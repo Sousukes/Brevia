@@ -845,7 +845,7 @@ const whatsNewLog = [
         "AI 纪要可独立开启或关闭，首次设置中可分别配置纪要与实时 AI 笔记。",
       ],
       improved: [
-        "优化首次设置、录音导入、会议准备页和详情页布局；翻译与重新精修入口更加清晰。",
+        "优化首次设置、录音导入、会议准备页和详情页布局；统一 AI 引导页的标题与卡片比例，翻译与重新精修入口更加清晰。",
         "升级语音识别引擎至 sherpa-onnx 1.13.8，Qwen3-ASR 按所选会议语言识别。",
         "统一存储设置的多语言提示，清理重复样式并改善窄窗口与暗色模式显示。",
       ],
@@ -864,7 +864,7 @@ const whatsNewLog = [
         "Turn AI summaries on or off independently, with separate setup controls for summaries and live AI notes.",
       ],
       improved: [
-        "Refined first-run setup, recording import, meeting preparation, and detail layouts, with clearer translation and re-refinement actions.",
+        "Refined first-run setup, recording import, meeting preparation, and detail layouts; aligned AI setup heading and card sizes with other setup pages, with clearer translation and re-refinement actions.",
         "Updated the speech recognition engine to sherpa-onnx 1.13.8; Qwen3-ASR now follows the selected meeting language.",
         "Unified localized storage messages, removed redundant styles, and improved narrow-window and dark-mode layouts.",
       ],
