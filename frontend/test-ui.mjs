@@ -51,7 +51,9 @@ assert.match(text(app), /hint\.textContent = error\.message/);
 assert.match(text(css), /\.capture-settings\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 assert.match(text(tailwind), /\.capture-mode-select\.opens-upward \.flow-select-options/, 'capture mode menu opens upward when it would overflow');
 assert.match(text(app), /options\.getBoundingClientRect\(\)\.bottom > window\.innerHeight/, 'capture mode menu checks available viewport space');
-assert.match(text(tailwind), /\.live-caption-controls \{ @apply col-span-2 flex flex-col items-end justify-center gap-1\.5; \}/, 'live controls keep each option on its own line');
+assert.match(text(tailwind), /\.live-caption-controls \{ @apply flex flex-wrap items-center gap-2; \}/, 'live controls fit the floating bar');
+assert.match(text(html), /class="floating-control-bar live-control-bar"[^]*id="pause"[^]*id="end-meeting"[^]*id="mark-important"[^]*id="live-more-toggle"/, 'live controls follow pause, end, mark, more order');
+assert.match(text(html), /class="player floating-control-bar"[^]*id="progress"[^]*id="play"/, 'playback controls stay together in the floating bar');
 assert.match(text(tailwind), /\.secondary \{ @apply mt-7 appearance-none bg-transparent/, 'secondary actions do not fall back to a native light button in dark mode');
 assert.match(text(tailwind), /html\[data-theme="dark"\] \.modal-danger \{ border-color: var\(--color-danger\); background: var\(--color-danger\); color: #fff; \}/, 'dark destructive actions retain a visible danger background');
 assert.match(text(app), /window\.brevia\.on\('meeting\.interrupted'/);
@@ -139,6 +141,7 @@ for (const group of ['asrRole', 'tiers', 'model', 'recommended', 'setup', 'prepa
   }
 }
 for (const code of asrCopyLocales) {
+  assert.equal(asrCopyData.setup[code].intro, undefined, `${code} recognition setup must omit the removed intro`);
   for (const id of asrModelCatalogIds) {
     assert.ok(asrCopyData.model[code][id], `model.${code} missing ${id}`);
     assert.ok(asrCopyData.model[code][id].tagline, `model.${code}.${id} needs a tagline`);
@@ -151,6 +154,9 @@ for (const code of asrCopyLocales) {
     assert.equal(asrCopyData.tiers[code][axis].length, 3, `tiers.${code}.${axis} must have 3 levels`);
   }
 }
+assert.equal(asrCopyData.model.zh['funasr-nano-int8'].tagline, '中文会议首选。中文识别准确率高，覆盖粤语等多种中文方言与各地口音以及英语。');
+assert.equal(asrCopyData.model.zh['qwen3-asr-0.6b-int8'].tagline, '日语与韩语会议首选，覆盖 30 种语言和 22 种中文方言。');
+assert.equal(asrCopyData.model.zh['parakeet-tdt-0.6b-v3-int8'].tagline, '英语与欧洲语言会议首选。覆盖英语、西班牙语、法语、德语、俄语等 25 种语言。');
 // 内层键集跨语种必须一致。某门语言少写一个字段时，渲染拿到的是 undefined 而不是
 // 回落英文——中文界面正常、该语种界面缺一块，这类缺漏只有逐语种比对结构才发现得了。
 // `recommended` 是扁平字符串表，不适用。
@@ -362,6 +368,19 @@ micCapture.micDeviceId = 'dead-device';
 const previewFellBack = await micCapture.previewMic();
 assert.equal(previewFellBack, true, 'preview reports device fallback');
 await micCapture.stopPreview();
+let resolvePreview;
+let openedPreviews = 0;
+let stoppedPreview = 0;
+micCapture.openMicStream = () => { openedPreviews += 1; return new Promise((resolve) => { resolvePreview = resolve; }); };
+const pendingPreview = micCapture.previewMic();
+await micCapture.previewMic();
+assert.equal(openedPreviews, 1, 'concurrent previews share one pending microphone acquisition');
+await micCapture.stopPreview();
+const lateTrack = { readyState: 'live', stop() { stoppedPreview += 1; } };
+resolvePreview({ getVideoTracks: () => [], getAudioTracks: () => [lateTrack] });
+await pendingPreview;
+assert.equal(stoppedPreview, 1, 'leaving the page releases a microphone acquired after cancellation');
+assert.equal(micCapture.preview, null);
 const pauseCapture = new mediaContext.AudioCapture();
 const contextStates = [];
 pauseCapture.sources = [{ context: {
@@ -391,6 +410,16 @@ mediaContext.navigator.mediaDevices.getDisplayMedia = async () => ({ getAudioTra
 await assert.rejects(new mediaContext.AudioCapture().prepare({ mic: false, system: true }), /未检测到系统音频/);
 const localeContext = { window: {} };
 runInNewContext(text(i18nData), localeContext);
+for (const code of asrCopyLocales) {
+  const storage = localeContext.window.BreviaLocaleData.onboardingStorageCopy;
+  assert.deepEqual(Object.keys(storage[code]).sort(), Object.keys(storage.en).sort(), `${code} storage labels must be complete`);
+  for (const key of ['请选择空文件夹。', '请先结束会议、精修和模型下载，再更改文件夹。', '模型和录音文件夹必须相互独立，且不能包含原数据文件夹。', '此文件夹由环境变量指定，无法在应用内更改。', '文件夹更改失败，请检查路径、磁盘连接和写入权限。']) {
+    assert.ok(localeContext.window.BreviaLocaleData.catalog[code].labels[key], `${code} missing storage error: ${key}`);
+  }
+}
+for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
+  assert.ok(localeContext.window.BreviaLocaleData.catalog[code].labels['言录需要以下系统权限以提供服务'], `${code} missing onboarding permission copy`);
+}
 const i18nStaticKeys = new Set([text(app), text(meetings), text(meetingDetail), text(workspaces), text(components)].flatMap((source) => [...source.matchAll(/\bt\('([^']+)'\)/g)].map((match) => match[1])));
 for (const key of i18nStaticKeys) for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
   assert.ok(localeContext.window.BreviaLocaleData.appCopy.stageLabels[key]?.[code] || localeContext.window.BreviaLocaleData.catalog[code].labels[key], `missing ${code} translation for ${key}`);
@@ -567,7 +596,8 @@ assert.match(text(css), /\.required-models-card ul\{(?=[^}]*max-height:min\(28vh
 assert.match(text(css), /#prepare-view\.active\{[^}]*overflow:hidden/);
 assert.match(text(css), /\.prepare-layout\{[^}]*grid-template-columns:minmax\(0,42rem\)/);
 assert.match(text(css), /\.prepare-layout\{[^}]*transform:scale\(var\(--prepare-scale,1\)\)/);
-assert.match(text(css), /#import-recording\{[^}]*margin-top:0/);
+assert.match(text(html), /id="import-recording" data-view="prepare" data-prepare-mode="import"/);
+assert.match(text(css), /\.import-recording\{[^}]*border/);
 assert.match(text(js), /function fitPrepareLayout/);
 assert.match(text(js), /function renderModelDownloadQueue/);
 assert.match(text(js), /id = 'model-download-queue'/);
@@ -607,7 +637,7 @@ assert.match(text(js), /MODEL_DOWNLOAD_FAILURES/);
 assert.match(text(app), /if \(\/LLM request failed\/i\.test\(text\)\) return content;/);
 assert.match(text(js), /Insufficient disk space/);
 assert.match(text(js), /checksum mismatch/);
-assert.match(text(electronMain), /BREVIA_MODELS_DIR: process\.env\.BREVIA_MODELS_DIR \|\| path\.join\(dataDir\(\), 'models'\)/);
+assert.match(text(electronMain), /BREVIA_MODELS_DIR: modelsDir\(\)/);
 assert.match(text(electronMain), /const dataDir = \(\) => process\.env\.BREVIA_DATA_DIR \|\|/);
 assert.match(text(electronMain), /const resetOnboarding = process\.argv\.includes\('--reset-onboarding'\)/);
 assert.match(text(electronMain), /query: \{ resetOnboarding: '1' \}/);
@@ -725,7 +755,7 @@ assert.match(text(components), /function renderSettingsCard/);
 assert.match(text(js), /renderStaticViews\(\);/);
 assert.match(text(js), /function renderPrepareSelects/);
 assert.match(text(js), /function selectCurrentWorkspaceForMeeting/);
-assert.match(text(js), /if \(target\.dataset\.view === 'prepare'\) selectCurrentWorkspaceForMeeting\(\)/);
+assert.match(text(js), /if \(target\.dataset\.view === 'prepare'\) setPrepareMode\(target\.dataset\.prepareMode \|\| 'record'\)/);
 assert.match(text(js), /__new_workspace__/);
 assert.match(text(js), /showNewWorkspaceDialog\(null, \(workspace\)/);
 assert.match(text(app), /const rect = action\.getBoundingClientRect\(\);\s+closeMeetingMenus\(\);\s+if \(typeof showWorkspaceAssignMenu === 'function'\) \{\s+showWorkspaceAssignMenu\(index, rect\);/);
@@ -922,7 +952,8 @@ assert.match(text(js), /const inFlight = progress && !progress\.error && !progre
 // 退役模型整行不再渲染，所以下载按钮的禁用只看「是否正在下载」。
 assert.match(text(js), /\$\{inFlight \? ' disabled' : ''\}/);
 assert.match(text(js), /if \(card\?\.id === 'model-download-queue'\) \{[\s\S]*?if \(progress\.cancelled \|\| progress\.error\) \{ modelDownloads\.delete\(modelId\); requiredModelIds\.delete\(modelId\); \}/);
-assert.match(text(js), /function renderPrepareSelects\(\) \{[\s\S]*?importRecording\.textContent = t\('导入录音'\);/);
+assert.match(text(js), /function renderPrepareSelects\(\) \{[\s\S]*?prepareView\.dataset\.mode === 'import'/);
+assert.match(text(js), /if \(prepareView\.dataset\.mode === 'import'\) \{[\s\S]*?meeting\.import/);
 assert.doesNotMatch(text(components), /查看完整内容/);
 assert.match(text(js), /function renderPauseButton/);
 assert.match(text(js), /const translation = payload\.translation \|\| previous\?\.querySelector\('\.translation'\)\?\.textContent;/);
@@ -1542,7 +1573,6 @@ const DARK_AGNOSTIC = {
   'summary-model-hint': '仅 text-[#8b857e]，同上',
   'window-actions': '仅 text-[#8b857e]，同上',
   // 刻意反相：浅色下白底黑字，暗色下依然是"亮底暗字"，对比正确（与 .modal-action 的暗色规则同构）。
-  'is-playing': '刻意反相的激活态（亮底暗字），两个主题下都成立',
   // 纯遮罩，没有前景内容，暗色下不需要调整。
   'modal-backdrop': '纯遮罩层，无前景内容',
   // 与 .onboarding-page 同时挂载，由 `html[data-theme=dark] .onboarding-page{background:#262626}`
@@ -1692,7 +1722,11 @@ assert.match(text(js), /onboarding-actions onboarding-page-copy/);
 assert.match(text(js), /onboarding-language-page/);
 assert.doesNotMatch(text(js), /data-onboarding-exit/);
 assert.match(text(js), /onboarding-page/);
-assert.match(text(js), /if \(window\.BreviaOnboarding\.isFirstLaunch\(\)\) openOnboardingLanguage\(\);[\s\S]{0,220}initializationPromise = breviaClient\.initialize\(\)\.then/);
+assert.match(text(js), /if \(window\.BreviaOnboarding\.isFirstLaunch\(\)\) openOnboardingLanguage\(\);/);
+assert.match(text(js), /data-select-storage/);
+assert.match(text(js), /\+ storageRows\s*\+ `<section class="onboarding-section onboarding-model-selection"/);
+assert.match(text(js), /data-change-folder/);
+assert.match(text(js), /storage\.setupLocations/);
 assert.match(text(js), /settingsModal\.style\.zIndex = '60'/, 'settings dialogs must stay above the onboarding overlay');
 assert.match(text(js), /if \(initializationPromise\) await initializationPromise;[\s\S]{0,160}openOnboardingPermissions\(\); return;/);
 assert.match(text(js), /window\.brevia\.on\('app\.maintenance'/);
@@ -1759,6 +1793,8 @@ assert.match(text(js), /const permissionPoll = window\.setInterval/);
 assert.match(text(js), /window\.clearInterval\(permissionPoll\)/);
 assert.match(text(js), /const placeholders = steps\.map[\s\S]*?onboarding-permission-complete/);
 assert.match(text(js), /function openOnboardingLanguage[\s\S]*?openOnboardingPermissions\(\);/);
+assert.match(text(js), /data-storage-path/);
+assert.match(text(js), /storage\.setupLocations/);
 assert.match(text(js), /dismissOnboardingPage\(\(\) => \{\s*onboardingPreviewLocale = undefined;\s*applyLanguage\(nextLocale, true\);\s*openOnboardingPermissions\(\);/);
 assert.match(text(js), /data-skip-onboarding-permissions/);
 assert.match(text(js), /dismissOnboardingPage\(openOnboardingSetup\)/);
@@ -1786,7 +1822,7 @@ assert.doesNotMatch(text(js), /modelPaths\.has\(modelIds\[sourceIndex\]\) \? '�
 // 守卫问的是「能不能出字幕」：已装在本地但未勾选的模型照样能出字幕，所以要放行，
 // 否则全装过的用户会被「无法生成字幕」堵住。
 assert.match(text(js), /const missing = checked\.length === 0 && !anyInstalled;/);
-assert.match(text(js), /if \(!onboardingModelReady\) return;/);
+assert.match(text(js), /if \(download && !onboardingModelReady\) return;/);
 assert.doesNotMatch(text(js), /data-download-onboarding-selected/, 'the removed library download button must not come back');
 assert.match(text(js), /onboardingModelIds = checked/);
 assert.match(text(js), /showOfflineTranscriptionReady/);
@@ -1814,7 +1850,7 @@ assert.doesNotMatch(text(js), /prepare-language-hint/, 'the prepare page must no
 assert.doesNotMatch(text(asrCopy), /languageHint/, 'prepare.languageHint is replaced by the option badge');
 assert.doesNotMatch(text(css), /\.prepare-language-hint\{/);
 assert.match(text(css), /\.flow-select-badge\{/);
-assert.match(text(js), /renderMeetingList\(\);\s*\/\/ 识别模型下拉依赖模型清单与安装状态[\s\S]{0,60}renderPrepareSelects\(\);/);
+assert.match(text(js), /function applyInitializationResult\(result\)[\s\S]*?renderMeetingList\(\);\s*renderPrepareSelects\(\);/);
 assert.doesNotMatch(text(js), /function modelSupportsLanguage/, '语言支持判断不得在 app.js 里重复实现');
 assert.match(text(js), /modelSelection\.modelSupportsLanguage/);
 assert.match(text(js), /function renderLiveModelControl\(\)/);
@@ -1968,7 +2004,7 @@ assert.match(text(js), /segmentContextMenu/);
 assert.match(text(js), /addProfileSample/);
 assert.match(text(js), /data-create-segment-profile/);
 assert.match(text(i18nData), /Create voiceprint/);
-assert.match(text(css), /\.final-transcript\{[^}]*height:100%[^}]*overflow:hidden/);
+assert.match(text(css), /\.final-transcript\{[^}]*overflow:hidden/);
 assert.match(text(css), /#prepare-view\.active\{[^}]*height:calc\(100dvh - 4rem\)/);
 assert.match(text(css), /#detail-view\.active\{[^}]*height:calc\(100dvh - 4rem\)/);
 assert.doesNotMatch(text(tailwind), /\.dual-track-panel|\.track-player|\.dual-track-empty/);

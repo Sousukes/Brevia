@@ -250,6 +250,71 @@ try {
   check(value.navItems > 0, '[data-view] 导航项为 0');
   check(pageErrors.length === 0, `渲染进程加载期异常：\n  ${pageErrors.join('\n  ')}`);
 
+  const storageRows = await client.send('Runtime.evaluate', { expression: `[...document.querySelector('#settings-view .settings-grid').children].slice(0, 2).map((row) => row.querySelector('[data-settings-path]')?.dataset.settingsPath).join(',')`, returnByValue: true });
+  check(storageRows.result?.value === 'recordings,models', `设置页顶部路径顺序：${storageRows.result?.value}`);
+  await client.send('Runtime.evaluate', { expression: `document.querySelector('#import-recording').click()` });
+  await delay(350);
+  const importPage = await client.send('Runtime.evaluate', { expression: `({ sidebar: !!document.querySelector('.sidebar > #import-recording'), active: document.querySelector('#prepare-view').classList.contains('active'), mode: document.querySelector('#prepare-view').dataset.mode, capture: getComputedStyle(document.querySelector('#prepare-view fieldset')).display })`, returnByValue: true });
+  check(importPage.result?.value?.sidebar && importPage.result?.value?.active && importPage.result?.value?.mode === 'import' && importPage.result?.value?.capture === 'none', `侧栏导入入口未打开独立模式：${JSON.stringify(importPage.result?.value)}`);
+  const importUi = await client.send('Runtime.evaluate', { expression: `(() => { applyLanguage('fr'); const button = document.querySelector('#import-recording'); const label = button.querySelector('.import-recording-label'); return { radius: getComputedStyle(button).borderTopLeftRadius, referenceRadius: getComputedStyle(document.querySelector('.new-meeting')).borderTopLeftRadius, label: label.textContent, clipped: label.scrollWidth > label.clientWidth, heading: document.querySelector('#prepare-view h1').textContent }; })()`, returnByValue: true });
+  check(importUi.result?.value?.radius === importUi.result?.value?.referenceRadius, `导入按钮圆角不一致：${JSON.stringify(importUi.result?.value)}`);
+  check(importUi.result?.value?.label === 'Importer un enregistrement' && importUi.result?.value?.heading === 'Importer un enregistrement' && !importUi.result?.value?.clipped, `导入界面法语文案不完整：${JSON.stringify(importUi.result?.value)}`);
+  const aiOnboarding = await client.send('Runtime.evaluate', { expression: `(() => { applyLanguage('zh'); openOnboardingAi(); const page = document.querySelector('.onboarding-ai-setup-page'); const cards = page.querySelectorAll('.onboarding-ai-feature'); const toggle = page.querySelector('[name="onboarding-ai-enabled"]'); const select = page.querySelector('[name="onboarding-ai-proactivity"]'); toggle.checked = false; toggle.dispatchEvent(new Event('change', { bubbles: true })); const off = page.querySelector('[data-onboarding-ai-demo]').dataset.mode; toggle.checked = true; select.value = 'auto'; select.dispatchEvent(new Event('change', { bubbles: true })); return { cards: cards.length, choices: page.querySelectorAll('[name="onboarding-ai-way"]').length, off, on: page.querySelector('[data-onboarding-ai-demo]').dataset.mode, aligned: Math.abs(cards[0].getBoundingClientRect().width - cards[1].getBoundingClientRect().width) < 1, summaryVisible: getComputedStyle(page.querySelector('.app-demo-summary-body')).opacity === '1' }; })()`, returnByValue: true });
+  check(aiOnboarding.result?.value?.cards === 2 && aiOnboarding.result?.value?.choices === 2 && aiOnboarding.result?.value?.off === 'off' && aiOnboarding.result?.value?.on === 'auto' && aiOnboarding.result?.value?.aligned && aiOnboarding.result?.value?.summaryVisible, `AI 引导页布局或预览不正确：${JSON.stringify(aiOnboarding.result?.value)}`);
+  const disabledDemo = await client.send('Runtime.evaluate', { expression: `(async () => {
+    const toggle = onboardingPage.querySelector('[name="onboarding-ai-enabled"]');
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event('change', { bubbles: true }));
+    const demo = onboardingPage.querySelector('[data-onboarding-ai-demo]');
+    const before = demo.innerHTML;
+    await new Promise((resolve) => setTimeout(resolve, 2900));
+    return before === demo.innerHTML;
+  })()`, awaitPromise: true, returnByValue: true });
+  check(disabledDemo.result?.value === true, '关闭 AI 演示后旧定时器不能继续更新内容');
+  const cancelledProvider = await client.send('Runtime.evaluate', { expression: `(() => {
+    const previous = summaryConfig.provider;
+    onboardingPage.querySelector('[name="onboarding-ai-way"][value="online"]').closest('label').click();
+    const draft = summaryConfigDraft.provider;
+    closeModal();
+    return draft !== 'built-in' && summaryConfig.provider === previous;
+  })()`, returnByValue: true });
+  check(cancelledProvider.result?.value === true, '取消引导页供应商配置不能覆盖已保存选择');
+  const aiOptions = await client.send('Runtime.evaluate', { expression: `(async () => { const page = document.querySelector('.onboarding-ai-setup-page'); const options = [...page.querySelector('[name="onboarding-ai-proactivity"]').options].map((option) => option.value); const icons = page.querySelectorAll('.onboarding-ai-icon svg').length; const toggle = page.querySelector('[name="onboarding-summary-enabled"]'); toggle.checked = false; toggle.dispatchEvent(new Event('change', { bubbles: true })); const disabled = [...page.querySelectorAll('[name="onboarding-ai-way"]')].every((option) => option.disabled); await finishAiOnboarding(); const saved = await window.brevia.summary.config.get(); return { options, icons, disabled, saved: saved.enabled }; })()`, awaitPromise: true, returnByValue: true });
+  check(JSON.stringify(aiOptions.result?.value?.options) === '["assist","auto"]' && aiOptions.result?.value?.icons === 2 && aiOptions.result?.value?.disabled && aiOptions.result?.value?.saved === false, `AI 开关、图标或档位未正确保存：${JSON.stringify(aiOptions.result?.value)}`);
+  const floatingBars = await client.send('Runtime.evaluate', { expression: `(() => { const live = document.querySelector('#live-view .floating-control-bar'); const player = document.querySelector('#detail-view .floating-control-bar'); const toggle = document.querySelector('#live-more-toggle'); toggle.click(); const menuOpen = !document.querySelector('#live-more-panel').hidden && toggle.getAttribute('aria-expanded') === 'true'; document.body.click(); const menuClosed = document.querySelector('#live-more-panel').hidden; const wasActive = meetingActive, wasSeconds = seconds; meetingActive = true; seconds = 57; document.querySelector('#mark-important').click(); const note = currentNotesMarkdown(); meetingActive = wasActive; seconds = wasSeconds; return { live: getComputedStyle(live).position, player: getComputedStyle(player).position, menuOpen, menuClosed, note }; })()`, returnByValue: true });
+  check(floatingBars.result?.value?.live === 'absolute' && floatingBars.result?.value?.player === 'absolute' && floatingBars.result?.value?.menuOpen && floatingBars.result?.value?.menuClosed && floatingBars.result?.value?.note?.includes('重点 · 00:57'), `悬浮控制栏操作不正确：${JSON.stringify(floatingBars.result?.value)}`);
+
+  await delay(350);
+  const detailLayout = await client.send('Runtime.evaluate', { expression: `(async () => {
+    await initializationPromise;
+    // Exercise list filtering while the tour replica exists, then reveal the real app.
+    applyLanguage('en');
+    document.querySelectorAll('.onboarding-page').forEach((page) => page.remove());
+    onboardingPage = undefined;
+    await showView('detail');
+    const failures = [];
+    for (const code of BreviaI18n.languageCodes) {
+      applyLanguage(code);
+      for (const theme of ['light', 'dark']) {
+        applyTheme(theme);
+        const panel = document.querySelector('#detail-view .final-transcript').getBoundingClientRect();
+        const player = document.querySelector('#detail-view .player').getBoundingClientRect();
+        if (panel.width <= 0 || panel.height <= 0 || panel.bottom > player.top + 1) failures.push(code + '/' + theme + ': transcript hidden or overlaps player');
+      }
+      if (document.querySelectorAll('[data-settings-path]').length !== 2) failures.push(code + ': duplicate storage rows');
+      const error = storageErrorMessage(new Error('Chosen recording folder is no longer empty'));
+      if (error !== catalog[code].labels['请选择空文件夹。']) failures.push(code + ': untranslated storage error');
+    }
+    applyLanguage('zh');
+    return failures;
+  })()`, awaitPromise: true, returnByValue: true });
+  check(Array.isArray(detailLayout.result?.value) && detailLayout.result.value.length === 0, `多语言/主题布局回归：${JSON.stringify(detailLayout)}`);
+  await client.send('Emulation.setDeviceMetricsOverride', { width: 880, height: 720, deviceScaleFactor: 1, mobile: false });
+  const minimumWindow = await client.send('Runtime.evaluate', { expression: `({ activeView, className: document.querySelector('#detail-view').className, display: getComputedStyle(document.querySelector('#detail-view')).display, parentWidth: document.querySelector('#detail-view').parentElement.getBoundingClientRect().width, width: document.querySelector('#detail-view').getBoundingClientRect().width, sidebar: getComputedStyle(document.querySelector('.app-shell > .sidebar')).display })`, returnByValue: true });
+  check(minimumWindow.result?.value?.width > 500 && minimumWindow.result?.value?.sidebar !== 'none', `最小桌面窗口丢失内容或导航：${JSON.stringify(minimumWindow.result?.value)}`);
+  await client.send('Emulation.clearDeviceMetricsOverride');
+  check(pageErrors.length === 0, `交互期间渲染异常：${pageErrors.join('\n')}`);
+
   /* 应用自身把可预期的失败写进 console.error（例如临时数据目录里没有模型），
      这里只报告不判负，避免把"测试环境缺模型"误判成回归。 */
   if (consoleErrors.length) {

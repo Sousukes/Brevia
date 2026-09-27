@@ -158,7 +158,7 @@ python3 -m pip install -r backend/requirements.txt
 npm start
 ```
 
-初回起動時にマイクと画面録画の権限を付与してから、**設定 → モデルライブラリ** から必要なモデルをダウンロードしてください。
+初回起動時にマイクと画面録画の権限を付与し、モデルと、モデル用・録音用の保存先を選択してください。保存先は後から **設定** で変更できます。既存ファイルは選択した空のフォルダーに移動され、再起動は不要です。外付けドライブは起動前に接続してください。
 
 ### よく使うスクリプト
 
@@ -176,6 +176,7 @@ npm run start:fresh         # オンボーディングをリセットして起�
 ```bash
 BREVIA_DATA_DIR=/path/to/data       # カスタムデータディレクトリ（録音、エクスポート、SQLite）
 BREVIA_MODELS_DIR=/path/to/models   # カスタムモデルディレクトリ
+BREVIA_MEETINGS_DIR=/path/to/recordings # 録音・会議ファイルの保存先
 BREVIA_FFMPEG=/path/to/ffmpeg       # ffmpeg バイナリ（PATH にない場合）
 
 BREVIA_DATA_DIR=~/brevia-dev BREVIA_MODELS_DIR=~/brevia-models npm start
@@ -209,7 +210,7 @@ npm run dist:win   # Windows x64 EXE
 <details>
 <summary><strong>データはどこに保存されますか？</strong></summary>
 
-デフォルトで `~/brevia`——録音、文字起こし、エクスポート、キャッシュされたモデル、声紋プロファイル、SQLite データベース。`BREVIA_DATA_DIR` を設定して変更できます。
+既定の保存先は `~/brevia` です。モデルと録音・会議ファイルには別々の保存先を選択できます。SQLite と声紋プロファイルはデータルートに残ります。`BREVIA_DATA_DIR` でデータルートを指定できます。
 </details>
 
 <details>

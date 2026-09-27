@@ -28,6 +28,8 @@ from .worker_common import (
     model_supports_language,
     require,
 )
+from .transcript import subtitle_time_at_offset
+
 # 该值在 diarization 子进程内使用；子进程不加载用户覆盖，故经 payload 传入，
 # 这里仅作缺失时的回退默认值。较长窗口让声纹更稳定，避免把同一个人聚成多人。
 EMBEDDING_WINDOW_MS = 15_000
@@ -1119,8 +1121,8 @@ class RefinementWorkerMixin:
                     continuation=bool(event.get("continues_previous")),
                 )
                 previous["end_ms"] = max(previous["end_ms"], event["end_ms"])
-                # 词级数据仅用于详情页的重叠说话人提示，完整保留各窗口即可；
-                # 文本去重不再尝试替换整组词时间戳。
+                # 完整保留词级数据；公共时间轴仅在文本一致时使用它们，
+                # 失配时仍可用于详情页的重叠说话人提示。
                 previous["word_timestamps"].extend(event.get("word_timestamps", []))
                 continue
             # 超长：优先在 previous 最后一个句末标点处语义拆分。
@@ -1266,7 +1268,7 @@ class RefinementWorkerMixin:
 
         LLM 类 ASR 常在窗口末尾补一个「伪句末」（如 ``…but if you.``，实际句子还没完）。
         因此从后往前找第一个「后面还有实质内容」的句末标点作为切点，跳过末尾伪句末，
-        避免把 ``if you ask them…`` 从中间断开。拆点用字符比例映射到时间。
+        避免把 ``if you ask them…`` 从中间断开。词时间戳失配时按字符比例估时。
         数字内的小数点（如 ``60.99亿元``）不是句末，不会被当作切点。
         """
         text = (segment.get("text") or "").strip()
@@ -1285,9 +1287,7 @@ class RefinementWorkerMixin:
                 continue
             start_ms = segment["start_ms"]
             end_ms = segment["end_ms"]
-            # 合并时文本会去重/重写，词时间戳却仍是各原窗口的数据；
-            # 用它们对齐新文本会误命中常见词，把后文拉回旧时间。
-            split_ms = start_ms + round((end_ms - start_ms) * (last + 1) / len(text))
+            split_ms = subtitle_time_at_offset(segment, text, last + 1)
             split_ms = max(start_ms, min(split_ms, end_ms))
             words = segment.get("word_timestamps", []) or []
             head_words = [word for word in words if word["start_ms"] < split_ms]

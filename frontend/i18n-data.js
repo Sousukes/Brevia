@@ -79,16 +79,30 @@ const interfaceLabels = {
 };
 Object.entries(interfaceLabels).forEach(([code, labels]) => Object.assign(catalog[code].labels, labels));
 const missedInterfaceLabels = {
-  zh: { '公开工作区': '公开工作区', '导入录音': '导入录音',   '录制权限': '录制权限',  '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。': '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。', '录制你的发言。': '录制你的发言。', '录制屏幕共享中的系统声音。': '录制屏幕共享中的系统声音。', '稍后': '稍后' },
-  en: { '公开工作区': 'Public workspace', '导入录音': 'Import recording', '语音对话': 'Voice conversation', '请先在声纹库注册可用声音': 'Register a voiceprint before sending speech', '录制权限': 'Recording permissions', '首次使用时完成设置': 'Complete setup on first use', '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。': 'Brevia needs microphone, screen, and system-audio permission to record meetings and create live captions.', '录制你的发言。': 'Records your speech.', '录制屏幕共享中的系统声音。': 'Records system audio from screen sharing.', '稍后': 'Later' },
-  es: { '公开工作区': 'Espacio de trabajo público', '导入录音': 'Importar grabación', '语音对话': 'Chat de voz', '请先在声纹库注册可用声音': 'Registra una voz antes de enviar audio', '录制权限': 'Permisos de grabación', '首次使用时完成设置': 'Completa la configuración al usarla por primera vez', '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。': 'Brevia necesita permisos de micrófono, pantalla y audio del sistema para grabar reuniones y crear transcripciones en directo.', '录制你的发言。': 'Graba tu voz.', '录制屏幕共享中的系统声音。': 'Graba el audio del sistema al compartir pantalla.', '稍后': 'Más tarde' },
-  ja: { '公开工作区': '公開ワークスペース', '导入录音': '録音を読み込む', '语音对话': '音声チャット', '请先在声纹库注册可用声音': '音声を送信する前に声紋を登録してください', '录制权限': '録音の権限', '首次使用时完成设置': '初回使用時に設定を完了', '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。': 'Brevia は会議の録音とライブ字幕のために、マイク、画面、システム音声へのアクセスを必要とします。', '录制你的发言。': 'あなたの発言を録音します。', '录制屏幕共享中的系统声音。': '画面共有中のシステム音声を録音します。', '稍后': 'あとで' },
-  ko: { '公开工作区': '공개 작업 공간', '导入录音': '녹음 가져오기', '语音对话': '음성 채팅', '请先在声纹库注册可用声音': '음성을 보내기 전에 음성 지문을 등록하세요', '录制权限': '녹음 권한', '首次使用时完成设置': '처음 사용할 때 설정 완료', '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。': 'Brevia는 회의 녹음과 실시간 자막 생성을 위해 마이크, 화면 및 시스템 오디오 권한이 필요합니다.', '录制你的发言。': '내 발화를 녹음합니다.', '录制屏幕共享中的系统声音。': '화면 공유의 시스템 오디오를 녹음합니다.', '稍后': '나중에' },
-  fr: { '公开工作区': 'Espace de travail public', '导入录音': 'Importer un enregistrement', '语音对话': 'Chat vocal', '请先在声纹库注册可用声音': 'Enregistrez une empreinte vocale avant d’envoyer un message', '录制权限': 'Autorisations d’enregistrement', '首次使用时完成设置': 'Terminer la configuration à la première utilisation', '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。': 'Brevia a besoin des autorisations du microphone, de l’écran et de l’audio système pour enregistrer des réunions et créer des transcriptions en direct.', '录制你的发言。': 'Enregistre votre voix.', '录制屏幕共享中的系统声音。': 'Enregistre l’audio système lors du partage d’écran.', '稍后': 'Plus tard' },
-  de: { '公开工作区': 'Öffentlicher Arbeitsbereich', '导入录音': 'Aufnahme importieren', '语音对话': 'Sprachchat', '请先在声纹库注册可用声音': 'Registrieren Sie vor dem Senden eine Stimmprobe', '录制权限': 'Aufnahmeberechtigungen', '首次使用时完成设置': 'Einrichtung bei der ersten Verwendung abschließen', '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。': 'Brevia benötigt Mikrofon-, Bildschirm- und Systemaudio-Berechtigungen, um Besprechungen aufzuzeichnen und Live-Untertitel zu erstellen.', '录制你的发言。': 'Zeichnet Ihre Sprache auf.', '录制屏幕共享中的系统声音。': 'Zeichnet Systemaudio bei der Bildschirmfreigabe auf.', '稍后': 'Später' },
-  ru: { '公开工作区': 'Общее рабочее пространство', '导入录音': 'Импортировать запись', '语音对话': 'Голосовой чат', '请先在声纹库注册可用声音': 'Перед отправкой речи зарегистрируйте голосовой отпечаток', '录制权限': 'Разрешения на запись', '首次使用时完成设置': 'Завершите настройку при первом использовании', '言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。': 'Brevia нужны разрешения на микрофон, экран и системный звук для записи встреч и создания субтитров в реальном времени.', '录制你的发言。': 'Записывает вашу речь.', '录制屏幕共享中的系统声音。': 'Записывает системный звук при демонстрации экрана.', '稍后': 'Позже' },
+  zh: { '公开工作区': '公开工作区', '导入录音': '导入录音',   '录制权限': '录制权限',  '录制你的发言。': '录制你的发言。', '录制屏幕共享中的系统声音。': '录制屏幕共享中的系统声音。', '稍后': '稍后' },
+  en: { '公开工作区': 'Public workspace', '导入录音': 'Import recording', '语音对话': 'Voice conversation', '请先在声纹库注册可用声音': 'Register a voiceprint before sending speech', '录制权限': 'Recording permissions', '首次使用时完成设置': 'Complete setup on first use', '录制你的发言。': 'Records your speech.', '录制屏幕共享中的系统声音。': 'Records system audio from screen sharing.', '稍后': 'Later' },
+  es: { '公开工作区': 'Espacio de trabajo público', '导入录音': 'Importar grabación', '语音对话': 'Chat de voz', '请先在声纹库注册可用声音': 'Registra una voz antes de enviar audio', '录制权限': 'Permisos de grabación', '首次使用时完成设置': 'Completa la configuración al usarla por primera vez', '录制你的发言。': 'Graba tu voz.', '录制屏幕共享中的系统声音。': 'Graba el audio del sistema al compartir pantalla.', '稍后': 'Más tarde' },
+  ja: { '公开工作区': '公開ワークスペース', '导入录音': '録音を読み込む', '语音对话': '音声チャット', '请先在声纹库注册可用声音': '音声を送信する前に声紋を登録してください', '录制权限': '録音の権限', '首次使用时完成设置': '初回使用時に設定を完了', '录制你的发言。': 'あなたの発言を録音します。', '录制屏幕共享中的系统声音。': '画面共有中のシステム音声を録音します。', '稍后': 'あとで' },
+  ko: { '公开工作区': '공개 작업 공간', '导入录音': '녹음 가져오기', '语音对话': '음성 채팅', '请先在声纹库注册可用声音': '음성을 보내기 전에 음성 지문을 등록하세요', '录制权限': '녹음 권한', '首次使用时完成设置': '처음 사용할 때 설정 완료', '录制你的发言。': '내 발화를 녹음합니다.', '录制屏幕共享中的系统声音。': '화면 공유의 시스템 오디오를 녹음합니다.', '稍后': '나중에' },
+  fr: { '公开工作区': 'Espace de travail public', '导入录音': 'Importer un enregistrement', '语音对话': 'Chat vocal', '请先在声纹库注册可用声音': 'Enregistrez une empreinte vocale avant d’envoyer un message', '录制权限': 'Autorisations d’enregistrement', '首次使用时完成设置': 'Terminer la configuration à la première utilisation', '录制你的发言。': 'Enregistre votre voix.', '录制屏幕共享中的系统声音。': 'Enregistre l’audio système lors du partage d’écran.', '稍后': 'Plus tard' },
+  de: { '公开工作区': 'Öffentlicher Arbeitsbereich', '导入录音': 'Aufnahme importieren', '语音对话': 'Sprachchat', '请先在声纹库注册可用声音': 'Registrieren Sie vor dem Senden eine Stimmprobe', '录制权限': 'Aufnahmeberechtigungen', '首次使用时完成设置': 'Einrichtung bei der ersten Verwendung abschließen', '录制你的发言。': 'Zeichnet Ihre Sprache auf.', '录制屏幕共享中的系统声音。': 'Zeichnet Systemaudio bei der Bildschirmfreigabe auf.', '稍后': 'Später' },
+  ru: { '公开工作区': 'Общее рабочее пространство', '导入录音': 'Импортировать запись', '语音对话': 'Голосовой чат', '请先在声纹库注册可用声音': 'Перед отправкой речи зарегистрируйте голосовой отпечаток', '录制权限': 'Разрешения на запись', '首次使用时完成设置': 'Завершите настройку при первом использовании', '录制你的发言。': 'Записывает вашу речь.', '录制屏幕共享中的系统声音。': 'Записывает системный звук при демонстрации экрана.', '稍后': 'Позже' },
 };
 Object.entries(missedInterfaceLabels).forEach(([code, labels]) => Object.assign(catalog[code].labels, labels));
+Object.entries({
+  zh: '言录需要以下系统权限以提供服务',
+  en: 'Brevia needs the following system permissions to provide its services.',
+  es: 'Brevia necesita los siguientes permisos del sistema para prestar sus servicios.',
+  ja: 'Brevia がサービスを提供するには、以下のシステム権限が必要です。',
+  ko: 'Brevia 서비스를 제공하려면 다음 시스템 권한이 필요합니다.',
+  fr: 'Brevia a besoin des autorisations système suivantes pour fournir ses services.',
+  de: 'Brevia benötigt die folgenden Systemberechtigungen, um seine Dienste bereitzustellen.',
+  ru: 'Для работы Brevia требуются следующие системные разрешения.',
+}).forEach(([code, label]) => { catalog[code].labels['言录需要以下系统权限以提供服务'] = label; });
+Object.entries({
+  zh: '应用设置', en: 'App settings', es: 'Configuración de la aplicación', ja: 'アプリ設定',
+  ko: '앱 설정', fr: 'Paramètres de l’application', de: 'App-Einstellungen', ru: 'Настройки приложения',
+}).forEach(([code, title]) => { catalog[code].labels['应用设置'] = title; });
 const runtimeErrorLabels = {
   zh: { '纪要不能为空': '纪要不能为空', },
   en: { '纪要不能为空': 'Meeting notes cannot be empty.', '当前没有正在进行的会议': 'There is no meeting in progress.' },
@@ -823,7 +837,48 @@ const storageCleanupCopy = {
  */
 const whatsNewLog = [
   {
-    version: '1.2.0', date: '2026-09-12', current: true,
+    version: '1.2.1', date: '2026-09-27', current: true,
+    zh: {
+      what: [
+        "支持在首次设置和设置页选择模型、会议录音的存储目录，并迁移已有文件。",
+        "会议详情支持选择精修模型；精修完成后显示实际使用的模型。",
+        "AI 纪要可独立开启或关闭，首次设置中可分别配置纪要与实时 AI 笔记。",
+      ],
+      improved: [
+        "优化首次设置、录音导入、会议准备页和详情页布局；翻译与重新精修入口更加清晰。",
+        "升级语音识别引擎至 sherpa-onnx 1.13.8，Qwen3-ASR 按所选会议语言识别。",
+        "统一存储设置的多语言提示，清理重复样式并改善窄窗口与暗色模式显示。",
+      ],
+      fixed: [
+        "修复存储目录迁移中断后的恢复与校验问题，避免错误清理文件。",
+        "修复修改字幕后仍使用旧词级时间戳的问题，并保留有效的精修句子时间对齐。",
+        "修复取消麦克风预览后仍占用设备，以及重复获取麦克风的问题。",
+        "修复首次引导中切换语言影响会议列表、AI 演示关闭后计时器继续运行，以及未保存的供应商选择覆盖当前配置的问题。",
+        "修复字幕底部被播放器遮挡，以及窄窗口下侧栏隐藏的问题。",
+      ],
+    },
+    en: {
+      what: [
+        "Choose storage folders for models and meeting recordings during setup or in settings, and move existing files.",
+        "Choose a refinement model from meeting details and see which model produced the refined transcript.",
+        "Turn AI summaries on or off independently, with separate setup controls for summaries and live AI notes.",
+      ],
+      improved: [
+        "Refined first-run setup, recording import, meeting preparation, and detail layouts, with clearer translation and re-refinement actions.",
+        "Updated the speech recognition engine to sherpa-onnx 1.13.8; Qwen3-ASR now follows the selected meeting language.",
+        "Unified localized storage messages, removed redundant styles, and improved narrow-window and dark-mode layouts.",
+      ],
+      fixed: [
+        "Fixed recovery and validation after interrupted storage moves to prevent incorrect file cleanup.",
+        "Fixed stale word timestamps being reused after subtitle edits while preserving valid sentence alignment during refinement.",
+        "Fixed microphone previews retaining the device after cancellation or acquiring it more than once.",
+        "Fixed onboarding language changes affecting the meeting list, AI demo timers continuing after being disabled, and unsaved provider choices overwriting the active configuration.",
+        "Fixed the player covering the bottom of transcripts and the sidebar disappearing in narrow windows.",
+      ],
+    },
+  },
+  {
+    version: '1.2.0', date: '2026-09-12',
     zh: {
       what: [
         '识别链路改为「VAD 分段 → 单次高精度识别」：每次说完停顿即出整句字幕，不再有半句闪烁。',
@@ -1187,5 +1242,35 @@ Object.entries({
   ru: { '已安装': 'Установлено' },
 }).forEach(([code, labels]) => Object.assign(catalog[code].labels, labels));
 
-window.BreviaLocaleData = { catalog, appCopy, aiNotePromptCopy, storageCleanupCopy, exportHubCopy, whatsNewLog };
+Object.entries({
+  zh: ['后退 15 秒', '前进 15 秒'], en: ['Back 15 seconds', 'Forward 15 seconds'],
+  es: ['Retroceder 15 segundos', 'Avanzar 15 segundos'], ja: ['15 秒戻る', '15 秒進む'],
+  ko: ['15초 뒤로', '15초 앞으로'], fr: ['Reculer de 15 secondes', 'Avancer de 15 secondes'],
+  de: ['15 Sekunden zurück', '15 Sekunden vor'], ru: ['Назад на 15 секунд', 'Вперёд на 15 секунд'],
+}).forEach(([code, [back, forward]]) => Object.assign(catalog[code].labels, { '后退 15 秒': back, '前进 15 秒': forward }));
+
+const onboardingStorageCopy = {
+  zh: { title: '数据存放位置', models: '模型文件夹', recordings: '会议与录音文件夹', choose: '更改路径' },
+  en: { title: 'Data storage locations', models: 'Model folder', recordings: 'Recordings and meetings folder', choose: 'Choose folder' },
+  es: { title: 'Ubicaciones de almacenamiento', models: 'Carpeta de modelos', recordings: 'Carpeta de grabaciones y reuniones', choose: 'Elegir carpeta' },
+  ja: { title: 'データの保存先', models: 'モデルフォルダー', recordings: '録音・会議フォルダー', choose: 'フォルダーを選択' },
+  ko: { title: '데이터 저장 위치', models: '모델 폴더', recordings: '녹음 및 회의 폴더', choose: '폴더 선택' },
+  fr: { title: 'Emplacements des données', models: 'Dossier des modèles', recordings: 'Dossier des enregistrements et réunions', choose: 'Choisir un dossier' },
+  de: { title: 'Speicherorte für Daten', models: 'Modellordner', recordings: 'Aufnahme- und Besprechungsordner', choose: 'Ordner wählen' },
+  ru: { title: 'Места хранения данных', models: 'Папка моделей', recordings: 'Папка записей и встреч', choose: 'Выбрать папку' },
+};
+
+const storageErrorKeys = ['请选择空文件夹。', '请先结束会议、精修和模型下载，再更改文件夹。', '模型和录音文件夹必须相互独立，且不能包含原数据文件夹。', '此文件夹由环境变量指定，无法在应用内更改。', '文件夹更改失败，请检查路径、磁盘连接和写入权限。'];
+Object.entries({
+  zh: storageErrorKeys,
+  en: ['Choose an empty folder.', 'Finish meetings, refinement and model downloads before changing folders.', 'Model and recording folders must be separate and must not contain the existing data folders.', 'This folder is set by an environment variable and cannot be changed in the app.', 'Could not change folders. Check the path, drive connection and write permissions.'],
+  es: ['Elige una carpeta vacía.', 'Finaliza las reuniones, el refinamiento y las descargas de modelos antes de cambiar las carpetas.', 'Las carpetas de modelos y grabaciones deben estar separadas y no contener las carpetas de datos actuales.', 'Esta carpeta está definida por una variable de entorno y no se puede cambiar en la aplicación.', 'No se pudieron cambiar las carpetas. Comprueba la ruta, la conexión del disco y los permisos de escritura.'],
+  ja: ['空のフォルダーを選択してください。', '会議、精修、モデルのダウンロードを終了してから保存先を変更してください。', 'モデルと録音のフォルダーは互いに独立し、既存のデータフォルダーを含まない場所にしてください。', 'このフォルダーは環境変数で指定されているため、アプリでは変更できません。', 'フォルダーを変更できませんでした。パス、ドライブの接続、書き込み権限を確認してください。'],
+  ko: ['빈 폴더를 선택하세요.', '회의, 정제 및 모델 다운로드를 완료한 후 폴더를 변경하세요.', '모델과 녹음 폴더는 서로 분리되어야 하며 기존 데이터 폴더를 포함할 수 없습니다.', '환경 변수로 지정된 폴더는 앱에서 변경할 수 없습니다.', '폴더를 변경하지 못했습니다. 경로, 드라이브 연결 및 쓰기 권한을 확인하세요.'],
+  fr: ['Choisissez un dossier vide.', 'Terminez les réunions, la transcription affinée et les téléchargements de modèles avant de changer de dossier.', 'Les dossiers des modèles et des enregistrements doivent être séparés et ne pas contenir les dossiers de données existants.', 'Ce dossier est défini par une variable d’environnement et ne peut pas être modifié dans l’application.', 'Impossible de changer les dossiers. Vérifiez le chemin, la connexion du disque et les droits d’écriture.'],
+  de: ['Wählen Sie einen leeren Ordner.', 'Beenden Sie Besprechungen, Nachbearbeitung und Modell-Downloads, bevor Sie Ordner ändern.', 'Modell- und Aufnahmeordner müssen getrennt sein und dürfen die bestehenden Datenordner nicht enthalten.', 'Dieser Ordner wird durch eine Umgebungsvariable festgelegt und kann nicht in der App geändert werden.', 'Ordner konnten nicht geändert werden. Prüfen Sie Pfad, Laufwerksverbindung und Schreibrechte.'],
+  ru: ['Выберите пустую папку.', 'Завершите встречи, уточнение расшифровки и загрузку моделей перед сменой папок.', 'Папки моделей и записей должны быть отдельными и не содержать существующие папки данных.', 'Эта папка задана переменной окружения и не может быть изменена в приложении.', 'Не удалось изменить папки. Проверьте путь, подключение диска и права записи.'],
+}).forEach(([code, values]) => storageErrorKeys.forEach((key, index) => { catalog[code].labels[key] = values[index]; }));
+
+window.BreviaLocaleData = { onboardingStorageCopy, catalog, appCopy, aiNotePromptCopy, storageCleanupCopy, exportHubCopy, whatsNewLog };
 })();

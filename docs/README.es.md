@@ -158,7 +158,7 @@ python3 -m pip install -r backend/requirements.txt
 npm start
 ```
 
-Concede permisos de micrófono y grabación de pantalla al primer arranque, luego descarga los modelos que necesitas desde **Settings → Model Library**.
+Al iniciar por primera vez, concede permisos de micrófono y grabación de pantalla y elige los modelos y las carpetas de modelos y grabaciones. Puedes cambiar las carpetas en **Ajustes**: Brevia mueve los archivos existentes a una carpeta vacía sin reiniciar. Conecta los discos externos antes de abrir la aplicación.
 
 ### Scripts comunes
 
@@ -176,6 +176,7 @@ npm run start:fresh         # Reinicia el flujo de onboarding y arranca
 ```bash
 BREVIA_DATA_DIR=/path/to/data       # Directorio de datos personalizado (grabaciones, exportaciones, SQLite)
 BREVIA_MODELS_DIR=/path/to/models   # Directorio de modelos personalizado
+BREVIA_MEETINGS_DIR=/path/to/recordings # Carpeta personalizada de grabaciones y reuniones
 BREVIA_FFMPEG=/path/to/ffmpeg       # Binario ffmpeg (si no está en PATH)
 
 BREVIA_DATA_DIR=~/brevia-dev BREVIA_MODELS_DIR=~/brevia-models npm start
@@ -209,7 +210,7 @@ No. Los builds de release incluyen el runtime Python y todas las dependencias. S
 <details>
 <summary><strong>¿Dónde se almacenan mis datos?</strong></summary>
 
-`~/brevia` por defecto — grabaciones, transcripciones, exportaciones, modelos en caché, perfiles de voz y la base de datos SQLite. Configura `BREVIA_DATA_DIR` para cambiarlo.
+Por defecto en `~/brevia`. Puedes elegir carpetas independientes para modelos y grabaciones; SQLite y los perfiles de voz permanecen en la raíz de datos. `BREVIA_DATA_DIR` define esa raíz.
 </details>
 
 <details>

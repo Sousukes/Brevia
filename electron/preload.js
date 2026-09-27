@@ -64,7 +64,7 @@ contextBridge.exposeInMainWorld('brevia', {
     delete: invoke('speaker-profile.delete'),
     rename: invoke('speaker-profile.rename'),
   },
-  storage: { clear: invoke('storage.clear'), cleanup: invoke('storage.cleanup'), open: invoke('storage.open') },
+  storage: { clear: invoke('storage.clear'), cleanup: invoke('storage.cleanup'), open: invoke('storage.open'), locations: invoke('storage.locations'), chooseFolder: invoke('storage.choose-folder'), setupLocations: invoke('storage.setup-locations') },
   advancedSettings: { get: invoke('settings.advanced.get'), save: invoke('settings.advanced.save') },
   metrics: { record: invoke('metrics.record') },
   segment: { speaker: invoke('segment.speaker'), saveText: invoke('segment.text'), addProfileSample: invoke('segment.speaker-profile-sample') },

@@ -97,7 +97,7 @@ function revealTaskCard(card) {
   card.hidden = false;
   if (wasHidden || wasLeaving) { taskCards.append(card); enterTaskCard(card); }
 }
-const { aiNotePromptCopy, storageCleanupCopy, exportHubCopy, whatsNewLog, appCopy: { themeLabels, updateLabels, modalCopy, modelLabels, summaryModelCopy, speakerProfileCopy, voiceFeaturesCopy, aiAssistCopy, whatsNewCopy } } = window.BreviaLocaleData;
+const { onboardingStorageCopy, aiNotePromptCopy, storageCleanupCopy, exportHubCopy, whatsNewLog, appCopy: { themeLabels, updateLabels, modalCopy, modelLabels, summaryModelCopy, speakerProfileCopy, voiceFeaturesCopy, aiAssistCopy, whatsNewCopy } } = window.BreviaLocaleData;
 if (new URLSearchParams(location.search).has('resetOnboarding')) localStorage.removeItem('brevia-onboarding-complete');
 let theme = localStorage.getItem('brevia-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 const appOpenedAt = Date.now();
@@ -373,7 +373,7 @@ function summaryProviderLabel(provider) {
   return copy.providers?.[provider] || (summaryModelCopy.en.providers?.[provider] ?? provider);
 }
 // 只有一套生效配置，但每个供应商的模型/地址/密钥引用分别留存，来回切换不会丢失已填内容。
-let summaryConfig = { version: 2, provider: 'built-in', providers: {} };
+let summaryConfig = { version: 2, enabled: true, provider: 'built-in', providers: {} };
 // 配置写入版本号：loadSummaryConfig 读取期间若发生保存，旧值作废（防覆盖竞态）。
 let summaryConfigRevision = 0;
 let summaryConfigDraft = null;
@@ -406,13 +406,13 @@ function requestConfig(config) {
   if (preset.needsKey && !entry.keyReference) return null;
   return { provider, endpoint, model, format: preset.format, keyReference: entry.keyReference };
 }
-function summaryRequestConfig() { return requestConfig(summaryConfig); }
+function summaryRequestConfig() { return summaryConfig.enabled ? requestConfig(summaryConfig) : null; }
 function speakerProfileName(profile) {
   return profile.name;
 }
 /** 返回保存在应用数据目录中的非机密纪要配置。*/
 function currentSummaryConfig() {
-  return { version: 2, provider: summaryConfig.provider, providers: summaryConfig.providers };
+  return { version: 2, enabled: summaryConfig.enabled, provider: summaryConfig.provider, providers: summaryConfig.providers };
 }
 /** 在浏览器存储之外保存纪要模型设置；密钥保留在 Electron 安全存储中。*/
 async function persistSummaryConfig() {
@@ -422,6 +422,7 @@ async function persistSummaryConfig() {
 function applySummaryConfig(config) {
   summaryConfig = {
     version: 2,
+    enabled: config?.enabled !== false,
     provider: summaryProviders.includes(config?.provider) ? config.provider : 'built-in',
     providers: config?.providers && typeof config.providers === 'object' ? config.providers : {},
   };
@@ -558,6 +559,7 @@ function renderPermissionSettings() {
   return `<section class="advanced-settings-section permission-settings-section" data-permission-settings><h3>${t('系统权限')}</h3>${rows}</section>`;
 }
 const modelDownloads = new Map();
+const meetingList = document.querySelector('.meeting-list');
 const libraryToolbar = document.querySelector('.library-toolbar');
 const meetingSearch = document.querySelector('#meeting-search');
 const meetingSearchClear = document.querySelector('#meeting-search-clear');
@@ -573,7 +575,7 @@ batchToolbar.innerHTML = '<strong data-batch-count></strong><div class="batch-ac
 libraryToolbar.after(batchToolbar);
 /** 同步选中行样式和上下文批量工具栏。@param {boolean} updateToolbar 是否重绘批量操作。@returns {void} */
 function syncMeetingSelection(updateToolbar = true) {
-  const rows = [...document.querySelectorAll('.meeting-row')];
+  const rows = [...meetingList.querySelectorAll('.meeting-row')];
   const available = new Set(rows.map((row) => row.dataset.selectionKey));
   [...selectedMeetingKeys].filter((key) => !available.has(key)).forEach((key) => selectedMeetingKeys.delete(key));
   rows.forEach((row) => { const selected = selectedMeetingKeys.has(row.dataset.selectionKey); row.classList.toggle('is-selected', selected); row.setAttribute('aria-selected', String(selected)); });
@@ -604,7 +606,7 @@ const selectedMeetings = () => uiData.meetings.filter((meeting, index) => select
 function clearMeetingSelection() { selectedMeetingKeys.clear(); syncMeetingSelection(); }
 /** 将活动工作区过滤应用于会议库列表（搜索已改为独立浮窗，不再过滤列表）。@returns {void} */
 function filterMeetings() {
-  document.querySelectorAll('.meeting-row').forEach((row) => {
+  meetingList.querySelectorAll('.meeting-row').forEach((row) => {
     const meeting = uiData.meetings[Number(row.dataset.meetingIndex)];
     const workspaceMatch = activeWorkspaceId === '' ? !meeting.workspaceId : meeting.workspaceId === activeWorkspaceId;
     row.hidden = !workspaceMatch;
@@ -636,7 +638,7 @@ function meetingSecondaryInfo(meeting) {
   return parts.length ? parts.join(' · ') : t('本地录音');
 }
 /** 仅重新渲染会议列表，保留设置模态框事件绑定。@returns {void} */
-function renderMeetingList() { document.querySelector('.meeting-list').innerHTML = uiData.meetings.map((meeting, index) => !meeting.isExample || meeting.exampleLocale === locale ? renderMeetingRow(localizeMeeting(meeting), index) : '').join(''); filterMeetings(); syncMeetingSelection(); cacheMeetingList(); }
+function renderMeetingList() { meetingList.innerHTML = uiData.meetings.map((meeting, index) => !meeting.isExample || meeting.exampleLocale === locale ? renderMeetingRow(localizeMeeting(meeting), index) : '').join(''); filterMeetings(); syncMeetingSelection(); cacheMeetingList(); }
 const prepareForm = document.querySelector('#meeting-form');
 const prepareView = document.querySelector('#prepare-view');
 const prepareLayout = prepareView.querySelector('.prepare-layout');
@@ -663,12 +665,7 @@ function fitPrepareLayout() {
 }
 new ResizeObserver(() => requestAnimationFrame(fitPrepareLayout)).observe(prepareView);
 desktopPrepareLayout.addEventListener('change', fitPrepareLayout);
-const importRecording = document.createElement('button');
-importRecording.className = 'secondary';
-importRecording.type = 'button';
-importRecording.id = 'import-recording';
-importRecording.textContent = t('导入录音');
-prepareForm.querySelector('[type="submit"]').after(importRecording);
+const importRecording = document.querySelector('#import-recording');
 const meetingTitle = document.querySelector('#meeting-title');
 let meetingTitleEdited = false;
 /** 仅在用户提供自己的标题之前刷新起始标题。@returns {void} */
@@ -702,8 +699,12 @@ function renderPrepareSelects() {
   const modelLabel = prepareModelControl(language, refinedModel, modelOptions);
   prepareForm.querySelector('.form-grid').innerHTML = `<label>${t('会议语言')}${flowSelect('meeting-language', language, BreviaI18n.languageOptions(locale, t, true))}</label>${modelLabel}<label>${t('译文目标')}${flowSelect('translation-target', values['translation-target'] || '', BreviaI18n.languageOptions(locale, t))}</label><label>${t('工作区')}${flowSelect('meeting-workspace', workspaceValue, workspaceOptions)}</label>`;
   renderCaptureMode(values['capture-mode'] || savedCaptureMode());
-  prepareForm.querySelector('.primary-action').firstChild.nodeValue = `${t('开始录制')} `;
-  importRecording.textContent = t('导入录音');
+  const importing = prepareView.dataset.mode === 'import';
+  prepareView.querySelector('.eyebrow').textContent = t(importing ? '导入录音' : '准备录制');
+  prepareView.querySelector('h1').textContent = t(importing ? '导入录音' : '开始一场会议');
+  prepareForm.querySelector('.primary-action').firstChild.nodeValue = `${t(importing ? '导入录音' : '开始录制')} `;
+  importRecording.querySelector('.import-recording-label').textContent = t('导入录音');
+  if (activeView === 'prepare') crumb.textContent = importing ? t('导入录音') : catalog[locale].views.prepare;
   requestAnimationFrame(fitPrepareLayout);
 }
 const CAPTURE_MODE_KEY = 'brevia-capture-mode';
@@ -746,7 +747,7 @@ function renderCaptureMode(value = savedCaptureMode()) {
   if (hint) hint.textContent = '';
   renderPrepareAudioSources();
   // 仅在准备页内预览麦克风；启动或首页重绘（applyLanguage 会调用本函数）不应采集声音。
-  if (activeView !== 'prepare') return;
+  if (activeView !== 'prepare' || prepareView.dataset.mode === 'import') return;
   if (inputs.mic) { void refreshMicDevices(); void previewMicrophone(); }
   else void breviaClient?.stopPreview();
 }
@@ -754,6 +755,11 @@ function selectCurrentWorkspaceForMeeting() {
   const workspace = prepareForm.querySelector('[name="meeting-workspace"]');
   if (workspace) workspace.value = activeWorkspaceId;
   renderPrepareSelects();
+}
+function setPrepareMode(mode) {
+  prepareView.dataset.mode = mode;
+  if (mode === 'import') void breviaClient?.stopPreview();
+  selectCurrentWorkspaceForMeeting();
 }
 const DEFAULT_REFINED_MODEL_ID = 'funasr-nano-int8';
 const languageModelDefaults = {
@@ -836,7 +842,7 @@ function applyLanguageModelDefaults(language) {
 if (breviaClient) {
   breviaClient.onLevel = (track, level) => {
     if (track !== 'mic') return;
-    document.querySelectorAll('#mic-level, [data-onboarding-mic-level]').forEach((meter) => meter.style.setProperty('--level', Math.max(.04, level)));
+    document.querySelectorAll('#mic-level, [data-onboarding-mic-level], [data-live-mic-level]').forEach((meter) => meter.style.setProperty('--level', Math.max(.04, level)));
   };
   // 恢复用户上次选择的麦克风设备(若有)。
   if (savedMicDeviceId()) breviaClient.setMicDevice(savedMicDeviceId());
@@ -1461,7 +1467,7 @@ function renderSummaryModelModal() {
   const copy = summaryModelCopy[locale] || summaryModelCopy.en;
   settingsModal.querySelector('h2').textContent = t('AI 会议总结');
   settingsModal.querySelector('.modal-title p').textContent = copy.featureIntro || summaryModelCopy.en.featureIntro;
-  settingsModal.querySelector('.modal-body').innerHTML = renderSummaryModelForm();
+  settingsModal.querySelector('.modal-body').innerHTML = `<label class="summary-enabled-control"><input type="checkbox" data-summary-enabled${summaryConfig.enabled ? ' checked' : ''} />${escapeHtml(t('AI 会议总结'))}</label>${renderSummaryModelForm()}`;
 }
 /** 渲染「AI 笔记」设置模态框：开关、主动性与独立模型连接。@returns {void} */
 function renderAiAssistModal() {
@@ -1954,19 +1960,22 @@ function closeModal() {
 
 let onboardingPage;
 let onboardingAiDemoTimer;
-let onboardingSummaryDemoTimer;
 let onboardingPreviewLocale;
 let onboardingSelectedLocale;
 let onboardingTourIndex = 0;
 /** 渲染「AI 笔记」演示：复刻应用内实时会议界面——右侧实时字幕 + 左侧 AI 建议（随主动性切换）。@returns {void} */
 function renderOnboardingAiDemo() {
+  clearInterval(onboardingAiDemoTimer);
   const demo = onboardingPage?.querySelector('[data-onboarding-ai-demo]');
-  const mode = onboardingPage?.querySelector('[name="onboarding-ai-proactivity"]:checked')?.value || 'quiet';
+  const mode = onboardingPage?.querySelector('[name="onboarding-ai-enabled"]')?.checked
+    ? onboardingPage.querySelector('[name="onboarding-ai-proactivity"]')?.value || 'assist' : 'off';
   if (!demo) return;
+  onboardingPage.querySelector('[name="onboarding-ai-proactivity"]').disabled = mode === 'off';
   const copy = aiOnboardingCopy[locale] || aiOnboardingCopy.en;
   const demoCopy = aiOnboardingDemoCopy[locale] || copy.demo || aiOnboardingCopy.en.demo;
   const speaker = t('说话人');
   const caption = (n) => `<div class="app-demo-caption"><span class="app-demo-speaker">${escapeHtml(speaker)} ${n}</span><p>${escapeHtml(demoCopy.transcriptText)}</p></div>`;
+  demo.dataset.mode = mode;
   // 「暂不开启」：只显示实时字幕，左侧为空态提示（会中无实时建议）。
   if (mode === 'off') {
     demo.innerHTML = `<div class="app-demo-window"><div class="app-demo-window-bar"><i></i><i></i><i></i><span>${escapeHtml(demoCopy.meeting)}</span></div><div class="app-demo-live"><aside class="app-demo-notes"><div class="app-demo-notes-head"><p class="eyebrow">${escapeHtml(demoCopy.notes)}</p></div><p class="app-demo-notes-off">${escapeHtml(copy.offEmpty || '')}</p></aside><div class="app-demo-captions">${caption(1)}${caption(2)}</div></div></div>`;
@@ -1978,29 +1987,15 @@ function renderOnboardingAiDemo() {
     const [title, suggestion, note] = demoCopy.scenes[mode][index++ % demoCopy.scenes[mode].length];
     demo.innerHTML = `<div class="app-demo-window"><div class="app-demo-window-bar"><i></i><i></i><i></i><span>${escapeHtml(demoCopy.meeting)}</span></div><div class="app-demo-live"><aside class="app-demo-notes"><div class="app-demo-notes-head"><p class="eyebrow">${escapeHtml(demoCopy.notes)}</p></div><div class="ai-suggestion-card"><div class="ai-suggestion-head"><span class="ai-suggestion-star">✦</span><span class="ai-suggestion-type">${escapeHtml(title)}</span></div><p class="ai-suggestion-text">${escapeHtml(suggestion)}</p></div><p class="app-demo-notes-note">${escapeHtml(note).replace(/\n/g, '<br />')}</p></aside><div class="app-demo-captions">${caption(1)}${caption(2)}</div></div></div>`;
   };
-  clearInterval(onboardingAiDemoTimer);
-  demo.dataset.mode = mode;
   paint();
   onboardingAiDemoTimer = setInterval(paint, 2800);
 }
-/** 渲染「AI 会议纪要」演示：复刻应用内会议详情界面——先出会后生成任务（进度条），再显示整理好的纪要。@returns {void} */
+/** 渲染「AI 会议纪要」演示。@returns {void} */
 function renderOnboardingSummaryDemo() {
   const frame = onboardingPage?.querySelector('[data-onboarding-summary-demo]');
   if (!frame) return;
   const demo = aiOnboardingSummaryDemoCopy[locale] || aiOnboardingSummaryDemoCopy.en;
-  frame.innerHTML = `<div class="app-demo-window"><div class="app-demo-window-bar"><i></i><i></i><i></i><span>${escapeHtml(demo.windowTitle)}</span></div><div class="app-demo-summary"><div class="app-demo-summary-task"><small>${escapeHtml(demo.task)}</small><i><b></b></i><span>${escapeHtml(demo.progress)}</span></div><div class="app-demo-summary-body"><p class="eyebrow">${escapeHtml(demo.heading)}</p><div class="markdown-content"><p>${escapeHtml(demo.decision)}</p><ul>${demo.actions.map((action) => `<li>${escapeHtml(action)}</li>`).join('')}</ul></div></div></div></div>`;
-  const stage = frame.querySelector('.app-demo-summary');
-  let phase = 0;
-  const tick = () => {
-    phase = (phase + 1) % 2;
-    stage.classList.toggle('show-card', phase === 1);
-    stage.classList.remove('run-progress');
-    void stage.offsetWidth; // 重启动画
-    if (phase === 0) stage.classList.add('run-progress');
-  };
-  clearInterval(onboardingSummaryDemoTimer);
-  stage.classList.add('run-progress');
-  onboardingSummaryDemoTimer = setInterval(tick, 3000);
+  frame.innerHTML = `<div class="app-demo-window"><div class="app-demo-window-bar"><i></i><i></i><i></i><span>${escapeHtml(demo.windowTitle)}</span></div><div class="app-demo-summary"><div class="app-demo-summary-body"><p class="eyebrow">${escapeHtml(demo.heading)}</p><div class="markdown-content"><p>${escapeHtml(demo.decision)}</p><ul>${demo.actions.map((action) => `<li>${escapeHtml(action)}</li>`).join('')}</ul></div></div></div></div>`;
 }
 function openOnboardingLanguage(initialLocale = onboardingSelectedLocale || window.BreviaOnboarding.systemLocale()) {
   activeModal = undefined;
@@ -2027,6 +2022,42 @@ function openOnboardingLanguage(initialLocale = onboardingSelectedLocale || wind
     });
   });
 }
+
+function renderSettingsFolderRows() {
+  const grid = document.querySelector('#settings-view .settings-grid');
+  const copy = onboardingStorageCopy[locale] || onboardingStorageCopy.en;
+  const rows = [];
+  for (const key of ['recordings', 'models']) {
+    const row = document.createElement('section');
+    row.className = 'settings-folder-row';
+    row.innerHTML = `<span><b>${escapeHtml(key === 'models' ? copy.models : copy.recordings)}</b><small data-settings-path="${key}"></small></span><button class="secondary" data-change-folder="${key}" type="button">${escapeHtml(copy.choose)}</button>`;
+    rows.push(row);
+  }
+  grid.prepend(...rows);
+  void refreshSettingsFolderRows();
+}
+function storageErrorMessage(error) {
+  const message = String(error.message || error);
+  if (/empty|ENOTEMPTY/.test(message)) return t('请选择空文件夹。');
+  if (/Finish the current|Folders are/.test(message)) return t('请先结束会议、精修和模型下载，再更改文件夹。');
+  if (/separate|outside/.test(message)) return t('模型和录音文件夹必须相互独立，且不能包含原数据文件夹。');
+  if (/environment variable/.test(message)) return t('此文件夹由环境变量指定，无法在应用内更改。');
+  return `${t('文件夹更改失败，请检查路径、磁盘连接和写入权限。')} ${message}`;
+}
+async function refreshSettingsFolderRows() {
+  try {
+    const locations = await window.brevia.storage.locations();
+    for (const key of ['recordings', 'models']) {
+      const path = document.querySelector(`[data-settings-path="${key}"]`);
+      const button = document.querySelector(`[data-change-folder="${key}"]`);
+      if (!path || !button) continue;
+      path.textContent = locations[key];
+      path.title = locations[key];
+      button.disabled = !locations[`${key}Managed`];
+    }
+  } catch (error) { showToast(error.message); }
+}
+renderSettingsFolderRows();
 
 // 首次引导：功能演示（tour）。在设置完成后，以 1:1 复刻的应用界面逐一展示言录的核心能力。
 const tourMeetingFallback = { zh: '会议', en: 'Meeting', es: 'Reunión', ja: '会議', ko: '회의', fr: 'Réunion', de: 'Besprechung', ru: 'Встреча' };
@@ -2152,13 +2183,14 @@ function renderTourReplica(index, crumb) {
 }
 function tourSidebar(index) {
   const items = [['all', '⌂', t('所有会议')], ['trash', '◷', t('最近删除')], ['settings', '⚙', t('设置')]];
-  return `<aside class="sidebar"><button class="brand"><span class="brand-mark">言</span><img src="./assets/brevia-logo.svg" alt="brevia" /></button><button class="new-meeting${index === 1 ? ' is-tour-highlight' : ''}"><span class="new-meeting-icon">+</span><span class="new-meeting-label">${escapeHtml(t('开始会议'))}</span></button><nav>${items.map(([id, icon, label]) => `<button class="nav-item${id === 'all' ? ' active' : ''}"><span>${icon}</span>${escapeHtml(label)}</button>`).join('')}</nav></aside>`;
+  return `<aside class="sidebar"><button class="brand"><span class="brand-mark">言</span><img src="./assets/brevia-logo.svg" alt="brevia" /></button><button class="new-meeting${index === 1 ? ' is-tour-highlight' : ''}"><span class="new-meeting-icon">+</span><span class="new-meeting-label">${escapeHtml(t('开始会议'))}</span></button><button class="import-recording"><span class="import-recording-icon">↥</span><span class="import-recording-label">${escapeHtml(t('导入录音'))}</span></button><nav>${items.map(([id, icon, label]) => `<button class="nav-item${id === 'all' ? ' active' : ''}"><span>${icon}</span>${escapeHtml(label)}</button>`).join('')}</nav></aside>`;
 }
 function tourView(index, demo) {
   const meetingName = demo.meeting || tourMeetingFallback[locale] || 'Meeting';
   const aiSuggestionLabel = tourAiSuggestionFallback[locale] || 'AI';
   const aiToggleLabel = (aiAssistCopy[locale] || aiAssistCopy.en).toggleOff;
-  const liveHeader = (time) => `<header class="live-header tour-anim" style="--tour-delay:0ms"><div class="live-title"><strong>${escapeHtml(meetingName)}</strong><div class="live-status"><span class="recording"><i></i>${escapeHtml(t('正在录制'))}</span><time>${time}</time><span class="save-state"><svg class="check-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3.2 3.2L13 4.5" /></svg>${escapeHtml(t('已保存'))}</span></div></div><div class="live-caption-controls"><button class="floating-caption-toggle">${escapeHtml(t('悬浮字幕'))}</button><button class="translation-toggle">${escapeHtml(t('翻译：关'))}</button></div><button class="pause-button">Ⅱ ${escapeHtml(t('暂停'))}</button><button class="end-button">${escapeHtml(t('结束会议'))}</button></header>`;
+  const liveHeader = (time) => `<header class="live-header tour-anim" style="--tour-delay:0ms"><div class="live-title"><strong>${escapeHtml(meetingName)}</strong><div class="live-status"><span class="recording"><i></i>${escapeHtml(t('正在录制'))}</span><time>${time}</time><span class="save-state"><svg class="check-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8.5 3.2 3.2L13 4.5" /></svg>${escapeHtml(t('已保存'))}</span></div></div></header>`;
+  const liveControls = `<div class="floating-control-bar live-control-bar"><div class="control-source"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="7" y="2" width="6" height="11" rx="3"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v3m-3 0h6"/></svg><i class="input-meter" style="--level:.7"></i><span>${escapeHtml(t('麦克风'))}</span></div><div class="control-primary"><button class="pause-button">Ⅱ ${escapeHtml(t('暂停'))}</button><button class="end-button">${escapeHtml(t('结束会议'))}</button></div><div class="control-secondary"><button class="mark-button">▯ ${escapeHtml(t('重点'))}</button><button class="live-more-toggle">•••</button></div></div>`;
   const liveModeIcon = (path) => `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`;
   const captionsPanel = (segments) => `<section class="live-captions tour-anim" style="--tour-delay:160ms"><header class="live-section-head"><p class="eyebrow">${escapeHtml(t('实时字幕'))}</p><button class="live-mode-toggle" data-toggle-live-mode="notes" aria-label="${escapeHtml(t('返回笔记'))}" title="${escapeHtml(t('返回笔记'))}">${liveModeIcon('m10 3-5 5 5 5')}</button></header><div class="transcript-scroll">${segments}</div></section>`;
   const segment = (time, speaker, text, delay = 220) => `<div class="segment tour-anim" style="--tour-delay:${delay}ms"><div class="segment-meta"><time>${time}</time><button class="segment-speaker">${escapeHtml(speaker)}</button></div><div class="segment-copy"><p>${escapeHtml(text)}</p></div></div>`;
@@ -2171,17 +2203,17 @@ function tourView(index, demo) {
       return `<section class="view active" id="prepare-view"><button class="back tour-anim">← ${escapeHtml(t('返回会议库'))}</button><div class="prepare-layout"><div class="tour-anim" style="--tour-delay:60ms"><p class="eyebrow">${escapeHtml(t('准备录制'))}</p><h1>${escapeHtml(t('开始一场会议'))}</h1><form><label>${escapeHtml(t('会议名称'))}<input value="${escapeHtml(demo.name)}" /></label><div class="form-grid"><label>${escapeHtml(t('会议语言'))}<input value="${escapeHtml(demo.language)}" /></label><label>${escapeHtml(t('译文目标'))}<input value="${escapeHtml(demo.translation || t('不需要翻译'))}" /></label></div><fieldset><legend>${escapeHtml(t('录制来源'))}</legend><div class="capture-settings"><label>${escapeHtml(t('采集模式'))}<div class="flow-select capture-mode-select"><button class="flow-select-toggle" type="button">${escapeHtml(t('自动（记住上次）'))}<span>⌄</span></button></div></label><label>${escapeHtml(t('麦克风设备'))}<div class="flow-select"><button class="flow-select-toggle" type="button">${escapeHtml(t('系统默认'))}<span>⌄</span></button></div></label></div><div class="capture-status"><span><b>${escapeHtml(t('麦克风'))}</b><strong><i class="input-meter" style="--level:.72"></i><span>${escapeHtml(t('输入良好'))}</span></strong></span><span><b>${escapeHtml(t('系统音频'))}</b><strong><span>${escapeHtml(t('已连接'))}</span></strong></span></div></fieldset><button class="primary-action wide tour-anim" style="--tour-delay:200ms">${escapeHtml(t('开始录制'))} <span>→</span></button></form></div></div></section>`;
     case 2: {
       const segments = demo.segments.map(([speaker, text], i) => segment(`${String((i * 3) + 2).padStart(2, '0')}:00`, speaker, text, 240 + i * 130)).join('');
-      return `<section class="view active" id="live-view">${liveHeader('04:23')}<div class="live-layout"><section class="live-notes tour-anim" style="--tour-delay:120ms"><header class="live-section-head"><p class="eyebrow">${escapeHtml(t('我的笔记'))}</p><button class="ai-assist-toggle"><span class="ai-assist-toggle-star">✦</span> ${escapeHtml(aiToggleLabel)}</button><button class="live-mode-toggle" data-toggle-live-mode="caption" aria-label="${escapeHtml(t('展开字幕'))}" title="${escapeHtml(t('展开字幕'))}">${liveModeIcon('m6 3 5 5-5 5')}</button></header><div class="notes-editor">${(demo.notes || []).map((line) => `<p>${escapeHtml(line)}</p>`).join('')}</div></section>${captionsPanel(segments)}</div></section>`;
+      return `<section class="view active" id="live-view">${liveHeader('04:23')}<div class="live-layout"><section class="live-notes tour-anim" style="--tour-delay:120ms"><header class="live-section-head"><p class="eyebrow">${escapeHtml(t('我的笔记'))}</p><button class="ai-assist-toggle"><span class="ai-assist-toggle-star">✦</span> ${escapeHtml(aiToggleLabel)}</button><button class="live-mode-toggle" data-toggle-live-mode="caption" aria-label="${escapeHtml(t('展开字幕'))}" title="${escapeHtml(t('展开字幕'))}">${liveModeIcon('m6 3 5 5-5 5')}</button></header><div class="notes-editor">${(demo.notes || []).map((line) => `<p>${escapeHtml(line)}</p>`).join('')}</div></section>${captionsPanel(segments)}</div>${liveControls}</section>`;
     }
     case 3: {
       // AI 纪要步骤的 demo 只含 decision/actions，无字幕；回退到上一步（实时字幕）的片段，
       // 避免渲染出空说话人 + 空文本的字幕行。
       const live = demo.live || demo.segments?.[0] || (tourCopy[locale] || tourCopy.en).steps[2].demo.segments?.[0] || [];
-      return `<section class="view active" id="live-view">${liveHeader('07:41')}<div class="live-layout"><section class="live-notes tour-anim" style="--tour-delay:120ms"><header class="live-section-head"><p class="eyebrow">${escapeHtml(t('我的笔记'))}</p><button class="ai-assist-toggle is-enabled"><span class="ai-assist-toggle-star">✦</span> ${escapeHtml(aiToggleLabel)}</button><button class="live-mode-toggle" data-toggle-live-mode="caption" aria-label="${escapeHtml(t('展开字幕'))}" title="${escapeHtml(t('展开字幕'))}">${liveModeIcon('m6 3 5 5-5 5')}</button></header><div class="ai-suggestion tour-anim" style="--tour-delay:220ms"><div class="ai-suggestion-card"><div class="ai-suggestion-head"><span class="ai-suggestion-star">✦</span><span class="ai-suggestion-type">${escapeHtml(aiSuggestionLabel)}</span></div><p class="ai-suggestion-text">${escapeHtml(demo.decision)}</p></div></div><div class="notes-editor tour-anim" style="--tour-delay:320ms">${(demo.actions || []).map((action) => `<p>• ${escapeHtml(action)}</p>`).join('')}</div></section>${captionsPanel(segment('00:02', live[0] || '', live[1] || '', 300))}</div></section>`;
+      return `<section class="view active" id="live-view">${liveHeader('07:41')}<div class="live-layout"><section class="live-notes tour-anim" style="--tour-delay:120ms"><header class="live-section-head"><p class="eyebrow">${escapeHtml(t('我的笔记'))}</p><button class="ai-assist-toggle is-enabled"><span class="ai-assist-toggle-star">✦</span> ${escapeHtml(aiToggleLabel)}</button><button class="live-mode-toggle" data-toggle-live-mode="caption" aria-label="${escapeHtml(t('展开字幕'))}" title="${escapeHtml(t('展开字幕'))}">${liveModeIcon('m6 3 5 5-5 5')}</button></header><div class="ai-suggestion tour-anim" style="--tour-delay:220ms"><div class="ai-suggestion-card"><div class="ai-suggestion-head"><span class="ai-suggestion-star">✦</span><span class="ai-suggestion-type">${escapeHtml(aiSuggestionLabel)}</span></div><p class="ai-suggestion-text">${escapeHtml(demo.decision)}</p></div></div><div class="notes-editor tour-anim" style="--tour-delay:320ms">${(demo.actions || []).map((action) => `<p>• ${escapeHtml(action)}</p>`).join('')}</div></section>${captionsPanel(segment('00:02', live[0] || '', live[1] || '', 300))}</div>${liveControls}</section>`;
     }
     case 4: {
       const meta = demo.meta || (tourCopy[locale] || tourCopy.en).steps[0].demo.meetings[0]?.[1] || '';
-      return `<section class="view active" id="detail-view"><button class="back tour-anim">← ${escapeHtml(t('返回会议库'))}</button><header class="detail-head tour-anim" style="--tour-delay:60ms"><div><p class="eyebrow">${escapeHtml(t('本地会议'))}</p><h1>${escapeHtml(meetingName)}</h1><p class="detail-meta">${escapeHtml(meta)}</p></div><div class="detail-actions"><button class="primary-action">${escapeHtml(t('导出与分享'))}</button></div></header><section class="player tour-anim" style="--tour-delay:140ms"><button class="play">▶</button><button class="skip">↶ 15</button><button class="skip">15 ↷</button><span class="player-time">00:00</span><input type="range" min="0" max="1" value="0" /><span>${escapeHtml(t('本地录音'))}</span><div class="player-speed flow-select"><button class="flow-select-toggle" type="button">1× <span>⌄</span></button></div></section><div class="detail-layout"><section class="final-transcript tour-anim" style="--tour-delay:220ms"><div class="tabbar"><div class="tabbar-tabs"><button class="tab active">${escapeHtml(t('精修字幕'))}</button><button class="tab">${escapeHtml(t('原始转写'))}</button></div><button class="tabbar-action">${escapeHtml(t('更多'))}</button></div><div class="refined-fulltext"><div class="refined-fulltext-body">${escapeHtml(demo.refined)}</div></div></section><aside class="notes tour-anim" style="--tour-delay:300ms"><div class="tabbar"><div class="tabbar-tabs"><button class="tab active">${escapeHtml(t('会议纪要'))}</button></div></div><div class="detail-notes-panel"><p>${escapeHtml(demo.summary)}</p></div></aside></div></section>`;
+      return `<section class="view active" id="detail-view"><button class="back tour-anim">← ${escapeHtml(t('返回会议库'))}</button><header class="detail-head tour-anim" style="--tour-delay:60ms"><div><p class="eyebrow">${escapeHtml(t('本地会议'))}</p><h1>${escapeHtml(meetingName)}</h1><p class="detail-meta">${escapeHtml(meta)}</p></div><div class="detail-actions"><button class="primary-action">${escapeHtml(t('导出与分享'))}</button></div></header><div class="detail-layout"><section class="final-transcript tour-anim" style="--tour-delay:220ms"><div class="tabbar"><div class="tabbar-tabs"><button class="tab active">${escapeHtml(t('精修字幕'))}</button><button class="tab">${escapeHtml(t('原始转写'))}</button></div><button class="tabbar-action">${escapeHtml(t('更多'))}</button></div><div class="refined-fulltext"><div class="refined-fulltext-body">${escapeHtml(demo.refined)}</div></div></section><aside class="notes tour-anim" style="--tour-delay:300ms"><div class="tabbar"><div class="tabbar-tabs"><button class="tab active">${escapeHtml(t('会议纪要'))}</button></div></div><div class="detail-notes-panel"><p>${escapeHtml(demo.summary)}</p></div></aside></div><section class="player floating-control-bar tour-anim" style="--tour-delay:140ms"><div class="player-track"><span>${escapeHtml(t('本地录音'))}</span><span class="player-time">00:00</span><input type="range" min="0" max="1" value="0" /></div><div class="player-actions"><button class="skip">↶ 15</button><button class="play">▶</button><button class="skip">15 ↷</button></div><div class="player-speed flow-select"><button class="flow-select-toggle" type="button">1× <span>⌄</span></button></div></section></section>`;
     }
   }
   return '';
@@ -2263,7 +2295,6 @@ function showOnboardingPage(kind, content) {
 function dismissOnboardingPage(next) {
   const page = onboardingPage;
   clearInterval(onboardingAiDemoTimer);
-  clearInterval(onboardingSummaryDemoTimer);
   void breviaClient?.stopPreview();
   page.classList.remove('onboarding-page-enter');
   page.classList.add('onboarding-page-leave');
@@ -2297,6 +2328,10 @@ async function openOnboardingSetup() {
   try { if (initializationPromise) await initializationPromise; }
   catch (error) { showToast(`${t('配置或后端启动失败')}: ${error.message}`); openOnboardingPermissions(); return; }
   const copy = asrText('setup');
+  const storageCopy = onboardingStorageCopy[locale] || onboardingStorageCopy.en;
+  let locations;
+  try { locations = await window.brevia.storage.locations(); }
+  catch (error) { showToast(error.message); return; }
   const roleWords = asrText('asrRole');
   const modelWords = asrText('model');
   const tierWords = asrText('tiers');
@@ -2339,10 +2374,14 @@ async function openOnboardingSetup() {
     + `<small>${escapeHtml(copy.bundledDetail || '')}</small></span>`
     + `<i>${escapeHtml(formatBytes(bundledSize))}</i></div>`;
 
+  const storageRow = (key, label, managed) => `<div class="onboarding-folder-row"><span><b>${escapeHtml(label)}</b><small data-storage-path="${key}" title="${escapeHtml(locations[key])}">${escapeHtml(locations[key])}</small></span><button class="secondary" data-select-storage="${key}" type="button"${managed ? '' : ' disabled'}>${escapeHtml(storageCopy.choose)}</button></div>`;
+  const storageRows = `<section class="onboarding-section onboarding-folder-section"><h2>${escapeHtml(storageCopy.title)}</h2>${storageRow('models', storageCopy.models, locations.modelsManaged)}${storageRow('recordings', storageCopy.recordings, locations.recordingsManaged)}</section>`;
+
   showOnboardingPage('setup',
     `<section class="onboarding-setup-page"><button class="onboarding-back" data-onboarding-back-language type="button" aria-label="${t('返回')}">←</button>`
     + `<header><img class="onboarding-brand" src="./assets/brevia-logo.svg" alt="Brevia" /><h1>${escapeHtml(copy.title || '')}</h1>`
-    + `<div class="onboarding-intro"><p>${escapeHtml(copy.intro || '')}</p><small>${securityHint}</small></div></header>`
+    + `<div class="onboarding-intro"><small>${securityHint}</small></div></header>`
+    + storageRows
     + `<section class="onboarding-section onboarding-model-selection"><h2>${escapeHtml(copy.pickHint || '')}</h2>`
     + `<div class="onboarding-model-grid">${cards}</div></section>`
     + `<section class="onboarding-section onboarding-bundled-section">${bundledRow}</section>`
@@ -2356,16 +2395,40 @@ async function openOnboardingSetup() {
     if (event.target.matches('[name="onboarding-model"]')) updateOnboardingSetup();
     if (event.target.matches('[data-china-model-source]')) localStorage.setItem('brevia-china-model-source', event.target.checked);
   });
-  onboardingPage.addEventListener('click', (event) => {
+  onboardingPage.addEventListener('click', async (event) => {
     if (event.target.closest('[data-onboarding-back-language]')) { dismissOnboardingPage(openOnboardingPermissions); return; }
-    if (event.target.closest('[data-download-onboarding-models]')) {
-      if (!onboardingModelReady) return;
-      window.BreviaOnboarding.beginDownloads(onboardingModelIds);
-      downloadRequiredModels(onboardingModelIds);
-      dismissOnboardingPage(openOnboardingAi);
+    const select = event.target.closest('[data-select-storage]');
+    if (select) {
+      try {
+        const directory = await window.brevia.storage.chooseFolder();
+        if (directory) {
+          locations[select.dataset.selectStorage] = directory;
+          const path = onboardingPage.querySelector(`[data-storage-path="${select.dataset.selectStorage}"]`);
+          path.textContent = directory;
+          path.title = directory;
+        }
+      } catch (error) { showToast(error.message); }
       return;
     }
-    if (event.target.closest('[data-finish-onboarding]')) dismissOnboardingPage(openOnboardingAi);
+    const download = event.target.closest('[data-download-onboarding-models]');
+    const later = event.target.closest('[data-finish-onboarding]');
+    if (!download && !later) return;
+    if (download && !onboardingModelReady) return;
+    download?.setAttribute('disabled', '');
+    later?.setAttribute('disabled', '');
+    try {
+      const result = await window.brevia.storage.setupLocations({ models: locations.models, recordings: locations.recordings });
+      if (result.data) applyInitializationResult(result.data);
+      if (download) {
+        window.BreviaOnboarding.beginDownloads(onboardingModelIds);
+        downloadRequiredModels(onboardingModelIds);
+      }
+      dismissOnboardingPage(openOnboardingAi);
+    } catch (error) {
+      showToast(storageErrorMessage(error));
+      if (download) download.disabled = false;
+      if (later) later.disabled = false;
+    }
   });
 }
 
@@ -2509,22 +2572,53 @@ function openOnboardingAi() {
   const copy = aiOnboardingCopy[locale] || aiOnboardingCopy.en;
   // 低配设备默认「暂不开启」实时 AI 笔记（太耗资源），仅保留会后一次性的 AI 会议纪要。
   const defaultProactivity = deviceIsWeak() ? 'off' : 'assist';
-  const levels = copy.levels.map(([value, title, detail]) => `<label class="onboarding-ai-level${value === defaultProactivity ? ' is-selected' : ''}"><input type="radio" name="onboarding-ai-proactivity" value="${value}"${value === defaultProactivity ? ' checked' : ''} /><span><b>${escapeHtml(title)}${recommendTag(value === 'off' && deviceIsWeak())}</b><small>${escapeHtml(detail)}</small></span></label>`).join('');
+  const levels = copy.levels.filter(([value]) => ['assist', 'auto'].includes(value)).map(([value, title]) => `<option value="${value}"${value === defaultProactivity ? ' selected' : ''}>${escapeHtml(title)}</option>`).join('');
   const brand = locale === 'zh' ? '<div class="onboarding-brand-name"><span>言</span><b>言录</b></div>' : '<img class="onboarding-brand" src="./assets/brevia-logo.svg" alt="Brevia" />';
-  showOnboardingPage('setup', `<section class="onboarding-setup-page onboarding-ai-setup-page"><button class="onboarding-back" data-onboarding-back-language type="button" aria-label="${t('返回')}">←</button><header>${brand}<h1>${escapeHtml(copy.title)}</h1><div class="onboarding-intro"><p>${escapeHtml(copy.intro)}</p></div></header><section class="onboarding-section onboarding-ai-feature onboarding-ai-row"><div class="onboarding-ai-copy"><h2>${escapeHtml(copy.meetingNotesTitle)}</h2><p class="onboarding-ai-feature-desc">${escapeHtml(copy.meetingNotesDesc)}</p><p class="onboarding-ai-way-title">${escapeHtml(copy.wayTitle)}</p><div class="onboarding-ai-ways"><label><input type="radio" name="onboarding-ai-way" value="built-in" /><span><b>${escapeHtml(copy.builtin)}</b><small>${escapeHtml(copy.builtinHint)}</small></span></label><label><input type="radio" name="onboarding-ai-way" value="online" /><span><b>${escapeHtml(copy.online)}${recommendTag(deviceIsWeak())}</b><small>${escapeHtml(copy.onlineHint)}</small></span></label></div></div><div class="onboarding-ai-frame" data-onboarding-summary-demo></div></section><section class="onboarding-section onboarding-ai-feature onboarding-ai-row"><div class="onboarding-ai-copy"><h2>${escapeHtml(copy.liveNotesTitle)}</h2><p class="onboarding-ai-feature-desc">${escapeHtml(copy.liveNotesDesc)}</p><p class="onboarding-ai-way-title">${escapeHtml(copy.proactivityTitle)}</p><div class="onboarding-ai-levels">${levels}</div></div><div class="onboarding-ai-frame"><aside class="onboarding-ai-demo" data-onboarding-ai-demo></aside></div></section><div class="onboarding-actions"><button class="modal-action" data-onboarding-ai-finish type="button">${escapeHtml(copy.finish)}</button><button class="secondary" data-onboarding-ai-skip type="button">${escapeHtml(copy.skip)}</button></div></section>`);
+  const summaryIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 11h6M9 15h6M9 19h4"/></svg>';
+  const notesIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a2 2 0 0 1 2 2v6M5 4v16h9M8 9h7M8 13h5"/><path d="m16 17 1.5-3 1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5z"/></svg>';
+  showOnboardingPage('setup', `<section class="onboarding-setup-page onboarding-ai-setup-page">
+    <button class="onboarding-back" data-onboarding-back-language type="button" aria-label="${t('返回')}">←</button>
+    <header>${brand}<h1>${escapeHtml(copy.title)}</h1><div class="onboarding-intro"><p>${escapeHtml(copy.intro)}</p></div></header>
+    <section class="onboarding-section onboarding-ai-feature onboarding-ai-row">
+      <div class="onboarding-ai-copy">
+        <div class="onboarding-ai-feature-head"><span class="onboarding-ai-icon">${summaryIcon}</span><h2>${escapeHtml(copy.meetingNotesTitle)}</h2><label class="onboarding-ai-switch"><input type="checkbox" name="onboarding-summary-enabled" aria-label="${escapeHtml(copy.meetingNotesTitle)}"${summaryConfig.enabled ? ' checked' : ''} /></label></div>
+        <p class="onboarding-ai-feature-desc">${escapeHtml(copy.meetingNotesDesc)}</p>
+        <p class="onboarding-ai-way-title">${escapeHtml(copy.wayTitle)}</p>
+        <div class="onboarding-ai-ways"><label><input type="radio" name="onboarding-ai-way" value="built-in"${summaryConfig.provider === 'built-in' ? ' checked' : ''} /><span><b>${escapeHtml(copy.builtin)}</b><small>${escapeHtml(copy.builtinHint)}</small></span></label><label><input type="radio" name="onboarding-ai-way" value="online"${summaryConfig.provider !== 'built-in' ? ' checked' : ''} /><span><b>${escapeHtml(copy.online)}${recommendTag(deviceIsWeak())}</b><small>${escapeHtml(copy.onlineHint)}</small></span></label></div>
+      </div><div class="onboarding-ai-frame" data-onboarding-summary-demo></div>
+    </section>
+    <section class="onboarding-section onboarding-ai-feature onboarding-ai-row">
+      <div class="onboarding-ai-copy">
+        <div class="onboarding-ai-feature-head"><span class="onboarding-ai-icon">${notesIcon}</span><h2>${escapeHtml(copy.liveNotesTitle)}</h2><label class="onboarding-ai-switch"><input type="checkbox" name="onboarding-ai-enabled" aria-label="${escapeHtml(copy.enableLiveNotes)}"${defaultProactivity !== 'off' ? ' checked' : ''} /></label></div>
+        <p class="onboarding-ai-feature-desc">${escapeHtml(copy.liveNotesDesc)}</p>
+        <label class="onboarding-ai-way-title" for="onboarding-ai-proactivity">${escapeHtml(copy.proactivityTitle)}</label>
+        <div class="onboarding-ai-levels"><select id="onboarding-ai-proactivity" name="onboarding-ai-proactivity">${levels}</select></div>
+        <small class="onboarding-ai-feature-hint">${escapeHtml(copy.proactivityHint || '')}</small>
+      </div><div class="onboarding-ai-frame"><aside class="onboarding-ai-demo" data-onboarding-ai-demo></aside></div>
+    </section>
+    <div class="onboarding-actions"><button class="secondary" data-onboarding-ai-skip type="button">${escapeHtml(copy.skip)}</button><button class="modal-action" data-onboarding-ai-finish type="button">${escapeHtml(copy.finish)}</button></div>
+  </section>`);
   renderOnboardingAiDemo();
   renderOnboardingSummaryDemo();
+  const syncSummarySwitch = () => {
+    const enabled = onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked;
+    onboardingPage.querySelectorAll('[name="onboarding-ai-way"]').forEach((option) => { option.disabled = !enabled; });
+    onboardingPage.querySelector('[data-onboarding-summary-demo]').classList.toggle('is-disabled', !enabled);
+  };
+  syncSummarySwitch();
   onboardingPage.addEventListener('change', (event) => {
-    if (event.target.matches('[name="onboarding-ai-proactivity"]')) {
-      onboardingPage.querySelectorAll('.onboarding-ai-level').forEach((level) => level.classList.toggle('is-selected', level.querySelector('input').checked));
+    if (event.target.matches('[name="onboarding-summary-enabled"]')) syncSummarySwitch();
+    if (event.target.matches('[name="onboarding-ai-proactivity"], [name="onboarding-ai-enabled"]')) {
       renderOnboardingAiDemo();
     }
   });
   onboardingPage.addEventListener('click', (event) => {
     const aiWay = event.target.closest('.onboarding-ai-ways label');
     if (aiWay) {
+      if (!onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked) return;
       onboardingOnlineProvider = !aiWay.querySelector('[value="built-in"]');
-      summaryConfig = { ...summaryConfig, provider: aiWay.querySelector('[value="built-in"]') ? 'built-in' : 'openai' };
+      summaryConfigDraft = structuredClone(summaryConfig);
+      summaryConfigDraft.provider = onboardingOnlineProvider ? (summaryConfig.provider === 'built-in' ? 'openai' : summaryConfig.provider) : 'built-in';
       openModal('summary-model');
       return;
     }
@@ -2534,12 +2628,15 @@ function openOnboardingAi() {
   });
 }
 async function finishAiOnboarding(forceEnabled) {
-  const proactivity = onboardingPage.querySelector('[name="onboarding-ai-proactivity"]:checked')?.value || 'off';
-  const enabled = typeof forceEnabled === 'boolean' ? forceEnabled : proactivity !== 'off';
+  const proactivity = onboardingPage.querySelector('[name="onboarding-ai-proactivity"]')?.value || 'assist';
+  const enabled = typeof forceEnabled === 'boolean' ? forceEnabled : onboardingPage.querySelector('[name="onboarding-ai-enabled"]')?.checked;
+  summaryConfig.enabled = forceEnabled === false ? false : Boolean(onboardingPage.querySelector('[name="onboarding-summary-enabled"]')?.checked);
+  summaryConfigRevision += 1;
   aiAssistConfig.enabled = enabled;
   aiAssistConfig.proactivity = ['quiet', 'assist', 'auto'].includes(proactivity) ? proactivity : 'assist';
   aiAssistConfigRevision += 1;
-  await persistAiAssistConfig().catch(() => {});
+  try { await Promise.all([persistSummaryConfig(), persistAiAssistConfig()]); }
+  catch (error) { showToast(error.message); return; }
   dismissOnboardingPage(openOnboardingTour);
 }
 
@@ -2550,7 +2647,7 @@ function openOnboardingPermissions() {
     ['screen', t('屏幕与系统音频'), t('录制屏幕共享中的系统声音。')],
   ];
   const placeholders = steps.map(([permission, label, detail], index) => `<div class="onboarding-permission"><span class="onboarding-permission-state">${index + 1}</span><span><b>${label}</b><small>${detail}</small></span><button class="modal-action onboarding-permission-action onboarding-permission-placeholder" type="button" disabled>${permission === 'microphone' ? t('允许') : t('继续')}</button></div>`).join('') + `<div class="onboarding-permission-complete onboarding-permission-placeholder" aria-hidden="true">&nbsp;</div>`;
-  showOnboardingPage('permissions', `<section class="onboarding-setup-page onboarding-permissions-page"><button class="onboarding-back" data-onboarding-back-language type="button" aria-label="${t('返回')}">←</button><header><img class="onboarding-brand" src="./assets/brevia-logo.svg" alt="Brevia" /><h1>${t('录制权限')}</h1><div class="onboarding-intro"><p>${t('言录需要麦克风、屏幕与系统音频权限，才能录制会议并生成实时字幕。')}</p></div></header><section class="onboarding-section" data-onboarding-permissions>${placeholders}</section><div class="onboarding-actions"><button class="modal-action" data-finish-onboarding type="button" disabled>${t('继续')}</button><button class="secondary" data-skip-onboarding-permissions type="button">${copy.later}</button></div></section>`);
+  showOnboardingPage('permissions', `<section class="onboarding-setup-page onboarding-permissions-page"><button class="onboarding-back" data-onboarding-back-language type="button" aria-label="${t('返回')}">←</button><header><img class="onboarding-brand" src="./assets/brevia-logo.svg" alt="Brevia" /><h1>${t('录制权限')}</h1><div class="onboarding-intro"><p>${t('言录需要以下系统权限以提供服务')}</p></div></header><section class="onboarding-section" data-onboarding-permissions>${placeholders}</section><div class="onboarding-actions"><button class="modal-action" data-finish-onboarding type="button" disabled>${t('继续')}</button><button class="secondary" data-skip-onboarding-permissions type="button">${copy.later}</button></div></section>`);
   const page = onboardingPage;
   const section = onboardingPage.querySelector('[data-onboarding-permissions]');
   const continueButton = onboardingPage.querySelector('[data-finish-onboarding]');
@@ -2611,7 +2708,29 @@ function openOnboardingPermissions() {
   });
 }
 
-document.querySelector('#settings-view .settings-grid').addEventListener('click', (event) => {
+document.querySelector('#settings-view .settings-grid').addEventListener('click', async (event) => {
+  const folder = event.target.closest('[data-change-folder]');
+  if (folder) {
+    folder.disabled = true;
+    try {
+      const chosen = await window.brevia.storage.chooseFolder();
+      if (!chosen) return;
+      const locations = await window.brevia.storage.locations();
+      playerAudio.pause();
+      playerAudio.removeAttribute('src');
+      playbackStarted = false;
+      renderMiniPlayback();
+      const result = await window.brevia.storage.setupLocations({ ...locations, [folder.dataset.changeFolder]: chosen });
+      if (result.data) {
+        applyInitializationResult(result.data);
+        if (currentMeetingDetail?.id) applyBackendDetail(await window.brevia.meeting.get({ meeting_id: currentMeetingDetail.id }));
+      }
+      await refreshSettingsFolderRows();
+    }
+    catch (error) { showToast(storageErrorMessage(error)); }
+    finally { folder.disabled = false; }
+    return;
+  }
   const button = event.target.closest('[data-settings-modal]');
   if (button) openModal(button.dataset.settingsModal);
   if (event.target.closest('[data-open-whats-new]')) openModal('whats-new');
@@ -2916,7 +3035,17 @@ settingsModal.addEventListener('click', async (event) => {
     return;
   }
 });
-settingsModal.addEventListener('change', (event) => {
+settingsModal.addEventListener('change', async (event) => {
+  if (event.target.matches('[data-summary-enabled]')) {
+    const previous = summaryConfig.enabled;
+    event.target.disabled = true;
+    summaryConfig.enabled = event.target.checked;
+    summaryConfigRevision += 1;
+    try { await persistSummaryConfig(); }
+    catch (error) { summaryConfig.enabled = previous; event.target.checked = previous; showToast(error.message); }
+    finally { event.target.disabled = false; }
+    return;
+  }
   if (event.target.matches('[data-china-model-source]')) { localStorage.setItem('brevia-china-model-source', event.target.checked); return; }
   if (event.target.matches('.ai-assist-level input[type=radio]')) {
     settingsModal.querySelectorAll('.ai-assist-level').forEach((level) => level.classList.toggle('is-selected', level.querySelector('input[type=radio]').checked));
@@ -3148,16 +3277,18 @@ function applyLanguage(nextLocale, animate = false) {
     renderPrepareSelects();
     renderPrepareAudioSources();
     renderPauseButton();
+    renderLiveInputStatus();
     document.querySelector('#end-meeting').textContent = t('结束会议');
     renderSettingsView();
     document.querySelector('#advanced-settings').before(speakerProfileCard);
     document.querySelector('#settings-view .settings-grid').append(updateCard);
+    renderSettingsFolderRows();
     renderDefaultMeetingTitle();
     renderMeetingList();
     renderWorkspaceNav();
     renderMeetingDetail();
     if (activeView === 'home') selectLibraryNav(activeLibraryNav);
-    else crumb.textContent = catalog[locale].views[activeView];
+    else crumb.textContent = activeView === 'prepare' && prepareView.dataset.mode === 'import' ? t('导入录音') : catalog[locale].views[activeView];
     renderSlogan(false);
     renderUpdateButton();
     renderUpdateNotice();
@@ -3317,13 +3448,13 @@ const showView = async (name) => {
     // 侧边栏“收起”态（is-live-meeting 在该应用里只承担侧边栏折叠样式）：
     // 会议进行中，以及进入会议详情页时都默认收起；悬浮/聚焦时才展开。
     document.querySelector('.app-shell').classList.toggle('is-live-meeting', (name === 'live' && meetingActive) || name === 'detail');
-    crumb.textContent = catalog[locale].views[name];
+    crumb.textContent = name === 'prepare' && prepareView.dataset.mode === 'import' ? t('导入录音') : catalog[locale].views[name];
     if (name === 'home') selectLibraryNav(activeLibraryNav);
     else document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === name));
     if (name === 'detail') resetDetailHeaderCollapse();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
-  if (name === 'prepare') { requestAnimationFrame(fitPrepareLayout); renderCaptureMode(); void refreshPrepareAudioSources(); }
+  if (name === 'prepare') { requestAnimationFrame(fitPrepareLayout); renderCaptureMode(); if (prepareView.dataset.mode !== 'import') void refreshPrepareAudioSources(); }
   renderMiniPlayback();
 };
 
@@ -3477,7 +3608,7 @@ document.addEventListener('keydown', (event) => {
 });
 /** 在录制期间导航离开时显示紧凑的实时会议控件。@returns {void} */
 function minimizeMeeting() { miniTitle.textContent = document.querySelector('#live-name').textContent; miniTimer.textContent = document.querySelector('#timer').textContent; const wasHidden = miniMeeting.hidden; miniMeeting.hidden = false; if (wasHidden) taskCards.append(miniMeeting); }
-document.addEventListener('click', (event) => { const target = event.target.closest('[data-view]'); if (!target || ['all-meetings', 'recently-deleted'].includes(target.id)) return; if (target.dataset.view === 'home') selectLibraryNav('all-meetings'); if (target.dataset.view === 'prepare') selectCurrentWorkspaceForMeeting(); if (activeView === 'live' && meetingActive && target.dataset.view !== 'live') minimizeMeeting(); showView(target.dataset.view); });
+document.addEventListener('click', (event) => { const target = event.target.closest('[data-view]'); if (!target || ['all-meetings', 'recently-deleted'].includes(target.id)) return; if (target.dataset.view === 'home') selectLibraryNav('all-meetings'); if (target.dataset.view === 'prepare') setPrepareMode(target.dataset.prepareMode || 'record'); if (activeView === 'live' && meetingActive && target.dataset.view !== 'live') minimizeMeeting(); showView(target.dataset.view); if (target.dataset.view === 'settings') void refreshSettingsFolderRows(); });
 homeEyebrow.addEventListener('click', async () => {
   if (activeLibraryNav !== 'recently-deleted') return;
   await showLibraryNav('all-meetings').catch((error) => showToast(error.message));
@@ -3554,6 +3685,7 @@ function activateMeeting(meeting, payload) {
   const pauseButton = document.querySelector('#pause');
   pauseButton.dataset.paused = 'false';
   renderPauseButton();
+  renderLiveInputStatus();
   renderAiAssistEmptyState();
   void startAiNoteForMeeting(meeting.id);
   miniMeeting.hidden = true;
@@ -3583,6 +3715,16 @@ document.querySelector('#meeting-form').addEventListener('submit', async (event)
     vad_model_id: prepareForm.dataset.vadModel || 'silero-vad', workspace_id: form.get('meeting-workspace') || null,
   };
   try {
+    if (prepareView.dataset.mode === 'import') {
+      const meeting = window.brevia && await window.brevia.meeting.import({ ...payload, path: 'selected-by-electron' });
+      if (!meeting) return;
+      breviaClient.state.selectedMeetingId = meeting.id;
+      applyBackendDetail(meeting);
+      await refreshBackendMeetings();
+      showView('detail');
+      startRefinement();
+      return;
+    }
     const meeting = breviaClient ? await breviaClient.start(payload, inputs, selectedMicDeviceId()) : { id: null };
     if (meeting?.model_required) {
       queueModelTask('meeting.start', { ...payload, inputs }, meeting.model_required);
@@ -3601,29 +3743,6 @@ document.querySelector('#meeting-form').addEventListener('submit', async (event)
     submit.removeAttribute('aria-busy');
     submit.innerHTML = submitLabel;
   }
-});
-importRecording.addEventListener('click', async () => {
-  const form = new FormData(prepareForm);
-  const title = meetingTitle.value.trim();
-  if (!title) { meetingTitle.focus(); return; }
-  const language = form.get('meeting-language') || defaultMeetingLanguage();
-  const defaults = preferredModelsForLanguage(language);
-  const refinedModelId = form.get('refined-model') || defaultRefinedModelId(language);
-  importRecording.disabled = true;
-  try {
-    const meeting = window.brevia && await window.brevia.meeting.import({
-      title, language, target_language: form.get('translation-target') || null,
-      refined_model_id: refinedModelId,
-      speaker_segmentation_model_id: prepareForm.dataset.segmentationModel || defaults.segmentation,
-      workspace_id: form.get('meeting-workspace') || null, path: 'selected-by-electron',
-    });
-    if (!meeting) return;
-    breviaClient.state.selectedMeetingId = meeting.id;
-    applyBackendDetail(meeting);
-    await refreshBackendMeetings();
-    showView('detail');
-    startRefinement();
-  } catch (error) { showToast(error.message); } finally { importRecording.disabled = false; }
 });
 /** 当前是否处于「暂停录制」状态：暂停按钮的 dataset 是唯一状态来源。@returns {boolean} 是否已暂停。 */
 function meetingPaused() { return document.querySelector('#pause')?.dataset.paused === 'true'; }
@@ -3644,6 +3763,11 @@ function renderRecordingState(paused) {
   const changed = active.status.label !== label || Boolean(active.status.paused) !== paused;
   active.status = { ...active.status, label, paused };
   if (changed) renderMeetingList();
+}
+function renderLiveInputStatus() {
+  const mic = captureModeInputs().mic;
+  document.querySelector('#live-input-label').textContent = t(mic ? '麦克风' : '系统音频');
+  document.querySelector('[data-live-mic-level]').hidden = !mic;
 }
 /** 实时识别链路没能建立时，给出一条**常驻**提示卡（而不是一闪而过的 toast）。
  *
@@ -3715,6 +3839,12 @@ document.querySelector('#pause').addEventListener('click', async (event) => {
     if (paused) clearInterval(timer); else startTimer();
     showToast(error.message);
   } finally { button.disabled = false; }
+});
+document.querySelector('#mark-important').addEventListener('click', () => {
+  if (!meetingActive) return;
+  const segment = liveSegmentData.get(latestLiveSegmentId);
+  liveNotesEditor.appendMarkdown(`${t('重点')} · ${formatMeetingTime(seconds * 1000)}${segment ? ` — ${segment.text}` : ''}`);
+  showToast(t('已加入笔记'));
 });
 document.querySelector('#end-meeting').addEventListener('click', async (event) => {
   const button = event.currentTarget;
@@ -4094,7 +4224,25 @@ document.querySelector('.live-model-menu').addEventListener('click', async (even
   if (!ok) return;
   renderLiveModelControl();
 });
+document.querySelector('#live-more-toggle').addEventListener('click', (event) => {
+  const panel = document.querySelector('#live-more-panel');
+  panel.hidden = !panel.hidden;
+  event.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  document.querySelector('#live-more-panel').hidden = true;
+  document.querySelector('#live-more-toggle').setAttribute('aria-expanded', 'false');
+  for (const [options, toggle] of [['#translation-options', '#translation-toggle'], ['#live-model-options', '#live-model-toggle']]) {
+    document.querySelector(options).hidden = true;
+    document.querySelector(toggle).setAttribute('aria-expanded', 'false');
+  }
+});
 document.addEventListener('click', (event) => {
+  if (!event.target.closest('.live-more')) {
+    document.querySelector('#live-more-panel').hidden = true;
+    document.querySelector('#live-more-toggle').setAttribute('aria-expanded', 'false');
+  }
   if (!event.target.closest('.translation-menu')) {
     document.querySelector('#translation-options').hidden = true;
     document.querySelector('#translation-toggle').setAttribute('aria-expanded', 'false');
@@ -4216,13 +4364,12 @@ async function updateSearchPopup() {
   searchResultsPanel.hidden = false;
 }
 function closeSearchPopup() { searchResultsPanel.hidden = true; searchResultsPanel.innerHTML = ''; }
-const meetingList = document.querySelector('.meeting-list');
 const meetingSelectionSurface = document.querySelector('#home-view');
 let dragSelection;
 let suppressMeetingClick = false;
 const toggleMeetingSelection = (row) => { const key = row.dataset.selectionKey; if (selectedMeetingKeys.has(key)) selectedMeetingKeys.delete(key); else selectedMeetingKeys.add(key); syncMeetingSelection(); };
 document.querySelector('#meeting-select-all')?.addEventListener('click', () => {
-  const rows = [...document.querySelectorAll('.meeting-row:not([hidden])')];
+  const rows = [...meetingList.querySelectorAll('.meeting-row:not([hidden])')];
   const allSelected = rows.length > 0 && rows.every((row) => selectedMeetingKeys.has(row.dataset.selectionKey));
   if (allSelected) clearMeetingSelection();
   else { rows.forEach((row) => selectedMeetingKeys.add(row.dataset.selectionKey)); syncMeetingSelection(); }
@@ -4257,7 +4404,7 @@ meetingSelectionSurface.addEventListener('pointermove', (event) => {
   const bottom = Math.max(dragSelection.y, event.clientY);
   dragSelection.marquee.style.cssText = `left:${left}px;top:${top}px;width:${right - left}px;height:${bottom - top}px`;
   const next = dragSelection.additive ? new Set(dragSelection.initial) : new Set();
-  document.querySelectorAll('.meeting-row:not([hidden])').forEach((row) => {
+  meetingList.querySelectorAll('.meeting-row:not([hidden])').forEach((row) => {
     const rect = row.getBoundingClientRect();
     if (rectanglesIntersect(rect, { left, right, top, bottom })) next.add(row.dataset.selectionKey);
   });
@@ -5135,6 +5282,24 @@ finalTranscript.addEventListener('focusout', (event) => {
   if (form) void saveInlineSegmentSpeaker(form);
 });
 
+function applyInitializationResult(result) {
+  modelCatalog = result.models;
+  uiData.meetings = result.meetings.map(backendMeeting);
+  if (typeof initializeWorkspaces === 'function') {
+    initializeWorkspaces(result.workspaces || []);
+    renderWorkspaceNav();
+    updateHomeViewTitle();
+  }
+  speakerProfiles = result.speaker_profiles || [];
+  modelPaths.clear();
+  result.models.filter((model) => model.status === 'ready' && model.path).forEach((model) => modelPaths.set(model.id, model.path));
+  deviceReport = result.device || null;
+  renderSpeakerProfileCard();
+  renderMeetingList();
+  renderPrepareSelects();
+  void window.brevia.maintain();
+}
+
 if (window.brevia) {
   const dismissStartupSplash = () => {
     const splash = document.querySelector('#startup-splash');
@@ -5172,27 +5337,7 @@ if (window.brevia) {
   if (window.BreviaOnboarding.isFirstLaunch()) openOnboardingLanguage();
   void loadSummaryConfig().catch((error) => showToast(`${t('纪要配置加载失败')}: ${error.message}`));
   void loadAiAssistConfig().catch((error) => showToast(`${t('AI 笔记配置加载失败')}: ${error.message}`));
-  initializationPromise = breviaClient.initialize().then((result) => {
-    modelCatalog = result.models;
-    uiData.meetings = result.meetings.map(backendMeeting);
-    // 初始化工作区
-    if (typeof initializeWorkspaces === 'function') {
-      initializeWorkspaces(result.workspaces || []);
-      renderWorkspaceNav();
-      updateHomeViewTitle();
-    }
-    speakerProfiles = result.speaker_profiles || [];
-    modelPaths.clear();
-    result.models.filter((model) => model.status === 'ready').forEach((model) => {
-      if (model.path) modelPaths.set(model.id, model.path);
-    });
-    deviceReport = result.device || null;
-    renderSpeakerProfileCard();
-    renderMeetingList();
-    // 识别模型下拉依赖模型清单与安装状态，必须等首屏数据落地后再渲染一次。
-    renderPrepareSelects();
-    void window.brevia.maintain();
-  });
+  initializationPromise = breviaClient.initialize().then(applyInitializationResult);
   void initializationPromise.catch((error) => showToast(`${t('配置或后端启动失败')}: ${error.message}`));
 
   const transcript = document.querySelector('#transcript-scroll');

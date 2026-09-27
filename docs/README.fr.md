@@ -158,7 +158,7 @@ python3 -m pip install -r backend/requirements.txt
 npm start
 ```
 
-Accordez les permissions microphone et enregistrement d'ecran au premier lancement, puis telechargez les modeles necessaires depuis **Reglages → Bibliotheque de modeles**.
+Au premier lancement, autorisez le microphone et l’enregistrement de l’écran, puis choisissez les modèles et les dossiers des modèles et des enregistrements. Vous pouvez modifier ces dossiers dans **Réglages** : Brevia déplace les fichiers existants vers un dossier vide sans redémarrer. Connectez les disques externes avant de lancer l’application.
 
 ### Scripts courants
 
@@ -176,6 +176,7 @@ npm run start:fresh         # Reinitialise l'onboarding et demarre
 ```bash
 BREVIA_DATA_DIR=/path/to/data       # Repertoire de donnees personnalise (enregistrements, exports, SQLite)
 BREVIA_MODELS_DIR=/path/to/models   # Repertoire de modeles personnalise
+BREVIA_MEETINGS_DIR=/path/to/recordings # Dossier personnalisé des enregistrements et réunions
 BREVIA_FFMPEG=/path/to/ffmpeg       # Binaire ffmpeg (si absent du PATH)
 
 BREVIA_DATA_DIR=~/brevia-dev BREVIA_MODELS_DIR=~/brevia-models npm start
@@ -209,7 +210,7 @@ Non. Les builds de release integrent le runtime Python et toutes les dependances
 <details>
 <summary><strong>Ou sont stockees mes donnees ?</strong></summary>
 
-`~/brevia` par defaut — enregistrements, transcriptions, exports, modeles en cache, profils vocaux et la base SQLite. Definissez `BREVIA_DATA_DIR` pour changer.
+Par défaut dans `~/brevia`. Les modèles et les enregistrements peuvent avoir des dossiers distincts ; SQLite et les profils vocaux restent à la racine des données. `BREVIA_DATA_DIR` définit cette racine.
 </details>
 
 <details>

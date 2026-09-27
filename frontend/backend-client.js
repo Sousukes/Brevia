@@ -84,7 +84,10 @@ class AudioCapture {
       if (track === 'mic') throw new Error(describeMicError(error));
       throw error instanceof Error ? error : new Error(micMessage('无法获取系统音频，请检查系统权限后重试'));
     }
-    if (!stream.getAudioTracks().length) throw new Error(micMessage(track === 'system' ? '未检测到系统音频，请在系统设置中允许屏幕与系统音频录制后重试' : '麦克风没有可用的音频轨道'));
+    if (!stream.getAudioTracks().length) {
+      stopMediaStream(stream);
+      throw new Error(micMessage(track === 'system' ? '未检测到系统音频，请在系统设置中允许屏幕与系统音频录制后重试' : '麦克风没有可用的音频轨道'));
+    }
     return stream;
   }
 
@@ -111,21 +114,17 @@ class AudioCapture {
 
   async previewMic() {
     if (this.preview) return false;
+    const resource = {};
+    this.preview = resource;
     this.micFellBack = false;
-    let stream;
     try {
-      stream = await this.openMicStream();
-    } catch (error) {
-      throw new Error(describeMicError(error));
-    }
-    if (!stream.getAudioTracks().length) {
-      stopMediaStream(stream);
-      throw new Error(micMessage('麦克风没有可用的音频轨道'));
-    }
-    const resource = { stream, context: new AudioContext() };
-    try {
+      resource.stream = await this.openMicStream();
+      if (this.preview !== resource) { await this.release(resource); return false; }
+      if (!resource.stream.getAudioTracks().length) throw new Error(micMessage('麦克风没有可用的音频轨道'));
+      resource.context = new AudioContext();
       await loadAudioWorklet(resource.context);
-      resource.source = resource.context.createMediaStreamSource(stream);
+      if (this.preview !== resource) { await this.release(resource); return false; }
+      resource.source = resource.context.createMediaStreamSource(resource.stream);
       resource.processor = new AudioWorkletNode(resource.context, 'audio-capture-processor');
       // worklet 只回传电平,预览阶段无需推流。节点不写输出缓冲,因此接到 destination 也是静音。
       resource.processor.port.onmessage = ({ data }) => {
@@ -133,12 +132,11 @@ class AudioCapture {
       };
       resource.source.connect(resource.processor);
       resource.processor.connect(resource.context.destination);
-      this.preview = resource;
       await resource.context.resume();
     } catch (error) {
       if (this.preview === resource) this.preview = null;
       await this.release(resource);
-      throw error;
+      throw new Error(describeMicError(error));
     }
     return this.micFellBack;
   }

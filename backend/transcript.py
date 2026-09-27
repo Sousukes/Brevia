@@ -53,16 +53,17 @@ def srt_time(milliseconds):
 def subtitle_timeline_anchors(event, text):
     """文本字符偏移 → 音频时间 的锚点，来自模型的词级时间戳。
 
-    识别器给出的 ``word_timestamps`` 是同一段音频里按顺序排列的 token；把它们在最终
-    文本里顺序定位，就得到一组「这个字在哪里说出口」的真实锚点。定位不到的 token
-    （数字被归一化、接缝去重改写过的文本）直接跳过，相邻锚点之间由调用方线性插值，
-    因此个别失配不会把整条时间轴带偏。返回值按偏移与时间都单调递增，并以段落自身的
-    起止封口——段落的外边界始终精确。
+    只有 token 与当前文本一致时才使用词级时间戳；接缝去重、数字归一化或改写后
+    的旧 token 可能误命中常用词，应整段回退到比例估时。忽略空白与标点差异。
     """
     start_ms, end_ms = event["start_ms"], event["end_ms"]
+    words = event.get("word_timestamps") or []
+    word_text = "".join(str(word.get("text") or "") for word in words)
+    if [ch for ch in word_text if ch.isalnum()] != [ch for ch in text if ch.isalnum()]:
+        return [(0, start_ms), (len(text), end_ms)]
     anchors = [(0, start_ms)]
     cursor, previous = 0, start_ms
-    for word in event.get("word_timestamps") or []:
+    for word in words:
         token = str(word.get("text") or "").strip()
         if not token:
             continue

@@ -158,7 +158,7 @@ python3 -m pip install -r backend/requirements.txt
 npm start
 ```
 
-Erteile beim ersten Start die Berechtigungen fuer Mikrofon und Bildschirmaufnahme und lade dann die gewuenschten Modelle aus **Einstellungen → Modellbibliothek** herunter.
+Beim ersten Start erteile Mikrofon- und Bildschirmaufnahmeberechtigungen und wähle Modelle sowie getrennte Modell- und Aufnahmeordner. Unter **Einstellungen** kannst du die Ordner später ändern: Brevia verschiebt vorhandene Dateien in einen leeren Zielordner, ohne Neustart. Externe Laufwerke müssen beim Start verbunden sein.
 
 ### Haeufig verwendete Skripte
 
@@ -176,6 +176,7 @@ npm run start:fresh         # Onboarding zuruecksetzen und starten
 ```bash
 BREVIA_DATA_DIR=/path/to/data       # Benutzerdefiniertes Datenverzeichnis (Aufnahmen, Exporte, SQLite)
 BREVIA_MODELS_DIR=/path/to/models   # Benutzerdefiniertes Modellverzeichnis
+BREVIA_MEETINGS_DIR=/path/to/recordings # Benutzerdefinierter Aufnahme- und Besprechungsordner
 BREVIA_FFMPEG=/path/to/ffmpeg       # ffmpeg-Binary (falls nicht im PATH)
 
 BREVIA_DATA_DIR=~/brevia-dev BREVIA_MODELS_DIR=~/brevia-models npm start
@@ -209,7 +210,7 @@ Nein. Release-Builds bundeln die Python-Runtime und alle noetigen Abhaengigkeite
 <details>
 <summary><strong>Wo werden meine Daten gespeichert?</strong></summary>
 
-Standardmaessig in `~/brevia` — Aufnahmen, Transkripte, Exporte, zwischengespeicherte Modelle, Stimmprofile und die SQLite-Datenbank. Setze `BREVIA_DATA_DIR`, um dies zu aendern.
+Standardmäßig in `~/brevia`. Modell- und Aufnahmeordner lassen sich separat wählen; SQLite und Stimmprofile bleiben im Datenstamm. `BREVIA_DATA_DIR` legt den Datenstamm fest.
 </details>
 
 <details>

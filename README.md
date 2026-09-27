@@ -154,7 +154,7 @@ python3 -m pip install -r backend/requirements.txt
 npm start
 ```
 
-Grant microphone and screen-recording permissions on first launch, then download the models you need from **Settings → Model Library**.
+On first launch, grant microphone and screen-recording permissions, then choose speech models and the model and meeting folders on the same page. You can change either path later in **Settings**. Brevia moves existing files to the empty folder you choose and updates the running app without restarting. Keep external drives connected when launching Brevia.
 
 ### Common scripts
 
@@ -172,6 +172,7 @@ npm run start:fresh         # Reset the onboarding flow and start
 ```bash
 BREVIA_DATA_DIR=/path/to/data       # Custom data dir (recordings, exports, SQLite)
 BREVIA_MODELS_DIR=/path/to/models   # Custom model dir
+BREVIA_MEETINGS_DIR=/path/to/recordings # Custom recordings and meetings dir
 BREVIA_FFMPEG=/path/to/ffmpeg       # ffmpeg binary (if not on PATH)
 BREVIA_ASR_BACKEND=cpu              # cpu, cuda, or coreml; mps safely maps to cpu
 BREVIA_LLAMA_THREADS=2              # Cap llama.cpp CPU threads (default: min(4, cores/2))
@@ -241,7 +242,7 @@ No. Release builds bundle the Python runtime and all required dependencies. A se
 <details>
 <summary><strong>Where is my data stored?</strong></summary>
 
-`~/brevia` by default — recordings, transcripts, exports, cached models, voice profiles, and the SQLite database. Set `BREVIA_DATA_DIR` to override.
+`~/brevia` by default. On first launch, you can choose separate folders for models and recordings/meeting files; the SQLite database and voice profiles remain in `~/brevia`. Set `BREVIA_DATA_DIR` to move the data root.
 </details>
 
 <details>

@@ -295,6 +295,23 @@ class SentenceTest(unittest.TestCase):
         self.assertEqual(tail["start_ms"], expected)
         self.assertGreater(tail["start_ms"], segment["start_ms"])
 
+        # 同一公共映射也用于最终字幕分段，不能只在 utterance 路径绕过旧时间戳。
+        from .transcript import subtitle_time_at_offset
+        self.assertEqual(subtitle_time_at_offset(segment, text, 4), expected)
+
+    def test_utterance_sentence_split_preserves_valid_word_timestamps(self):
+        segment = {
+            "segment_id": "aligned", "start_ms": 0, "end_ms": 10000,
+            "text": "甲" * 20 + "。" + "乙" * 20 + "。",
+            "word_timestamps": (
+                [{"text": "甲", "start_ms": i * 100, "end_ms": i * 100 + 100} for i in range(20)]
+                + [{"text": "乙", "start_ms": 6000 + i * 100, "end_ms": 6100 + i * 100} for i in range(20)]
+            ),
+        }
+        head, tail = self.worker._split_utterance_at_sentence(segment)
+        self.assertEqual(head["end_ms"], 6000)
+        self.assertEqual(tail["start_ms"], 6000)
+
     def test_overlap_window_comes_from_the_cut_lookback_not_a_fixed_width(self):
         # 接缝对齐的搜索窗口 = 切点回看时长 × 本段语速；语速从本段自己的字数与时长算，
         # 与估句时间轴同源，因此不会两头各估一次。

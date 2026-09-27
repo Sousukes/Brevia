@@ -1,17 +1,14 @@
 /* ===== Sticky Auto-hide Header（会议详情页）=====
-   用户滚动字幕/纪要内容时，顶部的标题、导出操作与播放条会“扁平化”收窄，
+   用户滚动字幕/纪要内容时，顶部的标题与导出操作会收窄，
    把垂直空间让给笔记区和右侧会议纪要区。
-   #detail-view 是 grid，行模板为 `auto auto auto minmax(0,1fr)`，
-   前两行（.detail-head 与 .player）高度由内容撑起，收窄后第四行 .detail-layout
-   会自动增长——这正是“内容区变大”的来源。 */
+   标题收窄后第三行 .detail-layout 自动增长；底部播放器独立悬浮。 */
 
 #detail-view .detail-head,
 #detail-view .detail-title,
 #detail-view .detail-head h1,
 #detail-view .detail-head .eyebrow,
 #detail-view .detail-head .detail-meta,
-#detail-view .detail-actions,
-#detail-view .player {
+#detail-view .detail-actions {
   transition:
     padding 0.22s cubic-bezier(0.4, 0, 0.2, 1),
     margin 0.22s cubic-bezier(0.4, 0, 0.2, 1),
@@ -57,14 +54,4 @@
 }
 #detail-view.is-header-collapsed .detail-actions {
   align-self: center;
-}
-
-/* 播放条压扁：减少内边距，隐藏跳转与录音来源标签，重排为紧凑列 */
-#detail-view.is-header-collapsed .player {
-  padding-block: calc(var(--spacing) * 2);
-  grid-template-columns: 40px auto 1fr auto;
-}
-#detail-view.is-header-collapsed .player .skip,
-#detail-view.is-header-collapsed .player > span:not(.player-time) {
-  display: none;
 }

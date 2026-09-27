@@ -139,12 +139,12 @@ class StoreBase:
         """
         self.root = Path(root).expanduser()
         self.root.mkdir(parents=True, exist_ok=True)
-        self.meetings_dir = self.root / "meetings"
+        self.meetings_dir = Path(os.environ.get("BREVIA_MEETINGS_DIR", self.root / "meetings")).expanduser()
         self.speaker_profiles_dir = self.root / "speaker-profiles"
         self.models_dir = Path(
             os.environ.get("BREVIA_MODELS_DIR", self.root / "models")
         ).expanduser()
-        self.meetings_dir.mkdir(exist_ok=True)
+        self.meetings_dir.mkdir(parents=True, exist_ok=True)
         self.speaker_profiles_dir.mkdir(exist_ok=True)
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.storage_file_lock = threading.RLock()

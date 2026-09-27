@@ -158,7 +158,7 @@ python3 -m pip install -r backend/requirements.txt
 npm start
 ```
 
-첫 실행 시 마이크와 화면 녹화 권한을 부여한 후, **설정 → 모델 라이브러리** 에서 필요한 모델을 다운로드하세요.
+첫 실행 시 마이크와 화면 녹화 권한을 부여하고 모델 및 모델·녹음 저장 폴더를 선택하세요. 이후 **설정** 에서 폴더를 변경할 수 있습니다. 기존 파일은 선택한 빈 폴더로 이동되며 재시작할 필요가 없습니다. 앱 실행 전에 외장 드라이브를 연결하세요.
 
 ### 자주 쓰는 스크립트
 
@@ -176,6 +176,7 @@ npm run start:fresh         # 온보딩 초기화 후 시작
 ```bash
 BREVIA_DATA_DIR=/path/to/data       # 사용자 지정 데이터 디렉터리 (녹음, 내보내기, SQLite)
 BREVIA_MODELS_DIR=/path/to/models   # 사용자 지정 모델 디렉터리
+BREVIA_MEETINGS_DIR=/path/to/recordings # 녹음 및 회의 파일의 사용자 지정 폴더
 BREVIA_FFMPEG=/path/to/ffmpeg       # ffmpeg 바이너리 (PATH 에 없을 때)
 
 BREVIA_DATA_DIR=~/brevia-dev BREVIA_MODELS_DIR=~/brevia-models npm start
@@ -209,7 +210,7 @@ npm run dist:win   # Windows x64 EXE
 <details>
 <summary><strong>데이터는 어디에 저장되나요?</strong></summary>
 
-기본적으로 `~/brevia` — 녹음, 전사, 내보내기, 캐시된 모델, 성문 프로필, SQLite 데이터베이스. `BREVIA_DATA_DIR` 을 설정해 변경할 수 있습니다.
+기본 위치는 `~/brevia`입니다. 모델과 녹음·회의 파일의 폴더를 각각 선택할 수 있으며 SQLite와 성문 프로필은 데이터 루트에 남습니다. `BREVIA_DATA_DIR`로 데이터 루트를 지정할 수 있습니다.
 </details>
 
 <details>

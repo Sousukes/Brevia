@@ -1,11 +1,115 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { runInNewContext } from 'node:vm';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const require = createRequire(import.meta.url);
+const { applyPendingMove, currentDirectory, readLocation, recordingsDirectory, setFirstRunDirectories } = require('./model-location');
+const modelLocationRoot = await mkdtemp(path.join(tmpdir(), 'brevia-model-location-'));
+try {
+  const data = path.join(modelLocationRoot, 'data');
+  const oldModels = path.join(data, 'models');
+  const newModels = path.join(modelLocationRoot, 'external-models');
+  await mkdir(oldModels, { recursive: true });
+  await mkdir(newModels);
+  await writeFile(path.join(oldModels, 'model.gguf'), 'model data');
+  const oldRealPath = await realpath(oldModels);
+  const newRealPath = await realpath(newModels);
+  const dottedChild = path.join(oldModels, '..archive');
+  await mkdir(dottedChild);
+  await assert.rejects(setFirstRunDirectories(data, { models: dottedChild }), /outside/);
+  await rm(dottedChild, { recursive: true });
+  await assert.rejects(setFirstRunDirectories(data, { models: data }), /outside/);
+  await assert.rejects(setFirstRunDirectories(data, { recordings: oldModels }), /folders must be separate/);
+  await setFirstRunDirectories(data, { models: newModels });
+  assert.equal(currentDirectory(data), oldRealPath, 'model directory changes only after migration');
+  await writeFile(path.join(newModels, 'foreign-file'), 'keep');
+  await assert.rejects(applyPendingMove(data), /no longer empty/);
+  assert.equal(await readFile(path.join(oldModels, 'model.gguf'), 'utf8'), 'model data');
+  await rm(path.join(newModels, 'foreign-file'));
+  assert.equal(readLocation(data).pending, undefined, 'failed moves cannot later commit a stale copy');
+  await setFirstRunDirectories(data, { models: newModels });
+  await mkdir(`${newModels}.brevia-migration`);
+  await writeFile(path.join(`${newModels}.brevia-migration`, 'keep'), 'not ours');
+  await assert.rejects(applyPendingMove(data), /staging folder already exists/);
+  assert.equal(await readFile(path.join(`${newModels}.brevia-migration`, 'keep'), 'utf8'), 'not ours');
+  await rm(`${newModels}.brevia-migration`, { recursive: true });
+  await setFirstRunDirectories(data, { models: newModels });
+  await applyPendingMove(data);
+  assert.equal(currentDirectory(data), newRealPath);
+  assert.equal(await readFile(path.join(newModels, 'model.gguf'), 'utf8'), 'model data');
+  assert.deepEqual(readLocation(data), { current: newRealPath });
+  await assert.rejects(readFile(path.join(oldModels, 'model.gguf')), { code: 'ENOENT' });
+
+  const freshData = path.join(modelLocationRoot, 'fresh-data');
+  const chosenModels = path.join(modelLocationRoot, 'chosen-models');
+  const chosenRecordings = path.join(modelLocationRoot, 'chosen-recordings');
+  await mkdir(path.join(freshData, 'models'), { recursive: true });
+  await mkdir(path.join(freshData, 'meetings'));
+  await mkdir(chosenModels);
+  await mkdir(chosenRecordings);
+  await writeFile(path.join(freshData, 'meetings', 'existing-recording'), 'keep');
+  assert.equal(await setFirstRunDirectories(freshData, { models: chosenModels, recordings: chosenRecordings }), true);
+  assert.equal(recordingsDirectory(freshData), await realpath(path.join(freshData, 'meetings')), 'recordings remain at the source until copied');
+  await applyPendingMove(freshData);
+  assert.equal(currentDirectory(freshData), await realpath(chosenModels));
+  assert.equal(recordingsDirectory(freshData), await realpath(chosenRecordings));
+  assert.equal(await readFile(path.join(chosenRecordings, 'existing-recording'), 'utf8'), 'keep');
+  await assert.rejects(readFile(path.join(freshData, 'meetings', 'existing-recording')), { code: 'ENOENT' });
+
+  // The other partition may be managed by an environment variable.
+  const externalModels = path.join(modelLocationRoot, 'env-models');
+  const nextRecordings = path.join(modelLocationRoot, 'next-recordings');
+  await mkdir(externalModels);
+  await mkdir(nextRecordings);
+  await writeFile(path.join(externalModels, 'model'), 'external');
+  await setFirstRunDirectories(freshData, { models: externalModels, recordings: nextRecordings }, { models: externalModels });
+  await applyPendingMove(freshData);
+  assert.equal(currentDirectory(freshData), await realpath(chosenModels));
+  assert.equal(await readFile(path.join(nextRecordings, 'existing-recording'), 'utf8'), 'keep');
+
+  // A completed but unpublished staging copy must be rebuilt from the latest source.
+  const retryModels = path.join(modelLocationRoot, 'retry-models');
+  await mkdir(retryModels);
+  await setFirstRunDirectories(data, { models: retryModels });
+  await mkdir(`${retryModels}.brevia-migration`);
+  await writeFile(path.join(`${retryModels}.brevia-migration`, '.brevia-models-migration'), newRealPath);
+  await writeFile(path.join(newModels, 'new-after-failure'), 'latest');
+  await rm(retryModels, { recursive: true });
+  await applyPendingMove(data);
+  assert.equal(await readFile(path.join(retryModels, 'new-after-failure'), 'utf8'), 'latest');
+
+  // A disconnected destination must never trigger deletion of the surviving source.
+  const cleanupSource = path.join(modelLocationRoot, 'cleanup-source');
+  await mkdir(cleanupSource);
+  await writeFile(path.join(cleanupSource, 'keep'), 'only copy');
+  await writeFile(path.join(data, 'models-location.json'), JSON.stringify({ current: path.join(modelLocationRoot, 'offline'), cleanup: cleanupSource }));
+  await assert.rejects(applyPendingMove(data), { code: 'ENOENT' });
+  assert.equal(await readFile(path.join(cleanupSource, 'keep'), 'utf8'), 'only copy');
+
+  const racingData = path.join(modelLocationRoot, 'racing-data');
+  const racingTarget = path.join(modelLocationRoot, 'racing-target');
+  await mkdir(path.join(racingData, 'models'), { recursive: true });
+  await mkdir(racingTarget);
+  await writeFile(path.join(racingData, 'models', 'model'), 'keep source');
+  await setFirstRunDirectories(racingData, { models: racingTarget });
+  const fsPromises = require('node:fs/promises');
+  const racingModule = { exports: {} };
+  runInNewContext(await readFile(new URL('./model-location.js', import.meta.url), 'utf8'), {
+    module: racingModule,
+    require: (name) => name === 'node:fs/promises' ? { ...fsPromises, rmdir: async (directory) => {
+      await writeFile(path.join(directory, 'user-file'), 'keep target');
+      return fsPromises.rmdir(directory);
+    } } : require(name),
+  });
+  await assert.rejects(racingModule.exports.applyPendingMove(racingData), { code: 'ENOTEMPTY' });
+  assert.equal(await readFile(path.join(racingTarget, 'user-file'), 'utf8'), 'keep target');
+  assert.equal(await readFile(path.join(racingData, 'models', 'model'), 'utf8'), 'keep source');
+} finally {
+  await rm(modelLocationRoot, { recursive: true, force: true });
+}
 const { configureMacUpdater, createDisplayMediaHandler, isNewerVersion, registerScreenPermission, requiredModelsFrom, systemAudioSupported, workerError } = require('./main-logic');
 
 const screen = { id: 'screen:0:0' };
@@ -110,7 +214,9 @@ const writeConfig = (value) => writeFile(configFile, typeof value === 'string' ?
 assert.equal(await readConfig(), null, 'a missing file reads as unconfigured');
 const storedConfig = { version: 2, provider: 'custom-claude', providers: { 'custom-claude': { model: 'x', endpoint: 'https://example.com/v1', keyReference: 'summary-1', keyLength: 8 } } };
 await writeConfig(storedConfig);
-assert.deepEqual(await readConfig(), storedConfig, 'a valid version 2 config survives a round trip');
+assert.deepEqual(await readConfig(), { ...storedConfig, enabled: true }, 'existing summary configs default to enabled');
+await writeConfig({ ...storedConfig, enabled: false });
+assert.deepEqual(await readConfig(), { ...storedConfig, enabled: false }, 'the summary switch survives a round trip');
 await writeConfig({ models: [{ name: '配置-1', provider: 'OpenAI', endpoint: 'https://api.openai.com/v1/chat/completions', format: 'openai', model: 'gpt-4.1-mini', keyReference: 'summary-1' }], active: 0, sequence: 1 });
 assert.equal(await readConfig(), null, 'the pre-1.0.8 multi-config structure is not migrated');
 await writeConfig({ version: 1, provider: 'openai', providers: {} });
@@ -120,7 +226,7 @@ assert.equal(await readConfig(), null, 'a corrupt file reads as unconfigured ins
 await writeConfig({ version: 2, provider: 'ollama', providers: {} });
 assert.equal(await readConfig(), null, 'a removed provider id is rejected');
 await writeConfig({ version: 2, provider: 'built-in', providers: {} });
-assert.deepEqual(await readConfig(), { version: 2, provider: 'built-in', providers: {} }, 'built-in needs no provider entry');
+assert.deepEqual(await readConfig(), { version: 2, enabled: true, provider: 'built-in', providers: {} }, 'built-in needs no provider entry');
 runInNewContext([
   schemaBlock('const aiAssistConfig = '),
   schemaBlock('const aiAssistConfigV1 = '),

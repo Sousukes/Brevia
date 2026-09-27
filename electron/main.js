@@ -9,6 +9,7 @@ const { pathToFileURL } = require('node:url');
 const { randomUUID } = require('node:crypto');
 const { z } = require('zod');
 const { configureMacUpdater, createDisplayMediaHandler, isNewerVersion, registerScreenPermission, requiredModelsFrom, systemAudioSupported, workerError } = require('./main-logic');
+const { applyPendingMove, currentDirectory, recordingsDirectory, setFirstRunDirectories } = require('./model-location');
 
 const benchmarkRefinement = process.argv.includes('--bench-refinement');
 const commandArgument = (name, fallback = null) => {
@@ -45,7 +46,9 @@ const workerRequestTimeouts = new Map([
 ]);
 const resetOnboarding = process.argv.includes('--reset-onboarding');
 const dataDir = () => process.env.BREVIA_DATA_DIR || path.join(app.getPath('home'), 'brevia');
-const noteImagesDir = (meetingId) => path.join(dataDir(), 'meetings', meetingId, 'notes');
+const modelsDir = () => currentDirectory(dataDir(), process.env.BREVIA_MODELS_DIR);
+const recordingsDir = () => recordingsDirectory(dataDir(), process.env.BREVIA_MEETINGS_DIR);
+const noteImagesDir = (meetingId) => path.join(recordingsDir(), meetingId, 'notes');
 const legacyDataDir = () => app.getPath('userData');
 const logsDir = () => path.join(dataDir(), 'logs');
 const logFile = () => path.join(logsDir(), 'brevia.log');
@@ -68,12 +71,13 @@ const stopProcess = (child) => {
     catch { try { child.kill(); } catch { /* 进程可能已退出。 */ } }
   }
 };
+let storageMigrationInProgress = false;
 const migrateDataDir = async () => {
   if (process.env.BREVIA_DATA_DIR) return;
   const source = legacyDataDir();
   if (!existsSync(source) || existsSync(path.join(dataDir(), 'brevia.db'))) return;
   await mkdir(dataDir(), { recursive: true });
-  for (const name of ['advanced-settings.json', 'brevia.db', 'brevia.db-shm', 'brevia.db-wal', 'meetings', 'models', 'speaker-profiles', 'summary-models.json', 'secrets', 'logs']) {
+  for (const name of ['advanced-settings.json', 'brevia.db', 'brevia.db-shm', 'brevia.db-wal', 'meetings', 'models', 'models-location.json', 'speaker-profiles', 'summary-models.json', 'secrets', 'logs']) {
     const from = path.join(source, name);
     const to = path.join(dataDir(), name);
     if (!existsSync(from) || existsSync(to)) continue;
@@ -163,6 +167,7 @@ const llmRequest = z.object({
 // 单套生效配置，但每个供应商的模型/地址/密钥引用分别留存，切换供应商不会丢已填内容。
 const summaryConfig = z.object({
   version: z.literal(2),
+  enabled: z.boolean().default(true),
   provider: z.enum(summaryProviderIds),
   // partialRecord：只有用户配置过的供应商才出现在这里；z.record 在 zod 4 里要求键穷尽。
   providers: z.partialRecord(z.enum(summaryProviderIds), summaryProviderEntry),
@@ -242,6 +247,7 @@ class WorkerClient {
 
   start() {
     if (this.process?.stdin && !this.process.stdin.destroyed && this.process.exitCode === null) return Promise.resolve();
+    if (this.stopping) return this.stopping.then(() => this.start());
     if (this.starting) return this.starting;
     const workerName = process.platform === 'win32' ? 'brevia-worker.exe' : 'brevia-worker';
     const bundled = path.join(packagedRoot, 'backend', 'runtime', 'brevia-worker', workerName);
@@ -258,7 +264,8 @@ class WorkerClient {
         PYTHONUTF8: '1',
         PYTHONIOENCODING: 'utf-8',
         BREVIA_DATA_DIR: dataDir(),
-        BREVIA_MODELS_DIR: process.env.BREVIA_MODELS_DIR || path.join(dataDir(), 'models'),
+        BREVIA_MODELS_DIR: modelsDir(),
+        BREVIA_MEETINGS_DIR: recordingsDir(),
         BREVIA_BUNDLED_MODELS_DIR: path.join(packagedRoot, 'backend', 'bundled-models'),
         BREVIA_RECOVER_INTERRUPTED: recoverInterrupted ? '1' : '0',
         ...(ffmpeg ? { BREVIA_FFMPEG: ffmpeg } : {}),
@@ -317,12 +324,14 @@ class WorkerClient {
     if (message.type) this.sendEvent(message.type, message.payload);
   }
 
-  async request(type, payload = {}) {
+  async request(type, payload = {}, duringMigration = false) {
+    if (storageMigrationInProgress && !duringMigration) throw new Error('Folders are being moved. Please wait.');
     const value = command.parse({ type, payload });
     if (!this.process?.stdin || this.process.stdin.destroyed || this.process.exitCode !== null) {
       if (app.isQuitting) return Promise.reject(new Error('Worker is shutting down'));
       await this.start();
     }
+    if (storageMigrationInProgress && !duringMigration) throw new Error('Folders are being moved. Please wait.');
     const requestId = `cmd-${++this.sequence}`;
     return new Promise((resolve, reject) => {
       const timeout = workerRequestTimeouts.get(type);
@@ -369,7 +378,25 @@ class WorkerClient {
     this.recycleRequested = false;
     if (!child) return;
     this.process = null;
+    this.stopping = new Promise((resolve) => child.once('exit', resolve)).finally(() => { this.stopping = null; });
     stopProcess(child);
+  }
+
+  async stopForMigration() {
+    const child = this.process;
+    if (!child && !this.stopping) return;
+    let timer;
+    const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Worker did not stop before folder migration')), 10000); });
+    const stopped = child ? new Promise((resolve) => child.once('exit', resolve)) : this.stopping;
+    if (child) {
+      this.process = null;
+      stopProcess(child);
+    }
+    try { await Promise.race([stopped, timeout]); }
+    catch (error) {
+      if (child && child.exitCode === null && !child.signalCode) this.process = child;
+      throw error;
+    } finally { clearTimeout(timer); }
   }
 
   fail(error) {
@@ -442,14 +469,45 @@ process.on('unhandledRejection', (error) => reportMainError(error));
 process.on('uncaughtException', (error) => reportMainError(error, true));
 process.on('warning', (warning) => writeLog('WARNING', warning));
 
-function initializeWorker() {
+function initializeWorker(duringMigration = false) {
   if (!startupInitialization) {
-    startupInitialization = worker.request('app.initialize').catch((error) => {
+    startupInitialization = worker.request('app.initialize', {}, duringMigration).catch((error) => {
       startupInitialization = null;
       throw error;
     });
   }
   return startupInitialization;
+}
+
+async function migrateStorageFolders(value) {
+  if (storageMigrationInProgress) throw new Error('Folders are already being moved');
+  if ((process.env.BREVIA_MODELS_DIR && value.models !== modelsDir()) || (process.env.BREVIA_MEETINGS_DIR && value.recordings !== recordingsDir())) {
+    throw new Error('Folder is controlled by an environment variable');
+  }
+  storageMigrationInProgress = true;
+  let stopped = false;
+  try {
+    if (worker.active || refinementWorker.active || worker.pending.size || refinementWorker.pending.size || worker.starting || refinementWorker.starting || !(await worker.request('models.can-relocate', {}, true))) {
+      throw new Error('Finish the current meeting, refinement and model downloads before changing folders');
+    }
+    const changed = await setFirstRunDirectories(dataDir(), value, { models: process.env.BREVIA_MODELS_DIR, recordings: process.env.BREVIA_MEETINGS_DIR });
+    if (!changed) return { changed: false };
+    startupInitialization = null;
+    await Promise.all([worker.stopForMigration(), refinementWorker.stopForMigration()]);
+    stopped = true;
+    await applyPendingMove(dataDir());
+    const data = await initializeWorker(true);
+    stopped = false;
+    return { changed: true, data };
+  } catch (error) {
+    if (stopped) {
+      startupInitialization = null;
+      await initializeWorker(true).catch((restartError) => writeLog('ERROR', `storage migration worker restart: ${logText(restartError)}`));
+    }
+    throw error;
+  } finally {
+    storageMigrationInProgress = false;
+  }
 }
 
 function handle(channel, schema, type = channel) {
@@ -885,9 +943,21 @@ function registerIpc() {
   });
   ipcMain.handle('storage.open', async (_, payload) => {
     const partition = z.enum(['meetings', 'models', 'exports']).parse(payload?.partition);
-    const root = dataDir();
-    const directory = partition === 'models' ? process.env.BREVIA_MODELS_DIR || path.join(root, 'models') : path.join(root, 'meetings');
+    const directory = partition === 'models' ? modelsDir() : recordingsDir();
     return shell.openPath(directory);
+  });
+  ipcMain.handle('storage.locations', () => ({
+    models: modelsDir(), recordings: recordingsDir(),
+    modelsManaged: !process.env.BREVIA_MODELS_DIR,
+    recordingsManaged: !process.env.BREVIA_MEETINGS_DIR,
+  }));
+  ipcMain.handle('storage.choose-folder', async () => {
+    const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] });
+    return result.canceled ? null : result.filePaths[0];
+  });
+  ipcMain.handle('storage.setup-locations', async (_, payload) => {
+    const value = z.object({ models: z.string(), recordings: z.string() }).parse(payload);
+    return migrateStorageFolders(value);
   });
   handle('models.list', z.object({}), 'models.list');
   handle('models.download', z.object({ model_id: z.string(), source: z.enum(['default', 'china']).optional() }), 'models.download');
@@ -1484,6 +1554,18 @@ function closeFloatingCaption() {
 app.whenReady().then(async () => {
   if (process.platform === 'win32') Menu.setApplicationMenu(null);
   await migrateDataDir().catch((error) => writeLog('WARNING', `data migration: ${logText(error)}`));
+  try { await applyPendingMove(dataDir()); }
+  catch (error) { dialog.showErrorBox('Folder migration failed', `${error.message}\n\nRestart Brevia after checking that the storage drives are connected and writable.`); app.quit(); return; }
+  if (modelsDir() !== path.join(dataDir(), 'models') && !existsSync(modelsDir())) {
+    dialog.showErrorBox('Model folder unavailable', `Connect the drive containing ${modelsDir()} and restart Brevia.`);
+    app.quit();
+    return;
+  }
+  if (recordingsDir() !== path.join(dataDir(), 'meetings') && !existsSync(recordingsDir())) {
+    dialog.showErrorBox('Recording folder unavailable', `Connect the drive containing ${recordingsDir()} and restart Brevia.`);
+    app.quit();
+    return;
+  }
   registerNoteImageProtocol();
   session.defaultSession.setPermissionCheckHandler((_, permission) => permission === 'media' || permission === 'display-capture');
   session.defaultSession.setPermissionRequestHandler((_, permission, callback) => callback(permission === 'media' || permission === 'display-capture'));

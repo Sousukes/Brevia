@@ -53,6 +53,14 @@ def _stub_asr_stack():
 
 
 class WorkerTest(unittest.TestCase):
+    def test_custom_recordings_directory(self):
+        with tempfile.TemporaryDirectory() as root:
+            recordings = Path(root) / "external-recordings"
+            with patch.dict("os.environ", {"BREVIA_MEETINGS_DIR": str(recordings)}):
+                store = Store(Path(root) / "data")
+            self.assertEqual(store.meetings_dir, recordings)
+            self.assertTrue(recordings.is_dir())
+
     def test_bundled_models_exist_in_the_catalog(self):
         """打包出厂的基础模型必须仍在模型清单里。
 

@@ -160,7 +160,7 @@ python3 -m pip install -r backend/requirements.txt
 npm start
 ```
 
-首次启动按提示授予麦克风和屏幕录制权限，然后进入 **设置 → 模型库** 下载所需模型。
+首次启动时，在选择语音识别模型的页面可以同时选择模型文件夹和会议与录音文件夹。之后可在 **设置** 页面分别更改这两个路径。选择空文件夹后，言录会迁移现有文件并在应用内更新，无需重启；使用外接硬盘时，请在启动前连接硬盘。
 
 ### 常用脚本
 
@@ -181,6 +181,9 @@ BREVIA_DATA_DIR=/path/to/data
 
 # 自定义模型目录
 BREVIA_MODELS_DIR=/path/to/models
+
+# 自定义录音与会议目录
+BREVIA_MEETINGS_DIR=/path/to/recordings
 
 # 指定 ffmpeg 路径（如未在 PATH 中）
 BREVIA_FFMPEG=/path/to/ffmpeg
@@ -217,7 +220,7 @@ npm run dist:win   # Windows x64 EXE
 <details>
 <summary><strong>数据存储在哪里？</strong></summary>
 
-默认在 `~/brevia`，包含录音、逐字稿、导出文件、模型缓存、声纹档案和 SQLite 数据库。设置 `BREVIA_DATA_DIR` 可自定义位置。
+默认在 `~/brevia`。首次启动可为模型及录音与会议文件分别选择文件夹；SQLite 数据库和声纹档案仍在数据根目录。设置 `BREVIA_DATA_DIR` 可自定义数据根目录。
 </details>
 
 <details>
@@ -241,7 +244,7 @@ npm run dist:win   # Windows x64 EXE
 <details>
 <summary><strong>可以导入已有的会议录音吗？</strong></summary>
 
-可以。从会议库导入音频，言录会用同一套语音管线离线转写。需要系统 PATH 中有 `ffmpeg`（或设置 `BREVIA_FFMPEG`）。
+可以。从左侧栏进入“导入录音”，设置会议名称、语言和模型后选择音频文件。言录会用同一套语音管线离线转写。需要系统 PATH 中有 `ffmpeg`（或设置 `BREVIA_FFMPEG`）。
 </details>
 
 <details>

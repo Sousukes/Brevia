@@ -201,6 +201,7 @@ class WorkerCore:
             "segment.text": self.save_segment_texts,
             "segment.speaker-profile-sample": self.add_segment_speaker_profile_sample,
             "models.list": lambda _: self.models.list(),
+            "models.can-relocate": lambda _: not self.model_downloads,
             "models.download": self.download_model,
             "models.pause": self.pause_model,
             "models.cancel": self.cancel_model,
