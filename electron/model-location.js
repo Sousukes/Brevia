@@ -96,7 +96,17 @@ async function applyOneMove(dataDir, { currentKey, pendingKey, cleanupKey, fallb
       if (!fs.existsSync(target)) await mkdir(target);
       await rm(staging, { recursive: true });
     }
-    if ((await readdir(target)).length) throw new Error(`Chosen ${label} folder is no longer empty`);
+    let present = [];
+    try {
+      present = await readdir(target);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      // 崩溃恢复路径上 target 可能已被外部移除（例如 rmdir 之后 rename 之前中断）。
+      // 把它当作空目录并补建，否则这次 ENOENT 会被 applyPendingMove 捕获、静默取消
+      // 用户的整个目录迁移。
+      await mkdir(target, { recursive: true });
+    }
+    if (present.length) throw new Error(`Chosen ${label} folder is no longer empty`);
     await mkdir(staging);
     await writeFile(stagingSource, source);
     if (fs.existsSync(source)) {

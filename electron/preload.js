@@ -9,7 +9,15 @@ const handlersByType = new Map();
 ipcRenderer.on('brevia:event', (_, event) => {
   const handlers = handlersByType.get(event.type);
   if (!handlers) return;
-  for (const handler of [...handlers]) handler(event.payload);
+  for (const handler of [...handlers]) {
+    // 单个处理器抛错不能中断同类型其余处理器，也不能冒泡成未捕获异常
+    // （否则一个坏订阅者会让后续订阅者收不到事件）。
+    try {
+      handler(event.payload);
+    } catch (error) {
+      console.error(`brevia event handler failed for ${event.type}`, error);
+    }
+  }
 });
 
 contextBridge.exposeInMainWorld('brevia', {

@@ -44,11 +44,38 @@ const workerRequestTimeouts = new Map([
   ['models.download', 15000], ['models.pause', 15000], ['models.cancel', 15000],
   ['task.pause', 15000], ['task.resume', 15000], ['task.cancel', 15000],
 ]);
+// 这些命令在 worker 的后台线程里执行，可能持续数分钟（精修、导入、纪要、翻译、导出），
+// 或需要排空识别队列 / 冷加载模型（stop、start、resume）。它们必须豁免默认超时，
+// 否则正常的长任务会被误杀。
+const longRunningCommands = new Set([
+  'meeting.start',
+  'meeting.resume',
+  'meeting.stop',
+  'meeting.refine',
+  'meeting.import',
+  'meeting.export',
+  'meeting.bundle',
+  'meeting.purge',
+  'summary.generate',
+  'translation.generate',
+  'storage.clear',
+  'storage.cleanup',
+]);
+// 其余命令都应在一分钟内返回。给它们兜底超时，避免 worker 存活但无响应（原生调用
+// 卡死、DB 锁等）时 ipcRenderer.invoke 永久 pending、pending 条目泄漏。
+const defaultWorkerRequestTimeout = 60 * 1000;
 const resetOnboarding = process.argv.includes('--reset-onboarding');
 const dataDir = () => process.env.BREVIA_DATA_DIR || path.join(app.getPath('home'), 'brevia');
 const modelsDir = () => currentDirectory(dataDir(), process.env.BREVIA_MODELS_DIR);
 const recordingsDir = () => recordingsDirectory(dataDir(), process.env.BREVIA_MEETINGS_DIR);
 const noteImagesDir = (meetingId) => path.join(recordingsDir(), meetingId, 'notes');
+// Windows 路径大小写不敏感，而 path.resolve 不会归一化盘符大小写（d:\ vs D:\），
+// 直接用 startsWith 比较前缀会误判。比较前统一折叠大小写。
+const foldPath = (value) => (process.platform === 'win32' ? value.toLowerCase() : value);
+const isWithin = (root, target) => {
+  const base = foldPath(path.resolve(root));
+  return foldPath(target).startsWith(`${base}${path.sep}`);
+};
 const legacyDataDir = () => app.getPath('userData');
 const logsDir = () => path.join(dataDir(), 'logs');
 const logFile = () => path.join(logsDir(), 'brevia.log');
@@ -62,14 +89,25 @@ const writeLog = (level, value) => {
   const line = `${new Date().toISOString()} [${level}] ${logText(value).trim()}\n`;
   void mkdir(logsDir(), { recursive: true }).then(() => appendFile(logFile(), line, 'utf8')).catch((error) => console.error('Log write failed', error));
 };
-const stopProcess = (child) => {
+const stopProcess = (child, graceMs = 5000) => {
   if (!child?.pid) return;
-  if (process.platform === 'win32') execFile('taskkill', ['/pid', String(child.pid), '/t', '/f'], () => {});
-  else {
-    // 杀掉整个进程组：worker 会派生 ffmpeg 与 llama sidecar，只 SIGTERM 父进程会留下孤儿进程。
-    try { process.kill(-child.pid, 'SIGTERM'); }
-    catch { try { child.kill(); } catch { /* 进程可能已退出。 */ } }
+  if (process.platform === 'win32') {
+    execFile('taskkill', ['/pid', String(child.pid), '/t', '/f'], () => {});
+    return;
   }
+  // 已退出的进程不要再按 pid 杀进程组：pid 可能已被系统复用，会误杀同组进程。
+  if (child.exitCode !== null || child.signalCode) return;
+  // 杀掉整个进程组：worker 会派生 ffmpeg 与 llama sidecar，只 SIGTERM 父进程会留下孤儿进程。
+  try { process.kill(-child.pid, 'SIGTERM'); }
+  catch { try { child.kill(); } catch { /* 进程可能已退出。 */ } }
+  // worker 忽略 SIGTERM 时会残留孤儿进程：给一个宽限期后升级为 SIGKILL。
+  const escalation = setTimeout(() => {
+    if (child.exitCode !== null || child.signalCode) return;
+    try { process.kill(-child.pid, 'SIGKILL'); }
+    catch { try { child.kill('SIGKILL'); } catch { /* 已退出。 */ } }
+  }, graceMs);
+  escalation.unref?.();
+  child.once('exit', () => clearTimeout(escalation));
 };
 let storageMigrationInProgress = false;
 const migrateDataDir = async () => {
@@ -243,6 +281,24 @@ class WorkerClient {
     this.refinement = refinement;
     this.recycleRequested = false;
     this.hasSpawned = false;
+    // 串行化 stdin 写入：音频帧 base64 后可达数 MB，忽略 write() 返回值、不监听 drain
+    // 会让管道缓冲随写入速度堆积。按序一条条写，并在内核缓冲满时等待 flush 再继续。
+    this.writeChain = Promise.resolve();
+  }
+
+  writeChunk(data) {
+    const stream = this.process?.stdin;
+    if (!stream || stream.destroyed) return Promise.reject(new Error('Worker is not running'));
+    return new Promise((resolve, reject) => {
+      // 写入回调在数据真正落盘后触发；用它串起下一次写入即天然形成背压。
+      stream.write(data, (error) => (error ? reject(error) : resolve()));
+    });
+  }
+
+  enqueueWrite(data) {
+    const next = this.writeChain.then(() => this.writeChunk(data));
+    this.writeChain = next.catch(() => {});
+    return next;
   }
 
   start() {
@@ -281,6 +337,9 @@ class WorkerClient {
     let buffer = '';
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk) => {
+      // 旧进程在退出前可能仍在吐缓冲数据；重启后若不过滤来源，这些数据会被当成新进程
+      // 的输出转发给渲染层，甚至误杀新进程的 pending 请求（fail() 会拒绝所有 pending）。
+      if (child !== this.process) return;
       buffer += chunk;
       if (buffer.length > workerLineLimit) {
         const error = new Error('Worker output is too large');
@@ -301,10 +360,14 @@ class WorkerClient {
     });
     child.stderr.setEncoding('utf8');
     child.stderr.on('data', (message) => {
+      if (child !== this.process) return;
       writeLog('WARNING', message);
       this.sendEvent('worker:log', { message });
     });
-    child.on('error', (error) => this.fail(error));
+    child.on('error', (error) => {
+      if (child !== this.process) return;
+      this.fail(error);
+    });
     child.on('exit', (code, signal) => this.closed(code, signal, child));
     return this.starting;
   }
@@ -334,10 +397,13 @@ class WorkerClient {
     if (storageMigrationInProgress && !duringMigration) throw new Error('Folders are being moved. Please wait.');
     const requestId = `cmd-${++this.sequence}`;
     return new Promise((resolve, reject) => {
-      const timeout = workerRequestTimeouts.get(type);
-      const timer = timeout && setTimeout(() => {
+      const explicit = workerRequestTimeouts.get(type);
+      const timeout = explicit ?? (longRunningCommands.has(type) ? null : defaultWorkerRequestTimeout);
+      const timer = timeout == null ? null : setTimeout(() => {
         if (!this.pending.delete(requestId)) return;
         reject(new Error(`Worker request timed out: ${type}`));
+        // 超时说明 worker 很可能卡死；空闲时回收重启，避免后续请求继续挂起。
+        this.recycleRequested = true;
         this.recycleIfIdle();
       }, timeout);
       this.pending.set(requestId, { resolve, reject, timer });
@@ -348,12 +414,10 @@ class WorkerClient {
         // 中文会变成乱码（如“会议”→“浼氳”）；纯 ASCII 在任何代码页下都能正确还原。
         const asciiSafe = JSON.stringify({ id: requestId, ...value })
           .replace(/[\u0080-\uffff]/g, (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
-        this.process.stdin.write(`${asciiSafe}\n`, (error) => {
-          if (error) {
-            this.pending.delete(requestId);
-            clearTimeout(timer);
-            reject(error);
-          }
+        this.enqueueWrite(`${asciiSafe}\n`).catch((error) => {
+          this.pending.delete(requestId);
+          clearTimeout(timer);
+          reject(error);
         });
       } catch (error) {
         this.pending.delete(requestId);
@@ -435,7 +499,11 @@ class WorkerClient {
       return;
     }
     this.restarts += 1;
-    this.start();
+    // 新进程必须重新初始化：清掉缓存的启动初始化，否则 initializeWorker() 会继续返回
+    // 旧 worker 的过期结果，新进程也收不到 app.initialize（启动维护、模型引用收敛等）。
+    startupInitialization = null;
+    void this.start().catch((error) => writeLog('ERROR', `restart worker: ${logText(error)}`));
+    void initializeWorker().catch((error) => writeLog('ERROR', `re-initialize after restart: ${logText(error)}`));
     if (!this.active) {
       this.sendEvent('worker.error', { message: `转写进程已退出（${reason}）` });
       return;
@@ -444,6 +512,9 @@ class WorkerClient {
       await this.request('meeting.resume', {
         meeting_id: this.active.meeting_id,
       });
+      // 恢复成功说明这次重启是有效的：重置额度，让同一场会议里后续的崩溃仍能自愈，
+      // 而不是一次崩溃就用光预算、之后只能放弃。
+      this.restarts = 0;
       this.sendEvent('worker.recovered', { meeting_id: this.active.meeting_id });
     } catch (error) {
       this.sendEvent('worker.error', { message: `录音仍在本地保留，但转写无法恢复：${error.message}` });
@@ -715,6 +786,12 @@ async function writeZipArchive(targetZip, files) {
   // files: [{ path, name }] —— name 为归档内文件名（UTF-8）。
   const { deflateRawSync, crc32 } = zlib;
   const encoder = new TextEncoder();
+  // 这里手写的 ZIP 结构只有 32 位字段（没有 ZIP64）。一旦超过这些上限，继续写只会
+  // 产出打不开的损坏归档，因此提前明确报错，而不是静默生成坏文件。
+  const max32 = 0xffffffff;
+  if (files.length > 0xffff) {
+    throw new Error('Too many files to bundle into one archive (max 65535)');
+  }
   const localParts = [];
   const centralParts = [];
   let offset = 0;
@@ -726,6 +803,9 @@ async function writeZipArchive(targetZip, files) {
     const store = deflated.length >= data.length;
     const method = store ? 0 : 8;
     const payload = store ? data : deflated;
+    if (data.length > max32 || payload.length > max32 || offset > max32) {
+      throw new Error(`Bundle exceeds the 4 GB ZIP limit: ${file.name}`);
+    }
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
     local.writeUInt16LE(20, 4); // version needed
@@ -848,7 +928,9 @@ function registerIpc() {
     return result;
   });
   ipcMain.handle('meeting.import', async (_, payload) => {
-    const value = meetingStart.extend({ path: z.string().min(1) }).parse(payload);
+    // 真实路径由下面的文件对话框决定，渲染层传来的 path 会被忽略；因此只接受可选占位，
+    // 避免调用方省略 path 时被 schema 误判成参数错误。
+    const value = meetingStart.extend({ path: z.string().optional() }).parse(payload);
     const selected = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'aac', 'ogg'] }] });
     if (selected.canceled) return null;
     const result = await worker.request('meeting.import', { ...value, path: selected.filePaths[0] });
@@ -1165,10 +1247,23 @@ function registerIpc() {
     new ShareMenu(sharingItem).popup({ window, ...(value.anchor ? { x: value.anchor.x, y: value.anchor.y } : {}) });
     return { shared: true };
   });
-  ipcMain.handle('shell.showItem', (_, filePath) => shell.showItemInFolder(z.string().parse(filePath)));
+  ipcMain.handle('shell.showItem', (_, filePath) => {
+    const resolved = path.resolve(z.string().parse(filePath));
+    // 只允许定位到 Brevia 自己管理的目录，避免渲染进程把任意字符串交给系统文件管理器。
+    // 模型目录与录音目录都可迁移到数据目录之外，因此三个根都要放行。
+    if (![dataDir(), recordingsDir(), modelsDir()].some((root) => isWithin(root, resolved))) {
+      throw new Error('Invalid path');
+    }
+    return shell.showItemInFolder(resolved);
+  });
   ipcMain.handle('audio.url', (_, filePath) => {
     const resolved = path.resolve(z.string().parse(filePath));
-    if (!resolved.startsWith(`${path.resolve(dataDir())}${path.sep}`)) throw new Error('Invalid audio path');
+    // 录音目录可被迁移到数据目录之外（storage.setup-locations 或 BREVIA_MEETINGS_DIR），
+    // 白名单必须同时包含 dataDir 与 recordingsDir；只认 dataDir 会让迁移后的录音回放
+    // 一律报 "Invalid audio path"。
+    if (![dataDir(), recordingsDir()].some((root) => isWithin(root, resolved))) {
+      throw new Error('Invalid audio path');
+    }
     return pathToFileURL(resolved).href;
   });
   ipcMain.handle('floating-caption.show', () => { resetFloatingCaptionState(); return showFloatingCaption(); });
@@ -1283,13 +1378,18 @@ function checkForUpdate() {
   const { autoUpdater } = require('electron-updater');
   configureMacUpdater(autoUpdater);
   macUpdateCheck = new Promise((resolve, reject) => {
-    const done = (result) => { cleanup(); resolve(result); };
-    const fail = (error) => { cleanup(); reject(error); };
+    // 更新检查没有内置超时：网络挂起时 electron-updater 可能一个事件都不发，Promise 会
+    // 永久 pending，而 macUpdateCheck 只在 finally 里清空，后续调用会一直复用这个悬挂
+    // 的 Promise。这里兜一个超时，失败后 finally 会清空缓存以便重试。
+    const timer = setTimeout(() => fail(new Error('Update check timed out')), 30000);
     const cleanup = () => {
+      clearTimeout(timer);
       autoUpdater.removeListener('update-available', available);
       autoUpdater.removeListener('update-not-available', current);
       autoUpdater.removeListener('error', fail);
     };
+    const done = (result) => { cleanup(); resolve(result); };
+    const fail = (error) => { cleanup(); reject(error); };
     const available = (info) => done({ status: 'available', version: info.version });
     const current = () => done({ status: 'current' });
     autoUpdater.once('update-available', available);
