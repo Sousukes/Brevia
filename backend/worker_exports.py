@@ -39,7 +39,10 @@ class ExportWorkerMixin:
             "audio": "[会议录音]",
         }.get(content_type, "")
         prefix = re.sub(r'[<>:"/\\|?*]+', "-", str(prefix))
-        stem = self._available_export_stem(directory, f"{prefix}{safe_title}", export_format)
+        # PDF 的实际产物是 {stem}.print.html（交给 Electron 渲染成 PDF），唯一性检查必须
+        # 针对真实文件名，否则连续导出两次 PDF 会算出同一个 stem 并覆盖同一个 print.html。
+        uniqueness = "print.html" if export_format == "pdf" else export_format
+        stem = self._available_export_stem(directory, f"{prefix}{safe_title}", uniqueness)
         path = directory / f"{stem}.{export_format}"
         if content_type == "audio":
             return self._export_audio(

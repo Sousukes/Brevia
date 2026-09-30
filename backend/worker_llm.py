@@ -347,7 +347,10 @@ class LLMWorkerMixin:
             # 生成真正的纪要，而不是留下一条错误记录。
             raise
         except Exception as error:
-            if not self.store.save_summary(meeting["id"], None, markdown or str(error)):
+            # 失败时不写纪要。旧实现会把错误文本（或半截输出）存进 raw_response，并在
+            # ON CONFLICT 下把 data 覆盖成 NULL——重新生成一次失败就会抹掉上一次的好纪要。
+            # 会议已被删除时静默收尾（与 save_summary 的迟到结果保护一致），其余照常上抛。
+            if not self.store.meeting_exists(meeting["id"]):
                 return {"cancelled": True}
             if re.search(
                 r"\b(?:401|403)\b|error code:\s*1010|API key|Authorization header|invalid_api_key|authentication",
