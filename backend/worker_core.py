@@ -62,6 +62,8 @@ class WorkerCore:
         self.command_times_lock = threading.Lock()
         self.state = WorkerState()
         self.tasks = TaskRegistry()
+        # 命令分发表延迟构建并缓存（见 _command_handlers）。
+        self._handlers = None
         self.store = Store(root)
         if os.environ.get("BREVIA_RECOVER_INTERRUPTED", "1") == "1":
             self.store.recover_interrupted_meetings()
@@ -156,87 +158,97 @@ class WorkerCore:
         payload = sanitize_unicode(command.get("payload") or {})
         if not command_id or not command_type:
             raise ValueError("Commands require id and type")
-        handlers = {
-            "app.initialize": self.initialize,
-            "app.maintain": self.maintain,
-            "meeting.start": self.start,
-            "meeting.import": self.import_audio,
-            "meeting.resume": self.resume,
-            "meeting.pause": self.pause,
-            "meeting.reconfigure": self.reconfigure,
-            "meeting.audio": self.audio,
-            "meeting.stop": self.stop,
-            "meeting.list": lambda value: self.store.list_meetings(**value),
-            "meeting.search": lambda value: self.store.search_meetings(value.get("query", "")),
-            "meeting.get": lambda value: self.store.get_meeting(value["meeting_id"], compact=True),
-            "meeting.update": self.update_meeting,
-            "meeting.delete": self.delete_meeting,
-            "meeting.restore": self.restore_meeting,
-            "meeting.purge": self.purge_meeting,
-            "speaker.rename": self.rename_speaker,
-            "speaker-profile.list": lambda _: self.store.list_speaker_profiles(),
-            "speaker-profile.samples": lambda value: (
-                self.store.list_speaker_profile_samples(value["profile_id"])
-            ),
-            "speaker-profile.enroll": self.enroll_speaker_profile,
-            "speaker-profile.verify": self.verify_speaker_profile,
-            "speaker-profile.sample-delete": self.delete_speaker_profile_sample,
-            "speaker-profile.delete": self.delete_speaker_profile,
-            "speaker-profile.rename": lambda value: self.store.rename_speaker_profile(
-                value["profile_id"], value["name"]
-            ),
-            "storage.clear": self.clear_storage,
-            "storage.cleanup": self.cleanup_unused_storage,
-            "settings.advanced.get": lambda _: {
-                "settings": SETTINGS,
-                "defaults": DEFAULT_SETTINGS,
-            },
-            "settings.advanced.save": lambda value: save_runtime_settings(
-                self.store.root, value["settings"]
-            ),
-            "metrics.record": lambda value: self.store.metrics(
-                value.get("app_duration_ms", 0)
-            ),
-            "segment.speaker": self.assign_segment_speaker,
-            "segment.text": self.save_segment_texts,
-            "segment.speaker-profile-sample": self.add_segment_speaker_profile_sample,
-            "models.list": lambda _: self.models.list(),
-            "models.can-relocate": lambda _: not self.model_downloads,
-            "models.download": self.download_model,
-            "models.pause": self.pause_model,
-            "models.cancel": self.cancel_model,
-            "models.delete": self.delete_model,
-            "task.pause": self.pause_task,
-            "task.resume": self.resume_task,
-            "task.cancel": self.cancel_task,
-            "meeting.export": self.export,
-            "meeting.bundle": self.bundle,
-            "meeting.refinement-recover": self.recover_refinement,
-            "meeting.refine": self.refine,
-            "summary.generate": self.summarize,
-            "summary.save": self.save_summary,
-            "translation.generate": self.translate,
-            "ai-note.start": self.ai_note_start,
-            "ai-note.stop": self.ai_note_stop,
-            "ai-note.typing": self.ai_note_typing,
-            "ai-note.request": self.ai_note_request,
-            "ai-note.dismiss": self.ai_note_dismiss,
-            "ai-note.reconfigure": self.ai_note_reconfigure,
-            "workspace.list": lambda _: self.store.list_workspaces(),
-            "workspace.get": lambda value: self.store.get_workspace(value["workspace_id"]),
-            "workspace.create": lambda value: self.store.create_workspace(value),
-            "workspace.update": lambda value: self.store.update_workspace(
-                value["workspace_id"], value["updates"]
-            ),
-            "workspace.delete": lambda value: self.store.delete_workspace(value["workspace_id"]),
-            "workspace.reorder": lambda value: self.store.reorder_workspaces(value["workspace_ids"]),
-            "workspace.assign": lambda value: self.store.assign_meeting_to_workspace(
-                value["meeting_id"], value["workspace_id"]
-            ),
-        }
+        handlers = self._command_handlers()
         if command_type not in handlers:
             raise ValueError(f"Unknown command: {command_type}")
         return handlers[command_type](payload)
+
+    def _command_handlers(self):
+        """返回命令分发表，并缓存到实例上。
+
+        分发表含约 80 个条目，此前每条命令（包括每秒多次的 ``meeting.audio``）都会
+        重建一次字典。构建一次即可——条目全是绑定方法/lambda，运行时不变。
+        """
+        if self._handlers is None:
+            self._handlers = {
+                "app.initialize": self.initialize,
+                "app.maintain": self.maintain,
+                "meeting.start": self.start,
+                "meeting.import": self.import_audio,
+                "meeting.resume": self.resume,
+                "meeting.pause": self.pause,
+                "meeting.reconfigure": self.reconfigure,
+                "meeting.audio": self.audio,
+                "meeting.stop": self.stop,
+                "meeting.list": lambda value: self.store.list_meetings(**value),
+                "meeting.search": lambda value: self.store.search_meetings(value.get("query", "")),
+                "meeting.get": lambda value: self.store.get_meeting(value["meeting_id"], compact=True),
+                "meeting.update": self.update_meeting,
+                "meeting.delete": self.delete_meeting,
+                "meeting.restore": self.restore_meeting,
+                "meeting.purge": self.purge_meeting,
+                "speaker.rename": self.rename_speaker,
+                "speaker-profile.list": lambda _: self.store.list_speaker_profiles(),
+                "speaker-profile.samples": lambda value: (
+                    self.store.list_speaker_profile_samples(value["profile_id"])
+                ),
+                "speaker-profile.enroll": self.enroll_speaker_profile,
+                "speaker-profile.verify": self.verify_speaker_profile,
+                "speaker-profile.sample-delete": self.delete_speaker_profile_sample,
+                "speaker-profile.delete": self.delete_speaker_profile,
+                "speaker-profile.rename": lambda value: self.store.rename_speaker_profile(
+                    value["profile_id"], value["name"]
+                ),
+                "storage.clear": self.clear_storage,
+                "storage.cleanup": self.cleanup_unused_storage,
+                "settings.advanced.get": lambda _: {
+                    "settings": SETTINGS,
+                    "defaults": DEFAULT_SETTINGS,
+                },
+                "settings.advanced.save": lambda value: save_runtime_settings(
+                    self.store.root, value["settings"]
+                ),
+                "metrics.record": lambda value: self.store.metrics(
+                    value.get("app_duration_ms", 0)
+                ),
+                "segment.speaker": self.assign_segment_speaker,
+                "segment.text": self.save_segment_texts,
+                "segment.speaker-profile-sample": self.add_segment_speaker_profile_sample,
+                "models.list": lambda _: self.models.list(),
+                "models.can-relocate": lambda _: not self.model_downloads,
+                "models.download": self.download_model,
+                "models.pause": self.pause_model,
+                "models.cancel": self.cancel_model,
+                "models.delete": self.delete_model,
+                "task.pause": self.pause_task,
+                "task.resume": self.resume_task,
+                "task.cancel": self.cancel_task,
+                "meeting.export": self.export,
+                "meeting.bundle": self.bundle,
+                "meeting.refinement-recover": self.recover_refinement,
+                "meeting.refine": self.refine,
+                "summary.generate": self.summarize,
+                "summary.save": self.save_summary,
+                "translation.generate": self.translate,
+                "ai-note.start": self.ai_note_start,
+                "ai-note.stop": self.ai_note_stop,
+                "ai-note.typing": self.ai_note_typing,
+                "ai-note.request": self.ai_note_request,
+                "ai-note.dismiss": self.ai_note_dismiss,
+                "ai-note.reconfigure": self.ai_note_reconfigure,
+                "workspace.list": lambda _: self.store.list_workspaces(),
+                "workspace.get": lambda value: self.store.get_workspace(value["workspace_id"]),
+                "workspace.create": lambda value: self.store.create_workspace(value),
+                "workspace.update": lambda value: self.store.update_workspace(
+                    value["workspace_id"], value["updates"]
+                ),
+                "workspace.delete": lambda value: self.store.delete_workspace(value["workspace_id"]),
+                "workspace.reorder": lambda value: self.store.reorder_workspaces(value["workspace_ids"]),
+                "workspace.assign": lambda value: self.store.assign_meeting_to_workspace(
+                    value["meeting_id"], value["workspace_id"]
+                ),
+            }
+        return self._handlers
 
     def initialize(self, _):
         """返回首屏状态，并把可延后的启动维护放入后台。"""
@@ -261,6 +273,13 @@ class WorkerCore:
     def _startup_maintenance(self):
         """完成不影响首屏的清理与磁盘统计。"""
         purged = self.store.purge_expired()
+        # 种子示例或异常中断可能留下「有 manifest 但数据库无记录」的会议目录
+        # （例如 seed_examples 的 DB 事务回滚、但音频已复制）。此前只在用户手动
+        # 清理时才回收，这里补一次启动期兜底，避免孤儿目录长期占盘。
+        try:
+            self.store.cleanup_orphan_meeting_dirs()
+        except Exception:
+            logger.exception("orphan meeting directory cleanup failed")
         # 会议引用的识别模型一次性收敛：退役/已下架/带不动该语言的 id 统一改写成该语言
         # 当前的默认模型。以前这件事散在 resume / reconfigure / refine 三条运行路径里各做
         # 一次（漏一条就表现为"某条路径加载不了模型"），这里在启动时统一收敛一次。

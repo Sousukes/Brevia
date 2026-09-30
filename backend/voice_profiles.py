@@ -116,7 +116,10 @@ class VoiceProfileService:
             path = meeting["audio"]["playback"].get(segment["track"])
             if not path or not Path(path).exists():
                 continue
-            cached.setdefault(path, read_mono_wav(path))
+            # setdefault 的第二个参数会被立即求值（不惰性），那样每段都会整段重读 WAV，
+            # 长会议下退化成 O(n²)。显式判空只读一次。
+            if path not in cached:
+                cached[path] = read_mono_wav(path)
             samples, rate = cached[path]
             text = segment["text"] or ""
             sentences = self._sentences(text)

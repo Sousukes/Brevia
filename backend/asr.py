@@ -146,12 +146,15 @@ def model_files_present(model, path):
 class ModelManager:
     """按模型清单管理本地文件，并向 Worker 上报下载状态。"""
 
-    def __init__(self, root, event=lambda *_: None, bundled_root=None):
+    def __init__(self, root, event=lambda *_: None, bundled_root=None, cleanup=True):
         """加载模型清单。
 
         Args:
             root: 模型文件根目录。
             event: 状态回调，接收 ``(事件名, 事件数据)``。
+            bundled_root: 随安装包出厂的基础模型目录。
+            cleanup: 是否清理退役/历史遗留模型。短生命子进程（如说话人分离）
+                只读模型，传 False 以免在精修期间对模型目录执行删除。
         """
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
@@ -159,7 +162,8 @@ class ModelManager:
         self.bundled_root = Path(bundled_root) if bundled_root else None
         self.event = event
         self.catalog = load_model_catalog()
-        self.remove_deprecated_models()
+        if cleanup:
+            self.remove_deprecated_models()
 
     def remove_deprecated_models(self):
         """删除已从清单移除、且应用不再提供删除入口的旧模型。
@@ -377,8 +381,10 @@ class ModelManager:
                         report,
                     )
                     check_control()
-                    digest = sha256_file(destination)
-                    if item.get("sha256") and digest != item["sha256"]:
+                    expected = item.get("sha256")
+                    # 仅当清单声明了校验和时才计算 SHA256：大文件全量哈希会让进度条在
+                    # 100% 处停顿数秒且无实际收益（与下方单文件分支保持一致）。
+                    if expected and sha256_file(destination) != expected:
                         raise ValueError("Model download checksum mismatch")
                     if item.get("extract"):
                         extract_root = Path(temporary) / f"extract-{received}"
