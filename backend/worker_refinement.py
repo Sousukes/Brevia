@@ -1,5 +1,6 @@
 """聚焦的 worker 职责组件。"""
 
+import logging
 import os
 import re
 import sys
@@ -29,6 +30,8 @@ from .worker_common import (
     require,
 )
 from .transcript import subtitle_time_at_offset
+
+logger = logging.getLogger(__name__)
 
 # 该值在 diarization 子进程内使用；子进程不加载用户覆盖，故经 payload 传入，
 # 这里仅作缺失时的回退默认值。较长窗口让声纹更稳定，避免把同一个人聚成多人。
@@ -182,7 +185,10 @@ def _diarize_chunk_process(connection, payload):
     """在短生命进程内完成分段和声纹，让 OS 回收 Sherpa 原生缓冲。"""
     try:
         manager = ModelManager(
-            payload["models_root"], bundled_root=payload.get("bundled_models_root")
+            payload["models_root"],
+            bundled_root=payload.get("bundled_models_root"),
+            # 只读子进程：不要在精修期间清理/删除模型目录（退役模型由主进程启动时收敛）。
+            cleanup=False,
         )
         samples, sample_rate = read_mono_wav_window(
             payload["path"], payload["window_start_ms"], payload["window_end_ms"]
@@ -398,6 +404,33 @@ class RefinementWorkerMixin:
             self.emit("refinement.cancelled", {"meeting_id": meeting["id"]})
             return self.store.get_meeting(meeting["id"])
 
+        def fail_refinement(error):
+            """准备/转写阶段抛错时回滚状态并发出终态事件。
+
+            精修是请求/响应命令，异常仍向上抛给调用方（前端在 ``.catch`` 里也会收尾）；
+            但并非每条触发路径都挂了 ``catch``，只靠拒绝会让进度卡一直停在「准备精修」。
+            这里额外发一条 ``refinement.cancelled``，保证 UI 无论如何都能退出精修态。
+            """
+            try:
+                self.store.set_status(meeting["id"], "ready")
+                meeting_after = self.store.get_meeting(meeting["id"])
+            except Exception:
+                logger.exception("failed to roll back refinement status")
+                meeting_after = None
+            self.emit(
+                "worker.warning",
+                {
+                    "meeting_id": meeting["id"],
+                    "code": "refinement_failed",
+                    "message": str(error),
+                },
+            )
+            self.emit(
+                "refinement.cancelled",
+                {"meeting_id": meeting["id"], "meeting": meeting_after},
+            )
+            raise error
+
         sources, turns_by_track = {}, {}
         def prepare(track):
             return self._prepare_track(
@@ -431,6 +464,8 @@ class RefinementWorkerMixin:
                 prepared = [prepare(track) for track in tracks]
         except TaskCancelled:
             return cancel_refinement()
+        except Exception as error:
+            return fail_refinement(error)
         try:
             self.wait_task(control)
         except TaskCancelled:
@@ -591,9 +626,8 @@ class RefinementWorkerMixin:
             self.wait_task(control)
         except TaskCancelled:
             return cancel_refinement()
-        except Exception:
-            self.store.set_status(meeting["id"], "ready")
-            raise
+        except Exception as error:
+            return fail_refinement(error)
         try:
             self.wait_task(control)
         except TaskCancelled:
@@ -1756,28 +1790,38 @@ class RefinementWorkerMixin:
 
     @staticmethod
     def _deoverlap_speaker_turns(turns):
-        """消除相邻不同说话人 turn 的时间重叠，避免被误判成两人同时说话。
+        """消除不同说话人 turn 之间的时间重叠，避免被误判成两人同时说话。
 
         pyannote 分段在说话人切换处常产生重叠边界（相邻 turn 有几百毫秒到几秒的
         交叠），这些交叠是 diarization 的边界噪声，并非真实的同时说话。这里按重叠
         区中点切分，让同一时刻只归属一位说话人，从而去掉 UI 上大量虚假的「重叠说话」。
+
+        必须与**所有**已输出、说话人不同的 turn 比对，而不是只看最后一个：中间若夹着
+        同说话人的 turn（如 Q(0-1000) 与 R(5-10) 同为 spk-1，随后 Y(20-30) 是 spk-2），
+        只比 R 会漏掉 Y 与 Q 的交叠，UI 上就会出现同一时刻两人在说。
         """
         turns = sorted(turns, key=lambda turn: (turn["start_ms"], turn["end_ms"]))
         deoverlapped = []
         for turn in turns:
-            if (
-                deoverlapped
-                and turn["start_ms"] < deoverlapped[-1]["end_ms"]
-                and turn["speaker"] != deoverlapped[-1]["speaker"]
-            ):
-                previous = deoverlapped[-1]
-                # 完全被前一个 turn 包含的碎片（如 1ms 的 diarization 噪声）直接丢弃。
-                if turn["end_ms"] <= previous["end_ms"]:
+            current = dict(turn)
+            dropped = False
+            for previous in deoverlapped:
+                if previous["speaker"] == current["speaker"]:
                     continue
-                boundary = (turn["start_ms"] + previous["end_ms"]) // 2
+                if current["start_ms"] >= previous["end_ms"]:
+                    continue
+                # 完全被已输出 turn 包含的碎片（如 1ms 的 diarization 噪声）直接丢弃。
+                if current["end_ms"] <= previous["end_ms"]:
+                    dropped = True
+                    break
+                boundary = (current["start_ms"] + previous["end_ms"]) // 2
                 previous["end_ms"] = max(previous["start_ms"] + 1, boundary)
-                turn = {**turn, "start_ms": min(boundary, turn["end_ms"] - 1)}
-            deoverlapped.append(dict(turn))
+                current["start_ms"] = max(
+                    current["start_ms"], min(boundary, current["end_ms"] - 1)
+                )
+            if dropped:
+                continue
+            deoverlapped.append(current)
         return [turn for turn in deoverlapped if turn["end_ms"] > turn["start_ms"]]
 
     @staticmethod

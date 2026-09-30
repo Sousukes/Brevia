@@ -1,6 +1,7 @@
 """录音落盘 → Silero VAD 分段 → 单次高精度识别 → 完整句字幕。"""
 
 import base64
+import logging
 import re
 import sys
 import tempfile
@@ -27,6 +28,8 @@ from .worker_common import (
 
 MAX_MIX_BUFFER_MS = 5000
 _MIX_STALL = object()
+
+logger = logging.getLogger(__name__)
 
 # 一条字幕的（下限、目标、上限）。目标决定什么时候可以提交，上限决定还能并进多少；
 # 下限用来避免把一句话单独发成一段。中文按字数、拉丁按字符数，两者对应的时间跨度
@@ -237,6 +240,13 @@ class RecordingSessionMixin:
                 max_speech_duration=self.asr.max_speech_seconds,
             )
             self.live_postprocessing = ThreadPoolExecutor(max_workers=1, thread_name_prefix="brevia-sentence")
+            # 崩溃可能留下未清理的 sentence-*.npy（识别队列的临时切片）；开工前清一次，
+            # 否则它们会一直躺在会议目录里累积。清理失败绝不能挡住录音开始。
+            try:
+                for stale in (self.store.meeting_dir(self.active) / "audio").glob("sentence-*.npy"):
+                    stale.unlink(missing_ok=True)
+            except OSError:
+                logger.exception("failed to clean stale sentence scratch files")
         except (RuntimeError, ValueError) as error:
             self.asr = None
             self.vad = None
@@ -423,10 +433,40 @@ class RecordingSessionMixin:
                 self._queue_sentence(track, segment)
         if self.live_postprocessing and start_ms >= self.subtitle_expiry_ms:
             self.subtitle_expiry_ms = start_ms + 1000
-            self.live_postprocessing.submit(self._flush_subtitle_tails, start_ms)
+            self._submit_live_task(self._flush_subtitle_tails, start_ms)
         if payload.get("flush"):
             self._flush_sentences()
         return {"samples": total}
+
+    def _submit_live_task(self, task, *args):
+        """把任务提交到实时后处理线程池，并保证异常不被静默吞掉。
+
+        ``ThreadPoolExecutor`` 会把任务异常存进返回的 ``Future``；调用方从不取用
+        ``Future``，因此 ``_flush_subtitle_tails`` / ``_emit_draft`` 里的异常（DB busy、
+        磁盘满等）会完全无声——段落反复 flush 失败却没有任何告警。这里统一包一层：
+        记日志并向上发一条 ``worker.warning``。
+        """
+        if not self.live_postprocessing:
+            return
+
+        def run():
+            try:
+                task(*args)
+            except Exception as error:  # noqa: BLE001 - 必须兜住，否则被线程池丢弃
+                logger.exception("live postprocessing task failed")
+                try:
+                    self.emit(
+                        "worker.warning",
+                        {
+                            "meeting_id": self.active,
+                            "code": "live_postprocessing_failed",
+                            "message": str(error),
+                        },
+                    )
+                except Exception:
+                    logger.exception("failed to report live postprocessing error")
+
+        self.live_postprocessing.submit(run)
 
     def _flush_sentences(self):
         if not (self.vad and self.asr):
@@ -441,11 +481,11 @@ class RecordingSessionMixin:
             for segment in self.vad.flush(track):
                 self._queue_sentence(track, segment)
         if self.live_postprocessing:
-            self.live_postprocessing.submit(self._flush_subtitle_tails)
+            self._submit_live_task(self._flush_subtitle_tails)
             # 排空后临时行必须跟着撤下，否则界面上会留一条内容已经进正式段落的残留行。
             # 只通知真的提交过段落的音轨，避免为从未出现的音轨发空事件。
             for track in list(self.stream_state):
-                self.live_postprocessing.submit(self._emit_draft, track, self.active)
+                self._submit_live_task(self._emit_draft, track, self.active)
 
     def _queue_sentence(self, track, segment):
         # VAD/Smart Turn is the sole endpoint authority. Holding an endpoint here
@@ -463,10 +503,17 @@ class RecordingSessionMixin:
                  "speaker": "local-user" if track == "mic" else "spk-1",
                  "speaker_name": None, "track": track}
         # 队列只持有路径，慢设备积压时不把整场语音留在内存。原录音始终独立保留。
-        directory = self.store.meetings_dir / self.active / "audio"
-        with tempfile.NamedTemporaryFile(dir=directory, prefix="sentence-", suffix=".npy", delete=False) as file:
-            numpy.save(file, samples, allow_pickle=False)
-            path = Path(file.name)
+        directory = self.store.meeting_dir(self.active) / "audio"
+        path = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=directory, prefix="sentence-", suffix=".npy", delete=False) as file:
+                path = Path(file.name)
+                numpy.save(file, samples, allow_pickle=False)
+        except Exception:
+            # 磁盘满等写入失败时不要留下半截临时文件。
+            if path is not None:
+                path.unlink(missing_ok=True)
+            raise
         try:
             self.live_postprocessing.submit(self._decode_sentence, self.asr, event, path)
         except Exception:
