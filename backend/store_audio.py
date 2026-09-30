@@ -52,7 +52,7 @@ class AudioStoreMixin:
             # 避免恢复录音时重叠或留下静音空洞。
             for track_state in manifest.get("tracks", {}).values():
                 track_state["samples"] = sum(
-                    self._wav_samples(self.meetings_dir / meeting_id / "audio" / name)
+                    self._wav_samples(self.meeting_dir(meeting_id) / "audio" / name)
                     for name in track_state.get("chunks", [])
                 )
             session = {"manifest": manifest, "writers": {}, "last_checkpoint": 0.0}
@@ -72,7 +72,7 @@ class AudioStoreMixin:
                 in_chunk = state["samples"] % chunk_samples
                 take = min((chunk_samples - in_chunk) * 2, len(data) - offset)
                 name = f"{track}-{chunk_index:05d}.wav"
-                path = self.meetings_dir / meeting_id / "audio" / name
+                path = self.meeting_dir(meeting_id) / "audio" / name
                 frame = data[offset : offset + take]
                 output = session["writers"].get(name)
                 if output is None:
@@ -115,7 +115,7 @@ class AudioStoreMixin:
 
     def recorded_duration_ms(self, meeting_id):
         """按 WAV 实际帧数计算已录时长，供崩溃恢复使用。"""
-        audio = self.meetings_dir / meeting_id / "audio"
+        audio = self.meeting_dir(meeting_id) / "audio"
         durations = []
         for track in ("mic", "system"):
             total_ms = 0
@@ -153,7 +153,7 @@ class AudioStoreMixin:
 
     def audio_files(self, meeting_id):
         """返回会议的分块录音列表及可播放的连续 WAV 路径。"""
-        audio = self.meetings_dir / meeting_id / "audio"
+        audio = self.meeting_dir(meeting_id) / "audio"
         files = {
             track: [str(path) for path in sorted(audio.glob(f"{track}-*.wav"))]
             for track in ("mic", "system")
@@ -171,7 +171,7 @@ class AudioStoreMixin:
         sources = self.audio_files(meeting_id)[track]
         if not sources:
             return
-        destination = self.meetings_dir / meeting_id / "audio" / f"playback-{track}.wav"
+        destination = self.meeting_dir(meeting_id) / "audio" / f"playback-{track}.wav"
         with (
             wave.open(sources[0]) as first,
             wave.open(str(destination), "wb") as output,
@@ -189,7 +189,7 @@ class AudioStoreMixin:
         playback = self.audio_files(meeting_id)["playback"]
         if not playback["mic"] or not playback["system"]:
             return
-        destination = self.meetings_dir / meeting_id / "audio" / "playback-mix.wav"
+        destination = self.meeting_dir(meeting_id) / "audio" / "playback-mix.wav"
         with wave.open(playback["mic"]) as mic, wave.open(playback["system"]) as system:
             if mic.getparams()[:3] != system.getparams()[:3]:
                 raise ValueError("Audio track format mismatch")
@@ -225,13 +225,13 @@ class AudioStoreMixin:
         session = getattr(self, "_audio_sessions", {}).get(meeting_id)
         if session:
             return json.loads(json.dumps(session["manifest"]))
-        path = self.meetings_dir / meeting_id / "manifest.json"
+        path = self.meeting_dir(meeting_id) / "manifest.json"
         return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
     @synchronized_storage_files
     def write_manifest(self, meeting_id, data):
         """通过临时文件替换，原子地写入录音恢复清单。"""
-        path = self.meetings_dir / meeting_id / "manifest.json"
+        path = self.meeting_dir(meeting_id) / "manifest.json"
         temporary = path.with_suffix(".tmp")
         temporary.write_text(
             json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"

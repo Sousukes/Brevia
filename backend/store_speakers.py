@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from .config import SETTINGS
-from .store_base import utc_now
+from .store_base import safe_child, utc_now
 
 
 class SpeakerProfileStoreMixin:
@@ -87,6 +87,7 @@ class SpeakerProfileStoreMixin:
         """保存一条声纹样本，并以所有样本的归一化中心更新人员声纹。"""
         normalized = self._normalized_embedding(embedding)
         now = utc_now()
+        stale_audio = None
         with self.connect() as db:
             if profile_id:
                 profile = db.execute(
@@ -120,10 +121,22 @@ class SpeakerProfileStoreMixin:
             if existing:
                 saved = False
                 if audio_path:
+                    previous = db.execute(
+                        "SELECT audio_path FROM speaker_profile_samples WHERE id=?",
+                        (existing["id"],),
+                    ).fetchone()
                     db.execute(
                         "UPDATE speaker_profile_samples SET audio_path=?,duration_ms=? WHERE id=?",
                         (audio_path, int(duration_ms), existing["id"]),
                     )
+                    # 同一 source_key 重新注册会写入新的时间戳 WAV；旧文件不删会永久泄漏。
+                    # 先记下来，等事务提交成功后再删（回滚时不能删掉仍在引用的旧文件）。
+                    if (
+                        previous
+                        and previous["audio_path"]
+                        and previous["audio_path"] != audio_path
+                    ):
+                        stale_audio = previous["audio_path"]
             else:
                 usage = db.execute(
                     "SELECT COUNT(*) AS samples,COALESCE(SUM(duration_ms),0) AS duration_ms FROM speaker_profile_samples WHERE profile_id=?",
@@ -168,7 +181,19 @@ class SpeakerProfileStoreMixin:
                     (json.dumps(center), len(samples), now, profile_id),
                 )
                 saved = True
+        self._unlink_sample_audio(stale_audio)
         return {**self.speaker_profile(profile_id), "added": saved}
+
+    def _unlink_sample_audio(self, audio_path):
+        """删除某条样本的存档 WAV；仅当路径确实位于 speaker-profiles 目录内时才删。"""
+        if not audio_path:
+            return
+        path = Path(audio_path)
+        try:
+            path.relative_to(self.speaker_profiles_dir)
+        except ValueError:
+            return
+        path.unlink(missing_ok=True)
 
     def delete_speaker_profile_sample(self, profile_id, sample_id):
         """删除一句存档录音，并用剩余样本增量重算声纹中心。"""
@@ -198,15 +223,7 @@ class SpeakerProfileStoreMixin:
                 "UPDATE speaker_profiles SET embedding=?,sample_count=?,updated_at=? WHERE id=?",
                 (json.dumps(center), len(samples), utc_now(), profile_id),
             )
-        audio_path = sample["audio_path"]
-        if audio_path:
-            path = Path(audio_path)
-            try:
-                path.relative_to(self.speaker_profiles_dir / profile_id)
-            except ValueError:
-                pass
-            else:
-                path.unlink(missing_ok=True)
+        self._unlink_sample_audio(sample["audio_path"])
         return self.speaker_profile(profile_id)
 
     def match_speaker_profile(self, embedding, threshold):
@@ -245,9 +262,12 @@ class SpeakerProfileStoreMixin:
 
     def delete_speaker_profile(self, profile_id):
         """删除人员档案及其所有声纹样本和本地录音文件。"""
+        directory = safe_child(
+            self.speaker_profiles_dir, profile_id, label="speaker profile id"
+        )
         with self.connect() as db:
             db.execute("DELETE FROM speaker_profiles WHERE id=?", (profile_id,))
-        shutil.rmtree(self.speaker_profiles_dir / profile_id, ignore_errors=True)
+        shutil.rmtree(directory, ignore_errors=True)
 
     def delete_legacy_builtin_profiles(self):
         """删除旧版本内置演示说话人（样本 source_key 以 ``builtin:`` 开头）。"""
