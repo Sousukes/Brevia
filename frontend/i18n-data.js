@@ -9042,6 +9042,10 @@ const whatsNewLog = [
         {
           "text": "修复取消 AI 推理时关闭已断开管道可能抛出异常的问题，确保子进程和两端管道均被回收。",
           "commit": "8f6e4592dff69c9b74009a2f6def393b6d489481"
+        },
+        {
+          "text": "修复 Windows 并发保存配置时的文件替换冲突，按请求顺序写入并保留最后一次保存结果。",
+          "commit": "2c0f3bc1baec6756a8007af264b8498ce4378932"
         }
       ],
       "security": [
@@ -9111,6 +9115,10 @@ const whatsNewLog = [
         {
           "text": "Fixed a broken-pipe race when cancelling AI inference, ensuring the child process and both pipes are released.",
           "commit": "8f6e4592dff69c9b74009a2f6def393b6d489481"
+        },
+        {
+          "text": "Fixed conflicting file replacements during concurrent configuration saves on Windows; writes now preserve request order and the last saved value.",
+          "commit": "2c0f3bc1baec6756a8007af264b8498ce4378932"
         }
       ],
       "security": [
