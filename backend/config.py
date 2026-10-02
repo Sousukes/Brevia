@@ -1,8 +1,14 @@
 """读取随应用发布的后端运行参数。"""
 
 import json
+import logging
 import math
+import os
+from datetime import datetime, timezone
 from pathlib import Path
+
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_SETTINGS = json.loads(
@@ -61,25 +67,60 @@ def _prune_to_template(value, template):
     return value
 
 
+def _quarantine(path):
+    """把不可用的配置文件改名备份，避免下次保存直接覆盖用户数据。"""
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    try:
+        path.replace(path.with_name(f"{path.name}.corrupt-{stamp}"))
+    except OSError:
+        logger.exception("Failed to back up unusable settings file %s", path)
+
+
 def runtime_settings(root):
-    """加载用户本地覆盖项，保留模块共享的 SETTINGS 引用。"""
+    """加载用户本地覆盖项，保留模块共享的 SETTINGS 引用。
+
+    配置文件的读取必须容错：``advanced-settings.json`` 若在写入过程中崩溃/断电而
+    被截断，严格的 ``json.loads`` 会抛 ``JSONDecodeError``。该函数在
+    ``WorkerCore.__init__`` 里调用，一旦抛出就会让 worker 起不来、整个应用无法启动。
+    因此这里把「读取 + 合并 + 校验」整体包进 try，失败时把坏文件改名备份并回落到
+    默认值继续启动。
+    """
     path = Path(root) / "advanced-settings.json"
     value = json.loads(json.dumps(DEFAULT_SETTINGS))
     if path.is_file():
-        _deep_update(value, json.loads(path.read_text(encoding="utf-8")))
-    _prune_to_template(value, DEFAULT_SETTINGS)
-    _validate(value, DEFAULT_SETTINGS)
+        try:
+            candidate = json.loads(json.dumps(DEFAULT_SETTINGS))
+            _deep_update(candidate, json.loads(path.read_text(encoding="utf-8")))
+            _prune_to_template(candidate, DEFAULT_SETTINGS)
+            _validate(candidate, DEFAULT_SETTINGS)
+            value = candidate
+        except (OSError, ValueError):
+            logger.exception("Unusable %s; falling back to defaults", path)
+            _quarantine(path)
     SETTINGS.clear()
     SETTINGS.update(value)
     return value
 
 
 def save_runtime_settings(root, value):
-    """保存用户本地覆盖配置到 advanced-settings.json。"""
+    """保存用户本地覆盖配置到 advanced-settings.json。
+
+    先写临时文件再 ``os.replace`` 原子替换：直接 ``write_text`` 时若进程崩溃，会留下
+    截断的半个 JSON，进而导致下次启动读取失败（见 ``runtime_settings``）。
+    """
     value = _prune_to_template(json.loads(json.dumps(value)), DEFAULT_SETTINGS)
     _validate(value, DEFAULT_SETTINGS)
     path = Path(root) / "advanced-settings.json"
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f"{path.name}.tmp")
+    try:
+        temporary.write_text(
+            json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        os.replace(temporary, path)
+    except OSError:
+        temporary.unlink(missing_ok=True)
+        raise
     SETTINGS.clear()
     SETTINGS.update(value)
     return value

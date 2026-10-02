@@ -41,21 +41,28 @@ def complete(payload, prompt, json_mode=False):
             )
     elif payload.get("api_key"):
         headers["Authorization"] = f"Bearer {payload['api_key']}"
-    request = urllib.request.Request(
-        endpoint, json.dumps(body).encode(), headers=headers, method="POST"
-    )
+    # timeout 允许缺省；显式传 null 或非法值时回落到设置里的默认秒数，而不是抛 TypeError。
+    timeout = payload.get("timeout")
     try:
-        with urllib.request.urlopen(
-            request,
-            timeout=int(payload.get("timeout", SETTINGS["llm"]["timeout_seconds"])),
-        ) as response:
+        timeout_seconds = int(
+            timeout if timeout is not None else SETTINGS["llm"]["timeout_seconds"]
+        )
+    except (TypeError, ValueError):
+        timeout_seconds = int(SETTINGS["llm"]["timeout_seconds"])
+    try:
+        # Request 构造也放进 try：endpoint 非法（如缺 scheme）会在这里抛 ValueError，
+        # 统一包装成可读的 "LLM request failed"，而不是把裸异常抛给上层。
+        request = urllib.request.Request(
+            endpoint, json.dumps(body).encode(), headers=headers, method="POST"
+        )
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
             data = json.loads(response.read())
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", "replace")
         raise ValueError(
             f"LLM request failed ({error.code}): {detail}"
         ) from error
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+    except (urllib.error.URLError, OSError, ValueError) as error:
         raise ValueError(f"LLM request failed: {error}") from error
     content = data.get("message", {}).get("content")
     if content is None and data.get("choices"):

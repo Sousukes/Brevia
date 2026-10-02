@@ -27,3 +27,17 @@ design.md
 
 # 计算样式指纹工具的 Electron 临时目录（脚本自动创建/清理）
 .css-fingerprint-tmp/
+
+# 凭据与密钥：任何情况下都不得提交。
+# 本仓库 origin 指向公开仓库，密钥一旦进入历史极难彻底清除。
+# 注意：运行时密钥实际存放在应用数据目录（~/brevia/secrets/）而非仓库内，
+# 这些规则是防止日后有人把密钥写进配置文件时的兜底。
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials.json
+.npmrc

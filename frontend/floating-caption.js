@@ -25,20 +25,24 @@ closeBtn.addEventListener('click', () => {
   }
 });
 
-// 手动窗口拖拽
+// 手动窗口拖拽。改用 Pointer Events + setPointerCapture：指针移出元素/窗口后仍能持续收到
+// move 事件，且能可靠收到 up，避免「松手后 dragState 残留、窗口黏着鼠标」。
 let dragState = null;
-captionContainer.addEventListener('mousedown', (event) => {
-  // 不在关闭按钮上开始拖拽
-  if (event.target.closest('.close-btn')) return;
+let dragPointerId = null;
+captionContainer.addEventListener('pointerdown', (event) => {
+  // 不在关闭按钮上开始拖拽；只响应主键。
+  if (event.target.closest('.close-btn') || event.button !== 0) return;
 
   dragState = {
     startX: event.screenX,
     startY: event.screenY,
   };
+  dragPointerId = event.pointerId;
+  try { captionContainer.setPointerCapture(event.pointerId); } catch { /* 某些环境不支持指针捕获。 */ }
 });
 
-document.addEventListener('mousemove', (event) => {
-  if (!dragState) return;
+captionContainer.addEventListener('pointermove', (event) => {
+  if (!dragState || event.pointerId !== dragPointerId) return;
 
   const deltaX = event.screenX - dragState.startX;
   const deltaY = event.screenY - dragState.startY;
@@ -51,9 +55,16 @@ document.addEventListener('mousemove', (event) => {
   dragState.startY = event.screenY;
 });
 
-document.addEventListener('mouseup', () => {
+const endDrag = (event) => {
+  if (!dragState || (event && event.pointerId !== dragPointerId)) return;
   dragState = null;
-});
+  if (dragPointerId !== null) {
+    try { captionContainer.releasePointerCapture(dragPointerId); } catch { /* 捕获可能已释放。 */ }
+    dragPointerId = null;
+  }
+};
+captionContainer.addEventListener('pointerup', endDrag);
+captionContainer.addEventListener('pointercancel', endDrag);
 
 captionContainer.addEventListener('scroll', () => {
   if (autoScrolling) return;

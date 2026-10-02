@@ -1197,6 +1197,26 @@ function scheduleRequiredModelsCardRender() {
     renderRequiredModelsCard();
   });
 }
+let modelLibraryRenderFrame;
+/** 节流刷新模型库弹窗：进度事件每秒数十次，逐帧重建会打断点击（mousedown 与 mouseup 之间
+ * 节点被销毁，click 永远命中不到）。@returns {void} */
+function scheduleModelLibraryRender() {
+  if (modelLibraryRenderFrame) return;
+  modelLibraryRenderFrame = requestAnimationFrame(() => {
+    modelLibraryRenderFrame = undefined;
+    if (activeModal === 'models') renderModelLibrary();
+  });
+}
+/** 模型安装状态变化后刷新纪要 / AI 笔记弹窗。
+ *
+ * 只有「内置模型」分支会随模型是否已安装而变化；在线供应商分支重建只会抹掉用户正在输入的
+ * API Key / 请求地址，因此对非内置分支直接跳过重建。@returns {void} */
+function refreshModelConfigModal() {
+  if (activeModal !== 'summary-model' && activeModal !== 'ai-assist') return;
+  const draft = activeModal === 'ai-assist' ? aiAssistConfigDraft : summaryConfigDraft;
+  if (draft?.provider !== 'built-in') return;
+  renderModal(activeModal);
+}
 function renderModelDownloadQueue() {
   let card = document.querySelector('#model-download-queue');
   const entries = [...modelDownloads.entries()];
@@ -2296,6 +2316,8 @@ function dismissOnboardingPage(next) {
   const page = onboardingPage;
   clearInterval(onboardingAiDemoTimer);
   void breviaClient?.stopPreview();
+  // 导览页在 openOnboardingTour 里注册了 resize 监听；页面销毁时同步移除，避免泄漏。
+  window.removeEventListener('resize', fitTourWindow);
   page.classList.remove('onboarding-page-enter');
   page.classList.add('onboarding-page-leave');
   window.setTimeout(() => {
@@ -3224,23 +3246,27 @@ function applyTheme(nextTheme) {
   themeToggle.setAttribute('aria-label', themeToggle.title);
 }
 
-/** 记录可在语言环境更改时替换的静态 DOM 文本和属性。@returns {void} */
+/** 记录可在语言环境更改时替换的静态 DOM 文本和属性。
+ *
+ * 节点用 WeakRef 持有：renderMeetingList / renderSettingsView 等用 innerHTML 重建后会
+ * 使旧节点游离，若用强引用会永久持有它们（内存泄漏）。WeakRef 让被替换的节点可被回收，
+ * 存活的节点仍能正常更新。@returns {void} */
 function collectTranslations() {
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let node;
   while ((node = walker.nextNode())) {
     const key = node.nodeValue.trim();
-    if (catalog.zh.labels[key]) translatedNodes.push({ node, key, leading: node.nodeValue.match(/^\s*/)[0], trailing: node.nodeValue.match(/\s*$/)[0] });
+    if (catalog.zh.labels[key]) translatedNodes.push({ node: new WeakRef(node), key, leading: node.nodeValue.match(/^\s*/)[0], trailing: node.nodeValue.match(/\s*$/)[0] });
   }
-  document.querySelectorAll('[placeholder]').forEach((element) => translatedNodes.push({ element, attribute: 'placeholder', key: element.placeholder }));
-  document.querySelectorAll('[value]').forEach((element) => translatedNodes.push({ element, attribute: 'value', key: element.value }));
+  document.querySelectorAll('[placeholder]').forEach((element) => translatedNodes.push({ element: new WeakRef(element), attribute: 'placeholder', key: element.placeholder }));
+  document.querySelectorAll('[value]').forEach((element) => translatedNodes.push({ element: new WeakRef(element), attribute: 'value', key: element.value }));
   document.querySelectorAll('[aria-label]').forEach((element) => {
     const key = element.getAttribute('aria-label');
-    if (catalog.zh.labels[key]) translatedNodes.push({ element, attribute: 'aria-label', key });
+    if (catalog.zh.labels[key]) translatedNodes.push({ element: new WeakRef(element), attribute: 'aria-label', key });
   });
   document.querySelectorAll('[title]').forEach((element) => {
     const key = element.getAttribute('title');
-    if (catalog.zh.labels[key]) translatedNodes.push({ element, attribute: 'title', key });
+    if (catalog.zh.labels[key]) translatedNodes.push({ element: new WeakRef(element), attribute: 'title', key });
   });
 }
 /** 应用语言环境、重绘依赖组件，并可选择对翻译节点进行动画处理。@param {'zh'|'en'|'es'} nextLocale 要应用的语言环境。@param {boolean} animate 是否对更改进行动画处理。@returns {void} */
@@ -3261,8 +3287,8 @@ function applyLanguage(nextLocale, animate = false) {
   const rerenderedRoots = rerendered.filter(Boolean);
   const nodes = [...new Set([
     ...translatedNodes
-      .map(({ node, element }) => node?.parentElement || element)
-      .filter((element) => element && !rerenderedRoots.some((root) => root.contains(element))),
+      .map(({ node, element }) => (node?.deref())?.parentElement || element?.deref())
+      .filter((element) => element?.isConnected && !rerenderedRoots.some((root) => root.contains(element))),
     ...rerenderedRoots,
     ...['#floating-caption-toggle', '#translation-toggle', '#playback-floating-caption-toggle']
       .map((selector) => document.querySelector(selector))
@@ -3271,8 +3297,10 @@ function applyLanguage(nextLocale, animate = false) {
   const updateText = () => {
     translatedNodes.forEach(({ node, element, attribute, key, leading = '', trailing = '' }) => {
       const value = t(key);
-      if (node) node.nodeValue = `${leading}${value}${trailing}`;
-      else element[attribute] = value;
+      const textNode = node?.deref();
+      if (textNode) { textNode.nodeValue = `${leading}${value}${trailing}`; return; }
+      const target = element?.deref();
+      if (target) target[attribute] = value;
     });
     renderPrepareSelects();
     renderPrepareAudioSources();
@@ -3437,25 +3465,40 @@ async function transitionPage(current, next, swap) {
     next.classList.add('active');
   }
 }
-/** 在顶级应用视图之间切换。@param {'home'|'prepare'|'live'|'detail'|'settings'} name 目标视图。*/
-const showView = async (name) => {
-  if (name === activeView) return;
-  if (activeView === 'prepare' && name !== 'prepare') await breviaClient?.stopPreview();
-  const current = document.querySelector(`#${activeView}-view`);
-  const next = document.querySelector(`#${name}-view`);
-  await transitionPage(current, next, () => {
-    activeView = name;
-    // 侧边栏“收起”态（is-live-meeting 在该应用里只承担侧边栏折叠样式）：
-    // 会议进行中，以及进入会议详情页时都默认收起；悬浮/聚焦时才展开。
-    document.querySelector('.app-shell').classList.toggle('is-live-meeting', (name === 'live' && meetingActive) || name === 'detail');
-    crumb.textContent = name === 'prepare' && prepareView.dataset.mode === 'import' ? t('导入录音') : catalog[locale].views[name];
-    if (name === 'home') selectLibraryNav(activeLibraryNav);
-    else document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === name));
-    if (name === 'detail') resetDetailHeaderCollapse();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-  if (name === 'prepare') { requestAnimationFrame(fitPrepareLayout); renderCaptureMode(); if (prepareView.dataset.mode !== 'import') void refreshPrepareAudioSources(); }
-  renderMiniPlayback();
+// 最近一次请求的目标视图。过渡动画（160ms）期间 activeView 仍是旧值，若只用 activeView 判重，
+// 第二次导航会因源视图带 leaving 被 transitionPage 直接 return 丢弃，最终停在旧视图。
+// 这里用独立变量记录「最后请求的视图」，过渡结束后比对并补跳，保证快速连点落到最后一次请求的视图。
+let pendingView = null;
+let viewChain = Promise.resolve();
+/** 串行执行视图过渡队列：反复跳到「最后请求的视图」，直到追上为止。@returns {Promise<void>} */
+async function runViewQueue() {
+  while (pendingView !== null && pendingView !== activeView) {
+    const name = pendingView;
+    if (activeView === 'prepare' && name !== 'prepare') await breviaClient?.stopPreview();
+    const current = document.querySelector(`#${activeView}-view`);
+    const next = document.querySelector(`#${name}-view`);
+    await transitionPage(current, next, () => {
+      activeView = name;
+      // 侧边栏“收起”态（is-live-meeting 在该应用里只承担侧边栏折叠样式）：
+      // 会议进行中，以及进入会议详情页时都默认收起；悬浮/聚焦时才展开。
+      document.querySelector('.app-shell').classList.toggle('is-live-meeting', (name === 'live' && meetingActive) || name === 'detail');
+      crumb.textContent = name === 'prepare' && prepareView.dataset.mode === 'import' ? t('导入录音') : catalog[locale].views[name];
+      if (name === 'home') selectLibraryNav(activeLibraryNav);
+      else document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === name));
+      if (name === 'detail') resetDetailHeaderCollapse();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    if (name === 'prepare') { requestAnimationFrame(fitPrepareLayout); renderCaptureMode(); if (prepareView.dataset.mode !== 'import') void refreshPrepareAudioSources(); }
+    renderMiniPlayback();
+  }
+}
+/** 在顶级应用视图之间切换。@param {'home'|'prepare'|'live'|'detail'|'settings'} name 目标视图。@returns {Promise<void>} */
+const showView = (name) => {
+  pendingView = name;
+  const run = viewChain.then(runViewQueue, runViewQueue);
+  // 用已吞掉异常的版本续接队列，保证单次失败不会永久阻塞后续导航；调用方仍可 await run 感知错误。
+  viewChain = run.then(() => {}, () => {});
+  return run;
 };
 
 /* ===== Sticky Auto-hide Header（会议详情页）=====
@@ -4497,7 +4540,12 @@ window.addEventListener('resize', positionOpenMeetingMenus);
 /** 为行操作和批量操作运行一次会议变更。*/
 async function mutateMeetings(action, meetings) {
   const ids = new Set(meetings.map(({ id }) => id).filter(Boolean));
-  if (window.brevia) await Promise.all([...ids].map((meeting_id) => window.brevia.meeting[action]({ meeting_id })));
+  if (window.brevia) {
+    // 批量删除 / 恢复加并发闸，避免一次勾选上千条时把 IPC 与后端队列打满。
+    const results = await mapWithConcurrency([...ids], 6, (meeting_id) => window.brevia.meeting[action]({ meeting_id }));
+    const failure = results.find((result) => result.status === 'rejected');
+    if (failure) throw failure.reason;
+  }
   if (['delete', 'restore', 'purge'].includes(action)) uiData.meetings = uiData.meetings.filter((meeting) => !ids.has(meeting.id));
   clearMeetingSelection();
   renderMeetingList();
@@ -4980,6 +5028,30 @@ function refineWithSelectedModel(numSpeakers) {
   }
   startRefinement(numSpeakers, modelId);
 }
+/** 以受限并发映射一批任务，返回与 Promise.allSettled 同形的结果数组。
+ *
+ * 批量翻译 / 批量删除若一次性打出全部请求，千段会议会把本地模型与后端队列压垮。
+ * 用固定并发闸把在途请求数压到 limit 以内，同时保留「逐条成功/失败」的 settle 语义。
+ * @template T
+ * @param {Iterable<T>} items 待处理项。
+ * @param {number} limit 最大并发数。
+ * @param {(item: T, index: number) => Promise<any>} worker 单项处理函数。
+ * @returns {Promise<Array<{status: 'fulfilled', value: any} | {status: 'rejected', reason: any}>>} */
+async function mapWithConcurrency(items, limit, worker) {
+  const list = [...items];
+  const results = new Array(list.length);
+  let cursor = 0;
+  const runner = async () => {
+    while (cursor < list.length) {
+      const index = cursor;
+      cursor += 1;
+      try { results[index] = { status: 'fulfilled', value: await worker(list[index], index) }; }
+      catch (reason) { results[index] = { status: 'rejected', reason }; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, list.length)) }, runner));
+  return results;
+}
 /** 调用内置模型翻译一条已确认字幕。 */
 async function generateSegmentTranslation(payload, targetLanguage) {
   if (!targetLanguage) return;
@@ -5009,10 +5081,10 @@ async function translateLatestTranscript(targetLanguage) {
   try {
     let completed = 0;
     showTranslationProgress(completed, segments.length, targetLanguage);
-    const results = await Promise.allSettled(segments.map(async (segment) => {
+    const results = await mapWithConcurrency(segments, 4, async (segment) => {
       try { return await generateSegmentTranslation(segment, targetLanguage); }
       finally { showTranslationProgress(++completed, segments.length, targetLanguage); }
-    }));
+    });
     const failure = results.find((result) => result.status === 'rejected');
     if (failure) showToast(`${t('翻译失败')}: ${failure.reason.message}`);
     const refreshed = await window.brevia.meeting.get({ meeting_id: meeting.id });
@@ -5380,7 +5452,9 @@ if (window.brevia) {
       time: formatMeetingTime(payload.start_ms),
       startSeconds: payload.start_ms / 1000,
       endSeconds: payload.end_ms / 1000,
-      speaker: { id: payload.speaker, segmentId: payload.segment_id, name: formatSpeakerName(payload.speaker_name || payload.speaker) || `${t('说话人')} ${payload.speaker.split('-').pop()}` },
+      // speaker 可能为 null（说话人分离未启用/后端未回填）：直接 .split 会抛 TypeError
+      // 并中断整个 transcript.final 处理，因此先兜底成空串。
+      speaker: { id: payload.speaker, segmentId: payload.segment_id, name: formatSpeakerName(payload.speaker_name || payload.speaker) || `${t('说话人')} ${String(payload.speaker || '').split('-').pop()}` },
       text: payload.text,
       translation,
       showSpeaker: false,
@@ -5411,6 +5485,8 @@ if (window.brevia) {
       const [segmentId, stale] = liveSegments.entries().next().value;
       liveSegments.delete(segmentId);
       liveSegmentData.delete(segmentId);
+      // 同步回收版本号，否则长会议里 liveSegmentRevisions 只增不减（每个段留一条永不回收）。
+      liveSegmentRevisions.delete(segmentId);
       stale.remove();
     }
     transcript.querySelectorAll('.segment.is-active').forEach((segment) => {
@@ -5591,7 +5667,7 @@ if (window.brevia) {
     if (!meeting.target_language) return;
     const refined = meeting.segments.filter((segment) => segment.version.startsWith('postprocess'));
     const revision = Math.max(...refined.map((segment) => segment.revision), -1);
-    const results = await Promise.allSettled(refined.filter((item) => item.revision === revision).map((segment) => generateSegmentTranslation(segment, meeting.target_language)));
+    const results = await mapWithConcurrency(refined.filter((item) => item.revision === revision), 4, (segment) => generateSegmentTranslation(segment, meeting.target_language));
     const failure = results.find((result) => result.status === 'rejected');
     if (failure) showToast(`${t('翻译失败')}: ${failure.reason.message}`);
     if (meeting.id === breviaClient.state.selectedMeetingId) applyBackendDetail(await window.brevia.meeting.get({ meeting_id: meeting.id }));
@@ -5602,8 +5678,9 @@ if (window.brevia) {
   window.brevia.on('model.progress', ({ model_id, received, total }) => {
     if (!modelDownloads.has(model_id)) return;
     modelDownloads.set(model_id, { ...modelDownloads.get(model_id), received, total, paused: false });
-    if (activeModal === 'models') renderModal('models');
-    if (activeModal === 'summary-model' || activeModal === 'ai-assist') renderModal(activeModal);
+    // 进度事件每秒数十次：只节流刷新模型库弹窗；绝不重建纪要 / AI 笔记弹窗——
+    // 那两个弹窗含 API Key / 请求地址输入框，重建会抹掉用户正在输入的内容。
+    scheduleModelLibraryRender();
     scheduleRequiredModelsCardRender();
   });
   window.brevia.on('model.status', ({ model_id, status, error }) => {
@@ -5623,7 +5700,7 @@ if (window.brevia) {
           modelsReturnToPending = null;
         }
         if (activeModal === 'models') renderModal('models');
-        if (activeModal === 'summary-model' || activeModal === 'ai-assist') renderModal(activeModal);
+        refreshModelConfigModal();
         renderRequiredModelsCard();
         renderPrepareSelects();
         void resumeReadyModelTasks();
@@ -5637,7 +5714,7 @@ if (window.brevia) {
     else if (status === 'failed' && modelDownloads.has(model_id)) modelDownloads.set(model_id, { error });
     else if (status === 'not_installed') modelPaths.delete(model_id);
     if (activeModal === 'models') renderModal('models');
-    if (activeModal === 'summary-model' || activeModal === 'ai-assist') renderModal(activeModal);
+    refreshModelConfigModal();
     renderRequiredModelsCard();
   });
   window.brevia.on('worker.warning', ({ code, message: warning, meeting_id: warningMeetingId }) => {

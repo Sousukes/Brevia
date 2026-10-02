@@ -79,6 +79,10 @@ class MeetingStoreMixin:
         """
         meeting_id = payload.get("meeting_id") or str(uuid4())
         now = utc_now()
+        # 显式 null 与缺省一样按「自动识别人数」(-1) 处理：键存在但值为 None 时
+        # ``dict.get(key, -1)`` 会返回 None，交给 validate_num_speakers 会报一个
+        # 与用户意图不符的「必须是整数」错误。
+        num_speakers = payload.get("num_speakers")
         values = (
             meeting_id,
             payload["title"].strip(),
@@ -87,14 +91,14 @@ class MeetingStoreMixin:
             payload["refined_model_id"],
             payload.get("speaker_segmentation_model_id"),
             payload.get("vad_model_id", "silero-vad"),
-            validate_num_speakers(payload.get("num_speakers", -1)),
+            validate_num_speakers(-1 if num_speakers is None else num_speakers),
             payload.get("workspace_id"),
             json.dumps(payload.get("tags", []), ensure_ascii=False),
             "recording",
             now,
             now,
         )
-        meeting_dir = self.meetings_dir / meeting_id
+        meeting_dir = self.meeting_dir(meeting_id)
         if meeting_dir.exists():
             raise ValueError("Meeting data already exists")
         try:
@@ -332,6 +336,21 @@ class MeetingStoreMixin:
             )
         return True
 
+    def meeting_exists(self, meeting_id):
+        """会议是否存在且未进入最近删除。
+
+        供后台任务（纪要、翻译等）在失败收尾时判断「是不是会议已经被删了」，
+        避免为此加载整份会议详情。
+        """
+        with self.connect() as db:
+            return (
+                db.execute(
+                    "SELECT 1 FROM meetings WHERE id=? AND deleted_at IS NULL",
+                    (meeting_id,),
+                ).fetchone()
+                is not None
+            )
+
     def get_meeting(self, meeting_id, compact=False):
         """读取会议及其逐字稿、说话人、摘要和音频路径。
 
@@ -375,11 +394,23 @@ class MeetingStoreMixin:
                 (meeting_id,),
             ).fetchall()
         if compact:
-            refined = [segment for segment in segments if segment["version"].startswith("postprocess")]
-            current = refined if refined else [segment for segment in segments if segment["version"] == "live"]
+            # 与展示/导出的 latest_segments 对齐：精修覆盖实时，且都过滤空文本段落
+            # （精修可能产出空段落）；人工编辑版本始终保留。
+            refined = [
+                segment
+                for segment in segments
+                if segment["version"].startswith("postprocess")
+                and str(segment["text"] or "").strip()
+            ]
             if refined:
                 latest_revision = max(segment["revision"] for segment in refined)
                 current = [segment for segment in refined if segment["revision"] == latest_revision]
+            else:
+                current = [
+                    segment
+                    for segment in segments
+                    if segment["version"] == "live" and str(segment["text"] or "").strip()
+                ]
             segments = [*current, *(segment for segment in segments if segment["version"] == "user")]
 
         def segment_data(segment):
@@ -514,16 +545,29 @@ class MeetingStoreMixin:
                     (f"example_deleted:{meeting_id}", utc_now()),
                 )
                 db.execute("DELETE FROM meetings WHERE id=?", (meeting_id,))
-                shutil.rmtree(self.meetings_dir / meeting_id, ignore_errors=True)
+                shutil.rmtree(self.meeting_dir(meeting_id), ignore_errors=True)
                 return
             if restore:
-                meeting = db.execute("SELECT previous_workspace_id FROM meetings WHERE id=?", (meeting_id,)).fetchone()
-                workspace_id = meeting["previous_workspace_id"] if meeting else None
+                # 恢复工作区归属。两条删除路径要都能还原：
+                #   - 经工作区删除（store_workspaces）：workspace_id 已置 NULL，
+                #     归属存在 previous_workspace_id；
+                #   - 直接在会议库删除：workspace_id 仍是原值，previous_workspace_id 为空。
+                # COALESCE 同时覆盖两种情形，也兼容本修复前直接删除的历史数据。
+                row = db.execute(
+                    "SELECT COALESCE(previous_workspace_id, workspace_id) AS workspace_id "
+                    "FROM meetings WHERE id=?",
+                    (meeting_id,),
+                ).fetchone()
+                workspace_id = row["workspace_id"] if row else None
                 if workspace_id:
                     db.execute("UPDATE workspaces SET deleted_at=NULL WHERE id=?", (workspace_id,))
                 db.execute("UPDATE meetings SET deleted_at=NULL, workspace_id=?, previous_workspace_id=NULL WHERE id=?", (workspace_id, meeting_id))
             else:
-                db.execute("UPDATE meetings SET deleted_at=? WHERE id=?", (utc_now(), meeting_id))
+                # 直接删除前先把归属转存到 previous_workspace_id，否则恢复时会被 NULL 覆盖。
+                db.execute(
+                    "UPDATE meetings SET deleted_at=?, previous_workspace_id=workspace_id WHERE id=?",
+                    (utc_now(), meeting_id),
+                )
 
     def purge_expired(self):
         """永久删除超过保留期的会议记录及其全部本地文件。"""
@@ -555,7 +599,7 @@ class MeetingStoreMixin:
                 raise ValueError("Only deleted meetings can be permanently deleted")
         with self.connect() as db:
             db.execute("DELETE FROM meetings WHERE id=?", (meeting_id,))
-        shutil.rmtree(self.meetings_dir / meeting_id, ignore_errors=True)
+        shutil.rmtree(self.meeting_dir(meeting_id), ignore_errors=True)
 
     @staticmethod
     def _meeting(row):

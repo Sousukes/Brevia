@@ -370,8 +370,13 @@ window.breviaClient = window.brevia ? {
       }
       await this.capture.start(meeting.id);
     } catch (error) {
-      await this.capture.stop();
-      if (meeting) await window.brevia.meeting.stop({ meeting_id: meeting.id, duration_ms: 0 });
+      // 清理步骤自身抛错时不能掩盖原始错误，也不能跳过 this.capture 置空——否则后续
+      // stop()/pause() 会拿到一个已死的 capture 实例。
+      try { await this.capture?.stop(); } catch (cleanupError) { console.error('Audio capture cleanup failed', cleanupError); }
+      if (meeting) {
+        try { await window.brevia.meeting.stop({ meeting_id: meeting.id, duration_ms: 0 }); }
+        catch (cleanupError) { console.error('Meeting stop after failed start', cleanupError); }
+      }
       this.capture = null;
       throw error;
     }
@@ -402,11 +407,20 @@ window.breviaClient = window.brevia ? {
   async stop(durationMs) {
     const meetingId = this.state.meeting?.id || this.capture?.meetingId;
     if (!meetingId) throw new Error(micMessage('当前没有正在进行的会议'));
-    if (this.capture) await this.capture.stop();
-    const meeting = await window.brevia.meeting.stop({ meeting_id: meetingId, duration_ms: durationMs });
-    this.capture = null;
-    this.state.meeting = null;
-    this.state.inputs = null;
-    return meeting;
+    const capture = this.capture;
+    // 采集侧收尾失败不能阻断后端会议结束：否则 capture.stop() 抛错会让 meeting.stop 永远
+    // 不被调用，会议在后端一直处于进行中。
+    try {
+      if (capture) await capture.stop();
+    } catch (error) {
+      console.error('Audio capture cleanup failed', error);
+    }
+    try {
+      return await window.brevia.meeting.stop({ meeting_id: meetingId, duration_ms: durationMs });
+    } finally {
+      this.capture = null;
+      this.state.meeting = null;
+      this.state.inputs = null;
+    }
   },
 } : null;
