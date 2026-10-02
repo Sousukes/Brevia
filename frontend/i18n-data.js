@@ -8978,9 +8978,154 @@ const exportHubCopy = {
 
 const whatsNewLog = [
   {
+    "version": "1.2.2",
+    "date": "2026-10-02",
+    "current": true,
+    "previousVersion": "1.2.1",
+    "contributors": [
+      {
+        "login": "anupamme",
+        "pr": 2
+      },
+      {
+        "login": "Sousukes",
+        "pr": 4
+      }
+    ],
+    "zh": {
+      "summary": "本次更新聚焦录音与数据安全、长会话稳定性，以及更清晰的双语更新日志。",
+      "what": [
+        {
+          "text": "迁移模型或录音目录时显示进度浮窗，并锁定冲突操作，迁移结束后自动恢复。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "更新日志按类别展示，支持提交链接、新贡献者致谢和完整版本对比；历史版本可折叠查看。",
+          "commit": "2b36241a67c1855ae40809abdf237ec55a5f32d9"
+        }
+      ],
+      "improved": [
+        {
+          "text": "统一逐字稿的展示、编辑、翻译和导出版本选择，避免历史精修结果被模型状态变化覆盖。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "声纹取样只读取所选音频片段，限制整段样本的内存加载；统一编辑器监听器、后台任务和侧车进程的生命周期。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "统一八语言文案与错误提示，保留配置表单和笔记编辑草稿，清理重复逻辑、失效样式和多余状态。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        }
+      ],
+      "fixed": [
+        {
+          "text": "修复批量删除与后台任务互斥冲突；部分操作失败时正确保留尚未处理的会议。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "修复结束录音失败后无法重试、恢复同名工作区返回空值，以及迁移数据目录后声纹样本路径失效的问题。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "导入、导出、翻译和声纹处理期间阻止冲突的数据清理；加强任务失败回滚与重复导出的文件名保护。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "修复快速切换页面、重复点击引导页和长会话残留监听器的问题；保留有效字幕时间戳与人工修改。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "为 IPC 请求设置有限超时并加强输入校验，避免后端无响应时操作无限等待。",
+          "commit": "45adfaf"
+        }
+      ],
+      "security": [
+        {
+          "text": "加强存储路径、符号链接、归档导出和 IPC 输入校验；补齐三个 GGUF 模型下载文件的 SHA-256 校验。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "升级 js-yaml 依赖以纳入安全修复。",
+          "commit": "6e6acc0a85d035fecb2587433d38ecc7c1570a8f"
+        }
+      ],
+      "changes": [
+        {
+          "text": "录音导出统一为 WAV，移除 FLAC/M4A 选项；逐字稿和笔记的 Markdown、TXT、JSON、SRT、DOCX、PDF 导出保持可用。",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        }
+      ]
+    },
+    "en": {
+      "summary": "This release focuses on recording and data safety, long-session stability, and clearer bilingual release notes.",
+      "what": [
+        {
+          "text": "Storage moves now show a progress dialog and block conflicting actions until the move finishes.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "The changelog now includes grouped changes, commit links, new contributor credits and a full comparison, with collapsible release history.",
+          "commit": "2b36241a67c1855ae40809abdf237ec55a5f32d9"
+        }
+      ],
+      "improved": [
+        {
+          "text": "Unified transcript selection across viewing, editing, translation and export, preserving historical refinements when model availability changes.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "Voiceprint learning reads only selected audio windows and bounds full-sample loading; editor listeners, background tasks and sidecar processes now share consistent cleanup rules.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "Consolidated copy and errors across eight languages, preserved configuration and note drafts, and removed duplicate logic, unused styles and redundant state.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        }
+      ],
+      "fixed": [
+        {
+          "text": "Fixed batch deletion conflicting with task safety checks; partially failed batches now retain unfinished meetings.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "Fixed retrying a failed recording stop, restoring a deleted workspace by name, and voiceprint sample paths after data migration.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "Protected imports, exports, translations and voiceprint processing from conflicting cleanup, and strengthened failure rollback and export filename reservation.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "Fixed rapid navigation, repeated onboarding clicks and stale listeners in long sessions, while preserving valid transcript timestamps and manual edits.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "Added finite IPC deadlines and stronger input validation to prevent operations from waiting indefinitely on an unresponsive worker.",
+          "commit": "45adfaf"
+        }
+      ],
+      "security": [
+        {
+          "text": "Hardened storage paths, symlinks, archive exports and IPC validation, and added SHA-256 checks for all three GGUF model downloads.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        },
+        {
+          "text": "Updated js-yaml to include security fixes.",
+          "commit": "6e6acc0a85d035fecb2587433d38ecc7c1570a8f"
+        }
+      ],
+      "changes": [
+        {
+          "text": "Audio export is now WAV-only; FLAC/M4A options have been removed. Markdown, TXT, JSON, SRT, DOCX and PDF exports remain available for text content.",
+          "commit": "4b1f51e088cf3f3f2c623e641c453a8a6f5d7724"
+        }
+      ]
+    }
+  },
+  {
     "version": "1.2.1",
     "date": "2026-09-27",
-    "current": true,
     "zh": {
       "what": [
         "支持在首次设置和设置页选择模型、会议录音的存储目录，并迁移已有文件。",
