@@ -47,13 +47,13 @@ assert.match(text(backendClient), /resampler: null/, 'audio capture retains resa
 assert.match(text(backendClient), /state\.nextOutput \* ratio/, 'resampling advances on one cumulative output clock');
 assert.doesNotMatch(text(backendClient), /sampleOffset/, 'per-frame resample rounding must not accumulate into timestamps');
 assert.match(text(app), /const DEFAULT_REFINED_MODEL_ID = 'funasr-nano-int8';/);
-assert.match(text(app), /hint\.textContent = error\.message/);
+assert.match(text(app), /hint\.textContent = userFacingError\(error\.message\)/);
 assert.match(text(css), /\.capture-settings\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 assert.match(text(tailwind), /\.capture-mode-select\.opens-upward \.flow-select-options/, 'capture mode menu opens upward when it would overflow');
 assert.match(text(app), /options\.getBoundingClientRect\(\)\.bottom > window\.innerHeight/, 'capture mode menu checks available viewport space');
 assert.match(text(tailwind), /\.live-caption-controls \{ @apply flex flex-wrap items-center gap-2; \}/, 'live controls fit the floating bar');
 assert.match(text(html), /class="floating-control-bar live-control-bar"[^]*id="pause"[^]*id="end-meeting"[^]*id="mark-important"[^]*id="live-more-toggle"/, 'live controls follow pause, end, mark, more order');
-assert.match(text(html), /class="player floating-control-bar"[^]*id="progress"[^]*id="play"/, 'playback controls stay together in the floating bar');
+assert.match(text(html), /class="player floating-control-bar"[^]*id="player-time"[^]*id="play"[^]*id="player-duration"[^]*id="progress"/, 'playback controls and timeline stay in the compact floating bar');
 assert.match(text(tailwind), /\.secondary \{ @apply mt-7 appearance-none bg-transparent/, 'secondary actions do not fall back to a native light button in dark mode');
 assert.match(text(tailwind), /html\[data-theme="dark"\] \.modal-danger \{ border-color: var\(--color-danger\); background: var\(--color-danger\); color: #fff; \}/, 'dark destructive actions retain a visible danger background');
 assert.match(text(app), /window\.brevia\.on\('meeting\.interrupted'/);
@@ -307,7 +307,11 @@ runInNewContext(text(components), componentContext);
 assert.match(componentContext.renderMarkdown('- parent\n  - child'), /<ul><li>parent<ul><li>child<\/li><\/ul><\/li><\/ul>/);
 assert.match(componentContext.renderMarkdown('1. parent\n  1. child'), /<ol><li>parent<ol><li>child<\/li><\/ol><\/li><\/ol>/);
 assert.match(componentContext.renderMarkdown('- parent\n  - child\n    - grandchild'), /<ul><li>parent<ul><li>child<ul><li>grandchild<\/li><\/ul><\/li><\/ul><\/li><\/ul>/);
-const mediaContext = { window: {}, navigator: { mediaDevices: {} }, console, btoa: (value) => Buffer.from(value, 'binary').toString('base64'), performance: globalThis.performance };
+for (const source of ['***bold***', '---heading', '___abc', 'text\n***bold***', '# Heading\n---\nend']) {
+  componentContext.markdownRegression = source;
+  assert.ok(runInNewContext('renderMarkdown(markdownRegression)', componentContext, { timeout: 1000 }).includes('<'), 'Markdown parser must make progress');
+}
+const mediaContext = { setTimeout, clearTimeout, window: {}, navigator: { mediaDevices: {} }, console, btoa: (value) => Buffer.from(value, 'binary').toString('base64'), performance: globalThis.performance };
 runInNewContext(`${text(backendClient)}\nthis.AudioCapture = AudioCapture;`, mediaContext);
 const stoppedTracks = [];
 const loopbackAudio = { readyState: 'live', stop() { stoppedTracks.push('audio'); } };
@@ -591,7 +595,7 @@ assert.match(text(tailwind), /\.task-cards > \.task-card-stack-item \{[^}]*width
 assert.match(text(tailwind), /\.task-cards > \.is-task-card-back \{[^}]*box-shadow:/);
 assert.match(text(app), /function activateTaskCard\(card\)/);
 assert.match(text(app), /\['Enter', ' '\]\.includes\(event\.key\)/);
-assert.match(text(electronMain), /ipcMain\.handle\('app\.maintain'[\s\S]{0,300}if \(app\.isQuitting\) return \{\}/);
+assert.match(text(electronMain), /handleIpc\('app\.maintain'[\s\S]{0,300}if \(app\.isQuitting\) return \{\}/);
 assert.match(text(css), /\.required-models-card ul\{(?=[^}]*max-height:min\(28vh,14rem\))(?=[^}]*overflow:hidden auto)(?=[^}]*overscroll-behavior:contain)/);
 assert.match(text(css), /#prepare-view\.active\{[^}]*overflow:hidden/);
 assert.match(text(css), /\.prepare-layout\{[^}]*grid-template-columns:minmax\(0,42rem\)/);
@@ -644,8 +648,8 @@ assert.match(text(electronMain), /query: \{ resetOnboarding: '1' \}/);
 assert.match(text(js), /resetOnboarding'\)\) localStorage\.removeItem\('brevia-onboarding-complete'\)/);
 assert.doesNotMatch(text(tailwind), /\.onboarding-ai-demo \{ position: fixed/);
 assert.match(text(app), /deviceIsWeak\(\) && config\.provider === 'built-in' && \/4b\/i\.test/);
-assert.match(text(app), /const aiOnboardingDemoCopy = \{/);
-for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) assert.match(text(app), new RegExp(`${code}: \\{[^\\n]*?(?:demo:|recording:)`));
+assert.match(text(app), /const aiOnboardingDemoCopy = window\.BreviaLocaleData\.appCopy\.aiOnboardingDemoCopy/);
+for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) assert.ok(localeContext.window.BreviaLocaleData.appCopy.aiOnboardingDemoCopy[code].recording);
 assert.match(text(js), /window\.brevia\.task\[paused \? 'resume' : 'pause'\]/);
 assert.match(text(js), /miniPlaybackSeek\.addEventListener\('pointerdown'/);
 assert.match(text(js), /let contextMeetingId;/);
@@ -717,24 +721,24 @@ assert.match(text(js), /type="password"[^>]*placeholder="\$\{entry\.keyReference
 assert.doesNotMatch(text(js), /secret\.get|summaryKeyValues/);
 assert.match(text(js), /speakerProfileName\(profile\)/);
 assert.match(text(js), /window\.brevia\?\.appInfo\?\.version\?\.\(\)/);
-assert.match(text(electronMain), /ipcMain\.handle\('app\.version', \(\) => app\.getVersion\(\)\)/);
+assert.match(text(electronMain), /handleIpc\('app\.version', \(\) => app\.getVersion\(\)\)/);
 assert.match(text(electronMain), /const useBundledWorker = app\.isPackaged/);
 assert.match(text(js), /fetch\('\.\.\/package\.json'\)/);
 assert.match(text(js), /renderSettingsView\(\);[\s\S]{0,220}before\(speakerProfileCard\);[\s\S]{0,120}append\(updateCard\)/);
 assert.match(text(components), /function renderSettingsView\(\)/);
-assert.doesNotMatch(text(electronMain), /ipcMain\.handle\('secret\.get'/);
+assert.doesNotMatch(text(electronMain), /handleIpc\('secret\.get'/);
 assert.match(text(js), /renderSlogan/);
 assert.match(text(app), /refinement\.progress'.*stage.*showRefinementProgress/s);
-assert.match(text(i18nData), /'检查音频': 'Checking audio'/);
-assert.match(text(i18nData), /const refinementStageLabels =/);
+assert.equal(localeContext.window.BreviaLocaleData.catalog.en.labels['检查音频'], 'Checking audio');
+assert.doesNotMatch(text(i18nData), /Object\.assign|catalog\.[a-z]+\.labels\[/, 'locale tables have no runtime overrides');
 for (const locale of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
-  assert.match(text(i18nData), new RegExp(`${locale}: \\{[^}]*'转写中 · 校正说话人'`));
+  assert.ok(localeContext.window.BreviaLocaleData.catalog[locale].labels['转写中 · 校正说话人']);
 }
 assert.match(text(js), /activeLibraryNav === 'recently-deleted' \? BreviaI18n\.trashCopy\(locale\)\.slogan/);
-assert.match(text(js), /if \(name === 'home'\) selectLibraryNav\(activeLibraryNav\)/);
+assert.match(text(js), /if \(activeView === 'home'\) selectLibraryNav\(activeLibraryNav\)/);
 assert.match(text(js), /async function showLibraryNav/);
 assert.match(text(js), /async function transitionPage/);
-assert.match(text(js), /transitionPage\(home, home/);
+assert.match(text(js), /transitionPage\(current, home/);
 assert.match(text(js), /minimizeMeeting/);
 assert.match(text(css), /page-in/);
 assert.match(text(css), /language-out/);
@@ -761,7 +765,7 @@ assert.match(text(js), /showNewWorkspaceDialog\(null, \(workspace\)/);
 assert.match(text(app), /const rect = action\.getBoundingClientRect\(\);\s+closeMeetingMenus\(\);\s+if \(typeof showWorkspaceAssignMenu === 'function'\) \{\s+showWorkspaceAssignMenu\(index, rect\);/);
 assert.match(text(js), /function renderWorkspaceNav/);
 assert.match(text(js), /async function switchWorkspace/);
-assert.match(text(workspaces), /await appActions\.transitionPage\(document\.querySelector\('#home-view'\), document\.querySelector\('#home-view'\), applyWorkspace\)/);
+assert.match(text(workspaces), /await appActions\.transitionPage\([\s\S]*?, applyWorkspace\)/);
 assert.match(text(js), /meeting\.list\(\{ include_deleted: includeDeleted \}\)/);
 assert.doesNotMatch(text(js), /action === 'purge' && window\.brevia/);
 assert.match(text(js), /addEventListener\('pointerdown'/);
@@ -794,8 +798,8 @@ assert.match(text(electronMain), /return current\.success \? current\.data : nul
 assert.doesNotMatch(text(electronMain), /legacySummaryConfig|migrateSummaryConfig/);
 assert.doesNotMatch(text(js), /migrateSummaryConfig|inferSummaryProvider/);
 assert.doesNotMatch(text(electronMain), /ollama/i);
-assert.match(text(electronMain), /ipcMain\.handle\('translation\.generate',[\s\S]{0,700}target_language: z\.string\(\)\.min\(2\)\.max\(16\),[\s\S]{0,100}consent: z\.literal\(true\)/);
-assert.doesNotMatch(text(electronMain), /ipcMain\.handle\('translation\.generate',[\s\S]{0,700}provider: z\.string\(\)/);
+assert.match(text(electronMain), /handleIpc\('translation\.generate',[\s\S]{0,700}target_language: z\.string\(\)\.min\(2\)\.max\(16\),[\s\S]{0,100}consent: z\.literal\(true\)/);
+assert.doesNotMatch(text(electronMain), /handleIpc\('translation\.generate',[\s\S]{0,700}provider: z\.string\(\)/);
 assert.match(text(electronMain), /const startupAnimationMs = 1700;/);
 assert.match(text(electronMain), /const startupDataWaitMs = 2200;/);
 assert.match(text(electronMain), /powerMonitor\.on\('suspend', \(\) => \{ void stopActiveMeetingForSleep\(\); \}\);/);
@@ -980,8 +984,8 @@ assert.match(text(js), /<b class="model-library-headline">\$\{escapeHtml\(model\
 for (const { id, speed, quality } of modelManifest) {
   assert.ok(Number.isInteger(speed) && Number.isInteger(quality), `${id} needs speed/quality for its ratings row`);
 }
-assert.match(text(js), /qualityTiers: \['标准', '高', '极高'\]/);
-assert.match(text(js), /speedTiers: \['较慢', '均衡', '快'\]/);
+assert.deepEqual(Array.from(localeContext.window.BreviaLocaleData.appCopy.modelLibraryMetaCopy.zh.qualityTiers), ['标准', '高', '极高']);
+assert.deepEqual(Array.from(localeContext.window.BreviaLocaleData.appCopy.modelLibraryMetaCopy.zh.speedTiers), ['较慢', '均衡', '快']);
 assert.doesNotMatch(text(html), /id="active-model-name"/);
 assert.doesNotMatch(text(js), /createElement\('select'\)/);
 assert.match(text(logo), /<svg/);
@@ -1081,9 +1085,9 @@ assert.match(text(html), /live-caption-controls[^]*floating-caption-toggle[^]*tr
 assert.match(text(app), /enabled \? '翻译：开' : '翻译：关'/, 'live translation toggle uses the current Chinese label');
 assert.doesNotMatch(text(html), /data-meeting-power-saving/);
 assert.match(text(html), /live-status[\s\S]*recording[\s\S]*id="timer"/);
-assert.match(text(i18nData), /captionButtonLabels/);
-assert.match(text(i18nData), /workspaceButtonLabels/);
-assert.match(text(i18nData), /translationToggleLabels/);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.en.labels['字幕：开']);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.en.labels['新建工作区']);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.en.labels['翻译']);
 assert.match(text(js), /function renderFloatingCaptionToggle\(\)/);
 assert.doesNotMatch(text(js), /floatingCaptionEnabled/);
 const captionModeSource = text(app).match(/function nextFloatingCaptionMode\(mode\) \{[^\n]+\}/)?.[0];
@@ -1171,6 +1175,9 @@ assert.match(text(js), /const collapsed = workspaceNav\.classList\.toggle\('is-c
 assert.match(text(js), /content: 'notes'/);
 // 统一「导出与分享」面板:内容勾选 + 每项格式 + 导出文件 + 分享到。
 assert.match(text(js), /function exportHubHtml/);
+assert.match(text(js), /audio: 'wav'/, 'recording exports use the saved WAV format');
+assert.match(text(js), /content === 'audio' \? '<span class="export-format-fixed">WAV<\/span>'/, 'recordings do not show a format picker');
+assert.doesNotMatch(text(js), /audio: \['m4a', 'wav', 'flac'\]/);
 assert.match(text(js), /function updateExportBuilderState/);
 assert.match(text(js), /function runExportBundle/);
 assert.match(text(js), /data-export-item/);
@@ -1194,7 +1201,7 @@ assert.match(text(preload), /exportBundle: invoke\('meeting\.export-bundle'\)/);
 assert.match(text(preload), /platform: process\.platform/);
 assert.match(text(electronMain), /new ShareMenu\(sharingItem\)\.popup/);
 assert.match(text(electronMain), /System share is only available on macOS/);
-assert.match(text(electronMain), /ipcMain\.handle\('meeting\.export-bundle'/);
+assert.match(text(electronMain), /handleIpc\('meeting\.export-bundle'/);
 assert.match(text(electronMain), /filename_prefix: z\.string\(\)\.max\(60\)\.optional\(\)/);
 // 详情页「转发」改为打开分享面板,不再直接打包。
 assert.doesNotMatch(text(js), /data-share-detail'\)\.addEventListener\('click', async/);
@@ -1214,8 +1221,8 @@ assert.match(text(electronMain), /meeting\.bundle/);
 assert.match(text(electronMain), /error\.code === 'ENOENT'/);
 assert.match(text(electronMain), /configuration_required: true/);
 assert.match(text(electronMain), /summary\.config\.save/);
-assert.match(text(js), /当前会议暂无逐字稿内容，请先完成转写后再生成会议纪要/);
-assert.match(text(js), /This meeting has no transcript yet/);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.zh.labels['error.summary.no_transcript']);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.en.labels['error.summary.no_transcript']);
 assert.doesNotMatch(text(js), /const modelSizes/);
 assert.match(text(js), /const modelSize = \(modelId\) => modelCatalog\.find/);
 
@@ -1582,12 +1589,13 @@ const DARK_AGNOSTIC = {
 const COMPONENT_COLOR = /(?:text|bg|border|from|to|via)-\[#[0-9a-fA-F]+\]|text-(?:black|white|red|green)|bg-(?:black|white|red|green)|border-(?:black|white|red|green)/;
 const componentLayerStart = text(tailwind).indexOf('@layer components');
 const componentLayerBody = (() => {
+  const source = text(tailwind);
   let depth = 0;
-  for (let index = componentLayerStart; index < text(tailwind).length; index += 1) {
-    if (text(tailwind)[index] === '{') depth += 1;
-    else if (text(tailwind)[index] === '}') {
+  for (let index = componentLayerStart; index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1;
+    else if (source[index] === '}') {
       depth -= 1;
-      if (depth === 0) return text(tailwind).slice(text(tailwind).indexOf('{', componentLayerStart) + 1, index);
+      if (depth === 0) return source.slice(source.indexOf('{', componentLayerStart) + 1, index);
     }
   }
   return '';
@@ -1661,7 +1669,7 @@ assert.match(text(backendClient), /await this\.capture\.prepare\(inputs\)[\s\S]*
 assert.match(text(backendClient), /系统音频.*未产生音频数据/);
 assert.match(text(backendClient), /this\.state\.meeting\?\.id \|\| this\.capture\?\.meetingId/);
 assert.match(text(backendClient), /await this\.capture\.stop\(\)/);
-assert.match(text(electronMain), /ipcMain\.handle\('permissions\.status'/);
+assert.match(text(electronMain), /handleIpc\('permissions\.status'/);
 assert.match(text(electronMain), /systemPreferences\.askForMediaAccess\('microphone'\)/);
 assert.ok(packageManifest.build.mac.extendInfo.NSAudioCaptureUsageDescription);
 assert.ok(packageManifest.build.mac.extendInfo.NSMicrophoneUsageDescription);
@@ -1672,7 +1680,7 @@ assert.match(text(js), /navigator\.mediaDevices\.getUserMedia\(\{ audio: true \}
 assert.match(text(js), /window\.brevia\.permissions\.requestMicrophone\(\)/);
 assert.match(text(js), /window\.brevia\?\.update\?\.check/);
 assert.match(text(js), /window\.brevia\.update\.install/);
-assert.match(text(electronMain), /ipcMain\.handle\('metrics\.record'/);
+assert.match(text(electronMain), /handleIpc\('metrics\.record'/);
 assert.match(text(electronMain), /error\.code === 'EPIPE'/);
 assert.match(text(electronMain), /workerRequestTimeouts = new Map/);
 assert.match(text(electronMain), /Worker request timed out/);
@@ -1681,7 +1689,7 @@ assert.match(text(app), /worker request \|operation \)timed out/);
 assert.match(text(app), /t\('操作超时，请稍后重试'\)/);
 assert.match(text(i18nData), /操作超时，请稍后重试/);
 assert.match(text(electronMain), /clearTimeout\(pending\.timer\)/);
-assert.doesNotMatch(text(electronMain).match(/workerRequestTimeouts = new Map\(\[[\s\S]*?\]\);/)?.[0] || '', /meeting\.(pause|stop)/);
+assert.match(text(electronMain), /'meeting\.stop', 'meeting\.pause'/, 'stop and pause have a long, finite deadline');
 assert.doesNotMatch(text(electronMain).match(/const timer = timeout && setTimeout\([\s\S]*?\}, timeout\);/)?.[0] || '', /stopProcess/);
 assert.match(text(backendClient), /navigator\.mediaDevices\.getDisplayMedia/);
 assert.match(text(backendClient), /systemAudio: 'include'/);
@@ -1777,7 +1785,7 @@ assert.match(text(css), /\.onboarding-setup-page header\{[^}]*justify-items:cent
 assert.match(text(js), /manifestDefaultRefinedModelId\(language\)/);
 assert.doesNotMatch(text(js), /name="onboarding-model-preference"/);
 assert.doesNotMatch(text(css), /\.onboarding-preference-option\{/);
-assert.match(text(i18nData), /const refinementStatusLabels = \{/);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.en.labels['准备精修']);
 assert.match(text(js), /data-onboarding-back-language/);
 assert.match(text(js), /function openOnboardingPermissions/);
 assert.match(text(js), /data-request-onboarding-permission/);
@@ -1833,8 +1841,8 @@ assert.match(text(js), /modelSelection\.defaultRefinedModelId/, '默认模型选
 // 展示的是实时段落、保存查的是精修段落，草稿会整体对不上并被静默丢弃。
 assert.match(
   text(js),
-  /latestTranscriptSegments\(meeting, \{ ignoreRefined: uiData\.detail\.ignoreRefined \}\)/,
-  '保存逐句字幕必须沿用展示时的 ignoreRefined 口径',
+  /latestTranscriptSegments\(meeting\)/,
+  '展示和保存必须使用同一份后端选定的逐字稿',
 );
 assert.match(text(js), /flowSelect\('refined-model', refinedModel, modelOptions\)/);
 assert.match(text(js), /const modelLabel = prepareModelControl\(language, refinedModel, modelOptions\);/);
@@ -1905,7 +1913,7 @@ assert.match(text(js), /await window\.brevia\.meeting\.reconfigure\(\{ meeting_i
 assert.doesNotMatch(text(js), /function setLivePowerSaving\(enabled\)/);
 assert.match(text(js), /const MAX_NOTES_CHARS = 5 \* 1024 \* 1024/);
 assert.doesNotMatch(text(js), /function checkPowerSavingSuggestion\(\)/);
-assert.match(text(js), /纪要生成失败：模型未返回有效内容，请稍后重试。/);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.zh.labels['error.summary.empty_response']);
 assert.doesNotMatch(text(js), /paraformer-zh-en-int8/);
 assert.doesNotMatch(text(uiData), /Streaming Paraformer/);
 for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
@@ -1972,21 +1980,21 @@ assert.match(text(js), /function refinementTitle\(meetingId\)/);
 assert.match(text(js), /refinementTitle\(meeting_id\), meeting_id, stage/);
 assert.match(text(js), /\$\{copy\.title\} - \$\{refinementMeetingTitle\}/);
 assert.match(text(js), /\$\{copy\.waiting\} · \$\{Math\.round\(ratio \* 100\)\}%/);
-assert.match(text(i18nData), /'转写中 · 校正说话人': 'Transcribing · Correcting speakers'/);
+assert.equal(localeContext.window.BreviaLocaleData.catalog.en.labels['转写中 · 校正说话人'], 'Transcribing · Correcting speakers');
 assert.match(text(js), /segment\.version\.startsWith\('postprocess'\)/);
-assert.match(text(js), /playback\.mix \|\| meeting\.audio\.playback\.mic/);
+assert.match(text(meetingDetail), /playback\?\.mix \|\| meeting\?\.audio\?\.playback\?\.mic/);
 assert.match(text(js), /segment\.is-active/);
 assert.match(text(js), /body\.scrollTo/);
 assert.match(text(i18nData), /Aún no se ha generado el resumen/);
 assert.match(text(i18nData), /Speaker diarization/);
 // 更新日志的版本簿记是手动维护的（RELEASING.md §1）：只允许一条 current，且它必须是
 // 列表第一条（版本从新到旧），否则应用内「更新日志」会把上一版标成当前版本。
-assert.equal((text(i18nData).match(/current: true,/g) || []).length, 1, 'whatsNewLog must have exactly one current entry');
-assert.match(
-  text(i18nData),
-  /const whatsNewLog = \[\s*\{\s*version: '\d+\.\d+\.\d+', date: '\d{4}-\d{2}-\d{2}', current: true,/,
-  'the newest whatsNewLog entry must be the current one and carry a date',
-);
+const releaseEntries = localeContext.window.BreviaLocaleData.whatsNewLog;
+assert.equal(releaseEntries.filter((entry) => entry.current).length, 1);
+assert.equal(releaseEntries[0].current, true);
+assert.match(releaseEntries[0].version, /^\d+\.\d+\.\d+$/);
+assert.match(releaseEntries[0].date, /^\d{4}-\d{2}-\d{2}$/);
+
 for (const copy of ['ローカル会議', '로컬 회의', 'Réunion locale', 'Lokale Besprechung', 'Локальная встреча']) assert.match(text(i18nData), new RegExp(copy));
 assert.doesNotMatch(text(css), /\.status\.complete:before/);
 assert.match(text(css), /\.page-head>div\{[^}]*min-height:/);
@@ -2044,6 +2052,7 @@ const summaryContext = {
   structuredClone,
   modelDownloads: new Map(),
   summaryConfigDraft: null,
+  modelConfigSecrets: new WeakMap(),
   onboardingOnlineProvider: false,
   settingsModal: { querySelector: (selector) => summaryNodes[selector] },
 };
@@ -2159,10 +2168,10 @@ assert.match(text(uiData), /modal: 'ai-assist'/);
 assert.match(text(tailwind), /\.ai-assist-toggle/);
 assert.match(text(tailwind), /\.ai-assist-popover/);
 assert.match(text(i18nData), /aiAssistCopy/);
-assert.match(text(i18nData), /aiAssistCopyLocales/);
-assert.match(text(i18nData), /aiAssistRequestLabels/);
-assert.match(text(i18nData), /aiNoteAtomicInstructions/);
-assert.match(text(i18nData), /toggleOn: 'AI 笔记 开'/);
+assert.equal(Object.keys(localeContext.window.BreviaLocaleData.appCopy.aiAssistCopy).length, 8);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.en.labels['暂无字幕可插入']);
+assert.ok(localeContext.window.BreviaLocaleData.aiNotePromptCopy.en.instructions.includes('Return at most one suggestion.'));
+assert.equal(localeContext.window.BreviaLocaleData.appCopy.aiAssistCopy.zh.toggleOn, 'AI 笔记 开');
 assert.deepEqual(Object.keys(localeContext.window.BreviaLocaleData.aiNotePromptCopy), ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']);
 Object.values(localeContext.window.BreviaLocaleData.aiNotePromptCopy).forEach((copy) => {
   assert.ok(copy.instructions.length > 0);
@@ -2182,7 +2191,7 @@ assert.match(text(tailwind), /\.caption-signals/);
 assert.match(text(electronMain), /ai-note\.suggestion/);
 assert.match(text(electronMain), /ai-note\.evidence/);
 assert.match(text(electronMain), /ai-note\.analyzing/);
-assert.match(text(electronMain), /ipcMain\.handle\('ai-note\.start'/);
+assert.match(text(electronMain), /handleIpc\('ai-note\.start'/);
 assert.match(text(preload), /aiNote: \{ start: invoke\('ai-note\.start'\)/);
 assert.match(text(preload), /request: invoke\('ai-note\.request'\)/);
 assert.match(text(workerSession), /self\.ai_note_on_segment\(event\)/);
@@ -2214,7 +2223,7 @@ assert.match(text(tailwind), /\.ai-suggestion-card/);
 assert.match(text(tailwind), /\.ai-topic-divider/);
 assert.match(text(tailwind), /\.ai-suggestion-badge/);
 for (const language of ['en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
-  assert.match(text(i18nData), new RegExp(`catalog\\.${language}\\.labels[\\s\\S]*'暂无字幕可插入'`));
+  assert.ok(localeContext.window.BreviaLocaleData.catalog[language].labels['暂无字幕可插入']);
 }
 // AI 辅助仅保留实时建议，不提供聊天式主动分析。
 assert.doesNotMatch(text(electronMain), /ai-note\.analyze/);
@@ -2223,7 +2232,7 @@ assert.doesNotMatch(text(app), /function organizeNotes|function factCheckNotes|f
 assert.doesNotMatch(text(html), /data-ai-actions|data-ai-action/);
 assert.match(text(html), /class="brand-mark"[^>]*>言/);
 assert.match(text(html), /class="new-meeting-label">开始会议/);
-assert.match(text(app), /classList\.toggle\('is-live-meeting', \(name === 'live' && meetingActive\) \|\| name === 'detail'\)/);
+assert.match(text(app), /classList\.toggle\('is-live-meeting', \(activeView === 'live' && meetingActive\) \|\| activeView === 'detail'\)/);
 assert.match(text(tailwind), /\.app-shell\.is-live-meeting:has\(\.sidebar:hover\)/);
 assert.match(text(tailwind), /\.sidebar:has\(\.task-cards > :not\(\[hidden\]\)\)::after/);
 assert.match(text(tailwind), /--task-progress/);
@@ -2234,7 +2243,7 @@ assert.doesNotMatch(text(app), /bindLiveNoteReference|noteReferenceMarkdown|segm
 assert.doesNotMatch(text(app), /renderLiveNoteReference|liveNoteReference/);
 assert.match(text(meetingDetail), /summaryGeneratingMeetingId === meeting\.id/);
 assert.match(text(components), /const action = editing/);
-assert.match(text(app), /const refresh = window\.brevia \? refreshBackendMeetings\(includeDeleted\) : Promise\.resolve\(\);/);
+assert.match(text(app), /if \(window\.brevia\) await refreshBackendMeetings\(includeDeleted\)/);
 // AI 辅助笔记（阶段 6 Onboarding AI 配置页）。
 assert.match(text(app), /function openOnboardingAi/);
 assert.match(text(app), /function finishAiOnboarding/);
@@ -2254,7 +2263,7 @@ assert.doesNotMatch(text(app), /data-transcript-search/);
 assert.match(text(tailwind), /\.notes-find-pop \{ position: absolute;[^}]*top: 64px;[^}]*width: min\(26rem/, 'find and replace should overlay the editor content instead of taking a row');
 assert.match(text(tailwind), /\.notes-find-pop input \{ min-width: 0; height: 28px;/, 'find and replace inputs should stay compact');
 assert.doesNotMatch(text(components), /selection\.addRange\(range\); editor\.focus\(\);/, 'find highlighting must not move focus from the find input');
-assert.match(text(components), /document\.addEventListener\('pointerdown', closeFindOnOutsidePointer\)/, 'clicking outside closes the find popover');
+assert.match(text(components), /document\.addEventListener\('pointerdown', closeFindOnOutsidePointer, \{ signal: listeners\.signal \}\)/, 'clicking outside closes the find popover');
 assert.match(text(components), /document\.execCommand\(event\.shiftKey \? 'outdent' : 'indent'\)/, 'rich-text lists support nesting');
 assert.match(text(components), /mode-toggle/);
 assert.doesNotMatch(text(components), /mode-rich/);
@@ -2283,7 +2292,7 @@ assert.match(text(components), /data-notes-table-rows/, 'table picker exposes a 
 assert.match(text(components), /data-notes-table-columns/, 'table picker exposes a column count field');
 assert.match(text(components), /data-notes-table-cell="\$\{column \+ 1\}:\$\{row \+ 1\}"/, 'table picker grid reports the hovered size');
 assert.match(text(components), /command === 'table'\) openTablePop\(button\)/, 'the table button opens the size picker');
-assert.match(text(components), /document\.addEventListener\('pointerdown', closeTablePopOnOutsidePointer\)/, 'clicking outside closes the table picker');
+assert.match(text(components), /document\.addEventListener\('pointerdown', closeTablePopOnOutsidePointer, \{ signal: listeners\.signal \}\)/, 'clicking outside closes the table picker');
 assert.match(text(components), /tablePop\.hidden = true;[\s\S]{0,80}\}/, 'switching editor mode closes the table picker');
 assert.match(text(tailwind), /\.notes-table-pop \{[^}]*display: grid/);
 assert.match(text(tailwind), /\.notes-table-grid button\.is-on/);
@@ -2310,7 +2319,7 @@ assert.doesNotMatch(text(components), /command === 'quote'\) document\.execComma
 assert.match(text(components), /block\.tagName\.toLowerCase\(\) === command\) \{ placeCaretAtEnd\(retagBlock\(block, 'p'\)\)/, 'headings can be turned off again');
 assert.match(text(components), /const blocks = \[\.\.\.quote\.children\]\.filter/, 'exiting a quote preserves its inner blocks');
 assert.match(text(components), /function syncToolbarState\(\)/);
-assert.match(text(components), /document\.addEventListener\('selectionchange', syncToolbarState\)/, 'active block formats are reflected on the toolbar');
+assert.match(text(components), /document\.addEventListener\('selectionchange', syncToolbarState, \{ signal: listeners\.signal \}\)/, 'active block formats are reflected on the toolbar');
 assert.match(text(components), /button\.classList\.toggle\('is-active', active\)/);
 assert.doesNotMatch(text(components), /class="jump"/);
 assert.match(text(tailwind), /\.caption-signals \{[^}]*white-space: nowrap; flex: none/);
@@ -2337,10 +2346,10 @@ assert.ok(modelManifest.every((model) => !model.stages.some((stage) => ['streami
 assert.doesNotMatch(text(app), /streamingModelId/);
 assert.match(text(app), /isRefined: true,\s*updateFinalized: true,\s*clearCurrentIfMatch: true/);
 
-// 会议记录里的识别模型已下架时，精修结果作废：按未精修展示实时版本，等用户重新精修。
-assert.match(text(meetingDetail), /const modelRetired = Boolean\(meeting\.refined_model_id\)[\s\S]{0,200}producedBy\.retired/, 'retirement is detected from the manifest retired flag, not from absence');
-assert.match(text(meetingDetail), /latestTranscriptSegments\(meeting, \{ ignoreRefined: modelRetired \}\)/, 'a retired model falls back to the live transcript');
-assert.match(text(meetingDetail), /modelCatalog\.length > 0/, 'the retired check must not fire before the model catalog is loaded');
+// 模型下架不改写或隐藏历史精修；下一次选型与稿件来源分别记录。
+assert.doesNotMatch(text(meetingDetail), /ignoreRefined|modelRetired/);
+assert.match(text(meetingDetail), /refinedModelApplied = meeting\.transcript_model_id/);
+assert.match(text(meetingDetail), /latestTranscriptSegments\(meeting\)/);
 // 判定本身已用合成输入验证（见 app-utils 的行为断言）；这里确认展示模式跟着**模型能力**
 // 分流，而不是跟着数据里有没有时间戳字段走。
 assert.match(text(components), /d\.refinedMode === 'fulltext'/);
@@ -2348,9 +2357,9 @@ assert.match(text(components), /d\.refinedMode === 'timestamps'/);
 assert.match(text(app), /language: uiData\.detail\.language \|\| 'auto',\n\s+\.\.\.\(numSpeakers/, 'refinement sends its own settings without a translation target');
 
 // 进阶设置表单必须覆盖 settings.json 的每个字段，并把两层配置渲染成可保存的路径。
-const advancedContext = { locale: 'zh', escapeHtml: (value) => String(value ?? '') };
+const advancedContext = { window: localeContext.window, locale: 'zh', escapeHtml: (value) => String(value ?? '') };
 runInNewContext(
-  `${summaryConst('const advancedSettingCopy = ', true)}${summaryFn('renderAdvancedSettings')}\nthis.advancedSettingCopy = advancedSettingCopy; this.renderAdvancedSettings = renderAdvancedSettings;`,
+  `${summaryConst('const advancedSettingCopy = ')}${summaryFn('renderAdvancedSettings')}\nthis.advancedSettingCopy = advancedSettingCopy; this.renderAdvancedSettings = renderAdvancedSettings;`,
   advancedContext,
 );
 const advancedSettings = JSON.parse(await readFile('../backend/settings.json', 'utf8'));
@@ -2413,11 +2422,140 @@ assert.match(text(app), /\.\.\.\(modelId \? \{ refined_model_id: modelId \} : \{
 assert.match(text(app), /refineWithSelectedModel\(refineNumSpeakers\(\)\)/);
 assert.match(text(meetingDetail), /refinedModelOptions = refinedModelOptions\(uiData\.detail\.language\)/);
 assert.match(text(meetingDetail), /refinedModelAppliedName/);
-assert.match(text(i18nData), /'识别模型'\] = label/);
+assert.ok(localeContext.window.BreviaLocaleData.catalog.en.labels['识别模型']);
 for (const copy of ['更换精修模型', 'Change refinement model', '精修モデルを変更', '정제 모델 변경',
   '该会议已有逐句修改。用新模型重新精修会按新模型重新分段，这些修改可能无法保留。',
   'Re-refining with a new model re-segments the transcript']) {
   assert.ok(text(i18nData).includes(copy), `missing i18n copy: ${copy}`);
 }
 assert.match(text(css), /\.refine-menu-speakers input:not\(\[type=checkbox\]\):not\(\[type=range\]\):not\(\[type=radio\]\),\.refine-menu-speakers \.flow-select-toggle\{[^}]*height:32px/);
-console.log('UI structure checks passed.');
+const navigationWaits = [];
+const viewNode = (id) => {
+  const classes = new Set(['active']);
+  return { id, classList: { contains: (name) => classes.has(name), add: (...names) => names.forEach((name) => classes.add(name)), remove: (...names) => names.forEach((name) => classes.delete(name)) } };
+};
+const viewA = viewNode('a-view'), viewB = viewNode('b-view'), viewC = viewNode('c-view');
+let visibleView = viewA;
+const navigationContext = {
+  pageTransition: null,
+  activeView: 'a', breviaClient: null,
+  document: { querySelector: (selector) => selector === '.view.active' ? visibleView : { classList: { toggle() {} } }, querySelectorAll: () => [] },
+  meetingActive: false, crumb: {}, prepareView: { dataset: {} }, t: (value) => value,
+  locale: 'en', catalog: { en: { views: { a: 'A', b: 'B', c: 'C' } } },
+  activeLibraryNav: 'all-meetings', selectLibraryNav() {}, resetDetailHeaderCollapse() {}, renderMiniPlayback() {},
+  matchMedia: () => ({ matches: false }),
+  window: { setTimeout: (callback) => navigationWaits.push(callback), scrollTo() {} },
+};
+runInNewContext(`async ${summaryFn('transitionPage')}`, navigationContext);
+const firstNavigation = navigationContext.transitionPage(viewA, viewB, () => { visibleView = viewB; });
+const secondNavigation = navigationContext.transitionPage(viewA, viewC, () => { visibleView = viewC; });
+navigationWaits.shift()();
+await firstNavigation;
+await Promise.resolve();
+navigationWaits.shift()();
+await secondNavigation;
+assert.equal(visibleView, viewC, 'the last navigation runs after the current transition');
+assert.equal(navigationContext.activeView, 'c', 'all transition callers update the same active view state');
+assert.ok(!viewA.classList.contains('active') && !viewB.classList.contains('active') && viewC.classList.contains('active'));
+
+const liveElement = () => ({ classList: { add() {}, remove() {} }, setAttribute() {}, removeAttribute() {}, querySelector: () => null, replaceWith() {}, remove() {} });
+const liveCacheContext = {
+  liveSegments: new Map(), liveSegmentData: new Map(), maxLiveSegments: 500,
+  followLiveTranscript: false, isAtLiveBottom: () => false,
+  formatMeetingTime: () => '', formatSpeakerName: summaryContext.formatSpeakerName, t: (value) => value,
+  floatingCaptionMode: null, latestLiveSegmentId: null,
+  document: { createElement: () => ({ content: { firstElementChild: liveElement() } }) },
+  renderTranscriptSegment: () => '', transcript: { querySelectorAll: () => [], insertBefore() {} },
+};
+const liveRenderStart = summaryAppSource.indexOf('  const renderLiveEvent = (payload) => {');
+runInNewContext(summaryAppSource.slice(liveRenderStart, summaryAppSource.indexOf("  for (const type of ['meeting.started'", liveRenderStart)) + '\nthis.renderLiveEvent = renderLiveEvent;', liveCacheContext);
+for (let index = 0; index < 505; index++) liveCacheContext.renderLiveEvent({ segment_id: `s${index}`, revision: 1, speaker: 'spk-1', start_ms: index, end_ms: index + 1, text: 'test' });
+assert.equal(liveCacheContext.liveSegments.size, 500);
+assert.equal(liveCacheContext.liveSegmentData.size, 500, 'deduplication revisions share the bounded segment cache');
+liveCacheContext.renderLiveEvent({ segment_id: 's504', revision: 1, speaker: 'spk-1', text: 'duplicate' });
+assert.equal(liveCacheContext.liveSegmentData.get('s504').text, 'test', 'repeated revisions cannot overwrite a retained segment');
+liveCacheContext.renderLiveEvent({ segment_id: 'missing-speaker', revision: 1, speaker: null, start_ms: 505, end_ms: 506, text: 'valid caption' });
+assert.equal(liveCacheContext.liveSegmentData.get('missing-speaker').text, 'valid caption');
+assert.doesNotMatch(summaryAppSource, /liveSegmentRevisions/, 'there is no second unbounded revision cache');
+
+// A slow worker cannot retain an unbounded stream or prevent microphone release.
+let releaseSlowAudio, captureError, releasedTracks = 0, releasedContexts = 0;
+const boundedCapture = new mediaContext.AudioCapture(() => new Promise((resolve) => { releaseSlowAudio = resolve; }), () => {}, (error) => { captureError = error; });
+boundedCapture.meetingId = 'bounded';
+const boundedResource = { track: 'mic', stream: { getAudioTracks: () => [{ readyState: 'live', stop() { releasedTracks += 1; } }], getVideoTracks: () => [] }, context: { state: 'running', async close() { releasedContexts += 1; } }, pending: () => boundedResource.inFlight };
+boundedCapture.sources = [boundedResource];
+boundedCapture.enqueue(boundedResource, new Int16Array(8192), 0);
+for (let frame = 0; frame < 100; frame += 1) boundedCapture.enqueue(boundedResource, new Int16Array(8192), frame * 512);
+assert.equal(captureError.message, 'error.audio_backpressure');
+assert.ok(boundedResource.pendingSamples <= 16000 * 15 + 8192);
+const stoppedSlowCapture = boundedCapture.stop();
+await new Promise(setImmediate);
+assert.ok(releasedTracks > 0 && releasedContexts === 1, 'device resources are released before the pending worker request');
+releaseSlowAudio();
+await new Promise(setImmediate);
+releaseSlowAudio();
+await stoppedSlowCapture;
+for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
+  const data = localeContext.window.BreviaLocaleData;
+  assert.ok(data.appCopy.summaryModelCopy[code].featureIntro);
+  if (code !== 'en') for (const key of ['译文: 开', '已完成精修', '说话人', '悬浮字幕：开', '精修字稿']) assert.notEqual(data.catalog[code].labels[key], data.catalog.en.labels[key]);
+  assert.ok(data.appCopy.aiOnboardingCopy[code].proactivityHint);
+  for (const key of ['error.audio_backpressure', 'error.worker_exited', 'error.worker_recovery', 'error.storage_recovery', 'error.storage_recovery_hint', 'error.storage_unavailable']) assert.ok(data.catalog[code].labels[key]);
+}
+const editsContext = { currentMeetingDetail: { segments: [{ version: 'live', user_edited: 1 }] } };
+runInNewContext(summaryFn('meetingHasUserEdits'), editsContext);
+assert.equal(editsContext.meetingHasUserEdits(), true, 'edited live segments must warn before refinement');
+editsContext.currentMeetingDetail.segments[0].user_edited = 0;
+assert.equal(editsContext.meetingHasUserEdits(), false);
+
+
+const clientStopContext = { window: { brevia: { meeting: { stop: async () => { throw new Error('offline'); } } } }, navigator: {}, console };
+runInNewContext(text(backendClient), clientStopContext);
+const stoppingClient = clientStopContext.window.breviaClient;
+stoppingClient.state.meeting = { id: 'retryable' };
+stoppingClient.state.inputs = { mic: true };
+stoppingClient.capture = { async stop() {} };
+await assert.rejects(stoppingClient.stop(100), /offline/);
+assert.equal(stoppingClient.state.meeting.id, 'retryable', 'backend stop failure must keep the meeting ID for retry');
+clientStopContext.window.brevia.meeting.stop = async () => ({ id: 'retryable' });
+await stoppingClient.stop(100);
+assert.equal(stoppingClient.state.meeting, null);
+const batchContext = { window: { brevia: { meeting: {} } }, uiData: { meetings: [] }, clearMeetingSelection() {}, renderMeetingList() {} };
+runInNewContext(`async ${summaryFn('mutateMeetings')}`, batchContext);
+let runningMutations = 0;
+const deletedMeetings = [];
+batchContext.window.brevia.meeting.delete = async ({ meeting_id }) => {
+  assert.equal(runningMutations++, 0, 'destructive IPC requests must be sequential');
+  await new Promise(setImmediate);
+  runningMutations--;
+  if (meeting_id === 'failed') throw new Error('disk disconnected');
+  deletedMeetings.push(meeting_id);
+};
+const batchMeetings = Array.from({ length: 6 }, (_, id) => ({ id: String(id) }));
+batchContext.uiData.meetings = [...batchMeetings];
+await batchContext.mutateMeetings('delete', batchMeetings);
+assert.equal(deletedMeetings.length, 6);
+assert.equal(batchContext.uiData.meetings.length, 0);
+batchContext.uiData.meetings = [{ id: 'done' }, { id: 'failed' }, { id: 'remaining' }];
+await assert.rejects(batchContext.mutateMeetings('delete', [...batchContext.uiData.meetings]), /disk disconnected/);
+assert.equal(batchContext.uiData.meetings.map(({ id }) => id).join(','), 'failed,remaining');
+for (const [code, data] of Object.entries(localeContext.window.BreviaLocaleData.catalog)) {
+  const errors = { t: (key) => data.labels[key] || key, MODEL_DOWNLOAD_FAILURES: [] };
+  runInNewContext(summaryFn('userFacingError'), errors);
+  for (const key of ['error.tasks.running', 'error.voice_sample_owned', 'error.worker_exited', 'error.audio_too_long']) {
+    assert.notEqual(errors.userFacingError(`Operation: ${key}`), `Operation: ${key}`, `${code}: prefixed errors must be translated`);
+    assert.equal(errors.userFacingError(`Operation: ${key}`), `Operation: ${data.labels[key]}`);
+  }
+  assert.equal(errors.userFacingError('Details: error.unknown_code'), 'Details: error.unknown_code');
+}
+const onboardingClasses = new Set();
+let onboardingNext = 0, onboardingTimer;
+const dismissal = { onboardingPage: { classList: { contains: (name) => onboardingClasses.has(name), remove: (name) => onboardingClasses.delete(name), add: (name) => onboardingClasses.add(name) }, remove() {} }, onboardingAiDemoTimer: null, clearInterval() {}, breviaClient: null, fitTourWindow() {}, window: { removeEventListener() {}, setTimeout(callback) { onboardingTimer = callback; } } };
+runInNewContext(summaryFn('dismissOnboardingPage'), dismissal);
+dismissal.dismissOnboardingPage(() => onboardingNext++);
+dismissal.dismissOnboardingPage(() => onboardingNext++);
+onboardingTimer();
+assert.equal(onboardingNext, 1, 'repeated clicks must not create duplicate onboarding pages');
+dismissal.dismissOnboardingPage(() => onboardingNext++);
+assert.equal(onboardingNext, 1);
+console.log('UI structure and behavior checks passed.');

@@ -54,6 +54,12 @@ class LlamaSidecar:
         if self.model and self.model_path == path and self.context_size == context_size:
             return
 
+        # 先释放旧模型，避免 AI 笔记与纪要切换上下文时同时占用两份模型/显存。
+        if self.model:
+            previous, self.model = self.model, None
+            self.model_path = None
+            previous.close()
+
         # 检测 GPU 层数
         n_gpu_layers = self._detect_gpu_layers()
         cpu_threads = self._cpu_threads() if n_gpu_layers == 0 else None

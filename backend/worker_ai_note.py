@@ -52,10 +52,6 @@ _ACTION_WORDS = (
     "下一步", "负责", "跟进", "待办", "行动", "分配", "安排", "落实",
     "action", "todo", "assigned", "owner", "due", "follow up", "follow-up",
 )
-_RISK_WORDS = (
-    "风险", "隐患", "担心", "可能出", "风险点", "瓶颈", "挑战", "困难",
-    "risk", "blocker", "blocked", "concern", "issue", "challenge",
-)
 _QUESTION_WORDS = ("?", "？", "怎么", "为什么", "是否", "什么时候", "多少", "能不能", "何时", "如何", "how", "why", "when", "whether")
 _TOPIC_MARKERS = (
     "接下来", "我们换", "下一个议题", "回到", "先看", "现在讨论", "下一个", "下面",
@@ -161,6 +157,7 @@ class _AiNoteSession:
         self.cond = threading.Condition()
         self.stopped = False
         self.running = False
+        self.cancellation = threading.Event()
         self.generation = 0            # 仅在取消/停止时递增：让在飞结果过期
         self.content_version = 0       # 新内容版本号（每段字幕/停笔 +1）
         self.analyzed_version = 0      # 已覆盖的内容版本（分析开始时快照）
@@ -238,7 +235,7 @@ class AiNoteWorkerMixin:
         if not session:
             return {"ok": False}
         typing = bool(payload.get("typing"))
-        cancel_inflight = False
+        cancellation = None
         with session.cond:
             session.user_typing = typing
             if payload.get("notes") is not None:
@@ -248,12 +245,14 @@ class AiNoteWorkerMixin:
                 session.generation += 1
                 # 仅在确有在飞推理时杀掉 sidecar；空闲但已加载模型的进程保留，
                 # 避免每敲一次键都触发 GGUF 冷启动（CPU 上重载需数秒到数十秒）。
-                cancel_inflight = session.running
+                if session.running:
+                    cancellation = session.cancellation
+                    cancellation.set()
                 session.cond.notify_all()
             else:
                 session.cond.notify_all()
-        if cancel_inflight:
-            self.cancel_sidecar(ASSISTANT_SIDECAR)
+        if cancellation is not None:
+            self.cancel_sidecar(ASSISTANT_SIDECAR, cancellation)
         return {"ok": True}
 
     def ai_note_request(self, payload):
@@ -345,10 +344,12 @@ class AiNoteWorkerMixin:
         with session.cond:
             session.stopped = True
             session.generation += 1
-            running = session.running
+            cancellation = session.cancellation if session.running else None
+            if cancellation is not None:
+                cancellation.set()
             session.cond.notify_all()
-        if running:
-            self.cancel_sidecar(ASSISTANT_SIDECAR)
+        if cancellation is not None:
+            self.cancel_sidecar(ASSISTANT_SIDECAR, cancellation)
 
     def _scheduler_loop(self, session):
         """单飞去抖调度：一次只运行一个推理，新内容合并到下一轮，绝不打断在飞任务。"""
@@ -362,6 +363,7 @@ class AiNoteWorkerMixin:
                 task_version = session.content_version
                 task_pending_chars = session.pending_chars
                 session.running = True
+                session.cancellation = threading.Event()
                 if session.proactivity == "quiet":
                     session.typing_trigger = False
             try:
@@ -538,7 +540,7 @@ class AiNoteWorkerMixin:
         """把补全路由到内置 ``ai-note`` sidecar 或共享 HTTP 客户端。"""
         payload = session.connection
         if (payload.get("provider") or "").lower() in {"built-in", "builtin"}:
-            return self.llama_generate_realtime(payload["model"], prompt)
+            return self.llama_generate_realtime(payload["model"], prompt, cancellation=session.cancellation)
         return self.llm_complete(
             {**payload, "timeout": int(REALTIME_TIMEOUT_SECONDS)},
             prompt,

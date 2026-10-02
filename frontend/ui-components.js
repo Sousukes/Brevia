@@ -262,8 +262,9 @@ function placeCaretAtEnd(element) {
 /** 创建所见即所得 Markdown 笔记编辑器（富文本默认，可切 Markdown 源码），live 视图与详情页共用。
  * @param {HTMLElement} root 容器，编辑器 DOM 将追加到其中。
  * @param {{onInput?: Function, ariaLabel?: string, getMeetingId?: Function}} options 输入回调、编辑器标签与图片归属会议。
- * @returns {{setMarkdown: Function, getMarkdown: Function, setMode: Function, focus: Function}} 编辑器 API。 */
+ * @returns {{setMarkdown: Function, getMarkdown: Function, setMode: Function, focus: Function, destroy: Function}} 编辑器 API。 */
 function createNotesEditor(root, options = {}) {
+  const listeners = new AbortController();
   const { onInput = null, ariaLabel = t('我的笔记'), getMeetingId = () => null } = options;
   const toolbarButtons = [
     ['bold', '加粗', '<b>B</b>'],
@@ -481,7 +482,7 @@ function createNotesEditor(root, options = {}) {
       if (active) button.setAttribute('aria-pressed', 'true'); else button.removeAttribute('aria-pressed');
     });
   }
-  document.addEventListener('selectionchange', syncToolbarState);
+  document.addEventListener('selectionchange', syncToolbarState, { signal: listeners.signal });
   toolbar.addEventListener('mousedown', (event) => event.preventDefault());
   toolbar.addEventListener('click', (event) => {
     const button = event.target.closest('[data-notes-command]');
@@ -585,16 +586,14 @@ function createNotesEditor(root, options = {}) {
   findInput.addEventListener('input', () => { findMatchIndex = -1; selectFindMatch(1); });
   findInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); selectFindMatch(event.shiftKey ? -1 : 1); } if (event.key === 'Escape') findPop.hidden = true; });
   const closeFindOnOutsidePointer = (event) => {
-    if (!findPop.isConnected) { document.removeEventListener('pointerdown', closeFindOnOutsidePointer); return; }
     if (!findPop.hidden && !findPop.contains(event.target)) findPop.hidden = true;
   };
-  document.addEventListener('pointerdown', closeFindOnOutsidePointer);
+  document.addEventListener('pointerdown', closeFindOnOutsidePointer, { signal: listeners.signal });
   // 点击工具栏以外的任何位置都收起行列选择器，避免弹窗停留在编辑器上。
   const closeTablePopOnOutsidePointer = (event) => {
-    if (!tablePop.isConnected) { document.removeEventListener('pointerdown', closeTablePopOnOutsidePointer); return; }
     if (!tablePop.hidden && !tablePop.contains(event.target) && !toolbar.contains(event.target)) closeTablePop();
   };
-  document.addEventListener('pointerdown', closeTablePopOnOutsidePointer);
+  document.addEventListener('pointerdown', closeTablePopOnOutsidePointer, { signal: listeners.signal });
   [editor, input].forEach((surface) => surface.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); openFind(); }
     // 光标仍留在编辑器里时，Esc 也要能收起行列选择器。
@@ -639,6 +638,7 @@ function createNotesEditor(root, options = {}) {
   });
   input.addEventListener('input', () => { if (onInput) onInput(); });
   return {
+    destroy() { listeners.abort(); },
     setMarkdown(markdown) {
       const text = String(markdown || '');
       input.value = text;
@@ -724,8 +724,8 @@ function renderMarkdown(markdown) {
       const rendered = renderList(index);
       html.push(rendered.html); index = rendered.index; continue;
     }
-    const paragraph = [];
-    while (index < lines.length && lines[index].trim() && !/^(#{1,3}\s+|\||[-*]\s*(?:\[[ xX]\]\s*|\s)|\d+\.\s+|>\s?|---|\*\*\*|___)/.test(lines[index])) paragraph.push(lines[index++]);
+    const paragraph = [lines[index++]];
+    while (index < lines.length && lines[index].trim() && !/^(#{1,3}\s+|\||[-*]\s*(?:\[[ xX]\]\s*|\s)|\d+\.\s+|>\s?)/.test(lines[index]) && !/^(---|\*\*\*|___)\s*$/.test(lines[index])) paragraph.push(lines[index++]);
     html.push(`<p>${inline(paragraph.join(' '))}</p>`);
   }
   return html.join('');
@@ -805,6 +805,11 @@ function renderDetailTabbar() {
 /** 刷新选定会议的逐字稿、笔记和摘要面板。@returns {void} */
 function renderMeetingDetail() {
   const d = uiData.detail;
+  const notesMode = detailNotesEditor?.getMode();
+  const summaryMode = inlineSummaryEditor?.getMode();
+  detailNotesEditor?.destroy();
+  inlineSummaryEditor?.destroy();
+  detailNotesEditor = inlineSummaryEditor = null;
   const notesPanel = d.notesEditing
     ? `<div class="detail-notes-edit"><div data-detail-notes-root></div></div>`
     : `<div class="detail-notes-view">${d.notes && String(d.notes).trim() ? `<div class="detail-notes-content markdown-content">${renderMarkdown(d.notes)}</div>` : `<p class="detail-notes-empty">${t('会议中没有记录笔记。')}</p>`}</div>`;
@@ -835,7 +840,8 @@ function renderMeetingDetail() {
   if (d.notesEditing) {
     const root = document.querySelector('[data-detail-notes-root]');
     if (root) {
-      detailNotesEditor = createNotesEditor(root, { onInput: (...args) => appActions.scheduleDetailNotesSave(...args), getMeetingId: () => currentMeetingDetail?.id });
+      detailNotesEditor = createNotesEditor(root, { onInput: (...args) => appActions.updateDetailNotesDraft(...args), getMeetingId: () => currentMeetingDetail?.id });
+      if (notesMode) detailNotesEditor.setMode(notesMode);
       detailNotesEditor.setMarkdown(d.notes);
       detailNotesEditor.focus();
     }
@@ -844,8 +850,12 @@ function renderMeetingDetail() {
   if (d.summaryEditing) {
     const root = document.querySelector('[data-inline-summary-editor]');
     if (root) {
-      inlineSummaryEditor = createNotesEditor(root, { ariaLabel: t('会议纪要'), getMeetingId: () => currentMeetingDetail?.id });
-      inlineSummaryEditor.setMarkdown(d.summary.markdown);
+      inlineSummaryEditor = createNotesEditor(root, {
+        ariaLabel: t('会议纪要'), getMeetingId: () => currentMeetingDetail?.id,
+        onInput: () => { d.summaryDraft = inlineSummaryEditor.getMarkdown(); },
+      });
+      if (summaryMode) inlineSummaryEditor.setMode(summaryMode);
+      inlineSummaryEditor.setMarkdown(d.summaryDraft ?? d.summary.markdown);
       inlineSummaryEditor.focus();
     }
   }

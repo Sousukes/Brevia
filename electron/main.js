@@ -1,15 +1,35 @@
 const { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, Menu, powerMonitor, protocol, screen, session, ShareMenu, shell, systemPreferences } = require('electron');
 const { execFile, spawn } = require('node:child_process');
-const { appendFile, copyFile, mkdir, readFile, rename, rm, writeFile } = require('node:fs/promises');
-const zlib = require('node:zlib');
+const { appendFile, copyFile, mkdir, readFile, rm, writeFile } = require('node:fs/promises');
 const { existsSync } = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { fileURLToPath, pathToFileURL } = require('node:url');
 const { randomUUID } = require('node:crypto');
 const { z } = require('zod');
-const { configureMacUpdater, createDisplayMediaHandler, isNewerVersion, registerScreenPermission, requiredModelsFrom, systemAudioSupported, workerError } = require('./main-logic');
+const { audioFileURL, configureMacUpdater, createDisplayMediaHandler, isNewerVersion, migrateLegacyData, registerScreenPermission, requiredModelsFrom, systemAudioSupported, workerError, writeAtomicFile } = require('./main-logic');
 const { applyPendingMove, currentDirectory, recordingsDirectory, setFirstRunDirectories } = require('./model-location');
+
+// Electron 不保留跨 IPC 抛出的 Error 自定义字段；使用统一的可序列化错误结果。
+function handleIpc(channel, callback) {
+  ipcMain.handle(channel, async (...args) => {
+    try {
+      const event = args[0];
+      const frame = event?.senderFrame;
+      const mainPage = pathToFileURL(path.join(packagedRoot, 'frontend', 'index.html')).href;
+      const captionPage = pathToFileURL(path.join(packagedRoot, 'frontend', 'floating-caption.html')).href;
+      const page = frame?.url?.split(/[?#]/)[0];
+      if (!frame || frame !== event.sender.mainFrame || !(page === mainPage || (page === captionPage && ['floating-caption.close', 'floating-caption.move'].includes(channel)))) throw new Error('Untrusted IPC sender');
+      return await callback(...args);
+    }
+    catch (error) {
+      writeLog('ERROR', `${channel}: ${logText(error)}`);
+      const code = String(error.code || '').startsWith('error.') ? error.code
+        : /Worker request timed out/.test(error.message) ? 'error.timeout' : 'error.operation_failed';
+      return { __brevia_error: { code, detail: error.message } };
+    }
+  });
+}
 
 const benchmarkRefinement = process.argv.includes('--bench-refinement');
 const commandArgument = (name, fallback = null) => {
@@ -33,37 +53,28 @@ app.on('second-instance', () => {
 
 const root = path.join(__dirname, '..');
 const packagedRoot = app.isPackaged ? process.resourcesPath : root;
+const { catalog } = require(path.join(packagedRoot, 'frontend', 'i18n-data.js'));
+const mainText = (key) => (catalog[app.getLocale().split('-')[0]] || catalog.en).labels[key] || key;
 const startupAnimationMs = 1700;
 const startupDataWaitMs = 2200;
 // 单行 JSON 消息上限：长会议逐字稿（含逐词时间戳）可能达到数十 MB；
 // 8 MB 会在长时间录制/导入的会议请求时截断消息，64 MB 留足余量。
 const workerLineLimit = 64 * 1024 * 1024;
+// 兼容 UTF-8 笔记与 JSON 转义后的最大文本，并保留命令元数据空间。
+const maximumCommandBytes = 32 * 1024 * 1024;
+const dataTaskCommands = new Set(['meeting.start', 'meeting.resume', 'meeting.import', 'meeting.refine', 'summary.generate', 'translation.generate', 'meeting.export', 'meeting.bundle', 'meeting.bundle-files', 'speaker-profile.enroll', 'speaker-profile.verify', 'speaker.rename', 'segment.speaker', 'segment.speaker-profile-sample', 'models.download']);
 const workerRequestTimeouts = new Map([
   ['meeting.audio', 15000],
   ['meeting.get', 15000],
   ['models.download', 15000], ['models.pause', 15000], ['models.cancel', 15000],
   ['task.pause', 15000], ['task.resume', 15000], ['task.cancel', 15000],
+  ['app.initialize', 180000], ['meeting.start', 180000], ['meeting.resume', 180000], ['meeting.reconfigure', 180000],
+  ['summary.generate', 900000],
+  // 精修和纪要收到自己的进度事件时续期；长任务仍有有限的无响应期限。
+  ...['meeting.refine', 'translation.generate', 'meeting.import', 'meeting.stop', 'meeting.pause',
+    'meeting.export', 'meeting.bundle', 'meeting.bundle-files', 'speaker-profile.enroll', 'speaker-profile.verify', 'speaker.rename',
+    'segment.speaker', 'segment.speaker-profile-sample'].map((type) => [type, 600000]),
 ]);
-// 这些命令在 worker 的后台线程里执行，可能持续数分钟（精修、导入、纪要、翻译、导出），
-// 或需要排空识别队列 / 冷加载模型（stop、start、resume）。它们必须豁免默认超时，
-// 否则正常的长任务会被误杀。
-const longRunningCommands = new Set([
-  'meeting.start',
-  'meeting.resume',
-  'meeting.stop',
-  'meeting.refine',
-  'meeting.import',
-  'meeting.export',
-  'meeting.bundle',
-  'meeting.purge',
-  'summary.generate',
-  'translation.generate',
-  'storage.clear',
-  'storage.cleanup',
-]);
-// 其余命令都应在一分钟内返回。给它们兜底超时，避免 worker 存活但无响应（原生调用
-// 卡死、DB 锁等）时 ipcRenderer.invoke 永久 pending、pending 条目泄漏。
-const defaultWorkerRequestTimeout = 60 * 1000;
 const resetOnboarding = process.argv.includes('--reset-onboarding');
 const dataDir = () => process.env.BREVIA_DATA_DIR || path.join(app.getPath('home'), 'brevia');
 const modelsDir = () => currentDirectory(dataDir(), process.env.BREVIA_MODELS_DIR);
@@ -89,6 +100,7 @@ const writeLog = (level, value) => {
   const line = `${new Date().toISOString()} [${level}] ${logText(value).trim()}\n`;
   void mkdir(logsDir(), { recursive: true }).then(() => appendFile(logFile(), line, 'utf8')).catch((error) => console.error('Log write failed', error));
 };
+const stoppingProcessGroups = new Set();
 const stopProcess = (child, graceMs = 5000) => {
   if (!child?.pid) return;
   if (process.platform === 'win32') {
@@ -98,29 +110,23 @@ const stopProcess = (child, graceMs = 5000) => {
   // 已退出的进程不要再按 pid 杀进程组：pid 可能已被系统复用，会误杀同组进程。
   if (child.exitCode !== null || child.signalCode) return;
   // 杀掉整个进程组：worker 会派生 ffmpeg 与 llama sidecar，只 SIGTERM 父进程会留下孤儿进程。
+  stoppingProcessGroups.add(child.pid);
   try { process.kill(-child.pid, 'SIGTERM'); }
   catch { try { child.kill(); } catch { /* 进程可能已退出。 */ } }
   // worker 忽略 SIGTERM 时会残留孤儿进程：给一个宽限期后升级为 SIGKILL。
   const escalation = setTimeout(() => {
-    if (child.exitCode !== null || child.signalCode) return;
+    if (!stoppingProcessGroups.delete(child.pid)) return;
     try { process.kill(-child.pid, 'SIGKILL'); }
-    catch { try { child.kill('SIGKILL'); } catch { /* 已退出。 */ } }
+    catch { if (child.exitCode === null && !child.signalCode) { try { child.kill('SIGKILL'); } catch { /* 已退出。 */ } } }
   }, graceMs);
   escalation.unref?.();
-  child.once('exit', () => clearTimeout(escalation));
 };
 let storageMigrationInProgress = false;
 const migrateDataDir = async () => {
   if (process.env.BREVIA_DATA_DIR) return;
-  const source = legacyDataDir();
-  if (!existsSync(source) || existsSync(path.join(dataDir(), 'brevia.db'))) return;
-  await mkdir(dataDir(), { recursive: true });
-  for (const name of ['advanced-settings.json', 'brevia.db', 'brevia.db-shm', 'brevia.db-wal', 'meetings', 'models', 'models-location.json', 'speaker-profiles', 'summary-models.json', 'secrets', 'logs']) {
-    const from = path.join(source, name);
-    const to = path.join(dataDir(), name);
-    if (!existsSync(from) || existsSync(to)) continue;
-    await rename(from, to);
-  }
+  // 先完成旧根目录中已经确认的迁移，避免遗留清理标记指向即将搬走的源。
+  if (existsSync(path.join(legacyDataDir(), 'brevia.db')) && !existsSync(path.join(dataDir(), 'brevia.db'))) await applyPendingMove(legacyDataDir());
+  await migrateLegacyData(legacyDataDir(), dataDir());
 };
 app.setAppLogsPath(logsDir());
 const command = z.object({ type: z.string().min(1), payload: z.record(z.string(), z.unknown()).default({}) });
@@ -129,7 +135,7 @@ const workerResponse = z.discriminatedUnion('ok', [
   // 结构化错误字段：后端把 ModelNotInstalled 序列化成 error_code/error_models，主进程据此
   // 决定「先下载再重试」，不再正则解析 error 文本（见 main-logic.js 的 workerError）。
   z.object({
-    id: z.string().min(1),
+    id: z.string().min(1).nullable(),
     ok: z.literal(false),
     error: z.string(),
     error_code: z.string().max(64).optional(),
@@ -250,8 +256,10 @@ async function saveNoteImage({ meeting_id, mime_type, bytes }) {
   if (!image.length || image.length > 10 * 1024 * 1024) throw new Error('Image must be 10 MB or smaller');
   const extension = mime_type === 'image/jpeg' ? 'jpg' : mime_type.slice('image/'.length);
   const filename = `${randomUUID()}.${extension}`;
+  await audioFileURL(path.join(recordingsDir(), meeting_id), [recordingsDir()]);
   await mkdir(noteImagesDir(meeting_id), { recursive: true });
-  await writeFile(path.join(noteImagesDir(meeting_id), filename), image, { mode: 0o600 });
+  const directory = fileURLToPath(await audioFileURL(noteImagesDir(meeting_id), [recordingsDir()]));
+  await writeFile(path.join(directory, filename), image, { mode: 0o600, flag: 'wx' });
   return { url: `brevia-note://${meeting_id}/${filename}` };
 }
 
@@ -262,7 +270,8 @@ function registerNoteImageProtocol() {
       const meetingId = url.hostname;
       const filename = decodeURIComponent(url.pathname.slice(1));
       if (!/^[0-9a-f-]{36}$/i.test(meetingId) || !/^[0-9a-f-]{36}\.(png|jpe?g|gif|webp)$/i.test(filename)) throw new Error('Invalid note image');
-      const image = await readFile(path.join(noteImagesDir(meetingId), filename));
+      const source = fileURLToPath(await audioFileURL(path.join(noteImagesDir(meetingId), filename), [recordingsDir()]));
+      const image = await readFile(source);
       const type = filename.endsWith('.jpg') || filename.endsWith('.jpeg') ? 'image/jpeg' : `image/${filename.split('.').pop()}`;
       return new Response(image, { headers: { 'content-type': type } });
     } catch {
@@ -274,6 +283,8 @@ function registerNoteImageProtocol() {
 class WorkerClient {
   constructor({ refinement = false } = {}) {
     this.pending = new Map();
+    this.outbox = [];
+    this.writing = null;
     this.sequence = 0;
     this.restarts = 0;
     this.active = null;
@@ -281,24 +292,6 @@ class WorkerClient {
     this.refinement = refinement;
     this.recycleRequested = false;
     this.hasSpawned = false;
-    // 串行化 stdin 写入：音频帧 base64 后可达数 MB，忽略 write() 返回值、不监听 drain
-    // 会让管道缓冲随写入速度堆积。按序一条条写，并在内核缓冲满时等待 flush 再继续。
-    this.writeChain = Promise.resolve();
-  }
-
-  writeChunk(data) {
-    const stream = this.process?.stdin;
-    if (!stream || stream.destroyed) return Promise.reject(new Error('Worker is not running'));
-    return new Promise((resolve, reject) => {
-      // 写入回调在数据真正落盘后触发；用它串起下一次写入即天然形成背压。
-      stream.write(data, (error) => (error ? reject(error) : resolve()));
-    });
-  }
-
-  enqueueWrite(data) {
-    const next = this.writeChain.then(() => this.writeChunk(data));
-    this.writeChain = next.catch(() => {});
-    return next;
   }
 
   start() {
@@ -330,6 +323,7 @@ class WorkerClient {
       detached: process.platform !== 'win32',
     });
     this.process = child;
+    this.writing = null;
     this.starting = new Promise((resolve, reject) => {
       child.once('spawn', () => { this.hasSpawned = true; resolve(); });
       child.once('error', reject);
@@ -364,15 +358,14 @@ class WorkerClient {
       writeLog('WARNING', message);
       this.sendEvent('worker:log', { message });
     });
-    child.on('error', (error) => {
-      if (child !== this.process) return;
-      this.fail(error);
-    });
+    child.on('error', (error) => { if (child === this.process) this.fail(error); });
+    child.stdin.on('error', (error) => { if (child === this.process) this.fail(error); });
     child.on('exit', (code, signal) => this.closed(code, signal, child));
     return this.starting;
   }
 
   receive(message) {
+    if (message.id === null) { writeLog('WARNING', message.error); return; }
     if (message.type === 'worker.error' || (message.type === 'model.status' && message.payload.status === 'failed')) writeLog('ERROR', message.payload);
     if (message.type === 'worker.warning') writeLog('WARNING', message.payload);
     if (message.id) {
@@ -384,7 +377,48 @@ class WorkerClient {
       this.recycleIfIdle();
       return;
     }
-    if (message.type) this.sendEvent(message.type, message.payload);
+    if (message.type) {
+      this.pending.forEach((pending, requestId) => {
+        if (pending.meetingId !== message.payload.meeting_id) return;
+        if (message.type === 'task.status' && message.payload.task === pending.type) {
+          pending.paused = message.payload.status === 'paused';
+          this.armTimeout(requestId);
+        }
+        if ((pending.type === 'meeting.refine' && message.type.startsWith('refinement.'))
+          || (pending.type === 'summary.generate' && message.type.startsWith('summary.'))
+          || (['meeting.stop', 'meeting.pause'].includes(pending.type) && message.type.startsWith('transcript.'))) this.armTimeout(requestId);
+      });
+      this.sendEvent(message.type, message.payload);
+    }
+  }
+
+  armTimeout(requestId) {
+    const pending = this.pending.get(requestId);
+    clearTimeout(pending.timer);
+    if (pending.paused) return;
+    pending.timer = setTimeout(() => {
+      if (!this.pending.delete(requestId)) return;
+      this.outbox = this.outbox.filter((entry) => entry.requestId !== requestId);
+      pending.reject(new Error(`Worker request timed out: ${pending.type}`));
+      this.recycleRequested = true;
+      this.recycleIfIdle();
+    }, workerRequestTimeouts.get(pending.type) ?? 60000);
+  }
+
+  writeNext() {
+    if (this.writing || !this.outbox.length) return;
+    const entry = this.outbox.shift();
+    const child = this.process;
+    this.writing = entry;
+    try {
+      // 一次只写一条，等待流的写入回调后再取下一条，让管道本身施加背压。
+      child.stdin.write(entry.line, (error) => {
+        if (this.writing !== entry) return;
+        this.writing = null;
+        if (error) this.fail(error);
+        else this.writeNext();
+      });
+    } catch (error) { this.fail(error); }
   }
 
   async request(type, payload = {}, duringMigration = false) {
@@ -395,33 +429,19 @@ class WorkerClient {
       await this.start();
     }
     if (storageMigrationInProgress && !duringMigration) throw new Error('Folders are being moved. Please wait.');
+    if (destructiveOperationInProgress && dataTaskCommands.has(type)) throw Object.assign(new Error('Wait for data cleanup to finish'), { code: 'error.tasks.running' });
     const requestId = `cmd-${++this.sequence}`;
     return new Promise((resolve, reject) => {
-      const explicit = workerRequestTimeouts.get(type);
-      const timeout = explicit ?? (longRunningCommands.has(type) ? null : defaultWorkerRequestTimeout);
-      const timer = timeout == null ? null : setTimeout(() => {
-        if (!this.pending.delete(requestId)) return;
-        reject(new Error(`Worker request timed out: ${type}`));
-        // 超时说明 worker 很可能卡死；空闲时回收重启，避免后续请求继续挂起。
-        this.recycleRequested = true;
-        this.recycleIfIdle();
-      }, timeout);
-      this.pending.set(requestId, { resolve, reject, timer });
+      this.pending.set(requestId, { resolve, reject, type, meetingId: payload.meeting_id });
+      this.armTimeout(requestId);
       try {
-        // 与 Python 侧 json.dumps(ensure_ascii=True) 对齐：把命令 JSON 里的非 ASCII
-        // 字符转义为 \uXXXX，使写入 worker stdin 的字节流保持纯 ASCII。Windows 上
-        // worker 的 stdin 可能按系统 ANSI 代码页（中文区域为 GBK）解码，原始 UTF-8
-        // 中文会变成乱码（如“会议”→“浼氳”）；纯 ASCII 在任何代码页下都能正确还原。
-        const asciiSafe = JSON.stringify({ id: requestId, ...value })
-          .replace(/[\u0080-\uffff]/g, (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
-        this.enqueueWrite(`${asciiSafe}\n`).catch((error) => {
-          this.pending.delete(requestId);
-          clearTimeout(timer);
-          reject(error);
-        });
+        const line = `${JSON.stringify({ id: requestId, ...value })}\n`;
+        if (Buffer.byteLength(line, 'utf8') > maximumCommandBytes) throw Object.assign(new Error('Command is too large'), { code: 'error.command_too_large' });
+        this.outbox.push({ requestId, line });
+        this.writeNext();
       } catch (error) {
+        clearTimeout(this.pending.get(requestId)?.timer);
         this.pending.delete(requestId);
-        clearTimeout(timer);
         reject(error);
       }
     });
@@ -469,6 +489,8 @@ class WorkerClient {
       reject(error);
     });
     this.pending.clear();
+    this.outbox = [];
+    this.writing = null;
   }
 
   abandonActive(reason) {
@@ -485,7 +507,7 @@ class WorkerClient {
     const reason = signal || `code ${code}`;
     this.fail(new Error(`Worker exited with ${reason}`));
     if (this.refinement) {
-      this.sendEvent('worker.error', { message: `转写进程已退出（${reason}）` });
+      this.sendEvent('worker.error', { code: 'error.worker_exited', message: reason });
       const meetingId = this.active?.meeting_id;
       this.active = null;
       if (meetingId) void worker.request('meeting.refinement-recover', { meeting_id: meetingId })
@@ -494,7 +516,7 @@ class WorkerClient {
       return;
     }
     if (this.restarts >= 1) {
-      this.sendEvent('worker.error', { message: `转写进程已退出（${reason}）` });
+      this.sendEvent('worker.error', { code: 'error.worker_exited', message: reason });
       this.abandonActive(reason);
       return;
     }
@@ -505,7 +527,7 @@ class WorkerClient {
     void this.start().catch((error) => writeLog('ERROR', `restart worker: ${logText(error)}`));
     void initializeWorker().catch((error) => writeLog('ERROR', `re-initialize after restart: ${logText(error)}`));
     if (!this.active) {
-      this.sendEvent('worker.error', { message: `转写进程已退出（${reason}）` });
+      this.sendEvent('worker.error', { code: 'error.worker_exited', message: reason });
       return;
     }
     try {
@@ -517,7 +539,7 @@ class WorkerClient {
       this.restarts = 0;
       this.sendEvent('worker.recovered', { meeting_id: this.active.meeting_id });
     } catch (error) {
-      this.sendEvent('worker.error', { message: `录音仍在本地保留，但转写无法恢复：${error.message}` });
+      this.sendEvent('worker.error', { code: 'error.worker_recovery', message: error.message });
       this.abandonActive(error.message);
     }
   }
@@ -582,14 +604,36 @@ async function migrateStorageFolders(value) {
 }
 
 function handle(channel, schema, type = channel) {
-  ipcMain.handle(channel, async (_, payload = {}) => {
-    try {
-      return await worker.request(type, schema.parse(payload));
-    } catch (error) {
-      writeLog('ERROR', `${type}: ${logText(error)}`);
-      throw error;
-    }
+  handleIpc(channel, async (_, payload = {}) => {
+    return requestWithTaskSafety(type, schema.parse(payload));
   });
+}
+
+let destructiveOperationInProgress = false;
+const destructiveCommands = new Set(['meeting.delete', 'meeting.purge', 'workspace.delete', 'storage.clear', 'storage.cleanup', 'models.delete']);
+async function requestWithTaskSafety(type, value) {
+  if (!destructiveCommands.has(type)) return worker.request(type, value);
+  if (destructiveOperationInProgress) throw Object.assign(new Error('Wait for background tasks to finish before clearing data'), { code: 'error.tasks.running' });
+  destructiveOperationInProgress = true;
+  try {
+    const active = refinementWorker.active;
+    // 包括仍在管道排队、尚未来得及在 Python 注册的任务。
+    if (['storage.clear', 'storage.cleanup', 'models.delete'].includes(type)
+      && (active || [...worker.pending.values()].some((pending) => dataTaskCommands.has(pending.type)))) {
+      throw Object.assign(new Error('Wait for background tasks to finish before clearing data'), { code: 'error.tasks.running' });
+    }
+    const affected = active && (value.meeting_id === active.meeting_id || (type === 'workspace.delete'
+      && (await worker.request('meeting.get', { meeting_id: active.meeting_id })).workspace_id === value.workspace_id));
+    if (affected) {
+      await refinementWorker.request('task.cancel', { task: 'meeting.refine', meeting_id: active.meeting_id });
+      await active.promise.catch(() => {});
+      // 等待进程退出，确保超时或异常路径也不会在删除后继续写入。
+      if (refinementWorker.stopping) await refinementWorker.stopping;
+    }
+    return await worker.request(type, value);
+  } finally {
+    destructiveOperationInProgress = false;
+  }
 }
 
 // 判定"模型没装"一律读结构化字段（error_code / error_models），不再正则解析报错文本：
@@ -597,7 +641,7 @@ function handle(channel, schema, type = channel) {
 const requiredModels = (error) => requiredModelsFrom(error);
 
 function handleModelRequirement(channel, schema, type = channel) {
-  ipcMain.handle(channel, async (_, payload = {}) => {
+  handleIpc(channel, async (_, payload = {}) => {
     const value = schema.parse(payload);
     try {
       return await worker.request(type, value);
@@ -611,6 +655,7 @@ function handleModelRequirement(channel, schema, type = channel) {
 }
 
 function handleRefinement(payload) {
+  if (destructiveOperationInProgress || storageMigrationInProgress) return Promise.reject(Object.assign(new Error('Wait for data cleanup to finish before refining'), { code: 'error.tasks.running' }));
   const value = id.extend({
     language: z.string().min(2).max(16).optional(),
     target_language: z.string().min(2).max(16).nullable().optional(),
@@ -620,7 +665,7 @@ function handleRefinement(payload) {
   }).parse(payload);
   if (refinementWorker.active) {
     if (refinementWorker.active.meeting_id === value.meeting_id) return refinementWorker.active.promise;
-    return Promise.reject(new Error('Another meeting is already being refined'));
+    return Promise.reject(Object.assign(new Error('Another meeting is already being refined'), { code: 'error.tasks.running' }));
   }
   const active = { meeting_id: value.meeting_id, promise: null };
   refinementWorker.active = active;
@@ -662,7 +707,7 @@ async function runRefinementBenchmark() {
 }
 
 function handleTaskControl(channel, schema) {
-  ipcMain.handle(channel, (_, payload) => {
+  handleIpc(channel, (_, payload) => {
     const value = schema.parse(payload);
     return (value.task === 'meeting.refine' ? refinementWorker : worker).request(channel, value);
   });
@@ -671,7 +716,7 @@ function handleTaskControl(channel, schema) {
 async function setSecret(reference, value) {
   const directory = path.join(dataDir(), 'secrets');
   await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, `${reference}.key`), value, { encoding: 'utf8', mode: 0o600 });
+  await writeAtomicFile(path.join(directory, `${reference}.key`), value);
 }
 
 async function getSecret(reference) {
@@ -704,11 +749,7 @@ async function readSummaryConfig() {
   }
 }
 async function writeSummaryConfig(config) {
-  const target = summaryConfigPath();
-  const temporary = `${target}.${process.pid}.tmp`;
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(temporary, `${JSON.stringify(summaryConfig.parse(config), null, 2)}\n`, { mode: 0o600 });
-  await rename(temporary, target);
+  await writeAtomicFile(summaryConfigPath(), `${JSON.stringify(summaryConfig.parse(config), null, 2)}\n`);
 }
 
 const aiAssistConfig = z.object({
@@ -753,11 +794,7 @@ async function readAiAssistConfig() {
   }
 }
 async function writeAiAssistConfig(config) {
-  const target = aiAssistConfigPath();
-  const temporary = `${target}.${process.pid}.tmp`;
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(temporary, `${JSON.stringify(aiAssistConfig.parse(config), null, 2)}\n`, { mode: 0o600 });
-  await rename(temporary, target);
+  await writeAtomicFile(aiAssistConfigPath(), `${JSON.stringify(aiAssistConfig.parse(config), null, 2)}\n`);
 }
 
 async function prepareExport(value) {
@@ -767,7 +804,7 @@ async function prepareExport(value) {
   const pdfPath = exported.path.replace(/\.print\.html$/, '.pdf');
   try {
     await printWindow.loadFile(exported.path);
-    await writeFile(pdfPath, await printWindow.webContents.printToPDF({
+    await writeAtomicFile(pdfPath, await printWindow.webContents.printToPDF({
       printBackground: true,
       displayHeaderFooter: true,
       headerTemplate: '<div style="width:100%;text-align:center;opacity:.72"><svg width="98" height="28" viewBox="0 0 196 56" xmlns="http://www.w3.org/2000/svg" aria-label="Brevia"><rect width="56" height="56" fill="#000"/><text x="28" y="39" fill="#fff" font-family="PingFang SC,Hiragino Sans GB,Noto Sans CJK SC,sans-serif" font-size="28" font-weight="600" text-anchor="middle">言</text><text x="76" y="42" fill="#000" font-family="Arial,Helvetica,sans-serif" font-size="38" font-weight="700" letter-spacing="-2">brevia</text></svg></div>',
@@ -780,115 +817,39 @@ async function prepareExport(value) {
   }
 }
 
-// 最小化 ZIP 写入器（仅 store / deflate 两种压缩方法）。不引入第三方依赖，
-// 使用 Node 内置 zlib 的 deflateRawSync + crc32，标准 local-header / central-directory / EOCD 布局。
-async function writeZipArchive(targetZip, files) {
-  // files: [{ path, name }] —— name 为归档内文件名（UTF-8）。
-  const { deflateRawSync, crc32 } = zlib;
-  const encoder = new TextEncoder();
-  // 这里手写的 ZIP 结构只有 32 位字段（没有 ZIP64）。一旦超过这些上限，继续写只会
-  // 产出打不开的损坏归档，因此提前明确报错，而不是静默生成坏文件。
-  const max32 = 0xffffffff;
-  if (files.length > 0xffff) {
-    throw new Error('Too many files to bundle into one archive (max 65535)');
-  }
-  const localParts = [];
-  const centralParts = [];
-  let offset = 0;
-  for (const file of files) {
-    const data = await readFile(file.path);
-    const name = encoder.encode(file.name);
-    const crc = crc32(data);
-    const deflated = deflateRawSync(data);
-    const store = deflated.length >= data.length;
-    const method = store ? 0 : 8;
-    const payload = store ? data : deflated;
-    if (data.length > max32 || payload.length > max32 || offset > max32) {
-      throw new Error(`Bundle exceeds the 4 GB ZIP limit: ${file.name}`);
-    }
-    const local = Buffer.alloc(30);
-    local.writeUInt32LE(0x04034b50, 0);
-    local.writeUInt16LE(20, 4); // version needed
-    local.writeUInt16LE(0x0800, 6); // UTF-8 file name flag
-    local.writeUInt16LE(method, 8);
-    local.writeUInt16LE(0, 10); // mod time
-    local.writeUInt16LE(0, 12); // mod date
-    local.writeUInt32LE(crc, 14);
-    local.writeUInt32LE(payload.length, 18);
-    local.writeUInt32LE(data.length, 22);
-    local.writeUInt16LE(name.length, 26);
-    local.writeUInt16LE(0, 28); // extra length
-    const localEntry = Buffer.concat([local, name, payload]);
-    localParts.push(localEntry);
-    const central = Buffer.alloc(46);
-    central.writeUInt32LE(0x02014b50, 0);
-    central.writeUInt16LE(20, 4); // version made by
-    central.writeUInt16LE(20, 6); // version needed
-    central.writeUInt16LE(0x0800, 8);
-    central.writeUInt16LE(method, 10);
-    central.writeUInt16LE(0, 12);
-    central.writeUInt16LE(0, 14);
-    central.writeUInt32LE(crc, 16);
-    central.writeUInt32LE(payload.length, 20);
-    central.writeUInt32LE(data.length, 24);
-    central.writeUInt16LE(name.length, 28);
-    central.writeUInt16LE(0, 30); // extra
-    central.writeUInt16LE(0, 32); // comment
-    central.writeUInt16LE(0, 34); // disk number
-    central.writeUInt16LE(0, 36); // internal attrs
-    central.writeUInt32LE(0, 38); // external attrs
-    central.writeUInt32LE(offset, 42); // local header offset
-    centralParts.push(Buffer.concat([central, name]));
-    offset += localEntry.length;
-  }
-  const central = Buffer.concat(centralParts);
-  const eocd = Buffer.alloc(22);
-  eocd.writeUInt32LE(0x06054b50, 0);
-  eocd.writeUInt16LE(0, 4); // disk number
-  eocd.writeUInt16LE(0, 6); // disk with central dir
-  eocd.writeUInt16LE(files.length, 8); // entries on this disk
-  eocd.writeUInt16LE(files.length, 10); // total entries
-  eocd.writeUInt32LE(central.length, 12);
-  eocd.writeUInt32LE(offset, 16);
-  eocd.writeUInt16LE(0, 20); // comment length
-  await writeFile(targetZip, Buffer.concat([...localParts, central, eocd]));
-}
-
 // 把若干已准备好的导出文件打包成一个 zip，归档文件名按会议名加内容标签命名。
-async function buildSelectedBundle(prepared) {
+async function buildSelectedBundle(meetingId, prepared) {
   const base = path.parse(prepared[0].path).name; // 同一会议的所有导出共享会议名基础
-  const zipPath = path.join(path.dirname(prepared[0].path), `${base}.zip`);
   const safe = (value) => String(value || '').replace(/[<>:"/\\|?*]+/g, '-').trim() || 'item';
   const files = prepared.map((entry) => ({
     path: entry.path,
     name: `${base}-${safe(entry.label)}${path.extname(entry.path)}`,
   }));
-  await writeZipArchive(zipPath, files);
-  return zipPath;
+  return (await worker.request('meeting.bundle-files', { meeting_id: meetingId, name: base, files })).path;
 }
 
 function registerIpc() {
-  ipcMain.handle('app.version', () => app.getVersion());
-  ipcMain.handle('update.check', () => checkForUpdate());
-  ipcMain.handle('update.install', () => installUpdate());
-  ipcMain.handle('permissions.status', () => {
+  handleIpc('app.version', () => app.getVersion());
+  handleIpc('update.check', () => checkForUpdate());
+  handleIpc('update.install', () => installUpdate());
+  handleIpc('permissions.status', () => {
     if (process.platform === 'darwin') return { microphone: systemPreferences.getMediaAccessStatus('microphone'), screen: systemPreferences.getMediaAccessStatus('screen'), systemAudioSupported: supportsSystemAudio() };
     // Windows reports the real microphone privacy state; screen capture is not gated the same way.
     if (process.platform === 'win32') return { microphone: systemPreferences.getMediaAccessStatus('microphone'), screen: 'granted', systemAudioSupported: supportsSystemAudio() };
     return { microphone: 'granted', screen: 'granted', systemAudioSupported: supportsSystemAudio() };
   });
-  ipcMain.handle('permissions.request-microphone', () => process.platform === 'darwin'
+  handleIpc('permissions.request-microphone', () => process.platform === 'darwin'
     ? systemPreferences.askForMediaAccess('microphone')
     // Windows has no runtime prompt; report whether the OS privacy toggle already allows access.
     : process.platform !== 'win32' || systemPreferences.getMediaAccessStatus('microphone') === 'granted');
-  ipcMain.handle('permissions.open-screen-settings', async () => {
+  handleIpc('permissions.open-screen-settings', async () => {
     if (process.platform !== 'darwin') return false;
     await registerScreenPermission(desktopCapturer, writeLog);
     const settings = spawn('open', ['x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'], { detached: true, stdio: 'ignore' });
     settings.unref();
     return true;
   });
-  ipcMain.handle('permissions.open-microphone-settings', async () => {
+  handleIpc('permissions.open-microphone-settings', async () => {
     if (process.platform === 'darwin') {
       const settings = spawn('open', ['x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'], { detached: true, stdio: 'ignore' });
       settings.unref();
@@ -900,8 +861,8 @@ function registerIpc() {
     }
     return false;
   });
-  ipcMain.handle('app.initialize', () => initializeWorker());
-  ipcMain.handle('app.maintain', async () => {
+  handleIpc('app.initialize', () => initializeWorker());
+  handleIpc('app.maintain', async () => {
     if (app.isQuitting) return {};
     try {
       return await worker.request('app.maintain');
@@ -911,7 +872,7 @@ function registerIpc() {
       throw error;
     }
   });
-  ipcMain.handle('meeting.start', async (_, payload) => {
+  handleIpc('meeting.start', async (_, payload) => {
     const value = meetingStart.parse(payload);
     let result;
     try {
@@ -927,9 +888,7 @@ function registerIpc() {
     resetFloatingCaptionState();
     return result;
   });
-  ipcMain.handle('meeting.import', async (_, payload) => {
-    // 真实路径由下面的文件对话框决定，渲染层传来的 path 会被忽略；因此只接受可选占位，
-    // 避免调用方省略 path 时被 schema 误判成参数错误。
+  handleIpc('meeting.import', async (_, payload) => {
     const value = meetingStart.extend({ path: z.string().optional() }).parse(payload);
     const selected = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'aac', 'ogg'] }] });
     if (selected.canceled) return null;
@@ -937,7 +896,7 @@ function registerIpc() {
     resetFloatingCaptionState();
     return result;
   });
-  ipcMain.handle('meeting.audio', (_, payload) => {
+  handleIpc('meeting.audio', (_, payload) => {
     const value = audio.parse(payload);
     // 熄屏停会不会先等渲染进程的音频队列；丢弃其尾帧，避免已停止的 worker 报错。
     if (stoppingForSleep || worker.active?.meeting_id !== value.meeting_id) return { dropped: true };
@@ -945,7 +904,7 @@ function registerIpc() {
   });
   handle('meeting.pause', id.extend({ paused: z.boolean() }), 'meeting.pause');
   handleModelRequirement('meeting.reconfigure', meetingReconfigure, 'meeting.reconfigure');
-  ipcMain.handle('meeting.stop', async (_, payload) => {
+  handleIpc('meeting.stop', async (_, payload) => {
     const value = id.extend({ duration_ms: z.number().nonnegative() }).parse(payload);
     const result = await worker.request('meeting.stop', value);
     worker.active = null;
@@ -959,8 +918,8 @@ function registerIpc() {
   handle('meeting.delete', id, 'meeting.delete');
   handle('meeting.restore', id, 'meeting.restore');
   handle('meeting.purge', id, 'meeting.purge');
-  ipcMain.handle('meeting.refine', (_, payload) => handleRefinement(payload));
-  ipcMain.handle('meeting.note-image.save', async (_, payload) => {
+  handleIpc('meeting.refine', (_, payload) => handleRefinement(payload));
+  handleIpc('meeting.note-image.save', async (_, payload) => {
     const value = noteImage.parse(payload);
     await worker.request('meeting.get', { meeting_id: value.meeting_id });
     return saveNoteImage(value);
@@ -974,14 +933,14 @@ function registerIpc() {
   handle('speaker.rename', id.extend({ speaker_id: z.string(), name: z.string().trim().min(1).max(32), locked: z.boolean().optional() }), 'speaker.rename');
   handle('speaker-profile.list', z.object({}), 'speaker-profile.list');
   handle('speaker-profile.samples', z.object({ profile_id: z.string().uuid() }), 'speaker-profile.samples');
-  ipcMain.handle('speaker-profile.enroll', async (_, payload) => {
+  handleIpc('speaker-profile.enroll', async (_, payload) => {
     const value = z.object({ profile_id: z.string().uuid().optional(), name: z.string().trim().min(1).max(32) }).parse(payload);
     const selected = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'aac', 'ogg'] }] });
     if (selected.canceled) return null;
     return worker.request('speaker-profile.enroll', { ...value, path: selected.filePaths[0] })
       .finally(() => worker.recycle());
   });
-  ipcMain.handle('speaker-profile.verify', async (_, payload) => {
+  handleIpc('speaker-profile.verify', async (_, payload) => {
     const value = z.object({ profile_id: z.string().uuid() }).parse(payload);
     const selected = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'aac', 'ogg'] }] });
     if (selected.canceled) return null;
@@ -995,7 +954,7 @@ function registerIpc() {
   handle('storage.cleanup', z.object({}), 'storage.cleanup');
   handle('settings.advanced.get', z.object({}), 'settings.advanced.get');
   handle('settings.advanced.save', z.object({ settings: z.record(z.string(), z.unknown()) }), 'settings.advanced.save');
-  ipcMain.handle('metrics.record', async (_, payload) => {
+  handleIpc('metrics.record', async (_, payload) => {
     if (app.isQuitting) return null;
     try {
       return await worker.request('metrics.record', z.object({ app_duration_ms: z.number().int().nonnegative().optional() }).parse(payload));
@@ -1005,8 +964,7 @@ function registerIpc() {
     }
   });
   handle('segment.speaker', id.extend({ segment_id: z.string().min(1), name: z.string().trim().min(1).max(32), enroll: z.boolean().optional() }));
-  // 上限同时受 worker 单条命令 1 MiB 限制约束：非 ASCII 在 IPC 中按 \uXXXX 展开成
-  // 6 倍长度，因此按「总字符数」而不是「条数」设闸，避免整批命令被 worker 拒绝。
+  // 同时限制单句和整批字符数，避免编辑请求占满 worker 的 32 MiB 命令容量。
   handle(
     'segment.text',
     id.extend({
@@ -1019,25 +977,25 @@ function registerIpc() {
         }),
     }),
   );
-  ipcMain.handle('segment.speaker-profile-sample', async (_, payload) => {
+  handleIpc('segment.speaker-profile-sample', async (_, payload) => {
     const value = id.extend({ segment_id: z.string().min(1), profile_id: z.string().uuid() }).parse(payload);
     return worker.request('segment.speaker-profile-sample', value).finally(() => worker.recycle());
   });
-  ipcMain.handle('storage.open', async (_, payload) => {
+  handleIpc('storage.open', async (_, payload) => {
     const partition = z.enum(['meetings', 'models', 'exports']).parse(payload?.partition);
     const directory = partition === 'models' ? modelsDir() : recordingsDir();
     return shell.openPath(directory);
   });
-  ipcMain.handle('storage.locations', () => ({
+  handleIpc('storage.locations', () => ({
     models: modelsDir(), recordings: recordingsDir(),
     modelsManaged: !process.env.BREVIA_MODELS_DIR,
     recordingsManaged: !process.env.BREVIA_MEETINGS_DIR,
   }));
-  ipcMain.handle('storage.choose-folder', async () => {
+  handleIpc('storage.choose-folder', async () => {
     const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] });
     return result.canceled ? null : result.filePaths[0];
   });
-  ipcMain.handle('storage.setup-locations', async (_, payload) => {
+  handleIpc('storage.setup-locations', async (_, payload) => {
     const value = z.object({ models: z.string(), recordings: z.string() }).parse(payload);
     return migrateStorageFolders(value);
   });
@@ -1050,24 +1008,24 @@ function registerIpc() {
   handleTaskControl('task.pause', taskControl);
   handleTaskControl('task.resume', taskControl);
   handleTaskControl('task.cancel', taskControl);
-  ipcMain.handle('secret.set', async (_, payload) => {
+  handleIpc('secret.set', async (_, payload) => {
     const value = z.object({ reference: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/), value: z.string().min(1) }).parse(payload);
     await setSecret(value.reference, value.value);
     return true;
   });
-  ipcMain.handle('summary.config.get', async () => readSummaryConfig());
-  ipcMain.handle('summary.config.save', async (_, payload) => {
+  handleIpc('summary.config.get', async () => readSummaryConfig());
+  handleIpc('summary.config.save', async (_, payload) => {
     const config = summaryConfig.parse(payload);
     await writeSummaryConfig(config);
     return config;
   });
-  ipcMain.handle('ai-assist.config.get', async () => readAiAssistConfig());
-  ipcMain.handle('ai-assist.config.save', async (_, payload) => {
+  handleIpc('ai-assist.config.get', async () => readAiAssistConfig());
+  handleIpc('ai-assist.config.save', async (_, payload) => {
     const config = aiAssistConfig.parse(payload);
     await writeAiAssistConfig(config);
     return config;
   });
-  ipcMain.handle('summary.generate', async (_, payload) => {
+  handleIpc('summary.generate', async (_, payload) => {
     const value = id.extend({
       ...llmRequest.shape,
       language: z.enum(['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']).default('en'), consent: z.literal(true),
@@ -1078,8 +1036,8 @@ function registerIpc() {
     if (!api_key && !isBuiltInProvider(value.provider)) return { configuration_required: true };
     return worker.request('summary.generate', { ...value, api_key });
   });
-  ipcMain.handle('summary.save', async (_, payload) => worker.request('summary.save', id.extend({ markdown: z.string().max(5 * 1024 * 1024) }).parse(payload)));
-  ipcMain.handle('translation.generate', async (_, payload) => {
+  handleIpc('summary.save', async (_, payload) => worker.request('summary.save', id.extend({ markdown: z.string().max(5 * 1024 * 1024) }).parse(payload)));
+  handleIpc('translation.generate', async (_, payload) => {
     const value = id.extend({
       segment_id: z.string(),
       segment: z.object({
@@ -1091,22 +1049,22 @@ function registerIpc() {
     }).parse(payload);
     return worker.request('translation.generate', value);
   });
-  ipcMain.handle('ai-note.start', async (_, payload) => {
+  handleIpc('ai-note.start', async (_, payload) => {
     const value = aiNoteStart.parse(payload);
     const api_key = await getSecret(value.key_reference);
     if (!api_key && !isBuiltInProvider(value.provider)) return { configuration_required: true };
     return worker.request('ai-note.start', { ...value, api_key });
   });
-  ipcMain.handle('ai-note.stop', (_, payload) => worker.request('ai-note.stop', id.parse(payload)));
-  ipcMain.handle('ai-note.typing', (_, payload) => worker.request('ai-note.typing', aiNoteTyping.parse(payload)));
-  ipcMain.handle('ai-note.request', (_, payload) => worker.request('ai-note.request', aiNoteRequest.parse(payload)));
-  ipcMain.handle('ai-note.dismiss', (_, payload) => worker.request('ai-note.dismiss', aiNoteDismiss.parse(payload)));
-  ipcMain.handle('ai-note.reconfigure', (_, payload) => worker.request('ai-note.reconfigure', aiNoteReconfigure.parse(payload)));
-  ipcMain.handle('meeting.export', async (_, payload) => {
+  handleIpc('ai-note.stop', (_, payload) => worker.request('ai-note.stop', id.parse(payload)));
+  handleIpc('ai-note.typing', (_, payload) => worker.request('ai-note.typing', aiNoteTyping.parse(payload)));
+  handleIpc('ai-note.request', (_, payload) => worker.request('ai-note.request', aiNoteRequest.parse(payload)));
+  handleIpc('ai-note.dismiss', (_, payload) => worker.request('ai-note.dismiss', aiNoteDismiss.parse(payload)));
+  handleIpc('ai-note.reconfigure', (_, payload) => worker.request('ai-note.reconfigure', aiNoteReconfigure.parse(payload)));
+  handleIpc('meeting.export', async (_, payload) => {
     const value = id.extend({
       content: z.enum(['transcript', 'notes', 'mynotes', 'audio']).optional(),
-      format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'flac', 'wav', 'm4a']),
-      track: z.enum(['mix', 'mic', 'system', 'vocals', 'accompaniment']).optional(),
+      format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'wav']),
+      track: z.enum(['mix', 'mic', 'system']).optional(),
       filename_prefix: z.string().max(60).optional(),
     }).parse(payload);
     const exported = await prepareExport(value);
@@ -1115,13 +1073,13 @@ function registerIpc() {
     await copyFile(exported.path, destination.filePath);
     return { ...exported, path: destination.filePath };
   });
-  ipcMain.handle('meeting.export-many', async (_, payload) => {
-    const value = z.object({ meeting_ids: z.array(z.string().uuid()).min(1).max(200), format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'flac', 'wav', 'm4a']).default('md'), filename_prefix: z.string().max(60).optional() }).parse(payload);
+  handleIpc('meeting.export-many', async (_, payload) => {
+    const value = z.object({ meeting_ids: z.array(z.string().uuid()).min(1).max(200), format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'wav']).default('md'), filename_prefix: z.string().max(60).optional() }).parse(payload);
     const destination = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] });
     if (destination.canceled) return null;
     const paths = [];
     for (const meetingId of value.meeting_ids) {
-      const exported = await prepareExport({ meeting_id: meetingId, content: ['flac', 'wav', 'm4a'].includes(value.format) ? 'audio' : 'transcript', format: value.format, ...(value.filename_prefix ? { filename_prefix: value.filename_prefix } : {}) });
+      const exported = await prepareExport({ meeting_id: meetingId, content: value.format === 'wav' ? 'audio' : 'transcript', format: value.format, ...(value.filename_prefix ? { filename_prefix: value.filename_prefix } : {}) });
       const parsed = path.parse(exported.path);
       let target = path.join(destination.filePaths[0], parsed.base);
       for (let copy = 2; existsSync(target); copy += 1) target = path.join(destination.filePaths[0], `${parsed.name}-${copy}${parsed.ext}`);
@@ -1130,7 +1088,7 @@ function registerIpc() {
     }
     return { paths, format: value.format };
   });
-  ipcMain.handle('meeting.share', async (_, payload) => {
+  handleIpc('meeting.share', async (_, payload) => {
     const exported = await worker.request('meeting.bundle', id.parse(payload));
     const destination = await dialog.showSaveDialog({ defaultPath: path.basename(exported.path) });
     if (destination.canceled) return null;
@@ -1138,15 +1096,15 @@ function registerIpc() {
     return { ...exported, path: destination.filePath };
   });
   // 通用「导出与分享」入口：按用户勾选的内容项导出（逐字稿/纪要/我的笔记/录音，
-  // 每项可选格式）。单项直接交付该文件；多项打包为一个 zip。mode 决定交付方式：
+  // 文本内容可选格式，录音使用默认 WAV）。单项直接交付该文件；多项打包为一个 zip。mode 决定交付方式：
   // save —— 弹出保存对话框；reveal —— 在文件夹中定位；system —— 弹出系统分享面板。
-  ipcMain.handle('meeting.export-bundle', async (event, payload) => {
+  handleIpc('meeting.export-bundle', async (event, payload) => {
     const value = z.object({
       meeting_id: z.string().uuid(),
       items: z.array(z.object({
         content: z.enum(['transcript', 'notes', 'mynotes', 'audio']),
-        format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'flac', 'wav', 'm4a']),
-        track: z.enum(['mix', 'mic', 'system', 'vocals', 'accompaniment']).optional(),
+        format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'wav']),
+        track: z.enum(['mix', 'mic', 'system']).optional(),
         label: z.string().min(1).max(60).optional(),
         filename_prefix: z.string().max(60).optional(),
       })).min(1).max(8),
@@ -1168,7 +1126,7 @@ function registerIpc() {
     // 2. 多项时打包为一个 zip；单项直接交付。
     let deliver = prepared;
     if (prepared.length > 1) {
-      const zipPath = await buildSelectedBundle(prepared);
+      const zipPath = await buildSelectedBundle(value.meeting_id, prepared);
       deliver = [{ path: zipPath, format: 'zip', label: 'bundle' }];
     }
     const file = deliver[0];
@@ -1191,36 +1149,36 @@ function registerIpc() {
     }
     return null;
   });
-  ipcMain.handle('share.copy-text', (_, payload) => {
+  handleIpc('share.copy-text', (_, payload) => {
     const value = z.object({ text: z.string().min(1).max(200000) }).parse(payload);
     clipboard.writeText(value.text);
     return { copied: true };
   });
-  ipcMain.handle('share.open-external', async (_, payload) => {
+  handleIpc('share.open-external', async (_, payload) => {
     const value = z.object({ url: z.string().min(1).max(8000) }).parse(payload);
     // 仅放行社交网页分享(https)与邮件(mailto)。其余 scheme 一律拒绝,避免通过 IPC 触发任意协议处理器。
     if (!/^(https:\/\/|mailto:)/i.test(value.url)) throw new Error('Unsupported share URL');
     await shell.openExternal(value.url);
     return { opened: true };
   });
-  ipcMain.handle('share.file', async (_, payload) => {
+  handleIpc('share.file', async (_, payload) => {
     const value = z.object({
       meeting_id: z.string().uuid(),
       kind: z.enum(['export', 'bundle']).default('export'),
       content: z.enum(['transcript', 'notes', 'mynotes', 'audio']).optional(),
-      format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'flac', 'wav', 'm4a']).optional(),
-      track: z.enum(['mix', 'mic', 'system', 'vocals', 'accompaniment']).optional(),
+      format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'wav']).optional(),
+      track: z.enum(['mix', 'mic', 'system']).optional(),
     }).parse(payload);
     // 与「导出」不同:直接写入会议的 exports 目录并在文件管理器中高亮,供用户手动拖入微信等无 API 平台。
     const exported = value.kind === 'bundle'
       ? await worker.request('meeting.bundle', { meeting_id: value.meeting_id })
-      : await prepareExport({ meeting_id: value.meeting_id, content: value.content, format: value.format || 'md', ...(value.track ? { track: value.track } : {}) });
+      : await prepareExport({ meeting_id: value.meeting_id, content: value.content, format: value.format || (value.content === 'audio' ? 'wav' : 'md'), ...(value.track ? { track: value.track } : {}) });
     shell.showItemInFolder(exported.path);
     return { ...exported, revealed: true };
   });
   // 系统原生分享面板(NSSharingServicePicker)。仅 macOS 提供;可分享纯文本或先导出的文件,
   // 用户从面板选 AirDrop / 信息 / 邮件 / 备忘录,以及任何注册了分享扩展的 App(如微信)。
-  ipcMain.handle('share.system', async (event, payload) => {
+  handleIpc('share.system', async (event, payload) => {
     if (process.platform !== 'darwin' || typeof ShareMenu !== 'function') throw new Error('System share is only available on macOS');
     const value = z.object({
       text: z.string().min(1).max(200000).optional(),
@@ -1229,8 +1187,8 @@ function registerIpc() {
         meeting_id: z.string().uuid(),
         kind: z.enum(['export', 'bundle']).default('export'),
         content: z.enum(['transcript', 'notes', 'mynotes', 'audio']).optional(),
-        format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'flac', 'wav', 'm4a']).optional(),
-        track: z.enum(['mix', 'mic', 'system', 'vocals', 'accompaniment']).optional(),
+        format: z.enum(['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'wav']).optional(),
+        track: z.enum(['mix', 'mic', 'system']).optional(),
       }).optional(),
     }).refine((v) => v.text || v.file, { message: 'Nothing to share' }).parse(payload);
     const sharingItem = {};
@@ -1238,7 +1196,7 @@ function registerIpc() {
     if (value.file) {
       const exported = value.file.kind === 'bundle'
         ? await worker.request('meeting.bundle', { meeting_id: value.file.meeting_id })
-        : await prepareExport({ meeting_id: value.file.meeting_id, content: value.file.content, format: value.file.format || 'md', ...(value.file.track ? { track: value.file.track } : {}) });
+        : await prepareExport({ meeting_id: value.file.meeting_id, content: value.file.content, format: value.file.format || (value.file.content === 'audio' ? 'wav' : 'md'), ...(value.file.track ? { track: value.file.track } : {}) });
       sharingItem.filePaths = [exported.path];
     }
     const window = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getAllWindows()[0];
@@ -1247,28 +1205,15 @@ function registerIpc() {
     new ShareMenu(sharingItem).popup({ window, ...(value.anchor ? { x: value.anchor.x, y: value.anchor.y } : {}) });
     return { shared: true };
   });
-  ipcMain.handle('shell.showItem', (_, filePath) => {
+  handleIpc('shell.showItem', (_, filePath) => {
     const resolved = path.resolve(z.string().parse(filePath));
-    // 只允许定位到 Brevia 自己管理的目录，避免渲染进程把任意字符串交给系统文件管理器。
-    // 模型目录与录音目录都可迁移到数据目录之外，因此三个根都要放行。
-    if (![dataDir(), recordingsDir(), modelsDir()].some((root) => isWithin(root, resolved))) {
-      throw new Error('Invalid path');
-    }
+    if (![dataDir(), recordingsDir(), modelsDir()].some((root) => resolved === path.resolve(root) || isWithin(root, resolved))) throw new Error('Invalid path');
     return shell.showItemInFolder(resolved);
   });
-  ipcMain.handle('audio.url', (_, filePath) => {
-    const resolved = path.resolve(z.string().parse(filePath));
-    // 录音目录可被迁移到数据目录之外（storage.setup-locations 或 BREVIA_MEETINGS_DIR），
-    // 白名单必须同时包含 dataDir 与 recordingsDir；只认 dataDir 会让迁移后的录音回放
-    // 一律报 "Invalid audio path"。
-    if (![dataDir(), recordingsDir()].some((root) => isWithin(root, resolved))) {
-      throw new Error('Invalid audio path');
-    }
-    return pathToFileURL(resolved).href;
-  });
-  ipcMain.handle('floating-caption.show', () => { resetFloatingCaptionState(); return showFloatingCaption(); });
-  ipcMain.handle('floating-caption.close', () => closeFloatingCaption());
-  ipcMain.handle('floating-caption.update', (_, payload) => {
+  handleIpc('audio.url', (_, filePath) => audioFileURL(z.string().parse(filePath), [recordingsDir(), path.join(dataDir(), 'speaker-profiles')]));
+  handleIpc('floating-caption.show', () => { resetFloatingCaptionState(); return showFloatingCaption(); });
+  handleIpc('floating-caption.close', () => closeFloatingCaption());
+  handleIpc('floating-caption.update', (_, payload) => {
     const value = floatingCaptionPayload.parse(payload ?? {});
 
     // Handle finalize: move current → lastFinalized
@@ -1348,7 +1293,7 @@ function registerIpc() {
     return true;
   });
 
-  ipcMain.handle('floating-caption.move', (_, payload) => {
+  handleIpc('floating-caption.move', (_, payload) => {
     const value = z.object({ deltaX: z.number(), deltaY: z.number() }).parse(payload ?? {});
     if (floatingCaptionWindow && !floatingCaptionWindow.isDestroyed()) {
       const bounds = floatingCaptionWindow.getBounds();
@@ -1360,7 +1305,7 @@ function registerIpc() {
     return true;
   });
 
-  ipcMain.handle('floating-caption.set-always-on-top', (_, payload) => {
+  handleIpc('floating-caption.set-always-on-top', (_, payload) => {
     const value = z.object({ alwaysOnTop: z.boolean() }).parse(payload ?? {});
     if (floatingCaptionWindow && !floatingCaptionWindow.isDestroyed()) {
       floatingCaptionWindow.setAlwaysOnTop(value.alwaysOnTop, 'screen-saver');
@@ -1640,29 +1585,27 @@ function showFloatingCaption() {
   return true;
 }
 
-function closeFloatingCaption() {
+async function closeFloatingCaption() {
   if (floatingCaptionWindow && !floatingCaptionWindow.isDestroyed()) {
     // Save position before closing
     floatingCaptionBounds = floatingCaptionWindow.getBounds();
-    floatingCaptionWindow.close();
+    const closing = floatingCaptionWindow;
+    await new Promise((resolve) => { closing.once('closed', resolve); closing.close(); });
   }
-  floatingCaptionWindow = null;
-  floatingCaptionReady = false;
   return true;
 }
 
 app.whenReady().then(async () => {
   if (process.platform === 'win32') Menu.setApplicationMenu(null);
-  await migrateDataDir().catch((error) => writeLog('WARNING', `data migration: ${logText(error)}`));
-  try { await applyPendingMove(dataDir()); }
-  catch (error) { dialog.showErrorBox('Folder migration failed', `${error.message}\n\nRestart Brevia after checking that the storage drives are connected and writable.`); app.quit(); return; }
+  try { await migrateDataDir(); await applyPendingMove(dataDir()); }
+  catch (error) { dialog.showErrorBox(mainText('error.storage_recovery'), `${mainText('error.storage_recovery_hint')}\n\n${error.message}`); app.quit(); return; }
   if (modelsDir() !== path.join(dataDir(), 'models') && !existsSync(modelsDir())) {
-    dialog.showErrorBox('Model folder unavailable', `Connect the drive containing ${modelsDir()} and restart Brevia.`);
+    dialog.showErrorBox(mainText('error.storage_unavailable'), modelsDir());
     app.quit();
     return;
   }
   if (recordingsDir() !== path.join(dataDir(), 'meetings') && !existsSync(recordingsDir())) {
-    dialog.showErrorBox('Recording folder unavailable', `Connect the drive containing ${recordingsDir()} and restart Brevia.`);
+    dialog.showErrorBox(mainText('error.storage_unavailable'), recordingsDir());
     app.quit();
     return;
   }
@@ -1731,6 +1674,9 @@ app.on('before-quit', (event) => {
     app.isQuitting = true;
     stopProcess(worker.process);
     stopProcess(refinementWorker.process);
+    // Electron 退出后定时器不再运行；退出前收尾已发送 SIGTERM 的所有进程组。
+    for (const pid of stoppingProcessGroups) { try { process.kill(-pid, 'SIGKILL'); } catch { /* 已退出。 */ } }
+    stoppingProcessGroups.clear();
     return;
   }
   event.preventDefault();
@@ -1741,5 +1687,5 @@ app.on('before-quit', (event) => {
   ]).catch((error) => writeLog('WARNING', `stop meeting before quit: ${logText(error)}`)).finally(() => app.quit());
 });
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  app.quit();
 });

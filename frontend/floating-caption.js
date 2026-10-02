@@ -160,6 +160,13 @@ function render() {
 function setupListener() {
   if (window.brevia?.onFloatingCaptionUpdate) {
     window.brevia.onFloatingCaptionUpdate((data) => {
+      if (data.locale) {
+        const labels = (window.BreviaLocaleData.catalog[data.locale] || window.BreviaLocaleData.catalog.en).labels;
+        closeBtn.title = labels['关闭'];
+        closeBtn.setAttribute('aria-label', labels['关闭']);
+        document.documentElement.lang = data.locale;
+        document.title = labels['悬浮字幕'];
+      }
       // 如果我们从主进程接收到完整状态对象（在窗口加载时）
       if (data.lastFinalized !== undefined && data.current !== undefined) {
         state.lastFinalized = data.lastFinalized;

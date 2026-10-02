@@ -1,13 +1,15 @@
 """聚焦存储职责的组件。"""
 
 import json
+import logging
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
 from .config import SETTINGS
-from .store_base import safe_child, utc_now
+from .store_base import safe_child, synchronized_storage_files, utc_now
+from .worker_common import UserFacingError
 
 
 class SpeakerProfileStoreMixin:
@@ -30,7 +32,25 @@ class SpeakerProfileStoreMixin:
                        FROM speaker_profile_samples WHERE profile_id=? ORDER BY created_at DESC""",
                 (profile_id,),
             ).fetchall()
-        return [dict(row) for row in rows]
+        samples = [dict(row) for row in rows]
+        for sample in samples:
+            path = self._sample_audio_path(profile_id, sample["audio_path"])
+            sample["audio_path"] = str(path) if path else None
+        return samples
+
+    def _sample_audio_path(self, profile_id, audio_path):
+        """只在当前人员目录解析样本；兼容迁移前存储的绝对路径。"""
+        if not audio_path:
+            return None
+        path = Path(audio_path)
+        if path.is_absolute():
+            if path.parent.name != profile_id or path.parent.parent.name != "speaker-profiles":
+                return None
+        elif path.name != str(path) or path.name in {"", ".", ".."}:
+            return None
+        directory = safe_child(self.speaker_profiles_dir, profile_id)
+        resolved = (directory / path.name).resolve()
+        return directory / path.name if resolved.parent == directory.resolve() else None
 
     def speaker_profile(self, profile_id):
         """根据 ID 获取单个人员档案详情。"""
@@ -75,6 +95,7 @@ class SpeakerProfileStoreMixin:
             raise ValueError("Speaker embedding is empty")
         return [value / norm for value in values]
 
+    @synchronized_storage_files
     def save_speaker_profile_sample(
         self,
         name,
@@ -87,7 +108,6 @@ class SpeakerProfileStoreMixin:
         """保存一条声纹样本，并以所有样本的归一化中心更新人员声纹。"""
         normalized = self._normalized_embedding(embedding)
         now = utc_now()
-        stale_audio = None
         with self.connect() as db:
             if profile_id:
                 profile = db.execute(
@@ -114,29 +134,24 @@ class SpeakerProfileStoreMixin:
                     "Voiceprint model does not match this person's registered samples"
                 )
             profile_id = profile["id"]
+            if audio_path:
+                path = self._sample_audio_path(profile_id, audio_path)
+                if path is None:
+                    raise ValueError("Voiceprint audio must be inside its profile directory")
+                audio_path = path.name
             existing = db.execute(
-                "SELECT id FROM speaker_profile_samples WHERE source_key=?",
+                "SELECT id,profile_id,audio_path FROM speaker_profile_samples WHERE source_key=?",
                 (source_key,),
             ).fetchone()
             if existing:
+                if existing["profile_id"] != profile_id:
+                    raise UserFacingError("error.voice_sample_owned", "Recording already belongs to another voiceprint")
                 saved = False
                 if audio_path:
-                    previous = db.execute(
-                        "SELECT audio_path FROM speaker_profile_samples WHERE id=?",
-                        (existing["id"],),
-                    ).fetchone()
                     db.execute(
                         "UPDATE speaker_profile_samples SET audio_path=?,duration_ms=? WHERE id=?",
                         (audio_path, int(duration_ms), existing["id"]),
                     )
-                    # 同一 source_key 重新注册会写入新的时间戳 WAV；旧文件不删会永久泄漏。
-                    # 先记下来，等事务提交成功后再删（回滚时不能删掉仍在引用的旧文件）。
-                    if (
-                        previous
-                        and previous["audio_path"]
-                        and previous["audio_path"] != audio_path
-                    ):
-                        stale_audio = previous["audio_path"]
             else:
                 usage = db.execute(
                     "SELECT COUNT(*) AS samples,COALESCE(SUM(duration_ms),0) AS duration_ms FROM speaker_profile_samples WHERE profile_id=?",
@@ -181,20 +196,11 @@ class SpeakerProfileStoreMixin:
                     (json.dumps(center), len(samples), now, profile_id),
                 )
                 saved = True
-        self._unlink_sample_audio(stale_audio)
+        if existing and audio_path and self._sample_audio_path(profile_id, existing["audio_path"]) != self._sample_audio_path(profile_id, audio_path):
+            self._delete_sample_audio(profile_id, existing["audio_path"])
         return {**self.speaker_profile(profile_id), "added": saved}
 
-    def _unlink_sample_audio(self, audio_path):
-        """删除某条样本的存档 WAV；仅当路径确实位于 speaker-profiles 目录内时才删。"""
-        if not audio_path:
-            return
-        path = Path(audio_path)
-        try:
-            path.relative_to(self.speaker_profiles_dir)
-        except ValueError:
-            return
-        path.unlink(missing_ok=True)
-
+    @synchronized_storage_files
     def delete_speaker_profile_sample(self, profile_id, sample_id):
         """删除一句存档录音，并用剩余样本增量重算声纹中心。"""
         with self.connect() as db:
@@ -223,8 +229,16 @@ class SpeakerProfileStoreMixin:
                 "UPDATE speaker_profiles SET embedding=?,sample_count=?,updated_at=? WHERE id=?",
                 (json.dumps(center), len(samples), utc_now(), profile_id),
             )
-        self._unlink_sample_audio(sample["audio_path"])
+        self._delete_sample_audio(profile_id, sample["audio_path"])
         return self.speaker_profile(profile_id)
+
+    def _delete_sample_audio(self, profile_id, audio_path):
+        path = self._sample_audio_path(profile_id, audio_path)
+        if path:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                logging.getLogger(__name__).exception("Could not remove voiceprint audio %s", path)
 
     def match_speaker_profile(self, embedding, threshold):
         """按余弦相似度匹配本地人员；低于阈值时返回 ``None``。"""

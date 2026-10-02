@@ -11,6 +11,7 @@
 
 let locale = localStorage.getItem('brevia-language') || 'zh';
 let activeView = 'home';
+let pageTransition = null;
 let activeLibraryNav = 'all-meetings';
 let meetingActive = false;
 let editingMeetingIndex = null;

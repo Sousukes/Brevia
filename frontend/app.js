@@ -111,7 +111,6 @@ document.addEventListener('scroll', (event) => {
   scrollingTimers.set(scroller, setTimeout(() => scroller.classList.remove('is-scrolling'), 2000));
 }, true);
 const liveSegments = new Map();
-const liveSegmentRevisions = new Map();
 // 正在攒的段落（transcript.draft）渲染出的临时行，按音轨保存：后端每轨最多只有一段在攒，
 // 因此它是一条会被就地替换的行，正式段落提交后由空文本的 draft 事件撤下。
 const draftSegments = new Map();
@@ -184,16 +183,7 @@ const asrCopy = window.BreviaAsrCopy || {};
 // 这里只做「把全局状态传进去」的薄包装，使同一份规则既能被 app 使用，也能被测试用合成
 // 清单直接跑边界。
 const modelSelection = window.BreviaModelSelection || {};
-const modelLibraryMetaCopy = {
-  zh: { download: '下载', quality: '质量', speed: '速度', qualityTiers: ['标准', '高', '极高'], speedTiers: ['较慢', '均衡', '快'], refined: '整句识别 / 会后精修', vad: '语音检测', diarization: '说话人分离', voiceprint: '声纹识别', summary: '会议纪要', translation: '字幕翻译' },
-  en: { download: 'Download', quality: 'Quality', speed: 'Speed', qualityTiers: ['Standard', 'High', 'Very high'], speedTiers: ['Slower', 'Balanced', 'Fast'], refined: 'Sentence transcription / refinement', vad: 'Voice detection', diarization: 'Speaker diarization', voiceprint: 'Voiceprint recognition', summary: 'Meeting notes', translation: 'Caption translation' },
-  es: { download: 'Descarga', quality: 'Calidad', speed: 'Velocidad', qualityTiers: ['Estándar', 'Alta', 'Muy alta'], speedTiers: ['Más lento', 'Equilibrado', 'Rápido'], refined: 'Refinamiento posterior', vad: 'Detección de voz', diarization: 'Separación de hablantes', voiceprint: 'Reconocimiento de voz', summary: 'Notas de reunión', translation: 'Traducción de subtítulos' },
-  ja: { download: 'ダウンロード', quality: '品質', speed: '速度', qualityTiers: ['標準', '高', '最高'], speedTiers: ['やや遅い', 'バランス', '高速'], refined: '会議後の高精度化', vad: '音声検出', diarization: '話者分離', voiceprint: '声紋認識', summary: '議事録', translation: '字幕翻訳' },
-  ko: { download: '다운로드', quality: '품질', speed: '속도', qualityTiers: ['표준', '높음', '최고'], speedTiers: ['다소 느림', '균형', '빠름'], refined: '회의 후 정제', vad: '음성 감지', diarization: '화자 분리', voiceprint: '음성 지문 인식', summary: '회의록', translation: '자막 번역' },
-  fr: { download: 'Téléchargement', quality: 'Qualité', speed: 'Vitesse', qualityTiers: ['Standard', 'Élevée', 'Très élevée'], speedTiers: ['Plus lent', 'Équilibré', 'Rapide'], refined: 'Affinage après réunion', vad: 'Détection vocale', diarization: 'Séparation des locuteurs', voiceprint: 'Reconnaissance vocale', summary: 'Notes de réunion', translation: 'Traduction des sous-titres' },
-  de: { download: 'Download', quality: 'Qualität', speed: 'Geschwindigkeit', qualityTiers: ['Standard', 'Hoch', 'Sehr hoch'], speedTiers: ['Langsamer', 'Ausgewogen', 'Schnell'], refined: 'Nachbearbeitung', vad: 'Spracherkennung', diarization: 'Sprechertrennung', voiceprint: 'Stimmabdruck-Erkennung', summary: 'Besprechungsnotizen', translation: 'Untertitelübersetzung' },
-  ru: { download: 'Загрузка', quality: 'Качество', speed: 'Скорость', qualityTiers: ['Стандарт', 'Высокое', 'Очень высокое'], speedTiers: ['Медленнее', 'Сбалансированно', 'Быстро'], refined: 'Обработка после встречи', vad: 'Обнаружение речи', diarization: 'Разделение говорящих', voiceprint: 'Распознавание голоса', summary: 'Протокол встречи', translation: 'Перевод субтитров' },
-};
+const modelLibraryMetaCopy = window.BreviaLocaleData.appCopy.modelLibraryMetaCopy;
 // 内置纪要模型的编辑性单行描述，取自每个模型的公开
 // 定位（参数、优势、硬件适配）。按模型 id 索引，然后按语言环境索引。
 const builtinModelIntro = {
@@ -442,6 +432,7 @@ async function loadSummaryConfig() {
 let aiAssistConfig = { version: 2, enabled: false, proactivity: 'assist', provider: 'built-in', providers: {} };
 let aiAssistConfigRevision = 0;
 let aiAssistConfigDraft = null;
+const modelConfigSecrets = new WeakMap();
 let aiAssistTemporarilyDisabled = false;
 /** 返回当前 AI 辅助配置的可持久化形态。@returns {object} */
 function currentAiAssistConfig() {
@@ -483,48 +474,7 @@ let modelsReturnToPending = null;
 let advancedSettings;
 let permissionStatus;
 let permissionPollTimer;
-const advancedSettingCopy = {
-  zh: {
-    sections: { 'audio': '音频', 'asr': '识别与端点检测', 'live_asr': '实时识别', 'diarization': '说话人分离', 'refinement': '会后精修', 'vad': '语音检测（VAD）', 'voice_profiles': '声纹库', 'meetings': '会议', 'llm': '纪要模型' },
-    subgroups: { 'default': '默认（其他语言）', 'zh': '中文' },
-    fields: { 'sample_rate': '采样率（Hz）', 'chunk_seconds': '音频分块时长（秒）', 'refined_window_seconds': '精修窗口时长（秒）', 'max_speech_seconds': '整句识别段长上限（秒，仅在低于语言/模型上限时生效）', 'quiet_speech_recovery': '安静语音兜底识别（0 关 1 开）', 'quiet_speech_min_seconds': '安静语音最短时长（秒）', 'quiet_speech_max_seconds': '安静语音最长时长（秒）', 'quiet_speech_level_ratio': '安静语音相对响度阈值（0–1）', 'microphone_target_rms': '麦克风目标响度', 'microphone_minimum_rms': '麦克风最小响度', 'microphone_max_gain': '麦克风最大增益', 'microphone_peak': '麦克风峰值限制', 'segmentation_model_id': '说话区间模型', 'cluster_threshold': '聚类阈值', 'online_similarity_threshold': '在线匹配阈值', 'voiceprint_similarity_threshold': '声纹匹配阈值', 'minimum_embedding_seconds': '最短声纹语音（秒）', 'boundary_tail_seconds': '边界回补时长（秒）', 'speaker_change_detection': '说话人切换检测', 'num_speakers': '固定说话人数（-1 为自动）', 'min_duration_on': '最短说话时长（秒）', 'min_duration_off': '最短静音间隔（秒）', 'max_refine_seconds': '最长精修时长（秒）', 'diarization_chunk_ms': '说话人分块时长（毫秒）', 'diarization_overlap_ms': '说话人分块重叠（毫秒）', 'embedding_window_ms': '声纹窗口时长（毫秒）', 'max_auto_speakers': '自动聚类最多说话人', 'min_auto_speaker_windows': '自动聚类最少窗口数', 'min_auto_speaker_duration_ms': '自动聚类最短语音（毫秒）', 'auto_cluster_score_tolerance': '自动聚类分数容差', 'threshold': '语音检测阈值', 'min_silence_duration': '最小静音时长（秒）', 'min_speech_duration': '最短语音时长（秒）', 'max_speech_duration': '最长语音时长（秒）', 'max_samples': '每人最大录音条数', 'max_total_seconds': '每人最大录音时长（秒）', 'deleted_retention_days': '删除记录保留天数', 'timeout_seconds': '模型请求超时（秒）' },
-    hint: '用于本地运行配置。' },
-  en: {
-    sections: { 'audio': 'Audio', 'asr': 'Recognition and endpointing', 'live_asr': 'Live recognition', 'diarization': 'Speaker diarization', 'refinement': 'Post-meeting refinement', 'vad': 'Voice detection (VAD)', 'voice_profiles': 'Voiceprints', 'meetings': 'Meetings', 'llm': 'Summary model' },
-    subgroups: { 'default': 'Default (other languages)', 'zh': 'Chinese' },
-    fields: { 'sample_rate': 'Sample rate (Hz)', 'chunk_seconds': 'Audio chunk duration (s)', 'refined_window_seconds': 'Refinement window (s)', 'max_speech_seconds': 'Sentence segment cap (s; only lowers the language/model cap)', 'quiet_speech_recovery': 'Quiet-speech fallback recognition (0 off, 1 on)', 'quiet_speech_min_seconds': 'Quiet speech minimum duration (s)', 'quiet_speech_max_seconds': 'Quiet speech maximum duration (s)', 'quiet_speech_level_ratio': 'Quiet speech relative level threshold (0–1)', 'microphone_target_rms': 'Microphone target loudness', 'microphone_minimum_rms': 'Microphone minimum loudness', 'microphone_max_gain': 'Microphone maximum gain', 'microphone_peak': 'Microphone peak limit', 'segmentation_model_id': 'Speech-segmentation model', 'cluster_threshold': 'Clustering threshold', 'online_similarity_threshold': 'Online matching threshold', 'voiceprint_similarity_threshold': 'Voiceprint matching threshold', 'minimum_embedding_seconds': 'Minimum voiceprint audio (s)', 'boundary_tail_seconds': 'Boundary tail (s)', 'speaker_change_detection': 'Speaker-change detection', 'num_speakers': 'Fixed speaker count (-1 = auto)', 'min_duration_on': 'Minimum speech duration (s)', 'min_duration_off': 'Minimum silence gap (s)', 'max_refine_seconds': 'Maximum refinement duration (s)', 'diarization_chunk_ms': 'Diarization chunk (ms)', 'diarization_overlap_ms': 'Diarization chunk overlap (ms)', 'embedding_window_ms': 'Voiceprint window (ms)', 'max_auto_speakers': 'Maximum speakers when auto-clustering', 'min_auto_speaker_windows': 'Minimum windows when auto-clustering', 'min_auto_speaker_duration_ms': 'Minimum speech for auto-clustering (ms)', 'auto_cluster_score_tolerance': 'Auto-clustering score tolerance', 'threshold': 'Voice detection threshold', 'min_silence_duration': 'Minimum silence duration (s)', 'min_speech_duration': 'Minimum speech duration (s)', 'max_speech_duration': 'Maximum speech duration (s)', 'max_samples': 'Maximum recordings per person', 'max_total_seconds': 'Maximum recording duration per person (s)', 'deleted_retention_days': 'Deleted-record retention (days)', 'timeout_seconds': 'Model request timeout (s)' },
-    hint: 'Used by the local runtime.' },
-  es: {
-    sections: { 'audio': 'Audio', 'asr': 'Reconocimiento y detección de final', 'live_asr': 'Reconocimiento en vivo', 'diarization': 'Separación de hablantes', 'refinement': 'Refinamiento posterior', 'vad': 'Detección de voz (VAD)', 'voice_profiles': 'Huellas de voz', 'meetings': 'Reuniones', 'llm': 'Modelo de resumen' },
-    subgroups: { 'default': 'Predeterminado (otros idiomas)', 'zh': 'Chino' },
-    fields: { 'sample_rate': 'Frecuencia de muestreo (Hz)', 'chunk_seconds': 'Duración del bloque de audio (s)', 'refined_window_seconds': 'Ventana de refinamiento (s)', 'max_speech_seconds': 'Límite de segmento (s; solo reduce el límite de idioma/modelo)', 'quiet_speech_recovery': 'Reconocimiento de reserva para voz baja (0 no, 1 sí)', 'quiet_speech_min_seconds': 'Duración mínima de voz baja (s)', 'quiet_speech_max_seconds': 'Duración máxima de voz baja (s)', 'quiet_speech_level_ratio': 'Umbral de nivel relativo para voz baja (0–1)', 'microphone_target_rms': 'Volumen objetivo del micrófono', 'microphone_minimum_rms': 'Volumen mínimo del micrófono', 'microphone_max_gain': 'Ganancia máxima del micrófono', 'microphone_peak': 'Límite de pico del micrófono', 'segmentation_model_id': 'Modelo de segmentación de voz', 'cluster_threshold': 'Umbral de agrupación', 'online_similarity_threshold': 'Umbral de coincidencia en línea', 'voiceprint_similarity_threshold': 'Umbral de coincidencia de huella', 'minimum_embedding_seconds': 'Audio mínimo para huella de voz (s)', 'boundary_tail_seconds': 'Cola de frontera (s)', 'speaker_change_detection': 'Detección de cambio de hablante', 'num_speakers': 'Número fijo de hablantes (-1 = auto)', 'min_duration_on': 'Duración mínima de habla (s)', 'min_duration_off': 'Pausa mínima (s)', 'max_refine_seconds': 'Duración máxima de refinamiento (s)', 'diarization_chunk_ms': 'Bloque de separación (ms)', 'diarization_overlap_ms': 'Solape de bloques (ms)', 'embedding_window_ms': 'Ventana de huella de voz (ms)', 'max_auto_speakers': 'Máximo de hablantes al agrupar', 'min_auto_speaker_windows': 'Mínimo de ventanas al agrupar', 'min_auto_speaker_duration_ms': 'Habla mínima para agrupar (ms)', 'auto_cluster_score_tolerance': 'Tolerancia de puntuación al agrupar', 'threshold': 'Umbral de detección de voz', 'min_silence_duration': 'Silencio mínimo (s)', 'min_speech_duration': 'Duración mínima de habla (s)', 'max_speech_duration': 'Duración máxima de habla (s)', 'max_samples': 'Máximas grabaciones por persona', 'max_total_seconds': 'Duración máxima por persona (s)', 'deleted_retention_days': 'Retención de eliminados (días)', 'timeout_seconds': 'Tiempo de espera de solicitud (s)' },
-    hint: 'Se usa en la ejecución local.' },
-  ja: {
-    sections: { 'audio': '音声', 'asr': '認識と終端検出', 'live_asr': 'ライブ認識', 'diarization': '話者分離', 'refinement': '会議後の高精度化', 'vad': '音声検出（VAD）', 'voice_profiles': '声紋', 'meetings': '会議', 'llm': '要約モデル' },
-    subgroups: { 'default': '既定（その他の言語）', 'zh': '中国語' },
-    fields: { 'sample_rate': 'サンプリングレート（Hz）', 'chunk_seconds': '音声チャンク長（秒）', 'refined_window_seconds': '高精度化ウィンドウ（秒）', 'max_speech_seconds': '発話セグメント上限（秒。言語・モデル上限を下げる方向にのみ作用）', 'quiet_speech_recovery': '小さな声の補助認識（0 オフ 1 オン）', 'quiet_speech_min_seconds': '小さな声の最短長（秒）', 'quiet_speech_max_seconds': '小さな声の最長長（秒）', 'quiet_speech_level_ratio': '小さな声の相対レベル閾値（0–1）', 'microphone_target_rms': 'マイク目標音量', 'microphone_minimum_rms': 'マイク最小音量', 'microphone_max_gain': 'マイク最大ゲイン', 'microphone_peak': 'マイクピーク上限', 'segmentation_model_id': '音声区間モデル', 'cluster_threshold': 'クラスタリング閾値', 'online_similarity_threshold': 'オンライン一致閾値', 'voiceprint_similarity_threshold': '声紋一致閾値', 'minimum_embedding_seconds': '声紋用の最短音声（秒）', 'boundary_tail_seconds': '境界の余韻（秒）', 'speaker_change_detection': '話者切替の検出', 'num_speakers': '固定話者数（-1 = 自動）', 'min_duration_on': '最短発話時間（秒）', 'min_duration_off': '最短無音間隔（秒）', 'max_refine_seconds': '高精度化の最長時間（秒）', 'diarization_chunk_ms': '話者分離チャンク（ミリ秒）', 'diarization_overlap_ms': '話者分離の重複（ミリ秒）', 'embedding_window_ms': '声紋ウィンドウ（ミリ秒）', 'max_auto_speakers': '自動クラスタリングの最大話者数', 'min_auto_speaker_windows': '自動クラスタリングの最小ウィンドウ数', 'min_auto_speaker_duration_ms': '自動クラスタリングの最短音声（ミリ秒）', 'auto_cluster_score_tolerance': '自動クラスタリングのスコア許容差', 'threshold': '音声検出の閾値', 'min_silence_duration': '最小無音時間（秒）', 'min_speech_duration': '最短音声時間（秒）', 'max_speech_duration': '最長音声時間（秒）', 'max_samples': '1 人あたりの最大録音数', 'max_total_seconds': '1 人あたりの最大録音時間（秒）', 'deleted_retention_days': '削除済み記録の保持日数', 'timeout_seconds': 'モデル要求タイムアウト（秒）' },
-    hint: 'ローカル実行に使用します。' },
-  ko: {
-    sections: { 'audio': '오디오', 'asr': '인식 및 종점 감지', 'live_asr': '실시간 인식', 'diarization': '화자 분리', 'refinement': '회의 후 정제', 'vad': '음성 감지(VAD)', 'voice_profiles': '음성 지문', 'meetings': '회의', 'llm': '요약 모델' },
-    subgroups: { 'default': '기본(다른 언어)', 'zh': '중국어' },
-    fields: { 'sample_rate': '샘플링 레이트(Hz)', 'chunk_seconds': '오디오 청크 길이(초)', 'refined_window_seconds': '정교화 창(초)', 'max_speech_seconds': '문장 구간 상한(초, 언어/모델 상한을 낮추는 방향으로만 적용)', 'quiet_speech_recovery': '작은 목소리 보조 인식(0 끔, 1 켬)', 'quiet_speech_min_seconds': '작은 목소리 최소 길이(초)', 'quiet_speech_max_seconds': '작은 목소리 최대 길이(초)', 'quiet_speech_level_ratio': '작은 목소리 상대 음량 임계값(0–1)', 'microphone_target_rms': '마이크 목표 음량', 'microphone_minimum_rms': '마이크 최소 음량', 'microphone_max_gain': '마이크 최대 게인', 'microphone_peak': '마이크 피크 제한', 'segmentation_model_id': '음성 구간 모델', 'cluster_threshold': '클러스터링 임계값', 'online_similarity_threshold': '온라인 일치 임계값', 'voiceprint_similarity_threshold': '음성 지문 일치 임계값', 'minimum_embedding_seconds': '최소 음성 지문 오디오(초)', 'boundary_tail_seconds': '경계 꼬리(초)', 'speaker_change_detection': '화자 전환 감지', 'num_speakers': '고정 화자 수(-1 = 자동)', 'min_duration_on': '최소 발화 시간(초)', 'min_duration_off': '최소 무음 간격(초)', 'max_refine_seconds': '최대 정제 시간(초)', 'diarization_chunk_ms': '화자 분리 청크(ms)', 'diarization_overlap_ms': '화자 분리 겹침(ms)', 'embedding_window_ms': '음성 지문 창(ms)', 'max_auto_speakers': '자동 클러스터링 최대 화자 수', 'min_auto_speaker_windows': '자동 클러스터링 최소 창 수', 'min_auto_speaker_duration_ms': '자동 클러스터링 최소 음성(ms)', 'auto_cluster_score_tolerance': '자동 클러스터링 점수 허용 오차', 'threshold': '음성 감지 임계값', 'min_silence_duration': '최소 무음 시간(초)', 'min_speech_duration': '최소 음성 시간(초)', 'max_speech_duration': '최대 음성 시간(초)', 'max_samples': '1인당 최대 녹음 수', 'max_total_seconds': '1인당 최대 녹음 시간(초)', 'deleted_retention_days': '삭제 기록 보관 기간(일)', 'timeout_seconds': '모델 요청 시간 제한(초)' },
-    hint: '로컬 실행에 사용됩니다.' },
-  fr: {
-    sections: { 'audio': 'Audio', 'asr': 'Reconnaissance et détection de fin', 'live_asr': 'Reconnaissance en direct', 'diarization': 'Séparation des locuteurs', 'refinement': 'Affinage après réunion', 'vad': 'Détection de voix (VAD)', 'voice_profiles': 'Empreintes vocales', 'meetings': 'Réunions', 'llm': 'Modèle de résumé' },
-    subgroups: { 'default': 'Par défaut (autres langues)', 'zh': 'Chinois' },
-    fields: { 'sample_rate': 'Fréquence d’échantillonnage (Hz)', 'chunk_seconds': 'Durée du bloc audio (s)', 'refined_window_seconds': 'Fenêtre d’affinage (s)', 'max_speech_seconds': 'Plafond de segment (s ; n’abaisse que la limite langue/modèle)', 'quiet_speech_recovery': 'Reconnaissance de secours pour voix faible (0 off, 1 on)', 'quiet_speech_min_seconds': 'Durée minimale de voix faible (s)', 'quiet_speech_max_seconds': 'Durée maximale de voix faible (s)', 'quiet_speech_level_ratio': 'Seuil de niveau relatif pour voix faible (0–1)', 'microphone_target_rms': 'Volume cible du microphone', 'microphone_minimum_rms': 'Volume minimal du microphone', 'microphone_max_gain': 'Gain maximal du microphone', 'microphone_peak': 'Limite de crête du microphone', 'segmentation_model_id': 'Modèle de segmentation de parole', 'cluster_threshold': 'Seuil de regroupement', 'online_similarity_threshold': 'Seuil de correspondance en ligne', 'voiceprint_similarity_threshold': 'Seuil de correspondance d’empreinte', 'minimum_embedding_seconds': 'Audio minimal pour empreinte (s)', 'boundary_tail_seconds': 'Queue de frontière (s)', 'speaker_change_detection': 'Détection de changement de locuteur', 'num_speakers': 'Nombre fixe de locuteurs (-1 = auto)', 'min_duration_on': 'Durée minimale de parole (s)', 'min_duration_off': 'Pause minimale (s)', 'max_refine_seconds': 'Durée maximale d’affinage (s)', 'diarization_chunk_ms': 'Bloc de séparation (ms)', 'diarization_overlap_ms': 'Chevauchement des blocs (ms)', 'embedding_window_ms': 'Fenêtre d’empreinte (ms)', 'max_auto_speakers': 'Nombre maximal de locuteurs au regroupement', 'min_auto_speaker_windows': 'Fenêtres minimales au regroupement', 'min_auto_speaker_duration_ms': 'Parole minimale au regroupement (ms)', 'auto_cluster_score_tolerance': 'Tolérance de score au regroupement', 'threshold': 'Seuil de détection de voix', 'min_silence_duration': 'Silence minimal (s)', 'min_speech_duration': 'Durée minimale de parole (s)', 'max_speech_duration': 'Durée maximale de parole (s)', 'max_samples': 'Enregistrements maximum par personne', 'max_total_seconds': 'Durée maximale par personne (s)', 'deleted_retention_days': 'Conservation des éléments supprimés (jours)', 'timeout_seconds': 'Délai de requête du modèle (s)' },
-    hint: 'Utilisé par l’exécution locale.' },
-  de: {
-    sections: { 'audio': 'Audio', 'asr': 'Erkennung und Endpunkterkennung', 'live_asr': 'Live-Erkennung', 'diarization': 'Sprechertrennung', 'refinement': 'Nachbearbeitung', 'vad': 'Spracherkennung (VAD)', 'voice_profiles': 'Stimmabdrücke', 'meetings': 'Besprechungen', 'llm': 'Zusammenfassungsmodell' },
-    subgroups: { 'default': 'Standard (andere Sprachen)', 'zh': 'Chinesisch' },
-    fields: { 'sample_rate': 'Abtastrate (Hz)', 'chunk_seconds': 'Audioblockdauer (s)', 'refined_window_seconds': 'Nachbearbeitungsfenster (s)', 'max_speech_seconds': 'Segmentobergrenze (s; senkt nur die Sprach-/Modellgrenze)', 'quiet_speech_recovery': 'Ersatztranskription für leise Sprache (0 aus, 1 ein)', 'quiet_speech_min_seconds': 'Minimale Dauer leiser Sprache (s)', 'quiet_speech_max_seconds': 'Maximale Dauer leiser Sprache (s)', 'quiet_speech_level_ratio': 'Relativer Pegelschwellwert für leise Sprache (0–1)', 'microphone_target_rms': 'Mikrofon-Ziellautstärke', 'microphone_minimum_rms': 'Mikrofon-Mindestlautstärke', 'microphone_max_gain': 'Maximale Mikrofonverstärkung', 'microphone_peak': 'Mikrofon-Peakgrenze', 'segmentation_model_id': 'Sprachsegmentierungsmodell', 'cluster_threshold': 'Cluster-Schwellenwert', 'online_similarity_threshold': 'Online-Abgleichschwelle', 'voiceprint_similarity_threshold': 'Stimmabdruck-Schwelle', 'minimum_embedding_seconds': 'Minimales Stimmabdruck-Audio (s)', 'boundary_tail_seconds': 'Grenz-Nachlauf (s)', 'speaker_change_detection': 'Sprecherwechsel-Erkennung', 'num_speakers': 'Feste Sprecherzahl (-1 = auto)', 'min_duration_on': 'Minimale Sprechdauer (s)', 'min_duration_off': 'Minimale Stille (s)', 'max_refine_seconds': 'Maximale Nachbearbeitungsdauer (s)', 'diarization_chunk_ms': 'Sprechertrennungs-Block (ms)', 'diarization_overlap_ms': 'Blocküberlappung (ms)', 'embedding_window_ms': 'Stimmabdruck-Fenster (ms)', 'max_auto_speakers': 'Maximale Sprecher beim Auto-Clustering', 'min_auto_speaker_windows': 'Minimale Fenster beim Auto-Clustering', 'min_auto_speaker_duration_ms': 'Minimale Sprache beim Auto-Clustering (ms)', 'auto_cluster_score_tolerance': 'Score-Toleranz beim Auto-Clustering', 'threshold': 'Schwelle der Spracherkennung', 'min_silence_duration': 'Minimale Stille (s)', 'min_speech_duration': 'Minimale Sprechdauer (s)', 'max_speech_duration': 'Maximale Sprechdauer (s)', 'max_samples': 'Maximale Aufnahmen pro Person', 'max_total_seconds': 'Maximale Aufnahmezeit pro Person (s)', 'deleted_retention_days': 'Aufbewahrung gelöschter Einträge (Tage)', 'timeout_seconds': 'Zeitüberschreitung der Modellanfrage (s)' },
-    hint: 'Wird von der lokalen Laufzeit verwendet.' },
-  ru: {
-    sections: { 'audio': 'Аудио', 'asr': 'Распознавание и определение конца', 'live_asr': 'Распознавание в реальном времени', 'diarization': 'Разделение говорящих', 'refinement': 'Обработка после встречи', 'vad': 'Детекция голоса (VAD)', 'voice_profiles': 'Голосовые отпечатки', 'meetings': 'Встречи', 'llm': 'Модель сводки' },
-    subgroups: { 'default': 'По умолчанию (другие языки)', 'zh': 'Китайский' },
-    fields: { 'sample_rate': 'Частота дискретизации (Гц)', 'chunk_seconds': 'Длительность аудиоблока (с)', 'refined_window_seconds': 'Окно обработки (с)', 'max_speech_seconds': 'Предел длины сегмента (с; только понижает предел языка/модели)', 'quiet_speech_recovery': 'Резервное распознавание тихой речи (0 выкл, 1 вкл)', 'quiet_speech_min_seconds': 'Минимальная длительность тихой речи (с)', 'quiet_speech_max_seconds': 'Максимальная длительность тихой речи (с)', 'quiet_speech_level_ratio': 'Порог относительного уровня тихой речи (0–1)', 'microphone_target_rms': 'Целевая громкость микрофона', 'microphone_minimum_rms': 'Минимальная громкость микрофона', 'microphone_max_gain': 'Максимальное усиление микрофона', 'microphone_peak': 'Ограничение пика микрофона', 'segmentation_model_id': 'Модель сегментации речи', 'cluster_threshold': 'Порог кластеризации', 'online_similarity_threshold': 'Порог онлайн-сопоставления', 'voiceprint_similarity_threshold': 'Порог совпадения отпечатка', 'minimum_embedding_seconds': 'Минимальное аудио для отпечатка (с)', 'boundary_tail_seconds': 'Хвост границы (с)', 'speaker_change_detection': 'Обнаружение смены говорящего', 'num_speakers': 'Фиксированное число говорящих (-1 = авто)', 'min_duration_on': 'Минимальная длительность речи (с)', 'min_duration_off': 'Минимальная пауза (с)', 'max_refine_seconds': 'Максимальная длительность обработки (с)', 'diarization_chunk_ms': 'Блок разделения (мс)', 'diarization_overlap_ms': 'Перекрытие блоков (мс)', 'embedding_window_ms': 'Окно голосового отпечатка (мс)', 'max_auto_speakers': 'Максимум говорящих при авто-кластеризации', 'min_auto_speaker_windows': 'Минимум окон при авто-кластеризации', 'min_auto_speaker_duration_ms': 'Минимум речи при авто-кластеризации (мс)', 'auto_cluster_score_tolerance': 'Допуск оценки при авто-кластеризации', 'threshold': 'Порог детекции голоса', 'min_silence_duration': 'Минимальная тишина (с)', 'min_speech_duration': 'Минимальная длительность речи (с)', 'max_speech_duration': 'Максимальная длительность речи (с)', 'max_samples': 'Максимум записей на человека', 'max_total_seconds': 'Максимальная длительность на человека (с)', 'deleted_retention_days': 'Хранение удалённых записей (дни)', 'timeout_seconds': 'Тайм-аут запроса модели (с)' },
-    hint: 'Используется локальным запуском.' },
-};
+const advancedSettingCopy = window.BreviaLocaleData.appCopy.advancedSettingCopy;
 function renderAdvancedSettings(settings) {
   const copy = advancedSettingCopy[locale] || advancedSettingCopy.en;
   // 配置里只有 vad 是分语言的两层结构（default / zh）：子分组各有一个小标题，
@@ -840,6 +790,10 @@ function applyLanguageModelDefaults(language) {
   Object.assign(prepareForm.dataset, { segmentationModel: models.segmentation, vadModel: 'silero-vad' });
 }
 if (breviaClient) {
+  breviaClient.onCaptureError = (error) => {
+    showToast(t(error.message));
+    document.querySelector('#end-meeting').click();
+  };
   breviaClient.onLevel = (track, level) => {
     if (track !== 'mic') return;
     document.querySelectorAll('#mic-level, [data-onboarding-mic-level], [data-live-mic-level]').forEach((meter) => meter.style.setProperty('--level', Math.max(.04, level)));
@@ -887,7 +841,7 @@ async function previewMicrophone() {
     }
   } catch (error) {
     const hint = prepareForm.querySelector('#capture-mode-hint');
-    if (hint) hint.textContent = error.message;
+    if (hint) hint.textContent = userFacingError(error.message);
   }
 }
 const MIC_DEVICE_KEY = 'brevia-mic-device';
@@ -1002,26 +956,8 @@ function showTranslationProgress(completed, total, targetLanguage) {
   syncTaskCardStack(card);
   if (completed === total) translationDismissTimer = setTimeout(() => dismissTaskCard(card), 10000);
 }
-const summaryTaskCopy = {
-  zh: ['正在生成会议纪要', '准备生成纪要', '正在生成摘要', '正在保存纪要', '纪要已生成'],
-  en: ['Generating meeting notes', 'Preparing meeting notes', 'Generating summary', 'Saving meeting notes', 'Meeting notes generated'],
-  es: ['Generando notas de reunión', 'Preparando las notas de reunión', 'Generando el resumen', 'Guardando las notas', 'Notas de reunión generadas'],
-  ja: ['会議メモを生成中', '会議メモを準備中', '要約を生成中', '会議メモを保存中', '会議メモを生成しました'],
-  ko: ['회의록 생성 중', '회의록 준비 중', '요약 생성 중', '회의록 저장 중', '회의록이 생성되었습니다'],
-  fr: ['Génération des notes de réunion', 'Préparation des notes de réunion', 'Génération du résumé', 'Enregistrement des notes', 'Notes de réunion générées'],
-  de: ['Besprechungsnotizen werden erstellt', 'Besprechungsnotizen werden vorbereitet', 'Zusammenfassung wird erstellt', 'Besprechungsnotizen werden gespeichert', 'Besprechungsnotizen erstellt'],
-  ru: ['Создание заметок встречи', 'Подготовка заметок встречи', 'Создание сводки', 'Сохранение заметок встречи', 'Заметки встречи созданы'],
-};
-const summaryEmptyTranscriptCopy = {
-  zh: '当前会议暂无逐字稿内容，请先完成转写后再生成会议纪要。',
-  en: 'This meeting has no transcript yet. Finish transcription before generating meeting notes.',
-  es: 'Esta reunión aún no tiene transcripción. Finaliza la transcripción antes de generar las notas.',
-  ja: 'この会議にはまだ文字起こしがありません。文字起こし完了後に会議メモを生成してください。',
-  ko: '이 회의에는 아직 전사 내용이 없습니다. 전사를 완료한 후 회의록을 생성하세요.',
-  fr: 'Cette réunion ne contient pas encore de transcription. Terminez-la avant de générer les notes.',
-  de: 'Für diese Besprechung liegt noch kein Transkript vor. Schließen Sie die Transkription zuerst ab.',
-  ru: 'Для этой встречи пока нет расшифровки. Завершите расшифровку перед созданием заметок.',
-};
+const summaryTaskCopy = window.BreviaLocaleData.appCopy.summaryTaskCopy;
+
 function summaryTaskLabel(stage) {
   const copy = summaryTaskCopy[locale] || summaryTaskCopy.en;
   return { 'summary.prepare': copy[1], 'summary.generating': copy[2], 'summary.saving': copy[3], 'summary.complete': copy[4] }[stage] || stage || t('准备中');
@@ -1104,10 +1040,7 @@ async function generateMeetingSummary(meetingId = breviaClient?.state.selectedMe
     showToast(t('会议纪要已生成'));
   } catch (error) {
     hideSummaryProgress();
-    if (error.message === 'A meeting summary is already running') showToast(t('已有会议纪要正在生成，请稍候。'));
-    else if (isSummaryAuthenticationError(error)) showSummaryConfigCard(error);
-    else if (error.message === summaryEmptyTranscriptCopy.zh) showToast(summaryEmptyTranscriptCopy[locale] || summaryEmptyTranscriptCopy.en);
-    else if (/Summary response was empty|Summary generation failed/.test(String(error.message || ''))) showToast(t('纪要生成失败：模型未返回有效内容，请稍后重试。'));
+    if (isSummaryAuthenticationError(error)) showSummaryConfigCard(error);
     else showToast(error.message);
   }
 }
@@ -1122,36 +1055,9 @@ let initializationPromise;
 const useChinaModelSource = () => locale === 'zh' && localStorage.getItem('brevia-china-model-source') === 'true';
 const modelDownloadPayload = (modelId) => ({ model_id: modelId, ...(useChinaModelSource() ? { source: 'china' } : {}) });
 const chinaModelSourceToggle = () => locale === 'zh' ? `<p class="model-source-switch"><label><input type="checkbox" data-china-model-source${useChinaModelSource() ? ' checked' : ''} /><span>您是否身处中国大陆？</span></label><small>选择后将会使用大陆镜像源进行下载提速。</small></p>` : '';
-const onboardingCopy = {
-  zh: { languageHint: '之后你可以随时修改界面语言。', later: '稍后设置', ready: '功能已准备就绪' },
-  en: { languageHint: 'You can change the interface language any time.', later: 'Set up later', ready: 'All set' },
-  es: { languageHint: 'Puedes cambiar el idioma de la interfaz en cualquier momento.', later: 'Configurar más tarde', ready: 'Funciones listas' },
-  ja: { languageHint: '表示言語はいつでも変更できます。', later: 'あとで設定', ready: '機能の準備ができました' },
-  ko: { languageHint: '인터페이스 언어는 언제든 변경할 수 있습니다.', later: '나중에 설정', ready: '기능이 준비되었습니다' },
-  fr: { languageHint: 'Vous pourrez modifier la langue de l’interface à tout moment.', later: 'Configurer plus tard', ready: 'Fonctions prêtes' },
-  de: { languageHint: 'Sie können die Sprache der Oberfläche jederzeit ändern.', later: 'Später einrichten', ready: 'Alles bereit' },
-  ru: { languageHint: 'Язык интерфейса можно изменить в любое время.', later: 'Настроить позже', ready: 'Функции готовы' },
-};
-const onboardingSecurityCopy = {
-  zh: '模型资源来自可信来源，并经过完整性校验。\n您的音频数据不会上传至云端。',
-  en: 'Models come from trusted sources and pass integrity checks.\nYour audio is never uploaded to the cloud.',
-  es: 'Los modelos provienen de fuentes confiables y pasan comprobaciones de integridad.\nTu audio nunca se sube a la nube.',
-  ja: 'モデルは信頼できる提供元から取得し、完全性を検証しています。\n音声データがクラウドにアップロードされることはありません。',
-  ko: '모델은 신뢰할 수 있는 출처에서 제공되며 무결성 검사를 거칩니다.\n오디오 데이터는 클라우드에 업로드되지 않습니다.',
-  fr: 'Les modèles proviennent de sources fiables et leur intégrité est vérifiée.\nVos données audio ne sont jamais envoyées dans le cloud.',
-  de: 'Modelle stammen aus vertrauenswürdigen Quellen und werden auf Integrität geprüft.\nIhre Audiodaten werden nie in die Cloud hochgeladen.',
-  ru: 'Модели получены из надёжных источников и проходят проверку целостности.\nВаши аудиоданные никогда не загружаются в облако.',
-};
-const onboardingLanguageCopy = {
-  zh: ['选择你的语言', '选择言录的界面语言。', '继续'],
-  en: ['Choose your language', 'Choose the language for Brevia.', 'Continue'],
-  es: ['Elige tu idioma', 'Elige el idioma para Brevia.', 'Continuar'],
-  ja: ['言語を選択', 'Brevia で使用する言語を選択してください。', '続ける'],
-  ko: ['언어를 선택하세요', 'Brevia에서 사용할 언어를 선택하세요.', '계속'],
-  fr: ['Choisissez votre langue', 'Choisissez la langue de Brevia.', 'Continuer'],
-  de: ['Sprache auswählen', 'Wählen Sie die Sprache für Brevia.', 'Fortfahren'],
-  ru: ['Выберите язык', 'Выберите язык для Brevia.', 'Продолжить'],
-};
+const onboardingCopy = window.BreviaLocaleData.appCopy.onboardingCopy;
+const onboardingSecurityCopy = window.BreviaLocaleData.appCopy.onboardingSecurityCopy;
+const onboardingLanguageCopy = window.BreviaLocaleData.appCopy.onboardingLanguageCopy;
 function queueModelTask(task, payload, models) {
   if (!task || (!payload?.meeting_id && !['meeting.start'].includes(task))) return;
   pendingModelTasks.set(`${task}:${payload.meeting_id || 'new'}`, { task, payload, models });
@@ -1206,16 +1112,6 @@ function scheduleModelLibraryRender() {
     modelLibraryRenderFrame = undefined;
     if (activeModal === 'models') renderModelLibrary();
   });
-}
-/** 模型安装状态变化后刷新纪要 / AI 笔记弹窗。
- *
- * 只有「内置模型」分支会随模型是否已安装而变化；在线供应商分支重建只会抹掉用户正在输入的
- * API Key / 请求地址，因此对非内置分支直接跳过重建。@returns {void} */
-function refreshModelConfigModal() {
-  if (activeModal !== 'summary-model' && activeModal !== 'ai-assist') return;
-  const draft = activeModal === 'ai-assist' ? aiAssistConfigDraft : summaryConfigDraft;
-  if (draft?.provider !== 'built-in') return;
-  renderModal(activeModal);
 }
 function renderModelDownloadQueue() {
   let card = document.querySelector('#model-download-queue');
@@ -1468,7 +1364,7 @@ function renderModelConfigFields(config, selectedModel, { required = true, hint 
     const endpointField = preset.needsEndpoint ? `<label>${copy.endpoint}<input name="endpoint" value="${escapeHtml(entry.endpoint || '')}" type="url" placeholder="${escapeHtml(copy.endpointPlaceholder)}"${requiredAttr} /></label>` : '';
     // maxlength 对齐主进程的 zod 上限（model 128、keyLength 512），否则超长值要到
     // 主进程才被拒，用户只会看到一句无从下手的「操作失败」。
-    const keyField = `<label>${copy.key}<input name="apiKey" type="password" autocomplete="new-password" maxlength="512" placeholder="${entry.keyReference ? '•'.repeat(entry.keyLength || 8) : ''}"${entry.keyReference || !required ? '' : ' required'} /></label>`;
+    const keyField = `<label>${copy.key}<input name="apiKey" type="password" autocomplete="new-password" maxlength="512" value="${escapeHtml(modelConfigSecrets.get(config)?.[provider] || '')}" placeholder="${entry.keyReference ? '•'.repeat(entry.keyLength || 8) : ''}"${entry.keyReference || !required ? '' : ' required'} /></label>`;
     const modelField = `<label>${copy.model}<input name="model" value="${escapeHtml(entry.model || '')}" maxlength="128" placeholder="${escapeHtml(preset.model)}"${requiredAttr} /></label>`;
     fields = `${endpointField}${keyField}${modelField}`;
   }
@@ -1496,7 +1392,7 @@ function renderAiAssistModal() {
   const copy = (aiAssistCopy[locale] || aiAssistCopy.en).modal;
   settingsModal.querySelector('h2').textContent = t('AI 笔记');
   settingsModal.querySelector('.modal-title p').textContent = t('让 AI 在会议中帮你发现重点、提取待办并整理笔记。');
-  const proactivity = aiAssistConfig.enabled ? aiAssistConfig.proactivity : 'off';
+  const proactivity = config.enabled ? config.proactivity : 'off';
   const levels = (aiOnboardingCopy[locale] || aiOnboardingCopy.en).levels.map(([value, title, detail]) => `<label class="ai-assist-level${proactivity === value ? ' is-selected' : ''}"><input type="radio" name="proactivity" value="${escapeHtml(value)}"${proactivity === value ? ' checked' : ''} /><span><b>${escapeHtml(title)}${recommendTag(value === 'off' && deviceIsWeak())}</b><small>${escapeHtml(detail)}</small></span></label>`).join('');
   const warning = (deviceIsWeak() && config.provider === 'built-in' && /4b/i.test(providerEntry(config).model || ''))
     ? `<p class="performance-weak-note">⚠ ${escapeHtml(t('本机性能有限，建议使用更小的内置模型（如 2B）或在线 LLM API，以获得更流畅的实时体验。'))}<br><button class="secondary" data-use-ai-2b type="button">${escapeHtml(t('改用 2B AI 笔记模型'))}</button>${meetingActive ? ` <button class="secondary" data-disable-ai-assist type="button">${escapeHtml(t('暂时停用 AI 笔记'))}</button>` : ''}</p>` : '';
@@ -1555,9 +1451,8 @@ const exportContentFormats = {
   notes: ['md', 'pdf', 'docx', 'txt'],
   mynotes: ['md', 'pdf', 'docx', 'txt'],
   transcript: ['srt', 'md', 'txt', 'json'],
-  audio: ['m4a', 'wav', 'flac'],
 };
-const exportDefaultFormat = { notes: 'md', mynotes: 'md', transcript: 'srt', audio: 'm4a' };
+const exportDefaultFormat = { notes: 'md', mynotes: 'md', transcript: 'srt', audio: 'wav' };
 const exportTrack = { audio: 'mix' };
 const exportContentLabel = { notes: () => t('会议纪要'), mynotes: () => t('我的笔记'), transcript: () => t('字幕'), audio: () => t('会议录音') };
 function exportContentMeta() {
@@ -1620,7 +1515,7 @@ async function runExportBundle(mode, anchor) {
 }
 // 格式显示名：Markdown 与各容器格式为通用名，纯文本按语言显示（txt 使用 copy.txt）。
 const exportFormatDisplay = {
-  md: 'Markdown', pdf: 'PDF', docx: 'DOCX', txt: null, srt: 'SRT', json: 'JSON', m4a: 'M4A', wav: 'WAV', flac: 'FLAC',
+  md: 'Markdown', pdf: 'PDF', docx: 'DOCX', txt: null, srt: 'SRT', json: 'JSON', wav: 'WAV',
 };
 // 分享/转发渠道的轻量内联图标。
 function sharePlatformIcon(id) {
@@ -1688,11 +1583,11 @@ function exportHubHtml() {
     return `<label class="export-content-row${exportSelection[content] ? ' is-checked' : ''}">
       <input type="checkbox" data-export-item="${content}"${exportSelection[content] ? ' checked' : ''}>
       <span class="export-content-name"><b>${escapeHtml(label)}</b><small>${escapeHtml(desc)}</small></span>
-      <span class="export-format-wrap flow-select">
+      ${content === 'audio' ? '<span class="export-format-fixed">WAV</span>' : `<span class="export-format-wrap flow-select">
         <button class="flow-select-toggle" type="button" data-flow-select-toggle aria-expanded="false">${escapeHtml(currentDisplay)}<span>⌄</span></button>
         <input type="hidden" data-export-format="${content}" value="${current}" />
         <div class="flow-select-options" hidden>${formatOptions}</div>
-      </span>
+      </span>`}
     </label>`;
   }).join('');
   const channels = [];
@@ -1737,6 +1632,12 @@ function updateExportBuilderState() {
     btn.disabled = count === 0 || (kind === 'text' && !hasText);
   });
 }
+/** 模型事件只刷新内置模型选择，不打断在线配置表单的输入和焦点。 */
+function refreshModelConfigModels() {
+  const config = activeModal === 'summary-model' ? summaryConfigDraft : activeModal === 'ai-assist' ? aiAssistConfigDraft : null;
+  if (config?.provider === 'built-in') renderModal(activeModal);
+}
+
 /** 渲染一个设置模态框。@param {'models'|'storage'|'summary-model'} kind 请求的模态框。@returns {void} */
 function renderModal(kind) {
   settingsModal.classList.toggle('summary-model-modal', kind === 'summary-model');
@@ -1992,7 +1893,7 @@ function renderOnboardingAiDemo() {
   if (!demo) return;
   onboardingPage.querySelector('[name="onboarding-ai-proactivity"]').disabled = mode === 'off';
   const copy = aiOnboardingCopy[locale] || aiOnboardingCopy.en;
-  const demoCopy = aiOnboardingDemoCopy[locale] || copy.demo || aiOnboardingCopy.en.demo;
+  const demoCopy = aiOnboardingDemoCopy[locale] || aiOnboardingDemoCopy.en;
   const speaker = t('说话人');
   const caption = (n) => `<div class="app-demo-caption"><span class="app-demo-speaker">${escapeHtml(speaker)} ${n}</span><p>${escapeHtml(demoCopy.transcriptText)}</p></div>`;
   demo.dataset.mode = mode;
@@ -2056,13 +1957,37 @@ function renderSettingsFolderRows() {
   grid.prepend(...rows);
   void refreshSettingsFolderRows();
 }
+let storageMovePending = false;
+/** Keep setup and settings inert until the move and UI refresh both finish. */
+async function withStorageMigration(operation) {
+  if (storageMovePending) return;
+  storageMovePending = true;
+  const copy = onboardingStorageCopy[locale] || onboardingStorageCopy.en;
+  const dialog = document.createElement('dialog');
+  dialog.className = 'modal-panel storage-migration-dialog';
+  dialog.setAttribute('aria-labelledby', 'storage-migration-title');
+  dialog.setAttribute('aria-describedby', 'storage-migration-description');
+  dialog.innerHTML = `<h2 id="storage-migration-title">${escapeHtml(copy.moving)}</h2><p id="storage-migration-description">${escapeHtml(copy.movingHint)}</p><progress aria-label="${escapeHtml(copy.moving)}"></progress>`;
+  dialog.addEventListener('cancel', (event) => event.preventDefault());
+  dialog.addEventListener('keydown', (event) => event.stopPropagation());
+  document.body.append(dialog);
+  try {
+    dialog.showModal();
+    return await operation();
+  } finally {
+    dialog.close();
+    dialog.remove();
+    storageMovePending = false;
+  }
+}
 function storageErrorMessage(error) {
-  const message = String(error.message || error);
+  const message = String(error.detail || error.message || error);
   if (/empty|ENOTEMPTY/.test(message)) return t('请选择空文件夹。');
-  if (/Finish the current|Folders are/.test(message)) return t('请先结束会议、精修和模型下载，再更改文件夹。');
+  if (/Folders are/.test(message)) return (onboardingStorageCopy[locale] || onboardingStorageCopy.en).moving;
+  if (/Finish the current/.test(message)) return t('请先结束会议、精修和模型下载，再更改文件夹。');
   if (/separate|outside/.test(message)) return t('模型和录音文件夹必须相互独立，且不能包含原数据文件夹。');
   if (/environment variable/.test(message)) return t('此文件夹由环境变量指定，无法在应用内更改。');
-  return `${t('文件夹更改失败，请检查路径、磁盘连接和写入权限。')} ${message}`;
+  return t('文件夹更改失败，请检查路径、磁盘连接和写入权限。');
 }
 async function refreshSettingsFolderRows() {
   try {
@@ -2233,7 +2158,7 @@ function tourView(index, demo) {
     }
     case 4: {
       const meta = demo.meta || (tourCopy[locale] || tourCopy.en).steps[0].demo.meetings[0]?.[1] || '';
-      return `<section class="view active" id="detail-view"><button class="back tour-anim">← ${escapeHtml(t('返回会议库'))}</button><header class="detail-head tour-anim" style="--tour-delay:60ms"><div><p class="eyebrow">${escapeHtml(t('本地会议'))}</p><h1>${escapeHtml(meetingName)}</h1><p class="detail-meta">${escapeHtml(meta)}</p></div><div class="detail-actions"><button class="primary-action">${escapeHtml(t('导出与分享'))}</button></div></header><div class="detail-layout"><section class="final-transcript tour-anim" style="--tour-delay:220ms"><div class="tabbar"><div class="tabbar-tabs"><button class="tab active">${escapeHtml(t('精修字幕'))}</button><button class="tab">${escapeHtml(t('原始转写'))}</button></div><button class="tabbar-action">${escapeHtml(t('更多'))}</button></div><div class="refined-fulltext"><div class="refined-fulltext-body">${escapeHtml(demo.refined)}</div></div></section><aside class="notes tour-anim" style="--tour-delay:300ms"><div class="tabbar"><div class="tabbar-tabs"><button class="tab active">${escapeHtml(t('会议纪要'))}</button></div></div><div class="detail-notes-panel"><p>${escapeHtml(demo.summary)}</p></div></aside></div><section class="player floating-control-bar tour-anim" style="--tour-delay:140ms"><div class="player-track"><span>${escapeHtml(t('本地录音'))}</span><span class="player-time">00:00</span><input type="range" min="0" max="1" value="0" /></div><div class="player-actions"><button class="skip">↶ 15</button><button class="play">▶</button><button class="skip">15 ↷</button></div><div class="player-speed flow-select"><button class="flow-select-toggle" type="button">1× <span>⌄</span></button></div></section></section>`;
+      return `<section class="view active" id="detail-view"><button class="back tour-anim">← ${escapeHtml(t('返回会议库'))}</button><header class="detail-head tour-anim" style="--tour-delay:60ms"><div><p class="eyebrow">${escapeHtml(t('本地会议'))}</p><h1>${escapeHtml(meetingName)}</h1><p class="detail-meta">${escapeHtml(meta)}</p></div><div class="detail-actions"><button class="primary-action">${escapeHtml(t('导出与分享'))}</button></div></header><div class="detail-layout"><section class="final-transcript tour-anim" style="--tour-delay:220ms"><div class="tabbar"><div class="tabbar-tabs"><button class="tab active">${escapeHtml(t('精修字幕'))}</button><button class="tab">${escapeHtml(t('原始转写'))}</button></div><button class="tabbar-action">${escapeHtml(t('更多'))}</button></div><div class="refined-fulltext"><div class="refined-fulltext-body">${escapeHtml(demo.refined)}</div></div></section><aside class="notes tour-anim" style="--tour-delay:300ms"><div class="tabbar"><div class="tabbar-tabs"><button class="tab active">${escapeHtml(t('会议纪要'))}</button></div></div><div class="detail-notes-panel"><p>${escapeHtml(demo.summary)}</p></div></aside></div><section class="player floating-control-bar tour-anim" style="--tour-delay:140ms"><div class="player-source"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8v4h3l4 3V5L6 8H3z"/><path d="M13 7a4 4 0 0 1 0 6m2-9a8 8 0 0 1 0 12"/></svg><span>${escapeHtml(t('本地录音'))}</span><span class="player-time">00:00</span></div><div class="player-actions"><button class="skip">↶ 15</button><button class="play">▶</button><button class="skip">15 ↷</button></div><div class="player-meta"><span class="player-duration">17:00</span><div class="player-speed flow-select"><button class="flow-select-toggle" type="button">1× <span>⌄</span></button></div></div><div class="player-track"><input type="range" min="0" max="1" value="0" /></div></section></section>`;
     }
   }
   return '';
@@ -2314,6 +2239,7 @@ function showOnboardingPage(kind, content) {
 
 function dismissOnboardingPage(next) {
   const page = onboardingPage;
+  if (!page || page.classList.contains('onboarding-page-leave')) return;
   clearInterval(onboardingAiDemoTimer);
   void breviaClient?.stopPreview();
   // 导览页在 openOnboardingTour 里注册了 resize 监听；页面销毁时同步移除，避免泄漏。
@@ -2322,7 +2248,8 @@ function dismissOnboardingPage(next) {
   page.classList.add('onboarding-page-leave');
   window.setTimeout(() => {
     page.remove();
-    if (onboardingPage === page) onboardingPage = undefined;
+    if (onboardingPage !== page) return;
+    onboardingPage = undefined;
     next?.();
   }, 260);
 }
@@ -2348,7 +2275,7 @@ function onboardingRecommendedModelId() {
 }
 async function openOnboardingSetup() {
   try { if (initializationPromise) await initializationPromise; }
-  catch (error) { showToast(`${t('配置或后端启动失败')}: ${error.message}`); openOnboardingPermissions(); return; }
+  catch (error) { showToast(`${t('配置或后端启动失败')}: ${userFacingError(error.message)}`); openOnboardingPermissions(); return; }
   const copy = asrText('setup');
   const storageCopy = onboardingStorageCopy[locale] || onboardingStorageCopy.en;
   let locations;
@@ -2439,13 +2366,15 @@ async function openOnboardingSetup() {
     download?.setAttribute('disabled', '');
     later?.setAttribute('disabled', '');
     try {
-      const result = await window.brevia.storage.setupLocations({ models: locations.models, recordings: locations.recordings });
-      if (result.data) applyInitializationResult(result.data);
-      if (download) {
-        window.BreviaOnboarding.beginDownloads(onboardingModelIds);
-        downloadRequiredModels(onboardingModelIds);
-      }
-      dismissOnboardingPage(openOnboardingAi);
+      await withStorageMigration(async () => {
+        const result = await window.brevia.storage.setupLocations({ models: locations.models, recordings: locations.recordings });
+        if (result.data) applyInitializationResult(result.data);
+        if (download) {
+          window.BreviaOnboarding.beginDownloads(onboardingModelIds);
+          downloadRequiredModels(onboardingModelIds);
+        }
+        dismissOnboardingPage(openOnboardingAi);
+      });
     } catch (error) {
       showToast(storageErrorMessage(error));
       if (download) download.disabled = false;
@@ -2478,118 +2407,12 @@ function finishOnboarding() {
   closeModal();
 }
 // Onboarding 的 AI 辅助配置页（PRD §22）：离线功能配置之后进入。
-const aiOnboardingCopy = {
-  zh: { title: '启用 AI 功能', intro: '言录提供两项可独立开启的 AI 能力：会后生成会议纪要，以及会中实时协助记录。', meetingNotesTitle: 'AI 会议纪要', meetingNotesDesc: '会议结束后，AI 自动把整场对话整理成一份纪要。', meetingNotesConsequence: '不生成纪要也能正常录制与出字幕；之后可在「AI 会议总结」设置里随时开启。', wayTitle: '会议纪要使用哪种 AI？', wayHint: '内置 AI 在本机运行；在线 AI 使用你的 API Key。', builtin: '内置 AI', builtinHint: '免费、离线，数据更私密；会占用电脑性能，分析速度取决于本机性能。首次下载约 1–2 GB。', online: '在线 AI 供应商', onlineHint: '使用你自己的 API Key；对电脑性能占用更小，分析速度取决于网络状况。', configureOnline: '配置在线服务', liveNotesTitle: 'AI 笔记', liveNotesDesc: '在会议中，AI 实时提示重点、决策与待办，辅助记录笔记。', liveNotesConsequence: '不开 AI 笔记，仍会得到 AI 会议纪要；只是会中没有实时建议。', enableLiveNotes: '启用 AI 笔记', proactivityTitle: 'AI 笔记如何协助记录？', proactivityHint: '选得越主动，AI 介入越多；随时可在「AI 笔记」设置里调整。', offEmpty: '已选择暂不开启 AI 笔记，会中不会出现实时建议；会议结束后仍会生成 AI 会议纪要。', levels: [['off', '暂不开启 AI 笔记', '仅使用会后 AI 会议纪要，会中不产生实时建议。'], ['quiet', '只在我需要时', '只有你点击 AI、选中文字或主动要求时才出现。'], ['assist', '发现重点时提醒我', '发现结论、决策、待办、重要数字时适度提醒。'], ['auto', '自动帮我整理', '自动归纳结论、收集待办并整理会议内容。']], demo: { recording: '正在录制', meeting: '会议 ', transcript: '实时字幕', transcriptText: '“我们周五完成验收。”', notes: '我的笔记', scenes: { quiet: [['仅在需要时', '✦ AI 建议：确认截止时间', '• 周五前完成内部验收'], ['仅在需要时', '✦ AI 建议：记录待办', '• 产品团队跟进验收']], assist: [['发现重点', '✦ AI 建议：重要决策', '• 下周一开始小范围发布'], ['发现重点', '✦ AI 建议：行动项', '• 开发团队周四交付测试版']], auto: [['自动整理', '✦ AI 正在整理会议内容', '会议结论\n周五完成验收'], ['自动整理', '✦ AI 正在归纳待办', '下一步\n准备测试版本']] } }, finish: '完成', skip: '暂不启用' },
-  en: { title: 'Set up AI features', intro: 'Brevia has two AI features for different purposes. You can turn each on or off:', meetingNotesTitle: 'AI meeting summary', meetingNotesDesc: 'After the meeting, AI automatically distills the whole conversation into a summary (conclusions, actions, risks). It runs once, so it works smoothly even on low-end devices.', meetingNotesConsequence: 'Recording and captions work fine without a summary; you can turn it on anytime in the AI meeting summary settings.', wayTitle: 'Which AI for the meeting summary?', wayHint: 'Built-in AI: free, offline, more private, downloads about 1–2 GB once. Online AI: uses your own API key, faster but needs internet and may cost money.', builtin: 'Built-in AI', builtinHint: 'Free, offline, most private. Downloads about 1–2 GB once.', online: 'Online AI', onlineHint: 'Uses your own API key online, faster, may cost money; only text is sent.', configureOnline: 'Configure online service', liveNotesTitle: 'AI notes (real-time suggestions)', liveNotesDesc: 'During the meeting, AI suggests key points, decisions, and actions in real time. It keeps using resources, so we suggest turning it off on low-end devices.', liveNotesConsequence: 'Without AI notes you still get the AI meeting summary; you just won’t get in-meeting suggestions.', enableLiveNotes: 'Enable AI notes', proactivityTitle: 'How should AI notes help?', proactivityHint: 'The more proactive, the more AI chimes in. You can adjust this anytime in the AI notes settings.', offEmpty: 'AI notes are off for now, so you won’t see in-meeting suggestions; you’ll still get the post-meeting AI summary.', levels: [['off', 'Don’t enable AI notes yet', 'Only use the post-meeting AI summary; no in-meeting suggestions.'], ['quiet', 'Only when I ask', 'Appears only when you click AI, select text, or ask directly.'], ['assist', 'Notify me of key points', 'Lightly notifies you about conclusions, decisions, actions, and key figures.'], ['auto', 'Organize for me automatically', 'Automatically summarizes conclusions and organizes the meeting.']], demo: { recording: 'Recording', meeting: 'Meeting ', transcript: 'Live transcript', transcriptText: '“We’ll complete acceptance on Friday.”', notes: 'My notes', scenes: { quiet: [['When needed', '✦ AI suggestion: confirm deadline', '• Finish internal acceptance by Friday'], ['When needed', '✦ AI suggestion: capture action', '• Product team follows up on acceptance']], assist: [['Key point found', '✦ AI suggestion: key decision', '• Start a limited rollout next Monday'], ['Key point found', '✦ AI suggestion: action item', '• Engineering delivers a test build Thursday']], auto: [['Auto organize', '✦ AI is organizing the meeting', '## Decision\n- Complete acceptance Friday'], ['Auto organize', '✦ AI is grouping actions', '## Next step\n- Prepare a test build']] } }, finish: 'Done', skip: 'Not now' },
-  es: { title: 'Activar funciones de IA', intro: 'Brevia tiene dos funciones de IA con distintos fines. Puedes activar cada una por separado:', meetingNotesTitle: 'Resumen de reunión con IA', meetingNotesDesc: 'Tras la reunión, la IA resume toda la conversación en una nota de reunión.', meetingNotesConsequence: 'La grabación y los subtítulos funcionan sin resumen; puedes activarlo cuando quieras en los ajustes de resumen.', wayTitle: '¿Qué IA para el resumen?', wayHint: 'IA integrada: gratis, sin conexión y más privada; descarga una vez unos 1–2 GB. IA en línea: usa tu propia clave API, más rápida pero requiere conexión y puede costar.', builtin: 'IA integrada', builtinHint: 'Gratis, sin conexión, más privada. Descarga una vez ~1–2 GB.', online: 'IA en línea', onlineHint: 'Usa tu clave API en línea, más rápida, puede costar; solo texto.', configureOnline: 'Configurar servicio en línea', liveNotesTitle: 'Notas IA', liveNotesDesc: 'Durante la reunión, la IA sugiere puntos clave, decisiones y tareas en tiempo real para ayudarte a tomar notas.', liveNotesConsequence: 'Sin notas IA sigues teniendo el resumen de la reunión; solo pierdes las sugerencias en directo.', enableLiveNotes: 'Activar notas IA', proactivityTitle: '¿Cómo deben ayudar las notas IA?', proactivityHint: 'Cuanto más proactiva, más interviene la IA. Puedes ajustarlo cuando quieras en los ajustes de notas IA.', offEmpty: 'Has elegido no activar las notas IA por ahora; no verás sugerencias en tiempo real y seguirás teniendo el resumen tras la reunión.', levels: [['off', 'No activar notas IA todavía', 'Usar solo el resumen con IA; sin sugerencias en la reunión.'], ['quiet', 'Solo cuando lo pida', 'Aparece solo cuando haces clic en IA, seleccionas texto o lo pides.'], ['assist', 'Avisarme de puntos clave', 'Avisa de conclusiones, decisiones, tareas y cifras clave.'], ['auto', 'Organizar automáticamente', 'Resume conclusiones y organiza la reunión automáticamente.']], finish: 'Listo', skip: 'Ahora no' },
-  ja: { title: 'AI 機能を有効にする', intro: 'Brevia には用途の異なる 2 つの AI 機能があります。それぞれ個別にオン/オフできます：', meetingNotesTitle: 'AI 会議要約', meetingNotesDesc: '会議後に AI が会話全体を会議メモにまとめます。', meetingNotesConsequence: '要約なしでも録音・字幕は正常に動作します。後からいつでも「AI 会議要約」設定で有効にできます。', wayTitle: '会議要約にはどの AI を使いますか？', wayHint: '内蔵 AI：無料・オフライン・よりプライベート。初回に約 1〜2 GB をダウンロード。オンライン AI：自分の API キーを使用。より速いが接続と費用がかかる場合があります。', builtin: '内蔵 AI', builtinHint: '無料・オフライン・よりプライベート。初回約 1〜2 GB。', online: 'オンライン AI', onlineHint: '自分の API キーで接続。より速いが費用の可能性。テキストのみ送信。', configureOnline: 'オンラインサービスを設定', liveNotesTitle: 'AI メモ', liveNotesDesc: '会議中に AI が要点・決定・タスクをリアルタイムで提示し、メモ取りを支援します。', liveNotesConsequence: 'AI メモをオフにしても AI 会議要約は得られます。会議中のリアルタイム提案だけがなくなります。', enableLiveNotes: 'AI メモを有効にする', proactivityTitle: 'AI メモはどのように手伝いますか？', proactivityHint: 'より積極的に設定するほど、AI の介入が増えます。あとでいつでも「AIメモ」設定で変更できます。', offEmpty: 'AI メモをまだ有効にしていないため、会議中のリアルタイム提案はありません。会議後も AI 会議要約は生成されます。', levels: [['off', 'AI メモはまだ使わない', '会後の AI 会議要約のみ使用。会議中の提案はありません。'], ['quiet', '必要なときだけ', 'クリックや選択、直接依頼したときだけ表示。'], ['assist', '要点を知らせる', '結論・決定・ToDo・重要な数字を適度に知らせます。'], ['auto', '自動で整理する', '結論をまとめ、会議内容を自動整理します。']], finish: '完了', skip: 'あとで' },
-  ko: { title: 'AI 기능 사용', intro: 'Brevia에는 용도가 다른 두 가지 AI 기능이 있습니다. 각각 따로 켜고 끌 수 있습니다:', meetingNotesTitle: 'AI 회의 요약', meetingNotesDesc: '회의가 끝나면 AI가 전체 대화를 회의 요약으로 정리합니다.', meetingNotesConsequence: '요약이 없어도 녹음과 자막은 정상 작동합니다. 나중에 언제든 "AI 회의 요약" 설정에서 켤 수 있습니다.', wayTitle: '회의 요약에 어떤 AI를 쓸까요?', builtin: '내장 AI', builtinHint: '무료·오프라인·더 사적. 처음 약 1~2GB.', online: '온라인 AI', onlineHint: '자신의 API 키로 연결. 더 빠르고 비용 가능. 텍스트만 전송.', configureOnline: '온라인 서비스 구성', liveNotesTitle: 'AI 메모', liveNotesDesc: '회의 중 AI가 핵심·결정·할 일을 실시간으로 제안해 메모 작성을 돕습니다.', liveNotesConsequence: 'AI 메모를 꺼도 AI 회의 요약은 받습니다. 회의 중 실시간 제안만 사라집니다.', enableLiveNotes: 'AI 메모 사용', proactivityTitle: 'AI 메모는 어떻게 도와줄까요?', offEmpty: 'AI 메모를 아직 켜지 않아 회의 중 실시간 제안이 없습니다. 회의 후에도 AI 회의 요약은 생성됩니다.', levels: [['off', 'AI 메모 아직 사용 안 함', '회의 후 AI 요약만 사용합니다. 회의 중 제안은 없습니다.'], ['quiet', '필요할 때만', '클릭, 선택 또는 직접 요청할 때만 표시됩니다.'], ['assist', '핵심 포인트 알림', '결론·결정·할 일·중요 수치를 적절히 알립니다.'], ['auto', '자동으로 정리', '결론을 요약하고 회의를 자동 정리합니다.']], finish: '완료', skip: '나중에' },
-  fr: { title: "Activer les fonctions IA", intro: "Brevia a deux fonctions IA à des fins différentes. Vous pouvez activer chacune séparément :", meetingNotesTitle: "Résumé de réunion IA", meetingNotesDesc: "Après la réunion, l'IA résume toute la conversation en une note de réunion.", meetingNotesConsequence: "L'enregistrement et les sous-titres fonctionnent sans résumé ; vous pourrez l'activer à tout moment dans les réglages du résumé.", wayTitle: "Quelle IA pour le résumé ?", wayHint: "IA intégrée : gratuite, hors ligne et plus privée ; télécharge environ 1–2 Go une fois. IA en ligne : utilise votre propre clé API, plus rapide mais nécessite internet et peut coûter.", builtin: "IA intégrée", builtinHint: "Gratuite, hors ligne, plus privée. ~1–2 Go une fois.", online: "IA en ligne", onlineHint: "Votre clé API en ligne, plus rapide, peut coûter ; texte seul.", configureOnline: 'Configurer le service en ligne', liveNotesTitle: "Notes IA", liveNotesDesc: "Pendant la réunion, l'IA suggère points clés, décisions et tâches en temps réel pour vous aider à prendre des notes.", liveNotesConsequence: "Sans notes IA, vous avez toujours le résumé de réunion ; seules les suggestions en direct disparaissent.", enableLiveNotes: "Activer les notes IA", proactivityTitle: "Comment les notes IA doivent-elles aider ?", proactivityHint: "Plus c'est proactif, plus l'IA intervient. Ajustable à tout moment dans les réglages des notes IA.", offEmpty: "Vous avez choisi de ne pas activer les notes IA pour l'instant : aucune suggestion en temps réel, mais vous aurez toujours le résumé IA après la réunion.", levels: [['off', "Ne pas activer les notes IA pour l'instant", "Utiliser uniquement le résumé IA après réunion ; aucune suggestion en direct."], ['quiet', 'Seulement quand je demande', "N'apparaît que lorsque vous cliquez, sélectionnez du texte ou demandez."], ['assist', "M'alerter des points clés", 'Alerte sur les conclusions, décisions, tâches et chiffres clés.'], ['auto', 'Organiser automatiquement', 'Résume les conclusions et organise la réunion automatiquement.']], finish: 'Terminé', skip: 'Pas maintenant' },
-  de: { title: 'KI-Funktionen aktivieren', intro: 'Brevia hat zwei KI-Funktionen für unterschiedliche Zwecke. Sie können jede einzeln an- oder ausschalten:', meetingNotesTitle: 'KI-Besprechungszusammenfassung', meetingNotesDesc: 'Nach der Besprechung fasst die KI das ganze Gespräch in einer Zusammenfassung zusammen.', meetingNotesConsequence: 'Aufnahme und Untertitel funktionieren auch ohne Zusammenfassung; Sie können sie jederzeit in den Einstellungen aktivieren.', wayTitle: 'Welche KI für die Zusammenfassung?', wayHint: 'Integrierte KI: kostenlos, offline und am privatesten; einmaliger Download von ca. 1–2 GB. Online-KI: eigener API-Schlüssel, schneller, benötigt aber Internet und kann kosten.', builtin: 'Integrierte KI', builtinHint: 'Kostenlos, offline, am privatesten. Einmal ca. 1–2 GB.', online: 'Online-KI', onlineHint: 'Eigener API-Schlüssel online, schneller, kann kosten; nur Text.', configureOnline: 'Onlinedienst konfigurieren', liveNotesTitle: 'KI-Notizen', liveNotesDesc: 'Während der Besprechung schlägt die KI Punkte, Entscheidungen und Aufgaben in Echtzeit vor und hilft beim Mitschreiben.', liveNotesConsequence: 'Ohne KI-Notizen erhalten Sie weiterhin die Zusammenfassung; nur die Echtzeit-Vorschläge entfallen.', enableLiveNotes: 'KI-Notizen aktivieren', proactivityTitle: 'Wie sollen KI-Notizen helfen?', proactivityHint: 'Je proaktiver, desto mehr greift die KI ein. Sie können dies jederzeit in den KI-Notizen-Einstellungen anpassen.', offEmpty: 'KI-Notizen sind vorerst deaktiviert, daher keine Echtzeit-Vorschläge; die KI-Zusammenfassung nach der Besprechung erhalten Sie trotzdem.', levels: [['off', 'KI-Notizen noch nicht aktivieren', 'Nur die KI-Zusammenfassung nach der Besprechung; keine Echtzeit-Vorschläge.'], ['quiet', 'Nur wenn ich frage', 'Erscheint nur beim Klicken, Auswählen oder direkter Anfrage.'], ['assist', 'Über Kernpunkte informieren', 'Hinweise auf Schlussfolgerungen, Entscheidungen, Aufgaben und Zahlen.'], ['auto', 'Automatisch ordnen', 'Fasst Schlussfolgerungen zusammen und ordnet die Besprechung automatisch.']], finish: 'Fertig', skip: 'Später' },
-  ru: { title: 'Включить функции ИИ', intro: 'В Brevia есть две функции ИИ для разных целей. Каждую можно включать отдельно:', meetingNotesTitle: 'ИИ-сводка встречи', meetingNotesDesc: 'После встречи ИИ сводит весь разговор в сводку встречи.', meetingNotesConsequence: 'Запись и субтитры работают и без сводки; её можно включить в любой момент в настройках ИИ-сводки.', wayTitle: 'Какой ИИ для сводки?', wayHint: 'Встроенный ИИ: бесплатно, офлайн и максимально приватно; одноразовое скачивание около 1–2 ГБ. Онлайн-ИИ: свой ключ API, быстрее, но нужен интернет и возможны расходы.', builtin: 'Встроенный ИИ', builtinHint: 'Бесплатно, офлайн, приватно. Один раз ~1–2 ГБ.', online: 'Онлайн-ИИ', onlineHint: 'Свой ключ API онлайн, быстрее, может стоить; только текст.', configureOnline: 'Настроить онлайн-сервис', liveNotesTitle: 'ИИ-заметки', liveNotesDesc: 'Во время встречи ИИ в реальном времени подсказывает ключевые моменты, решения и задачи, помогая вести заметки.', liveNotesConsequence: 'Без ИИ-заметок вы всё равно получите ИИ-сводку встречи; пропадут лишь подсказки во время встречи.', enableLiveNotes: 'Включить ИИ-заметки', proactivityTitle: 'Как ИИ-заметки должны помогать?', proactivityHint: 'Чем активнее, тем больше вмешивается ИИ. Это можно изменить в любой момент в настройках ИИ-заметок.', offEmpty: 'Вы пока не включили ИИ-заметки, поэтому во время встречи подсказок не будет; ИИ-сводку после встречи вы всё равно получите.', levels: [['off', 'Пока не включать ИИ-заметки', 'Только ИИ-сводка после встречи; без подсказок во время встречи.'], ['quiet', 'Только когда попрошу', 'Появляется только при клике, выборе текста или прямой просьбе.'], ['assist', 'Сообщать о ключевых моментах', 'Сообщает о выводах, решениях, задачах и важных цифрах.'], ['auto', 'Упорядочивать автоматически', 'Автоматически резюмирует выводы и упорядочивает встречу.']], finish: 'Готово', skip: 'Не сейчас' },
-};
-const aiOnboardingDemoCopy = {
-  es: { recording: 'Grabando', meeting: 'Reunión ', transcript: 'Transcripción en vivo', transcriptText: '“Terminaremos la aceptación el viernes.”', notes: 'Mis notas', scenes: { quiet: [['Cuando sea necesario', '✦ Sugerencia de IA: confirmar plazo', '• Terminar la aceptación interna el viernes'], ['Cuando sea necesario', '✦ Sugerencia de IA: registrar tarea', '• Producto da seguimiento a la aceptación']], assist: [['Punto clave detectado', '✦ Sugerencia de IA: decisión clave', '• Iniciar despliegue limitado el lunes'], ['Punto clave detectado', '✦ Sugerencia de IA: tarea', '• Ingeniería entrega una versión de prueba el jueves']], auto: [['Organización automática', '✦ La IA organiza la reunión', '## Decisión\n- Completar la aceptación el viernes'], ['Organización automática', '✦ La IA agrupa las tareas', '## Siguiente paso\n- Preparar una versión de prueba']] } },
-  ja: { recording: '録音中', meeting: '会議 ', transcript: 'ライブ字幕', transcriptText: '「金曜日に受け入れを完了します。」', notes: '自分のメモ', scenes: { quiet: [['必要なとき', '✦ AI の提案：期限を確認', '• 金曜日までに社内受け入れを完了'], ['必要なとき', '✦ AI の提案：タスクを記録', '• プロダクトチームが受け入れをフォロー']], assist: [['要点を発見', '✦ AI の提案：重要な決定', '• 来週月曜に限定公開を開始'], ['要点を発見', '✦ AI の提案：アクション', '• 開発チームが木曜にテスト版を納品']], auto: [['自動整理', '✦ AI が会議を整理中', '## 決定事項\n- 金曜日に受け入れを完了'], ['自動整理', '✦ AI がタスクを整理中', '## 次の手順\n- テスト版を準備']] } },
-  ko: { recording: '녹음 중', meeting: '회의 ', transcript: '실시간 자막', transcriptText: '“금요일에 검수를 완료하겠습니다.”', notes: '내 메모', scenes: { quiet: [['필요할 때', '✦ AI 제안: 마감일 확인', '• 금요일까지 내부 검수 완료'], ['필요할 때', '✦ AI 제안: 할 일 기록', '• 제품팀이 검수를 후속 처리']], assist: [['핵심 포인트 발견', '✦ AI 제안: 주요 결정', '• 다음 주 월요일 제한 배포 시작'], ['핵심 포인트 발견', '✦ AI 제안: 실행 항목', '• 개발팀이 목요일 테스트 빌드 제공']], auto: [['자동 정리', '✦ AI가 회의를 정리 중', '## 결정\n- 금요일에 검수 완료'], ['자동 정리', '✦ AI가 할 일을 정리 중', '## 다음 단계\n- 테스트 빌드 준비']] } },
-  fr: { recording: 'Enregistrement', meeting: 'Réunion ', transcript: 'Transcription en direct', transcriptText: '« Nous terminerons la recette vendredi. »', notes: 'Mes notes', scenes: { quiet: [['Au besoin', '✦ Suggestion IA : confirmer l’échéance', '• Terminer la recette interne vendredi'], ['Au besoin', '✦ Suggestion IA : noter une tâche', '• L’équipe produit suit la recette']], assist: [['Point clé détecté', '✦ Suggestion IA : décision clé', '• Lancement limité lundi prochain'], ['Point clé détecté', '✦ Suggestion IA : action', '• L’équipe technique livre une version de test jeudi']], auto: [['Organisation auto', '✦ L’IA organise la réunion', '## Décision\n- Terminer la recette vendredi'], ['Organisation auto', '✦ L’IA regroupe les actions', '## Prochaine étape\n- Préparer une version de test']] } },
-  de: { recording: 'Aufnahme läuft', meeting: 'Besprechung ', transcript: 'Live-Transkript', transcriptText: '„Wir schließen die Abnahme am Freitag ab.“', notes: 'Meine Notizen', scenes: { quiet: [['Bei Bedarf', '✦ KI-Vorschlag: Frist bestätigen', '• Interne Abnahme bis Freitag abschließen'], ['Bei Bedarf', '✦ KI-Vorschlag: Aufgabe erfassen', '• Produktteam begleitet die Abnahme']], assist: [['Kernpunkt erkannt', '✦ KI-Vorschlag: wichtige Entscheidung', '• Begrenzten Rollout nächsten Montag starten'], ['Kernpunkt erkannt', '✦ KI-Vorschlag: Aktion', '• Entwicklung liefert Donnerstag einen Test-Build']], auto: [['Automatisch ordnen', '✦ KI ordnet die Besprechung', '## Entscheidung\n- Abnahme am Freitag abschließen'], ['Automatisch ordnen', '✦ KI bündelt Aufgaben', '## Nächster Schritt\n- Test-Build vorbereiten']] } },
-  ru: { recording: 'Идёт запись', meeting: 'Встреча ', transcript: 'Субтитры в реальном времени', transcriptText: '«Мы завершим приёмку в пятницу.»', notes: 'Мои заметки', scenes: { quiet: [['По запросу', '✦ Совет ИИ: подтвердить срок', '• Завершить внутреннюю приёмку к пятнице'], ['По запросу', '✦ Совет ИИ: записать задачу', '• Команда продукта сопровождает приёмку']], assist: [['Найден ключевой момент', '✦ Совет ИИ: важное решение', '• Начать ограниченный запуск в следующий понедельник'], ['Найден ключевой момент', '✦ Совет ИИ: задача', '• Разработка сдаёт тестовую сборку в четверг']], auto: [['Автоупорядочивание', '✦ ИИ упорядочивает встречу', '## Решение\n- Завершить приёмку в пятницу'], ['Автоупорядочивание', '✦ ИИ группирует задачи', '## Следующий шаг\n- Подготовить тестовую сборку']] } },
-};
+const aiOnboardingCopy = window.BreviaLocaleData.appCopy.aiOnboardingCopy;
+const aiOnboardingDemoCopy = window.BreviaLocaleData.appCopy.aiOnboardingDemoCopy;
 // AI 会议纪要演示：会后左下角出现任务卡片（进度条），随后显示整理好的纪要。
-const aiOnboardingSummaryDemoCopy = {
-  zh: { windowTitle: '会议', task: '生成会议纪要', progress: '正在整理结论与待办…', heading: 'AI 会议纪要', decision: '本周五前完成内部验收，风险点由李娜统一整理。', actions: ['产品团队跟进验收', '开发下周一同步进展'] },
-  en: { windowTitle: 'Meeting', task: 'Generating meeting summary', progress: 'Distilling conclusions and to-dos…', heading: 'AI meeting summary', decision: 'Complete internal acceptance by Friday; Mia consolidates the risks.', actions: ['Product team to follow up on acceptance', 'Engineering syncs progress Monday'] },
-  es: { windowTitle: 'Reunión', task: 'Generando resumen de reunión', progress: 'Resumiendo conclusiones y tareas…', heading: 'Resumen de reunión con IA', decision: 'Completar la aceptación interna el viernes; Mía consolida los riesgos.', actions: ['El equipo de producto da seguimiento', 'Ingeniería sincroniza el lunes'] },
-  ja: { windowTitle: '会議', task: '会議要約を生成中', progress: '結論とタスクを整理中…', heading: 'AI 会議要約', decision: '金曜までに社内受け入れを完了し、リスクは鈴木が整理します。', actions: ['プロダクトチームが受け入れをフォロー', '開発は月曜に同期'] },
-  ko: { windowTitle: '회의', task: '회의 요약 생성 중', progress: '결론과 할 일을 정리 중…', heading: 'AI 회의 요약', decision: '금요일까지 내부 검수를 완료하고 리스크는 이나가 정리합니다.', actions: ['제품팀이 검수를 후속 처리', '개발팀은 월요일 동기화'] },
-  fr: { windowTitle: 'Réunion', task: 'Génération du résumé', progress: 'Synthèse des conclusions…', heading: 'Résumé de réunion IA', decision: 'Terminer la recette interne vendredi ; Mía consolide les risques.', actions: ["L'équipe produit suit la recette", 'L’ingénierie synchronise lundi'] },
-  de: { windowTitle: 'Besprechung', task: 'Zusammenfassung wird erstellt', progress: 'Schlussfolgerungen werden zusammengefasst…', heading: 'KI-Besprechungszusammenfassung', decision: 'Interne Abnahme bis Freitag abschließen; Mia bündelt die Risiken.', actions: ['Produktteam begleitet die Abnahme', 'Entwicklung synchronisiert Montag'] },
-  ru: { windowTitle: 'Встреча', task: 'Создание сводки встречи', progress: 'Собираем выводы и задачи…', heading: 'ИИ-сводка встречи', decision: 'Завершить внутреннюю приёмку к пятнице; Миа собирает риски.', actions: ['Команда продукта сопровождает приёмку', 'Разработка синхронизируется в понедельник'] },
-};
+const aiOnboardingSummaryDemoCopy = window.BreviaLocaleData.appCopy.aiOnboardingSummaryDemoCopy;
 // 首次引导功能演示（tour）文案。
-const tourCopy = {
-  zh: {
-    title: '三分钟了解言录', intro: '把每一场对话，变成可回看、可检索、可分享的记录。', start: '开始使用', next: '下一步', back: '上一步', skip: '跳过演示',
-    steps: [
-      { label: '会议库', heading: '可检索的会议库', body: '所有会议按时间归档。你随时可以按名称、逐字稿或标签，快速找回某一场对话。', points: ['搜索会议、逐字稿与标签', '日期范围筛选', '删除后 30 天内可恢复'], callout: 'search', demo: { meetings: [['产品周会 · 2026-08-19', '04:23 · 中文 · 12 位参与者', ['发布计划', '风险']], ['需求评审 · 2026-08-17', '01:48 · 中文 · 6 位参与者', ['评审']]] } },
-      { label: '准备会议', heading: '三秒开始一场会议', body: '只需起个名字、选好语言与音频来源，点一下就能开始。', points: ['选择会议语言与翻译目标', '麦克风 + 系统音频双轨录制', '录制前自动加载模型，不依赖网络'], callout: 'form', demo: { name: '会议', language: '中文', device: 'CPU', mode: '标准模式' } },
-      { label: '实时字幕', heading: '边开会，边出字幕', body: '低延迟实时转写持续更新当前发言，还能区分不同说话人。', points: ['毫秒级实时字幕', '说话人识别与区分', '可开启悬浮字幕窗口'], callout: 'transcript', demo: { segments: [['张伟', '我们周五前要完成内部验收。'], ['李娜', '好，我把风险点整理出来。'], ['张伟', '那下周一同步进展。']] } },
-      { label: 'AI 纪要', heading: 'AI 自动提炼结论与待办', body: '会议过程中 AI 帮你记录重点、提取决策与待办，不遗漏任何行动项。', points: ['自动提炼结论、风险与待办', '支持内置离线 AI 或在线服务', '文本才会发送，音频永远留在本机'], callout: 'notes', demo: { decision: '周五前完成内部验收', actions: ['产品团队跟进验收', '开发下周一同步进展'] } },
-      { label: '会议详情', heading: '回放、精修与分享', body: '结束后可回听录音、查看精修后的逐字稿，并导出或分享纪要。', points: ['回放录音并跳转到对应字幕', '会后精修，提升正式记录可读性', '导出与分享会议纪要'], callout: 'player', demo: { refined: '我们确定周五前完成内部验收，风险点由李娜统一整理，下周一同步进展。', summary: '周五前完成内部验收' } },
-    ],
-  },
-  en: {
-    title: 'Meet Brevia in three minutes', intro: 'Turn every conversation into a record you can revisit, search, and share.', start: 'Start using', next: 'Next', back: 'Back', skip: 'Skip tour',
-    steps: [
-      { label: 'Library', heading: 'A searchable meeting library', body: 'Every meeting is archived by time. Return to any conversation by name, transcript, or tag.', points: ['Search meetings, transcripts, and tags', 'Filter by date range', 'Restore within 30 days of deletion'], callout: 'search', demo: { meetings: [['Product weekly · 2026-08-19', '04:23 · Chinese · 12 participants', ['Launch', 'Risks']], ['Requirements review · 2026-08-17', '01:48 · Chinese · 6 participants', ['Review']]] } },
-      { label: 'Prepare', heading: 'Start a meeting in seconds', body: 'Give it a name, pick a language and audio source, then hit record.', points: ['Choose the meeting language and translation target', 'Record mic and system audio together', 'Models load before recording, so it works offline'], callout: 'form', demo: { name: 'Meeting', language: 'Chinese', device: 'CPU', mode: 'Standard mode' } },
-      { label: 'Live captions', heading: 'Captions as you speak', body: 'Low-latency live transcription tracks the current speaker and separates voices.', points: ['Millisecond-level live captions', 'Speaker recognition and separation', 'Optional floating caption window'], callout: 'transcript', demo: { segments: [['Alex', 'We need to complete acceptance by Friday.'], ['Mia', 'Got it, I’ll list the risks.'], ['Alex', 'We’ll sync progress Monday.']] } },
-      { label: 'AI notes', heading: 'Key points and actions, automatically', body: 'AI captures decisions and to-dos while you talk, so no action is missed.', points: ['Derive conclusions, risks, and to-dos', 'Built-in offline or online AI', 'Only text is sent; audio stays on device'], callout: 'notes', demo: { decision: 'Complete acceptance by Friday', actions: ['Product team to follow up on acceptance', 'Engineering syncs progress Monday'] } },
-      { label: 'Details', heading: 'Play back, refine, and share', body: 'Afterward, replay the audio, read the refined transcript, and export or share notes.', points: ['Replay audio and jump to matching captions', 'Post-meeting refinement for polished records', 'Export and share meeting notes'], callout: 'player', demo: { refined: 'We agreed to complete acceptance by Friday. Mia will consolidate the risks, and we will sync progress on Monday.', summary: 'Complete acceptance by Friday' } },
-    ],
-  },
-  es: {
-    title: 'Conoce Brevia en tres minutos', intro: 'Convierte cada conversación en un registro que puedes revisar, buscar y compartir.', start: 'Comenzar', next: 'Siguiente', back: 'Atrás', skip: 'Saltar la guía',
-    steps: [
-      { label: 'Biblioteca', heading: 'Una biblioteca de reuniones consultable', body: 'Cada reunión queda archivada por fecha. Vuelve a cualquier conversación por nombre, transcripción o etiqueta.', points: ['Busca reuniones, transcripciones y etiquetas', 'Filtra por rango de fechas', 'Restaura hasta 30 días después de eliminar'], callout: 'search', demo: { meetings: [['Reunión semanal de producto · 2026-08-19', '04:23 · Chino · 12 participantes', ['Lanzamiento', 'Riesgos']], ['Revisión de requisitos · 2026-08-17', '01:48 · Chino · 6 participantes', ['Revisión']]] } },
-      { label: 'Preparar', heading: 'Empieza una reunión en segundos', body: 'Dale un nombre, elige el idioma y la fuente de audio, y pulsa grabar.', points: ['Elige idioma y traducción', 'Graba micrófono y audio del sistema', 'Los modelos cargan antes, sin depender de la red'], callout: 'form', demo: { name: 'Reunión', language: 'Chino', device: 'CPU', mode: 'Modo estándar' } },
-      { label: 'Subtítulos en vivo', heading: 'Subtítulos mientras hablas', body: 'La transcripción en vivo de baja latencia sigue al hablante y separa las voces.', points: ['Subtítulos en vivo con baja latencia', 'Reconocimiento y separación de hablantes', 'Ventana de subtítulos flotante opcional'], callout: 'transcript', demo: { segments: [['Álex', 'Debemos completar la aceptación el viernes.'], ['Mía', 'Entendido, ordenaré los riesgos.'], ['Álex', 'Sincronizamos el progreso el lunes.']] } },
-      { label: 'Notas IA', heading: 'Puntos clave y tareas, automáticamente', body: 'La IA captura decisiones y pendientes mientras hablas, para que nada se pierda.', points: ['Deriva conclusiones, riesgos y tareas', 'IA integrada sin conexión o en línea', 'Solo se envía texto; el audio queda en el dispositivo'], callout: 'notes', demo: { decision: 'Completar la aceptación el viernes', actions: ['El equipo de producto da seguimiento', 'Ingeniería sincroniza el lunes'] } },
-      { label: 'Detalles', heading: 'Reproduce, refina y comparte', body: 'Después, reproduce el audio, lee la transcripción refinada y exporta o comparte las notas.', points: ['Reproduce y salta a los subtítulos', 'Refinamiento posterior para registros pulidos', 'Exporta y comparte las notas'], callout: 'player', demo: { refined: 'Acordamos completar la aceptación el viernes. Mía ordenará los riesgos y sincronizaremos el lunes.', summary: 'Completar la aceptación el viernes' } },
-    ],
-  },
-  ja: {
-    title: 'Brevia を 3 分で知る', intro: 'すべての会話を、見返して検索・共有できる記録に。', start: 'はじめる', next: '次へ', back: '戻る', skip: 'ガイドをスキップ',
-    steps: [
-      { label: 'ライブラリ', heading: '検索できる会議ライブラリ', body: 'すべての会議が日時で整理されます。名前・文字起こし・タグでいつでも検索。', points: ['会議・文字起こし・タグを検索', '期間で絞り込み', '削除後 30 日以内に復元'], callout: 'search', demo: { meetings: [['プロダクト定例会 · 2026-08-19', '04:23 · 中国語 · 12 名', ['リリース', 'リスク']], ['要件レビュー · 2026-08-17', '01:48 · 中国語 · 6 名', ['レビュー']]] } },
-      { label: '準備', heading: '数秒で会議を開始', body: '名前を付け、言語と音声ソースを選んで録音を始めるだけ。', points: ['会議言語と翻訳先を選択', 'マイク＋システム音声で録音', '開始前にモデルを読み込み、オフライン対応'], callout: 'form', demo: { name: '会議', language: '中国語', device: 'CPU', mode: '標準モード' } },
-      { label: 'ライブ字幕', heading: '話すそばから字幕', body: '低遅延のリアルタイム文字起こしが発言を追い、話者を区別します。', points: ['低遅延のライブ字幕', '話者認識と分離', 'フローティング字幕も可能'], callout: 'transcript', demo: { segments: [['佐藤', '金曜までに内部受け入れを完了しましょう。'], ['鈴木', 'わかりました。リスクを整理します。'], ['佐藤', '月曜に進捗を共有しましょう。']] } },
-      { label: 'AI メモ', heading: '結論と ToDo を自動で抽出', body: 'AI が話しながら決定やタスクを記録し、行動項目を逃しません。', points: ['結論・リスク・ToDo を抽出', '内蔵オフライン AI またはオンライン', '送信されるのはテキストのみ。音声は端末内'], callout: 'notes', demo: { decision: '金曜までに内部受け入れを完了', actions: ['プロダクトチームが受け入れをフォロー', 'エンジニアリングは月曜に同期'] } },
-      { label: '詳細', heading: '再生・精修・共有', body: '終了後は音声を再生し、精修済みの文字起こしを確認して共有できます。', points: ['音声を再生し字幕へジャンプ', '会議後の精修で読みやすく', '議事録をエクスポート・共有'], callout: 'player', demo: { refined: '金曜までに内部受け入れを完了することで合意。リスクは鈴木が整理し、月曜に進捗を共有します。', summary: '金曜までに内部受け入れを完了' } },
-    ],
-  },
-  ko: {
-    title: 'Brevia를 3분 만에 알아보기', intro: '모든 대화를 다시 보고 검색하고 공유할 수 있는 기록으로.', start: '시작하기', next: '다음', back: '뒤로', skip: '둘러보기 건너뛰기',
-    steps: [
-      { label: '라이브러리', heading: '검색 가능한 회의 라이브러리', body: '모든 회의가 날짜별로 보관됩니다. 이름·녹취·태그로 언제든 다시 찾아보세요.', points: ['회의·녹취·태그 검색', '기간으로 필터링', '삭제 후 30일 이내 복원'], callout: 'search', demo: { meetings: [['제품 주간회의 · 2026-08-19', '04:23 · 한국어 · 참가자 12명', ['출시', '리스크']], ['요구사항 검토 · 2026-08-17', '01:48 · 한국어 · 참가자 6명', ['검토']]] } },
-      { label: '준비', heading: '몇 초 만에 회의 시작', body: '이름을 정하고 언어와 오디오 소스를 선택한 뒤 녹음을 시작하세요.', points: ['회의 언어와 번역 대상 선택', '마이크 + 시스템 오디오 녹음', '시작 전 모델 로드, 오프라인 대응'], callout: 'form', demo: { name: '회의', language: '한국어', device: 'CPU', mode: '표준 모드' } },
-      { label: '실시간 자막', heading: '말하는 즉시 자막', body: '저지연 실시간 전사가 발언을 따라가며 화자를 구분합니다.', points: ['밀리초 수준의 실시간 자막', '화자 인식 및 구분', '플로팅 자막 창 가능'], callout: 'transcript', demo: { segments: [['김민수', '금요일까지 내부 검수를 마칩시다.'], ['이지은', '네, 리스크를 정리할게요.'], ['김민수', '월요일에 진행 상황을 공유하죠.']] } },
-      { label: 'AI 메모', heading: '결론과 할 일을 자동으로', body: '말하는 동안 AI가 결정과 작업을 기록해 놓치는 일이 없습니다.', points: ['결론·리스크·할 일 추출', '내장 오프라인 또는 온라인 AI', '텍스트만 전송, 오디오는 기기에 유지'], callout: 'notes', demo: { decision: '금요일까지 내부 검수 완료', actions: ['제품팀이 검수 후속 처리', '엔지니어링 월요일 동기화'] } },
-      { label: '상세', heading: '재생·정제·공유', body: '종료 후 오디오를 재생하고 정제된 녹취를 확인하며 메모를 내보낼 수 있습니다.', points: ['오디오 재생 및 자막 이동', '회의 후 정제로 다듬기', '회의록 내보내기 및 공유'], callout: 'player', demo: { refined: '금요일까지 내부 검수를 완료하기로 합의했습니다. 리스크는 이지은이 정리하고 월요일에 진행 상황을 공유합니다.', summary: '금요일까지 내부 검수 완료' } },
-    ],
-  },
-  fr: {
-    title: 'Découvrez Brevia en trois minutes', intro: 'Transformez chaque conversation en un enregistrement à relire, chercher et partager.', start: 'Commencer', next: 'Suivant', back: 'Retour', skip: 'Passer la démo',
-    steps: [
-      { label: 'Bibliothèque', heading: 'Une bibliothèque de réunions consultable', body: 'Chaque réunion est archivée par date. Retrouvez toute conversation par nom, transcription ou étiquette.', points: ['Rechercher réunions, transcriptions et étiquettes', 'Filtrer par période', 'Restaurer sous 30 jours après suppression'], callout: 'search', demo: { meetings: [['Réunion produit hebdo · 2026-08-19', '04:23 · Chinois · 12 participants', ['Lancement', 'Risques']], ['Revue des exigences · 2026-08-17', '01:48 · Chinois · 6 participants', ['Revue']]] } },
-      { label: 'Préparer', heading: 'Lancez une réunion en quelques secondes', body: 'Donnez-lui un nom, choisissez la langue et la source audio, puis enregistrez.', points: ['Choisir langue et traduction', 'Enregistrer micro et audio système', 'Modèles chargés avant, fonctionne hors ligne'], callout: 'form', demo: { name: 'Réunion', language: 'Chinois', device: 'CPU', mode: 'Mode standard' } },
-      { label: 'Sous-titres en direct', heading: 'Des sous-titres pendant que vous parlez', body: 'La transcription en direct à faible latence suit l’intervenant et sépare les voix.', points: ['Sous-titres en direct à faible latence', 'Reconnaissance et séparation des locuteurs', 'Fenêtre de sous-titres flottante optionnelle'], callout: 'transcript', demo: { segments: [['Paul', 'Nous devons finaliser la recette vendredi.'], ['Marie', 'D’accord, je liste les risques.'], ['Paul', 'Nous synchroniserons lundi.']] } },
-      { label: 'Notes IA', heading: 'Points clés et actions, automatiquement', body: 'L’IA capture décisions et tâches pendant que vous parlez, sans rien manquer.', points: ['Déduire conclusions, risques et tâches', 'IA intégrée hors ligne ou en ligne', 'Seul le texte est envoyé ; l’audio reste local'], callout: 'notes', demo: { decision: 'Finaliser la recette vendredi', actions: ['L’équipe produit suit la recette', 'L’équipe technique synchronise lundi'] } },
-      { label: 'Détails', heading: 'Relire, affiner et partager', body: 'Après coup, écoutez l’audio, lisez la transcription affinée et exportez ou partagez les notes.', points: ['Écouter et sauter aux sous-titres', 'Affinage après réunion', 'Exporter et partager les notes'], callout: 'player', demo: { refined: 'Nous avons convenu de finaliser la recette vendredi. Marie consolidera les risques et nous synchroniserons lundi.', summary: 'Finaliser la recette vendredi' } },
-    ],
-  },
-  de: {
-    title: 'Brevia in drei Minuten kennenlernen', intro: 'Machen Sie aus jedem Gespräch eine Aufzeichnung, die Sie nachschlagen, durchsuchen und teilen können.', start: 'Starten', next: 'Weiter', back: 'Zurück', skip: 'Tour überspringen',
-    steps: [
-      { label: 'Bibliothek', heading: 'Eine durchsuchbare Besprechungsbibliothek', body: 'Jede Besprechung wird nach Datum archiviert. Finden Sie jede Unterhaltung über Name, Transkript oder Tag wieder.', points: ['Besprechungen, Transkripte und Tags durchsuchen', 'Nach Zeitraum filtern', 'Innerhalb von 30 Tagen nach Löschung wiederherstellen'], callout: 'search', demo: { meetings: [['Produktwochenmeeting · 2026-08-19', '04:23 · Chinesisch · 12 Teilnehmer', ['Launch', 'Risiken']], ['Anforderungsreview · 2026-08-17', '01:48 · Chinesisch · 6 Teilnehmer', ['Review']]] } },
-      { label: 'Vorbereiten', heading: 'In Sekunden eine Besprechung starten', body: 'Geben Sie einen Namen ein, wählen Sie Sprache und Audioquelle und drücken Sie Aufnahme.', points: ['Sprache und Übersetzungsziel wählen', 'Mikrofon und Systemaudio aufnehmen', 'Modelle laden vor dem Start, offline-tauglich'], callout: 'form', demo: { name: 'Besprechung', language: 'Chinesisch', device: 'CPU', mode: 'Standardmodus' } },
-      { label: 'Live-Untertitel', heading: 'Untertitel, während Sie sprechen', body: 'Die latenzarme Live-Transkription verfolgt den Sprecher und trennt die Stimmen.', points: ['Latenzarme Live-Untertitel', 'Sprechererkennung und -trennung', 'Optional schwebendes Untertitelfenster'], callout: 'transcript', demo: { segments: [['Alex', 'Wir müssen die Abnahme bis Freitag abschließen.'], ['Mia', 'Verstanden, ich liste die Risiken.'], ['Alex', 'Wir stimmen uns Montag ab.']] } },
-      { label: 'KI-Notizen', heading: 'Kernpunkte und Aufgaben, automatisch', body: 'Die KI erfasst Entscheidungen und Aufgaben, während Sie sprechen – nichts wird übersehen.', points: ['Schlussfolgerungen, Risiken und Aufgaben ableiten', 'Integrierte Offline- oder Online-KI', 'Nur Text wird gesendet; Audio bleibt lokal'], callout: 'notes', demo: { decision: 'Abnahme bis Freitag abschließen', actions: ['Produktteam begleitet die Abnahme', 'Entwicklung stimmt sich Montag ab'] } },
-      { label: 'Details', heading: 'Abspielen, nachbearbeiten und teilen', body: 'Danach können Sie das Audio abspielen, das bearbeitete Transkript lesen und Notizen exportieren oder teilen.', points: ['Audio abspielen und zu Untertiteln springen', 'Nachbearbeitung für saubere Aufzeichnungen', 'Notizen exportieren und teilen'], callout: 'player', demo: { refined: 'Wir haben vereinbart, die Abnahme bis Freitag abzuschließen. Mia konsolidiert die Risiken, und wir stimmen uns Montag ab.', summary: 'Abnahme bis Freitag abschließen' } },
-    ],
-  },
-  ru: {
-    title: 'Познакомьтесь с Brevia за три минуты', intro: 'Превратите любой разговор в запись, которую можно пересмотреть, найти и поделиться.', start: 'Начать', next: 'Далее', back: 'Назад', skip: 'Пропустить обзор',
-    steps: [
-      { label: 'Библиотека', heading: 'Поисковая библиотека встреч', body: 'Каждая встреча архивируется по дате. Вернитесь к любому разговору по названию, расшифровке или тегу.', points: ['Поиск встреч, расшифровок и тегов', 'Фильтр по периоду', 'Восстановление в течение 30 дней'], callout: 'search', demo: { meetings: [['Еженедельная встреча продукта · 2026-08-19', '04:23 · Китайский · 12 участников', ['Запуск', 'Риски']], ['Ревью требований · 2026-08-17', '01:48 · Китайский · 6 участников', ['Ревью']]] } },
-      { label: 'Подготовка', heading: 'Начните встречу за секунды', body: 'Дайте название, выберите язык и источник звука — и нажмите запись.', points: ['Выбор языка и перевода', 'Запись микрофона и системного звука', 'Модели загружаются заранее, работает офлайн'], callout: 'form', demo: { name: 'Встреча', language: 'Китайский', device: 'CPU', mode: 'Стандартный режим' } },
-      { label: 'Субтитры', heading: 'Субтитры, пока вы говорите', body: 'Низколатентная расшифровка в реальном времени следит за говорящим и разделяет голоса.', points: ['Субтитры в реальном времени', 'Распознавание и разделение говорящих', 'Опциональное плавающее окно субтитров'], callout: 'transcript', demo: { segments: [['Алекс', 'Нам нужно завершить приёмку к пятнице.'], ['Мия', 'Понял, я сведу риски.'], ['Алекс', 'Синхронизируемся в понедельник.']] } },
-      { label: 'Заметки ИИ', heading: 'Ключевые моменты и задачи автоматически', body: 'ИИ фиксирует решения и задачи, пока вы говорите, чтобы ничего не упустить.', points: ['Вывод выводов, рисков и задач', 'Встроенный офлайн или онлайн-ИИ', 'Отправляется только текст; звук остаётся локально'], callout: 'notes', demo: { decision: 'Завершить приёмку к пятнице', actions: ['Команда продукта сопровождает приёмку', 'Разработка синхронизируется в понедельник'] } },
-      { label: 'Детали', heading: 'Воспроизводите, обрабатывайте и делитесь', body: 'После завершения прослушайте звук, прочитайте обработанную расшифровку и экспортируйте или поделитесь заметками.', points: ['Прослушивание и переход к субтитрам', 'Обработка после встречи', 'Экспорт и обмен заметками'], callout: 'player', demo: { refined: 'Мы договорились завершить приёмку к пятнице. Мия сведёт риски, и мы синхронизируемся в понедельник.', summary: 'Завершить приёмку к пятнице' } },
-    ],
-  },
-};
+const tourCopy = window.BreviaLocaleData.appCopy.tourCopy;
 function openOnboardingAi() {
   const copy = aiOnboardingCopy[locale] || aiOnboardingCopy.en;
   // 低配设备默认「暂不开启」实时 AI 笔记（太耗资源），仅保留会后一次性的 AI 会议纪要。
@@ -2737,17 +2560,20 @@ document.querySelector('#settings-view .settings-grid').addEventListener('click'
     try {
       const chosen = await window.brevia.storage.chooseFolder();
       if (!chosen) return;
-      const locations = await window.brevia.storage.locations();
-      playerAudio.pause();
-      playerAudio.removeAttribute('src');
-      playbackStarted = false;
-      renderMiniPlayback();
-      const result = await window.brevia.storage.setupLocations({ ...locations, [folder.dataset.changeFolder]: chosen });
-      if (result.data) {
-        applyInitializationResult(result.data);
-        if (currentMeetingDetail?.id) applyBackendDetail(await window.brevia.meeting.get({ meeting_id: currentMeetingDetail.id }));
-      }
-      await refreshSettingsFolderRows();
+      await withStorageMigration(async () => {
+        const locations = await window.brevia.storage.locations();
+        playerAudio.pause();
+        playerAudio.removeAttribute('src');
+        playbackStarted = false;
+        renderMiniPlayback();
+        const result = await window.brevia.storage.setupLocations({ ...locations, [folder.dataset.changeFolder]: chosen });
+        if (result.data) {
+          applyInitializationResult(result.data);
+          if (currentMeetingDetail?.id) applyBackendDetail(await window.brevia.meeting.get({ meeting_id: currentMeetingDetail.id }));
+        }
+        await refreshSettingsFolderRows();
+        if (result.changed) showToast((onboardingStorageCopy[locale] || onboardingStorageCopy.en).moved);
+      });
     }
     catch (error) { showToast(storageErrorMessage(error)); }
     finally { folder.disabled = false; }
@@ -3057,6 +2883,19 @@ settingsModal.addEventListener('click', async (event) => {
     return;
   }
 });
+settingsModal.addEventListener('input', (event) => {
+  const form = event.target.closest('.summary-model-form, .ai-assist-config-form');
+  if (!form) return;
+  const config = form.matches('.ai-assist-config-form') ? aiAssistConfigDraft : summaryConfigDraft;
+  const name = event.target.name;
+  if (name === 'apiKey') {
+    const keys = modelConfigSecrets.get(config) || {};
+    keys[config.provider] = event.target.value;
+    modelConfigSecrets.set(config, keys);
+  } else if (name === 'model' || name === 'endpoint') {
+    config.providers[config.provider] = { ...providerEntry(config), [name]: event.target.value };
+  }
+});
 settingsModal.addEventListener('change', async (event) => {
   if (event.target.matches('[data-summary-enabled]')) {
     const previous = summaryConfig.enabled;
@@ -3070,6 +2909,8 @@ settingsModal.addEventListener('change', async (event) => {
   }
   if (event.target.matches('[data-china-model-source]')) { localStorage.setItem('brevia-china-model-source', event.target.checked); return; }
   if (event.target.matches('.ai-assist-level input[type=radio]')) {
+    aiAssistConfigDraft.enabled = event.target.value !== 'off';
+    if (aiAssistConfigDraft.enabled) aiAssistConfigDraft.proactivity = event.target.value;
     settingsModal.querySelectorAll('.ai-assist-level').forEach((level) => level.classList.toggle('is-selected', level.querySelector('input[type=radio]').checked));
     return;
   }
@@ -3364,7 +3205,7 @@ function showSummaryConfigCard(error) {
     taskCards.append(card);
     enterTaskCard(card);
   } else if (card.classList.contains('task-card-leave')) enterTaskCard(card);
-  const rejected = /LLM request failed \(403\)|error code: 1010/i.test(String(error?.message || error));
+  const rejected = /LLM request failed \(403\)|error code: 1010/i.test(String(error?.detail || error?.message || error));
   // 内置模型走本地 GGUF，与 API Key 无关；缺配置时给出针对性的指引，
   // 避免把「未选择本地模型」误报成「API Key 未配置」。
   const builtin = summaryConfig.provider === 'built-in';
@@ -3380,7 +3221,7 @@ function showSummaryConfigCard(error) {
   summaryConfigDismissTimer = setTimeout(() => dismissTaskCard(card), 30000);
 }
 function isSummaryAuthenticationError(error) {
-  return /LLM request failed \((401|403)\)|error code: 1010|API key|Authorization header|invalid_api_key|authentication/i.test(String(error.message));
+  return /LLM request failed \((401|403)\)|error code: 1010|API key|Authorization header|invalid_api_key|authentication/i.test(String(error.detail || error.message));
 }
 // 模型下载的失败原因分类。
 //
@@ -3398,11 +3239,13 @@ const MODEL_DOWNLOAD_FAILURES = [
 ];
 /** 把后端错误转成用户能行动的一句话。
  *
- * 只是模型下载类的错误才改写；其它错误保留原文，避免把有用的诊断信息盖掉。
+ * 翻译结构化错误码（包括带操作前缀的消息）；其它错误保留诊断信息。
  * @param {string} content 原始错误文本。
  * @returns {string} 可直接展示的文本。 */
 function userFacingError(content) {
   const text = String(content);
+  const localized = text.replace(/\berror\.[a-z_]+(?:\.[a-z_]+)*\b/g, (code) => t(code));
+  if (localized !== text) return localized;
   if (/\b(?:worker request |operation )timed out\b/i.test(text)) return t('操作超时，请稍后重试');
   // 在线纪要/AI 笔记的网络失败也带 timeout/SSL/CERTIFICATE 字样，但它们不是模型下载
   // 失败，套上下载文案会把用户引到错误的方向。
@@ -3431,12 +3274,12 @@ const showToast = (content, action) => {
 };
 window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault();
-  const message = event.reason instanceof Error ? event.reason.message : String(event.reason || '未知异步错误');
+  const message = userFacingError(event.reason?.message || 'error.operation_failed');
   showToast(`${t('操作失败')}: ${message}`);
 });
 window.addEventListener('error', (event) => {
   const message = event.error instanceof Error ? event.error.message : event.message;
-  if (message) showToast(`${t('应用错误')}: ${message}`);
+  if (message) { console.error(event.error || message); showToast(t('error.operation_failed')); }
 });
 /** 标记活动的会议库源并更新窗口面包屑。@param {'all-meetings'|'recently-deleted'} id 导航项 ID。@returns {void} */
 function selectLibraryNav(id) {
@@ -3450,55 +3293,45 @@ function selectLibraryNav(id) {
   homeEyebrow.textContent = deleted ? BreviaI18n.trashCopy(locale).back : t('会议库');
   renderSlogan(false);
 }
-/** 在视图或内容交换周围运行共享的页面淡出/淡入过渡。*/
-async function transitionPage(current, next, swap) {
-  if (current.classList.contains('leaving')) return;
-  const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 160;
-  current.classList.add('leaving');
-  await new Promise((resolve) => window.setTimeout(resolve, duration));
-  current.classList.remove('active', 'leaving');
-  try {
-    await swap();
-  } finally {
-    next.classList.remove('active', 'leaving');
-    void next.offsetWidth;
-    next.classList.add('active');
-  }
-}
-// 最近一次请求的目标视图。过渡动画（160ms）期间 activeView 仍是旧值，若只用 activeView 判重，
-// 第二次导航会因源视图带 leaving 被 transitionPage 直接 return 丢弃，最终停在旧视图。
-// 这里用独立变量记录「最后请求的视图」，过渡结束后比对并补跳，保证快速连点落到最后一次请求的视图。
-let pendingView = null;
-let viewChain = Promise.resolve();
-/** 串行执行视图过渡队列：反复跳到「最后请求的视图」，直到追上为止。@returns {Promise<void>} */
-async function runViewQueue() {
-  while (pendingView !== null && pendingView !== activeView) {
-    const name = pendingView;
-    if (activeView === 'prepare' && name !== 'prepare') await breviaClient?.stopPreview();
-    const current = document.querySelector(`#${activeView}-view`);
-    const next = document.querySelector(`#${name}-view`);
-    await transitionPage(current, next, () => {
-      activeView = name;
-      // 侧边栏“收起”态（is-live-meeting 在该应用里只承担侧边栏折叠样式）：
-      // 会议进行中，以及进入会议详情页时都默认收起；悬浮/聚焦时才展开。
-      document.querySelector('.app-shell').classList.toggle('is-live-meeting', (name === 'live' && meetingActive) || name === 'detail');
-      crumb.textContent = name === 'prepare' && prepareView.dataset.mode === 'import' ? t('导入录音') : catalog[locale].views[name];
-      if (name === 'home') selectLibraryNav(activeLibraryNav);
-      else document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === name));
-      if (name === 'detail') resetDetailHeaderCollapse();
+/** 按请求顺序执行页面过渡，当前过渡结束后再读取真正可见的页面。 */
+async function transitionPage(current, next, swap = () => {}) {
+  const previous = pageTransition;
+  const transition = (async () => {
+    if (previous) await previous.catch(() => {});
+    current = document.querySelector('.view.active') || current;
+    const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 160;
+    current.classList.add('leaving');
+    await new Promise((resolve) => window.setTimeout(resolve, duration));
+    const previousView = activeView;
+    activeView = next.id.slice(0, -'-view'.length);
+    try {
+      if (previousView === 'prepare' && activeView !== 'prepare') await breviaClient?.stopPreview();
+      document.querySelector('.app-shell').classList.toggle('is-live-meeting', (activeView === 'live' && meetingActive) || activeView === 'detail');
+      crumb.textContent = activeView === 'prepare' && prepareView.dataset.mode === 'import' ? t('导入录音') : catalog[locale].views[activeView];
+      if (activeView === 'home') selectLibraryNav(activeLibraryNav);
+      else document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === activeView));
+      if (activeView === 'detail') resetDetailHeaderCollapse();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    if (name === 'prepare') { requestAnimationFrame(fitPrepareLayout); renderCaptureMode(); if (prepareView.dataset.mode !== 'import') void refreshPrepareAudioSources(); }
-    renderMiniPlayback();
-  }
+      await swap();
+    } finally {
+      current.classList.remove('active', 'leaving');
+      next.classList.remove('active', 'leaving');
+      void next.offsetWidth;
+      next.classList.add('active');
+      renderMiniPlayback();
+    }
+  })();
+  pageTransition = transition;
+  try { await transition; }
+  finally { if (pageTransition === transition) pageTransition = null; }
 }
-/** 在顶级应用视图之间切换。@param {'home'|'prepare'|'live'|'detail'|'settings'} name 目标视图。@returns {Promise<void>} */
-const showView = (name) => {
-  pendingView = name;
-  const run = viewChain.then(runViewQueue, runViewQueue);
-  // 用已吞掉异常的版本续接队列，保证单次失败不会永久阻塞后续导航；调用方仍可 await run 感知错误。
-  viewChain = run.then(() => {}, () => {});
-  return run;
+/** 在顶级应用视图之间切换。@param {'home'|'prepare'|'live'|'detail'|'settings'} name 目标视图。*/
+const showView = async (name) => {
+  if (name === activeView && !pageTransition) return;
+  const current = document.querySelector(`#${activeView}-view`);
+  const next = document.querySelector(`#${name}-view`);
+  await transitionPage(current, next);
+  if (name === 'prepare') { requestAnimationFrame(fitPrepareLayout); renderCaptureMode(); if (prepareView.dataset.mode !== 'import') void refreshPrepareAudioSources(); }
 };
 
 /* ===== Sticky Auto-hide Header（会议详情页）=====
@@ -3538,22 +3371,14 @@ document.querySelector('#detail-view')?.addEventListener('scroll', updateDetailH
 /** 使用与顶级视图相同的页面淡出/淡入时序切换会议库源。*/
 async function showLibraryNav(id) {
   const includeDeleted = id === 'recently-deleted';
+  if (activeView === 'home' && id === activeLibraryNav && !pageTransition) return;
   if (activeView === 'live' && meetingActive) minimizeMeeting();
-  if (activeView !== 'home') {
-    selectLibraryNav(id);
-    const refresh = window.brevia ? refreshBackendMeetings(includeDeleted) : Promise.resolve();
-    await refresh.catch((error) => showToast(error.message));
-    await showView('home');
-    return;
-  }
-  if (id === activeLibraryNav) return;
+  const current = document.querySelector(`#${activeView}-view`);
   const home = document.querySelector('#home-view');
-  selectLibraryNav(id);
-  const refresh = window.brevia ? refreshBackendMeetings(includeDeleted) : Promise.resolve();
-  await transitionPage(home, home, () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  await transitionPage(current, home, async () => {
+    selectLibraryNav(id);
+    if (window.brevia) await refreshBackendMeetings(includeDeleted).catch((error) => showToast(error.message));
   });
-  await refresh.catch((error) => showToast(error.message));
 }
 collectTranslations();
 applyLanguage(locale);
@@ -3699,6 +3524,7 @@ function renderPlaybackFloatingCaptionToggle() {
 }
 function nextFloatingCaptionMode(mode) { return floatingCaptionMode === mode ? null : mode; }
 function activateMeeting(meeting, payload) {
+  document.querySelector('#pause').disabled = false;
   const { title, workspace_id: workspaceId, language } = meeting || payload;
   // 上一场遗留的「无实时字幕」卡片不能带到这一场；本场的卡片要保留（它的归属 id 与本次相同）。
   dismissLiveCaptionUnavailable(meeting?.id || payload?.id || breviaClient?.state.meeting?.id);
@@ -3719,7 +3545,7 @@ function activateMeeting(meeting, payload) {
   renderLiveModelControl();
   latestLiveSegmentId = null;
   liveSegments.clear();
-  liveSegmentRevisions.clear();
+  liveSegmentData.clear();
   clearDraftSegments();
   followLiveTranscript = true;
   renderMeetingList();
@@ -3898,7 +3724,8 @@ document.querySelector('#end-meeting').addEventListener('click', async (event) =
   button.innerHTML = `<i class="button-spinner" aria-hidden="true"></i>${t('结束中')}`;
   clearInterval(timer);
   try {
-    // 结束前把笔记落库，会议详情页“我的笔记”延续显示。
+    // 先释放采集；保存失败时会议 ID 与笔记草稿保留，允许再次结束。
+    await breviaClient?.capture?.stop().catch((error) => console.error('Audio capture cleanup failed', error));
     clearTimeout(liveNotesSaveTimer.current);
     const notes = currentNotesMarkdown();
     const activeMeetingId = breviaClient?.state.meeting?.id;
@@ -3918,7 +3745,10 @@ document.querySelector('#end-meeting').addEventListener('click', async (event) =
     if (meeting && summaryRequestConfig()) void generateMeetingSummary(meeting.id);
   } catch (error) {
     showToast(error.message);
-    startTimer();
+    // 采集已经收尾；保留会议 ID 供重试结束，不能装作仍在录音。
+    document.querySelector('#pause').dataset.paused = 'true';
+    renderPauseButton();
+    document.querySelector('#pause').disabled = true;
   } finally {
     button.disabled = false;
     button.classList.remove('is-pending');
@@ -4220,17 +4050,19 @@ function persistNotes(meetingId, notes) {
       showToast(t('笔记已达容量上限，超出部分未保存。'));
     }
   }
-  return window.brevia.meeting.update({ meeting_id: meetingId, updates: { notes: text } }).catch(() => {});
+  return window.brevia.meeting.update({ meeting_id: meetingId, updates: { notes: text } });
 }
-/** 防抖保存笔记（live 视图与详情页共用）。@param {{current: number|undefined}} timer 防抖计时器。@param {() => string} getNotes 取笔记文本。@param {() => string|undefined} getMeetingId 取会议 id。@returns {void} */
+/** 防抖保存实时笔记；会议与文本在输入时共同取快照。@param {{current: number|undefined}} timer 防抖计时器。@param {() => string} getNotes 取笔记文本。@param {() => string|undefined} getMeetingId 取会议 id。@returns {void} */
 function scheduleNotesSave(timer, getNotes, getMeetingId) {
   const meetingId = getMeetingId();
   if (!meetingId || !window.brevia?.meeting?.update) return;
   clearTimeout(timer.current);
-  timer.current = setTimeout(() => persistNotes(meetingId, getNotes()), 800);
+  const notes = getNotes();
+  timer.current = setTimeout(() => {
+    void persistNotes(meetingId, notes).catch((error) => showToast(error.message));
+  }, 800);
 }
 const liveNotesSaveTimer = { current: undefined };
-const detailNotesSaveTimer = { current: undefined };
 document.querySelector('.translation-menu').addEventListener('click', async (event) => {
   const options = document.querySelector('#translation-options');
   if (event.target.closest('#translation-toggle')) {
@@ -4480,7 +4312,7 @@ meetingList.addEventListener('keydown', (event) => {
   const row = event.target.closest('.meeting-row');
   if (row && event.key === ' ') { event.preventDefault(); toggleMeetingSelection(row); }
 });
-const batchExportFormats = ['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'flac', 'wav', 'm4a'];
+const batchExportFormats = ['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'wav'];
 function openBatchExport() {
   activeModal = 'batch-export';
   settingsModal.querySelector('h2').textContent = t('选择导出格式');
@@ -4493,7 +4325,7 @@ async function exportSelectedMeetings(format) {
   if (!meetings.length || !format) return;
   try {
     const result = window.brevia
-      ? await window.brevia.meeting.exportMany({ meeting_ids: meetings.map(({ id }) => id).filter(Boolean), format, filename_prefix: `[${['flac', 'wav', 'm4a'].includes(format) ? t('会议录音') : t('字幕')}]` })
+      ? await window.brevia.meeting.exportMany({ meeting_ids: meetings.map(({ id }) => id).filter(Boolean), format, filename_prefix: `[${format === 'wav' ? t('会议录音') : t('字幕')}]` })
       : { paths: meetings.map(({ title }) => `${title}.${format}`) };
     if (result) showToast(`${t('导出')}: ${BreviaI18n.selectionOverview(locale, meetings.length)}`);
   } catch (error) { showToast(error.message); }
@@ -4540,15 +4372,18 @@ window.addEventListener('resize', positionOpenMeetingMenus);
 /** 为行操作和批量操作运行一次会议变更。*/
 async function mutateMeetings(action, meetings) {
   const ids = new Set(meetings.map(({ id }) => id).filter(Boolean));
-  if (window.brevia) {
-    // 批量删除 / 恢复加并发闸，避免一次勾选上千条时把 IPC 与后端队列打满。
-    const results = await mapWithConcurrency([...ids], 6, (meeting_id) => window.brevia.meeting[action]({ meeting_id }));
-    const failure = results.find((result) => result.status === 'rejected');
-    if (failure) throw failure.reason;
+  const completed = new Set();
+  try {
+    for (const meeting_id of ids) {
+      if (window.brevia) await window.brevia.meeting[action]({ meeting_id });
+      completed.add(meeting_id);
+    }
+  } finally {
+    // 与主进程的串行删除保护一致；失败时也同步已完成项，只扫描一次列表。
+    if (['delete', 'restore', 'purge'].includes(action)) uiData.meetings = uiData.meetings.filter((meeting) => !completed.has(meeting.id));
+    clearMeetingSelection();
+    renderMeetingList();
   }
-  if (['delete', 'restore', 'purge'].includes(action)) uiData.meetings = uiData.meetings.filter((meeting) => !ids.has(meeting.id));
-  clearMeetingSelection();
-  renderMeetingList();
 }
 async function openMeetingRow(row) {
   if (!window.brevia) { showView('detail'); return; }
@@ -4679,6 +4514,7 @@ document.addEventListener('contextmenu', (event) => {
 });
 
 const playerTime = document.querySelector('#player-time');
+const playerDuration = document.querySelector('#player-duration');
 const playButton = document.querySelector('#play');
 let playbackCaptionSegmentId = undefined;
 function syncPlaybackFloatingCaption() {
@@ -4714,7 +4550,11 @@ const updatePlayerControl = () => {
   renderMiniPlayback();
 };
 /** 将音频进度控件格式化为 mm:ss 显示。@returns {void} */
-const renderPlayerTime = () => { playerTime.textContent = formatMeetingTime(Number(progress.value) * 1000); };
+const renderPlayerTime = () => {
+  playerTime.textContent = formatMeetingTime(Number(progress.value) * 1000);
+  playerDuration.textContent = formatMeetingTime(Number(progress.max) * 1000);
+  progress.style.setProperty('--played', `${Number(progress.value) / Number(progress.max) * 100}%`);
+};
 /** 突出显示当前播放时间的转录段落，并使其在自己的滚动器中居中。*/
 function syncPlaybackTranscript() {
   syncPlaybackFloatingCaption();
@@ -4901,7 +4741,7 @@ function appendTextToActiveNotes(markdown, meetingId) {
     renderMeetingDetail();
   }
   detailNotesEditor.appendMarkdown(markdown);
-  scheduleDetailNotesSave();
+  updateDetailNotesDraft();
 }
 /** 根据会议与段落 id 解析字幕元数据（live 视图从内存映射取，详情页从后端段落取）。@param {string} meetingId 会议 id。@param {string} segmentId 段落 id。@returns {{text:string, start_ms:number, speaker:string}|null} */
 function segmentInfoFor(meetingId, segmentId) {
@@ -5009,7 +4849,7 @@ function pinnedRefineModel() {
 }
 /** 会议是否已有逐句人工修改。@returns {boolean} 有则为真。 */
 function meetingHasUserEdits() {
-  return Boolean(currentMeetingDetail?.segments?.some((segment) => segment.version === 'user'));
+  return Boolean(currentMeetingDetail?.segments?.some((segment) => segment.user_edited || segment.version === 'user'));
 }
 /** 按菜单里的选择发起精修。
  *
@@ -5109,7 +4949,7 @@ async function saveDetailTranscriptEdits() {
   const draft = uiData.detail.transcriptDraft || {};
   // 与展示口径保持一致（精修模型退役时展示的是实时版本，见 applyBackendDetail）：
   // 用同一份段落集合取原文，否则草稿 id 全部对不上，修改会被整体静默跳过。
-  const original = new Map((latestTranscriptSegments(meeting, { ignoreRefined: uiData.detail.ignoreRefined }).segments || []).map((segment) => [segment.id, String(segment.text).trim()]));
+  const original = new Map((latestTranscriptSegments(meeting).segments || []).map((segment) => [segment.id, String(segment.text).trim()]));
   const edits = [];
   for (const [segmentId, value] of Object.entries(draft)) {
     if (!original.has(segmentId)) continue;
@@ -5141,7 +4981,7 @@ finalTranscript.addEventListener('input', (event) => {
   uiData.detail.transcriptDraft ||= {};
   uiData.detail.transcriptDraft[field.dataset.segmentText] = field.value;
 });
-finalTranscript.addEventListener('click', (event) => {
+finalTranscript.addEventListener('click', async (event) => {
   // 点击字幕段的时间戳/说话人区域 → 定位播放该段。
   const segmentMeta = event.target.closest('.segment-meta');
   if (segmentMeta && !event.target.closest('[data-segment-speaker-input]')) {
@@ -5164,8 +5004,6 @@ finalTranscript.addEventListener('click', (event) => {
   }
   const notesCancel = event.target.closest('[data-notes-cancel]');
   if (notesCancel) {
-    clearTimeout(detailNotesSaveTimer.current);
-    detailNotesEditor = null;
     uiData.detail.notes = detailNotesBeforeEdit;
     uiData.detail.notesEditing = false;
     // 取消后必然回到「我的笔记」只读态，编辑按钮始终可见；
@@ -5176,15 +5014,21 @@ finalTranscript.addEventListener('click', (event) => {
   }
   const notesSave = event.target.closest('[data-notes-save]');
   if (notesSave) {
-    clearTimeout(detailNotesSaveTimer.current);
+    const meetingId = currentMeetingDetail?.id;
     const notes = detailNotesEditor ? detailNotesEditor.getMarkdown() : uiData.detail.notes;
-    detailNotesEditor = null;
-    uiData.detail.notes = notes;
-    uiData.detail.notesEditing = false;
-    detailActiveTab = 'notes';
-    renderMeetingDetail();
-    if (breviaClient?.state.selectedMeetingId) {
-      void persistNotes(breviaClient.state.selectedMeetingId, notes);
+    notesSave.disabled = true;
+    try {
+      await persistNotes(meetingId, notes);
+      if (currentMeetingDetail?.id !== meetingId) return;
+      if (uiData.detail.notesEditing && detailNotesEditor?.getMarkdown() !== notes) return;
+      uiData.detail.notes = notes;
+      uiData.detail.notesEditing = false;
+      detailActiveTab = 'notes';
+      renderMeetingDetail();
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      notesSave.disabled = false;
     }
     return;
   }
@@ -5327,12 +5171,10 @@ document.addEventListener('click', (event) => {
   document.querySelectorAll('[data-refine-more]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
   document.querySelectorAll('[data-detail-translation-toggle]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
 });
-/** 详情页富文本笔记编辑器实例（编辑模式下由 renderMeetingDetail 创建）。@type {object|null} */
-/** 详情页笔记防抖自动保存（800ms）；输入时即时同步到 uiData，避免重建面板丢失草稿。@returns {void} */
-function scheduleDetailNotesSave() {
+/** 同步详情页笔记草稿；只有点击保存才提交，取消编辑不会改变数据库。 */
+function updateDetailNotesDraft() {
   if (!detailNotesEditor) return;
   uiData.detail.notes = detailNotesEditor.getMarkdown(); // 即时同步，避免重建面板时丢失未保存内容
-  scheduleNotesSave(detailNotesSaveTimer, () => uiData.detail.notes, () => breviaClient?.state.selectedMeetingId);
 }
 finalTranscript.addEventListener('dblclick', (event) => {
   const speaker = event.target.closest('[data-segment-speaker]');
@@ -5410,7 +5252,7 @@ if (window.brevia) {
   void loadSummaryConfig().catch((error) => showToast(`${t('纪要配置加载失败')}: ${error.message}`));
   void loadAiAssistConfig().catch((error) => showToast(`${t('AI 笔记配置加载失败')}: ${error.message}`));
   initializationPromise = breviaClient.initialize().then(applyInitializationResult);
-  void initializationPromise.catch((error) => showToast(`${t('配置或后端启动失败')}: ${error.message}`));
+  void initializationPromise.catch((error) => showToast(`${t('配置或后端启动失败')}: ${userFacingError(error.message)}`));
 
   const transcript = document.querySelector('#transcript-scroll');
   const backToLatest = document.querySelector('#back-to-latest');
@@ -5442,9 +5284,8 @@ if (window.brevia) {
   const renderLiveEvent = (payload) => {
     // 防止重复事件覆盖已经展示的字幕。
     const revision = Number(payload.revision) || 0;
-    const seenRevision = liveSegmentRevisions.get(payload.segment_id);
+    const seenRevision = liveSegmentData.get(payload.segment_id)?.revision;
     if (seenRevision !== undefined && revision <= seenRevision) return;
-    liveSegmentRevisions.set(payload.segment_id, revision);
     const shouldFollow = followLiveTranscript || isAtLiveBottom();
     const previous = liveSegments.get(payload.segment_id);
     const translation = payload.translation || previous?.querySelector('.translation')?.textContent;
@@ -5452,9 +5293,7 @@ if (window.brevia) {
       time: formatMeetingTime(payload.start_ms),
       startSeconds: payload.start_ms / 1000,
       endSeconds: payload.end_ms / 1000,
-      // speaker 可能为 null（说话人分离未启用/后端未回填）：直接 .split 会抛 TypeError
-      // 并中断整个 transcript.final 处理，因此先兜底成空串。
-      speaker: { id: payload.speaker, segmentId: payload.segment_id, name: formatSpeakerName(payload.speaker_name || payload.speaker) || `${t('说话人')} ${String(payload.speaker || '').split('-').pop()}` },
+      speaker: { id: payload.speaker, segmentId: payload.segment_id, name: formatSpeakerName(payload.speaker_name || payload.speaker) || t('说话人') },
       text: payload.text,
       translation,
       showSpeaker: false,
@@ -5480,13 +5319,11 @@ if (window.brevia) {
       transcript.insertBefore(element, next || null);
     }
     liveSegments.set(payload.segment_id, element);
-    liveSegmentData.set(payload.segment_id, { text: payload.text, start_ms: payload.start_ms, speaker: payload.speaker_name || payload.speaker });
+    liveSegmentData.set(payload.segment_id, { revision, text: payload.text, start_ms: payload.start_ms, speaker: payload.speaker_name || payload.speaker });
     while (liveSegments.size > maxLiveSegments) {
       const [segmentId, stale] = liveSegments.entries().next().value;
       liveSegments.delete(segmentId);
       liveSegmentData.delete(segmentId);
-      // 同步回收版本号，否则长会议里 liveSegmentRevisions 只增不减（每个段留一条永不回收）。
-      liveSegmentRevisions.delete(segmentId);
       stale.remove();
     }
     transcript.querySelectorAll('.segment.is-active').forEach((segment) => {
@@ -5678,9 +5515,8 @@ if (window.brevia) {
   window.brevia.on('model.progress', ({ model_id, received, total }) => {
     if (!modelDownloads.has(model_id)) return;
     modelDownloads.set(model_id, { ...modelDownloads.get(model_id), received, total, paused: false });
-    // 进度事件每秒数十次：只节流刷新模型库弹窗；绝不重建纪要 / AI 笔记弹窗——
-    // 那两个弹窗含 API Key / 请求地址输入框，重建会抹掉用户正在输入的内容。
     scheduleModelLibraryRender();
+    refreshModelConfigModels();
     scheduleRequiredModelsCardRender();
   });
   window.brevia.on('model.status', ({ model_id, status, error }) => {
@@ -5700,7 +5536,7 @@ if (window.brevia) {
           modelsReturnToPending = null;
         }
         if (activeModal === 'models') renderModal('models');
-        refreshModelConfigModal();
+        refreshModelConfigModels();
         renderRequiredModelsCard();
         renderPrepareSelects();
         void resumeReadyModelTasks();
@@ -5714,7 +5550,7 @@ if (window.brevia) {
     else if (status === 'failed' && modelDownloads.has(model_id)) modelDownloads.set(model_id, { error });
     else if (status === 'not_installed') modelPaths.delete(model_id);
     if (activeModal === 'models') renderModal('models');
-    refreshModelConfigModal();
+    refreshModelConfigModels();
     renderRequiredModelsCard();
   });
   window.brevia.on('worker.warning', ({ code, message: warning, meeting_id: warningMeetingId }) => {
@@ -5725,7 +5561,7 @@ if (window.brevia) {
     }
     showToast(warning);
   });
-  window.brevia.on('worker.error', ({ message: error }) => showToast(error));
+  window.brevia.on('worker.error', ({ code, message: error }) => showToast(code ? `${t(code)} (${error})` : userFacingError(error)));
   window.brevia.on('update.download-progress', (progress) => {
     updateDownloadProgress = progress;
     renderUpdateButton();
@@ -5786,17 +5622,20 @@ if (window.brevia) {
       return;
     }
     if (event.target.closest('[data-open-summary-edit]')) { uiData.detail.summaryEditing = true; renderMeetingDetail(); return; }
-    if (event.target.closest('[data-cancel-inline-summary-edit]')) { inlineSummaryEditor = null; uiData.detail.summaryEditing = false; renderMeetingDetail(); return; }
+    if (event.target.closest('[data-cancel-inline-summary-edit]')) { uiData.detail.summaryDraft = undefined; uiData.detail.summaryEditing = false; renderMeetingDetail(); return; }
     if (event.target.closest('[data-save-inline-summary]')) {
       const markdown = (inlineSummaryEditor?.getMarkdown() || '').trim();
       const meetingId = currentMeetingDetail?.id;
       if (!meetingId || !window.brevia?.summary?.save) return;
       if (!markdown) { showToast(t('纪要不能为空')); return; }
       void window.brevia.summary.save({ meeting_id: meetingId, markdown }).then(() => {
+        if (currentMeetingDetail?.id !== meetingId) return;
         currentMeetingDetail.summary = { data: { markdown } };
         uiData.detail.summary = { markdown, hasFull: true, blocked: meetingActive, generating: false };
-        inlineSummaryEditor = null;
-        uiData.detail.summaryEditing = false;
+        if (!uiData.detail.summaryEditing || (inlineSummaryEditor?.getMarkdown() || '').trim() === markdown) {
+          uiData.detail.summaryDraft = undefined;
+          uiData.detail.summaryEditing = false;
+        }
         renderMeetingDetail();
         showToast(t('已保存'));
       }).catch((error) => showToast(error.message));
@@ -5816,7 +5655,7 @@ if (window.brevia) {
    放在文件末尾：上面的 function 声明已提升，而 const 箭头函数（showToast / showView /
    updatePlayerControl / renderPlayerTime）到这里都已初始化。 */
 registerAppActions('app.js', {
-  scheduleDetailNotesSave,
+  updateDetailNotesDraft,
   showToast,
   filterMeetings,
   renderMeetingList,

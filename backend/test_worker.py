@@ -2,6 +2,7 @@ import base64
 import hashlib
 import io
 import json
+import sys
 import tarfile
 import tempfile
 import threading
@@ -12,13 +13,14 @@ import wave
 import zipfile
 from array import array
 from contextlib import closing
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from .asr import DownloadCancelled, ModelManager, OfflineVAD, RefinedASR, SpeakerTracker
-from .audio_io import convert_to_pcm_wav, ensure_wav_duration
+from .audio_io import convert_to_pcm_wav, ensure_wav_duration, read_mono_wav
 from .config import (
     BUNDLED_MODEL_IDS,
     DEFAULT_SETTINGS,
@@ -126,7 +128,7 @@ class WorkerTest(unittest.TestCase):
         ):
             with self.assertRaisesRegex(ValueError, "no audio"):
                 self.worker.refine({"meeting_id": meeting["id"], "refined_model_id": "retired-model"})
-        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["refined_model_id"], "qwen3-asr-0.6b-int8")
+        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["refined_model_id"], meeting["refined_model_id"])
 
     def test_refinement_falls_back_when_the_stored_model_is_retired(self):
         """点名一个退役模型时也要换成默认模型——它的本地副本已经在启动时清掉了。"""
@@ -140,7 +142,7 @@ class WorkerTest(unittest.TestCase):
         with patch.object(self.worker, "_default_refined_model", return_value="qwen3-asr-0.6b-int8"), patch.object(self.worker.models, "is_ready", return_value=True):
             with self.assertRaisesRegex(ValueError, "no audio"):
                 self.worker.refine({"meeting_id": meeting["id"], "refined_model_id": retired_id})
-        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["refined_model_id"], "qwen3-asr-0.6b-int8")
+        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["refined_model_id"], meeting["refined_model_id"])
 
     def test_assemble_utterances_splits_at_sentence_boundary_when_overlong(self):
         # 第二句跨窗口：窗口 2 以半句话结尾，句末在窗口 3 中。超长时应在
@@ -165,6 +167,103 @@ class WorkerTest(unittest.TestCase):
     def tearDown(self):
         self.worker.store.close_audio_sessions()
         self.temp.cleanup()
+
+    def test_invalid_settings_survive_failed_backup(self):
+        settings = Path(self.temp.name) / "advanced-settings.json"
+        settings.write_text("{bad json", encoding="utf-8")
+        with patch.object(Path, "rename", side_effect=PermissionError("read-only drive")), self.assertLogs("backend.config", level="WARNING"):
+            self.assertEqual(runtime_settings(self.temp.name), DEFAULT_SETTINGS)
+        self.assertEqual(settings.read_text(), "{bad json")
+        with patch.object(Path, "read_text", side_effect=OSError("offline drive")), self.assertLogs("backend.config", level="WARNING"):
+            self.assertEqual(runtime_settings(self.temp.name), DEFAULT_SETTINGS)
+
+    def test_long_recording_closes_completed_chunks(self):
+        meeting = self.worker.store.create_meeting({"title": "long recording", "language": "en", "refined_model_id": "qwen3-asr-0.6b-int8"})
+        chunk = SETTINGS["audio"]["chunk_seconds"] * 10
+        for track in ("mic", "system"):
+            self.worker.store.append_audio(meeting["id"], track, b"\x01\x00" * (chunk * 6 + 7), sample_rate=10)
+        session = self.worker.store._audio_sessions[meeting["id"]]
+        self.assertEqual(len(session["writers"]), 2)
+        self.worker.store.flush_audio(meeting["id"], force=True, close=True)
+        recovered = Store(self.temp.name)
+        try:
+            self.assertEqual(recovered.append_audio(meeting["id"], "mic", b"\x01\x00" * 3, sample_rate=10), chunk * 6 + 10)
+            files = recovered.meeting_dir(meeting["id"]) / "audio"
+            self.assertEqual(sum(recovered._wav_samples(p) for p in files.glob("mic-*.wav")), chunk * 6 + 10)
+        finally:
+            recovered.close_audio_sessions()
+
+    def test_exports_reserve_names_without_overwriting_or_leaving_invalid_files(self):
+        meeting = self.worker.store.create_meeting({"title": "export regression", "language": "en", "refined_model_id": "qwen3-asr-0.6b-int8"})
+        exported = Path(self.worker.export({"meeting_id": meeting["id"], "format": "pdf"})["path"])
+        pdf = exported.with_name(exported.name.removesuffix(".print.html") + ".pdf")
+        pdf.write_bytes(b"keep PDF")
+        exported.unlink()
+        following = self.worker.export({"meeting_id": meeting["id"], "format": "pdf"})
+        self.assertNotEqual(following["path"], str(exported))
+        self.assertEqual(pdf.read_bytes(), b"keep PDF")
+        directory = pdf.parent
+        before = set(directory.iterdir())
+        with self.assertRaises(ValueError):
+            self.worker.export({"meeting_id": meeting["id"], "format": "bad"})
+        with self.assertRaises(ValueError):
+            self.worker.export({"meeting_id": meeting["id"], "format": "wav", "content": "audio"})
+        self.assertEqual(set(directory.iterdir()), before)
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(lambda _: self.worker.export({"meeting_id": meeting["id"], "format": "txt"})["path"], range(8)))
+        self.assertEqual(len(set(results)), 8)
+        zipped = self.worker.bundle_files({"meeting_id": meeting["id"], "files": [{"path": results[0], "name": "字幕.txt"}]})
+        with zipfile.ZipFile(zipped["path"]) as archive:
+            self.assertEqual(archive.read("字幕.txt"), Path(results[0]).read_bytes())
+        outside = Path(self.temp.name) / "private.txt"
+        outside.write_text("private")
+        link = directory / "escape.txt"
+        link.symlink_to(outside)
+        with self.assertRaisesRegex(ValueError, "Invalid archive source"):
+            self.worker.bundle_files({"meeting_id": meeting["id"], "files": [{"path": str(link), "name": "escape.txt"}]})
+
+    def test_metrics_select_current_transcript_and_exclude_deleted_summaries(self):
+        meeting = self.worker.store.create_meeting({"title": "metrics", "language": "en", "refined_model_id": "qwen3-asr-0.6b-int8"})
+        for version, revision in (("live", 0), ("postprocess", 0), ("postprocess-1", 1), ("user", 1)):
+            self.worker.store.save_segment({"meeting_id": meeting["id"], "segment_id": "one", "version": version, "revision": revision, "text": "line one\nline two", "start_ms": 0, "end_ms": 100})
+        self.worker.store.save_summary(meeting["id"], {"markdown": "summary"}, "summary")
+        metrics = self.worker.store.metrics()
+        self.assertEqual((metrics["subtitle_count"], metrics["subtitle_lines"], metrics["summary_count"]), (1, 2, 1))
+        self.worker.store.soft_delete(meeting["id"])
+        metrics = self.worker.store.metrics()
+        self.assertEqual((metrics["subtitle_count"], metrics["summary_count"]), (0, 0))
+
+    def test_recording_and_export_reject_symlink_destinations(self):
+        meeting = self.worker.store.create_meeting({"title": "safe destinations", "language": "en", "refined_model_id": "qwen3-asr-0.6b-int8"})
+        directory = self.worker.store.meeting_dir(meeting["id"])
+        outside = Path(self.temp.name) / "outside"
+        outside.mkdir()
+        (outside / "mic-00000.wav").write_bytes(b"keep")
+        (directory / "audio").rmdir()
+        (directory / "audio").symlink_to(outside, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "Invalid audio path"):
+            self.worker.store.append_audio(meeting["id"], "mic", b"\x01\x00")
+        self.assertEqual((outside / "mic-00000.wav").read_bytes(), b"keep")
+        (directory / "exports").rmdir()
+        (directory / "exports").symlink_to(outside, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "Invalid export directory"):
+            self.worker.export({"meeting_id": meeting["id"], "format": "txt"})
+        self.assertEqual([p.name for p in outside.iterdir()], ["mic-00000.wav"])
+
+    def test_schema_recovers_missing_transcript_model_with_current_version(self):
+        with self.worker.store.connect() as db:
+            db.execute("ALTER TABLE meetings DROP COLUMN transcript_model_id")
+            db.execute("PRAGMA user_version=2")
+        recovered = Store(self.temp.name)
+        with recovered.connect() as db:
+            self.assertIn("transcript_model_id", {row["name"] for row in db.execute("PRAGMA table_info(meetings)")})
+
+    def test_nonobject_commands_do_not_kill_worker_loop(self):
+        commands = b'null\n[]\n42\n{"id":"ok","type":"meeting.list"}\n'
+        with patch("backend.worker.Worker") as worker, patch("sys.stdin", SimpleNamespace(encoding="utf-8", buffer=io.BytesIO(commands))):
+            main()
+        self.assertEqual(worker.return_value.handle.call_args.args[0]["id"], "ok")
+        self.assertEqual(worker.return_value.response.call_count, 4)
 
     def test_audio_import_does_not_read_worker_stdin(self):
         with patch("backend.audio_io.ffmpeg_path", return_value="ffmpeg"), patch("backend.audio_io.subprocess.run") as run:
@@ -217,6 +316,27 @@ class WorkerTest(unittest.TestCase):
             stop=[],
         )
 
+    def test_llama_sidecar_releases_old_model_before_changing_context(self):
+        sidecar = LlamaSidecar()
+        old, replacement = Mock(), Mock()
+        with tempfile.TemporaryDirectory() as root:
+            model = Path(root) / 'model.gguf'
+            model.touch()
+            sidecar.model, sidecar.model_path, sidecar.context_size = old, model, 4096
+            def create(**kwargs):
+                old.close.assert_called_once()
+                self.assertIsNone(sidecar.model)
+                self.assertEqual(kwargs['n_ctx'], 16384)
+                return replacement
+            with patch('backend.llama_sidecar.Llama', side_effect=create) as constructor:
+                sidecar.load_model(str(model), context_size=4096)
+                constructor.assert_not_called()
+                old.close.assert_not_called()
+                sidecar.load_model(str(model), context_size=16384)
+                self.assertIs(sidecar.model, replacement)
+                sidecar.load_model(str(model), context_size=16384)
+                constructor.assert_called_once()
+
     def test_ai_note_uses_a_small_context_while_summary_keeps_16k(self):
         self.worker.llama_generate = Mock(return_value="notes")
         self.assertEqual(
@@ -250,7 +370,8 @@ class WorkerTest(unittest.TestCase):
         self.worker.cancel_sidecar.assert_not_called()
         session.running = True
         self.worker._cancel_session(session)
-        self.worker.cancel_sidecar.assert_called_once_with(ASSISTANT_SIDECAR)
+        self.worker.cancel_sidecar.assert_called_once_with(ASSISTANT_SIDECAR, session.cancellation)
+        self.assertTrue(session.cancellation.is_set())
 
     def test_ai_note_uses_a_localized_prompt_and_state_labels(self):
         expected = {
@@ -274,7 +395,7 @@ class WorkerTest(unittest.TestCase):
         meeting_id = "11111111-1111-1111-1111-111111111111"
         self._patch_ai_note_cadence()
         self.worker.llm_complete = lambda payload, prompt: json.dumps({"type": "action", "text": "调研下一代主机发布节奏", "importance": "high"})
-        self.worker.llama_generate_realtime = lambda model_id, prompt: json.dumps({"type": "action", "text": "调研下一代主机发布节奏", "importance": "high"})
+        self.worker.llama_generate_realtime = lambda model_id, prompt, **kwargs: json.dumps({"type": "action", "text": "调研下一代主机发布节奏", "importance": "high"})
         self.worker.ai_note_start({"meeting_id": meeting_id, "provider": "built-in", "model": "qwen3.5-2b", "proactivity": "assist", "language": "zh"})
         self.worker.ai_note_on_segment({"meeting_id": meeting_id, "text": "下一步需要小王确认报价 160 万", "start_ms": 5000, "speaker": "spk-1"})
         suggestions = self._wait_ai_suggestions()
@@ -299,7 +420,7 @@ class WorkerTest(unittest.TestCase):
                 {"type": "action", "text": "需要评估每周 40 小时对人力成本的影响", "importance": "medium"},
             ]
         }
-        self.worker.llama_generate_realtime = lambda model_id, prompt: json.dumps(batch, ensure_ascii=False)
+        self.worker.llama_generate_realtime = lambda model_id, prompt, **kwargs: json.dumps(batch, ensure_ascii=False)
         self.worker.ai_note_start({"meeting_id": meeting_id, "provider": "built-in", "model": "qwen3.5-2b", "proactivity": "assist", "language": "zh"})
         self.worker.ai_note_on_segment({"meeting_id": meeting_id, "text": "2026 年全国企业就业人员每周平均工作 48.2 小时，家具制造业利润只有 5.36%。", "start_ms": 5000, "speaker": "spk-1"})
         suggestions = self._wait_ai_suggestions()
@@ -313,7 +434,7 @@ class WorkerTest(unittest.TestCase):
         self._patch_ai_note_cadence()
         calls = []
 
-        def fake(model_id, prompt):
+        def fake(model_id, prompt, **kwargs):
             calls.append(prompt)
             return json.dumps(
                 {
@@ -340,7 +461,7 @@ class WorkerTest(unittest.TestCase):
         meeting_id = "44444444-4444-4444-4444-444444444444"
         self._patch_ai_note_cadence()
 
-        def fake(model_id, prompt):
+        def fake(model_id, prompt, **kwargs):
             return json.dumps(
                 {"suggestions": [{"type": "number", "text": "2026 年全国企业平均每周工作 48.2 小时", "importance": "high"}]},
                 ensure_ascii=False,
@@ -429,7 +550,7 @@ class WorkerTest(unittest.TestCase):
         calls = []
         release = threading.Event()
 
-        def fake(model_id, prompt):
+        def fake(model_id, prompt, **kwargs):
             calls.append(1)
             if len(calls) == 1:
                 release.wait(timeout=5)  # 第一轮在飞时挂起
@@ -475,7 +596,7 @@ class WorkerTest(unittest.TestCase):
         self._patch_ai_note_cadence()
         calls = []
 
-        def fake(model_id, prompt):
+        def fake(model_id, prompt, **kwargs):
             calls.append(1)
             return json.dumps(
                 {"suggestions": [{"type": "decision", "text": "决定先做小范围灰度发布", "importance": "high"}]},
@@ -564,10 +685,35 @@ class WorkerTest(unittest.TestCase):
         self.assertEqual(self.worker.store.get_meeting(meeting["id"])["workspace_id"], workspace["id"])
         self.assertEqual(self.worker.store.get_workspace(workspace["id"])["id"], workspace["id"])
 
+    def test_direct_meeting_delete_restores_workspace_and_is_idempotent(self):
+        workspace = self.worker.store.create_workspace({"name": "Team"})
+        meeting = self.worker.store.create_meeting({"title": "restore", "language": "en", "refined_model_id": "funasr-nano-int8", "workspace_id": workspace["id"]})
+        for _ in range(2):
+            self.worker.store.soft_delete(meeting["id"])
+        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["workspace_id"], workspace["id"])
+        for _ in range(2):
+            self.worker.store.soft_delete(meeting["id"], restore=True)
+        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["workspace_id"], workspace["id"])
+        # 已经被旧版删除的会议没有 previous_workspace_id，仍需保留原归属。
+        with self.worker.store.connect() as db:
+            db.execute("UPDATE meetings SET deleted_at='2026-09-30', previous_workspace_id=NULL WHERE id=?", (meeting["id"],))
+        self.worker.store.soft_delete(meeting["id"], restore=True)
+        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["workspace_id"], workspace["id"])
+
     def test_meeting_can_start_in_a_workspace(self):
         workspace = self.worker.store.create_workspace({"name": "Team"})
         meeting = self.worker.start({"title": "workspace", "language": "zh", "refined_model_id": "qwen3-asr-0.6b-int8", "workspace_id": workspace["id"]})
         self.assertEqual(meeting["workspace_id"], workspace["id"])
+
+    def test_recreate_deleted_workspace_returns_committed_row_and_positions_increase(self):
+        first = self.worker.store.create_workspace({"name": "First"})
+        second = self.worker.store.create_workspace({"name": "Second"})
+        self.assertGreater(second["position"], first["position"])
+        self.worker.store.delete_workspace(first["id"])
+        restored = self.worker.store.create_workspace({"name": "first"})
+        self.assertEqual(restored["id"], first["id"])
+        self.assertIsNone(restored["deleted_at"])
+        self.assertEqual(restored, self.worker.store.get_workspace(first["id"]))
 
     def test_legacy_category_migrates_once_to_workspace_id(self):
         meeting = self.worker.start({"title": "legacy", "language": "zh", "refined_model_id": "qwen3-asr-0.6b-int8"})
@@ -618,6 +764,10 @@ class WorkerTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "too long"):
             ensure_wav_duration(path, 1, "refine")
         ensure_wav_duration(path, 2, "refine")
+        with patch.object(wave.Wave_read, "readframes", side_effect=AssertionError("must reject before reading samples")):
+            with self.assertRaisesRegex(ValueError, "too long") as error:
+                read_mono_wav(path, maximum_seconds=1)
+            self.assertEqual(error.exception.code, "error.audio_too_long")
 
     def test_cancelling_refinement_task_preserves_completed_turns(self):
         meeting = self.worker.start(
@@ -703,6 +853,7 @@ class WorkerTest(unittest.TestCase):
     def test_sidecar_timeout_kills_the_stalled_process(self):
         child = Mock()
         child.poll.return_value = None
+        child.kill.side_effect = lambda: setattr(child.poll, 'return_value', -9)
         child.stdout.readline.return_value = ""
 
         class ImmediateTimer:
@@ -715,6 +866,9 @@ class WorkerTest(unittest.TestCase):
             def cancel(self):
                 pass
 
+            def join(self):
+                pass
+
         with (
             patch("backend.worker_llama_sidecar.subprocess.Popen", return_value=child),
             patch("backend.worker_llama_sidecar.threading.Timer", ImmediateTimer),
@@ -722,6 +876,122 @@ class WorkerTest(unittest.TestCase):
             response = _Sidecar(["sidecar"], Mock()).request({"type": "generate"})
         self.assertEqual(response, {"type": "error", "message": "Sidecar request timed out"})
         child.kill.assert_called_once()
+        child.wait.assert_called_once()
+        child.stdin.close.assert_called_once()
+        child.stdout.close.assert_called_once()
+
+        stalled = _Sidecar([sys.executable, '-u', '-c', 'import time; time.sleep(30)'], Mock())
+        process = stalled._ensure()
+        try:
+            self.assertEqual(stalled.request({'type': 'generate'}, timeout_seconds=0.05),
+                {'type': 'error', 'message': 'Sidecar request timed out'})
+            self.assertIsNotNone(process.poll())
+            self.assertTrue(process.stdin.closed and process.stdout.closed)
+        finally:
+            stalled.shutdown()
+
+    def test_sidecar_protocol_failure_and_cancellation_reap_real_processes(self):
+        for reply in ('invalid-json', '[]'):
+            sidecar = _Sidecar([sys.executable, '-u', '-c',
+                f'import sys,time; sys.stdin.readline(); print({reply!r}); time.sleep(30)'], Mock())
+            child = sidecar._ensure()
+            try:
+                self.assertEqual(sidecar.request({'type': 'generate'})['type'], 'error')
+                self.assertIsNotNone(child.poll())
+                self.assertTrue(child.stdin.closed and child.stdout.closed)
+                self.assertIsNone(sidecar.process)
+            finally:
+                sidecar.shutdown()
+
+        sidecar = _Sidecar([sys.executable, '-u', '-c',
+            'import sys,json,time; '
+            '[print(json.dumps({"type":"response"}), flush=True) if json.loads(line).get("type") == "ping" '
+            'else time.sleep(30) for line in sys.stdin]'], Mock())
+        child = sidecar._ensure()
+        response = []
+        started = threading.Event()
+        cancellation = threading.Event()
+        def request():
+            started.set()
+            response.append(sidecar.request({'type': 'generate'}, cancellation=cancellation))
+        thread = threading.Thread(target=request)
+        try:
+            thread.start()
+            self.assertTrue(started.wait(1))
+            # 确认请求持锁，取消必须能解除阻塞而无需等待该锁。
+            deadline = time.monotonic() + 2
+            while sidecar.cancellation is not cancellation and time.monotonic() < deadline:
+                time.sleep(0.001)
+            self.assertIs(sidecar.cancellation, cancellation)
+            sidecar.cancel(cancellation)
+            thread.join(3)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(response[0]['type'], 'error')
+            self.assertIsNotNone(child.poll())
+            self.assertTrue(child.stdin.closed and child.stdout.closed)
+            self.assertEqual(sidecar.request({'type': 'ping'}), {'type': 'response'})
+        finally:
+            sidecar.cancel()
+            thread.join(3)
+
+    def test_ai_note_cancellation_does_not_kill_a_shared_summary(self):
+        with tempfile.TemporaryDirectory() as root:
+            ready, release = Path(root) / 'ready', Path(root) / 'release'
+            code = (
+                'import sys,json,time; from pathlib import Path\n'
+                'for line in sys.stdin:\n'
+                ' request=json.loads(line)\n'
+                ' if request.get("type") == "shutdown": break\n'
+                f' Path({str(ready)!r}).touch()\n'
+                f' while not Path({str(release)!r}).exists(): time.sleep(.01)\n'
+                ' print(json.dumps({"type":"response","text":"summary"}), flush=True)\n'
+            )
+            sidecar = _Sidecar([sys.executable, '-u', '-c', code], Mock())
+            self.worker._sidecars[ASSISTANT_SIDECAR] = sidecar
+            self.worker._resolve_gguf = Mock(return_value=Path(root) / 'model.gguf')
+            for provider, action in [('built-in', 'typing'), ('custom-openai', 'stop')]:
+                release.unlink(missing_ok=True)
+                ready.unlink(missing_ok=True)
+                summary = []
+                thread = threading.Thread(target=lambda: summary.append(sidecar.request({'type': 'generate'})))
+                session = _AiNoteSession('meeting', {'provider': provider, 'model': 'test'}, 'assist', 'zh')
+                session.running = True
+                self.worker._ai_note_sessions['meeting'] = session
+                note_errors = []
+                def note():
+                    try:
+                        self.worker._ai_note_complete(session, 'note')
+                    except RuntimeError as error:
+                        note_errors.append(str(error))
+                queued = threading.Thread(target=note)
+                try:
+                    thread.start()
+                    deadline = time.monotonic() + 3
+                    while not ready.exists() and time.monotonic() < deadline:
+                        time.sleep(.01)
+                    self.assertTrue(ready.exists())
+                    process = sidecar.process
+                    if action == 'typing':
+                        queued.start()
+                        self.worker.ai_note_typing({'meeting_id': 'meeting', 'typing': True})
+                    else:
+                        self.worker.ai_note_stop({'meeting_id': 'meeting'})
+                    self.assertIsNone(process.poll(), 'cancelling notes must preserve the active summary')
+                    release.touch()
+                    thread.join(3)
+                    self.assertFalse(thread.is_alive())
+                    self.assertEqual(summary, [{'type': 'response', 'text': 'summary'}])
+                    if queued.ident is not None:
+                        queued.join(3)
+                        self.assertFalse(queued.is_alive())
+                        self.assertTrue(note_errors and 'cancelled' in note_errors[0])
+                    self.assertIs(sidecar.process, process, 'cancelled queued notes must not restart the model')
+                finally:
+                    release.touch()
+                    thread.join(3)
+                    if queued.ident is not None:
+                        queued.join(3)
+            sidecar.shutdown()
 
     def test_meeting_audio_persistence_and_export(self):
         meeting = self.worker.start(
@@ -761,6 +1031,10 @@ class WorkerTest(unittest.TestCase):
             mixed = array("h")
             mixed.frombytes(recording.readframes(1))
             self.assertEqual(mixed[0], 24)
+        audio_export = self.worker.export({"meeting_id": meeting["id"], "content": "audio", "format": "wav"})
+        self.assertEqual(Path(audio_export["path"]).read_bytes(), Path(result["audio"]["playback"]["mix"]).read_bytes())
+        with self.assertRaisesRegex(ValueError, "saved WAV format"):
+            self.worker.export({"meeting_id": meeting["id"], "content": "audio", "format": "m4a"})
         exported = self.worker.export({"meeting_id": meeting["id"], "format": "srt"})
         self.assertIn("这是联调测试", Path(exported["path"]).read_text(encoding="utf-8"))
         docx = self.worker.export({"meeting_id": meeting["id"], "format": "docx"})
@@ -1261,9 +1535,12 @@ class WorkerTest(unittest.TestCase):
             "consent": True,
             "language": "zh",
         }
+        previous = {"markdown": "# 已有纪要"}
+        self.worker.store.save_summary(meeting["id"], previous, previous["markdown"])
         with self.assertRaisesRegex(ValueError, "Summary generation failed"):
             self.worker.active = None  # 纪要仅在会议结束后生成
             self.worker.summarize(payload)
+        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["summary"]["data"], previous)
         self.worker.active = None  # 纪要仅在会议结束后生成
         self.worker.summarize(payload)
         self.assertEqual(len(prompts), 2)
@@ -2721,6 +2998,21 @@ class WorkerTest(unittest.TestCase):
             [(0, 950, "spk-1"), (950, 2000, "spk-2")],
         )
 
+    def test_deoverlap_checks_all_active_turns_without_mutating_input(self):
+        turns = [
+            {"start_ms": 0, "end_ms": 1000, "speaker": "spk-1"},
+            {"start_ms": 5, "end_ms": 10, "speaker": "spk-1"},
+            {"start_ms": 20, "end_ms": 30, "speaker": "spk-2"},
+            {"start_ms": 900, "end_ms": 2000, "speaker": "spk-2"},
+        ]
+        original = [dict(turn) for turn in turns]
+        self.assertEqual(self.worker._deoverlap_speaker_turns(turns), [
+            {"start_ms": 0, "end_ms": 950, "speaker": "spk-1"},
+            {"start_ms": 5, "end_ms": 10, "speaker": "spk-1"},
+            {"start_ms": 950, "end_ms": 2000, "speaker": "spk-2"},
+        ])
+        self.assertEqual(turns, original)
+
     def test_deoverlap_speaker_turns_keeps_same_speaker_overlap(self):
         deoverlapped = self.worker._deoverlap_speaker_turns([
             {"start_ms": 0, "end_ms": 1000, "speaker": "spk-1"},
@@ -3010,6 +3302,57 @@ class WorkerTest(unittest.TestCase):
         self.worker.store.clear_storage_partition("meetings")
         self.assertEqual(self.worker.store.list_meetings(), [])
 
+    def test_import_registers_before_creation_and_blocks_cleanup_until_finished(self):
+        source = Path(self.temp.name) / "import.wav"
+        source.write_bytes(b"test")
+        started, release = threading.Event(), threading.Event()
+
+        def convert(_source, destination):
+            started.set()
+            self.assertTrue(release.wait(5))
+            with wave.open(str(destination), "wb") as wav:
+                wav.setparams((1, 2, 16000, 0, "NONE", "not compressed"))
+                wav.writeframes(b"\0\0" * 1600)
+
+        payload = {"title": "import", "path": str(source), "language": "zh", "refined_model_id": "qwen3-asr-0.6b-int8"}
+        with patch("backend.worker_session.convert_to_pcm_wav", side_effect=convert), ThreadPoolExecutor(max_workers=1) as pool:
+            imported = pool.submit(self.worker.import_audio, payload)
+            try:
+                self.assertTrue(started.wait(5))
+                meeting = self.worker.store.list_meetings()[0]
+                self.assertTrue(self.worker.tasks.has_for_meeting(meeting["id"]))
+                for partition in ["meetings", "models", "exports"]:
+                    with self.assertRaisesRegex(ValueError, "background tasks"):
+                        self.worker.clear_storage({"partition": partition})
+                with self.assertRaisesRegex(ValueError, "background tasks"):
+                    self.worker.cleanup_unused_storage({})
+            finally:
+                release.set()
+            self.assertEqual(imported.result()["duration_ms"], 100)
+        self.assertFalse(self.worker.tasks.has_any())
+        with patch("backend.worker_session.convert_to_pcm_wav", side_effect=OSError("conversion failed")):
+            with self.assertRaisesRegex(OSError, "conversion failed"):
+                self.worker.import_audio(payload)
+        self.assertFalse(self.worker.tasks.has_any())
+        self.assertEqual(len(self.worker.store.list_meetings()), 1)
+
+    def test_export_and_voice_processing_share_task_cleanup_guard(self):
+        meeting = self.worker.store.create_meeting({"title": "export", "language": "en", "refined_model_id": "funasr-nano-int8"})
+
+        def assert_protected(*_args, **_kwargs):
+            self.assertTrue(self.worker.tasks.has_any())
+            with self.assertRaisesRegex(ValueError, "background tasks"):
+                self.worker.clear_storage({"partition": "exports"})
+            raise RuntimeError("processing failed")
+
+        with patch.object(self.worker.store, "get_meeting", side_effect=assert_protected):
+            with self.assertRaisesRegex(RuntimeError, "processing failed"):
+                self.worker.export({"meeting_id": meeting["id"], "format": "txt"})
+        with patch.object(self.worker.voice_profiles, "enroll", side_effect=assert_protected):
+            with self.assertRaisesRegex(RuntimeError, "processing failed"):
+                self.worker.enroll_speaker_profile({"name": "Speaker", "path": "recording.wav"})
+        self.assertFalse(self.worker.tasks.has_any())
+
     def test_cannot_clear_meetings_while_recording(self):
         self.worker.start(
             {
@@ -3045,6 +3388,30 @@ class WorkerTest(unittest.TestCase):
         self.assertEqual(
             runtime_settings(self.temp.name)["vad"]["default"]["min_silence_duration"], 0.9
         )
+
+    def test_invalid_advanced_settings_are_preserved_and_startup_recovers(self):
+        path = Path(self.temp.name) / "advanced-settings.json"
+        for content in ('{"audio":', '[]', '{"audio":{"sample_rate":false}}'):
+            path.write_text(content)
+            with self.assertLogs("backend.config", level="WARNING"):
+                worker = Worker(self.temp.name, self.events.append)
+            self.assertEqual(SETTINGS, DEFAULT_SETTINGS)
+            self.assertFalse(path.exists())
+            self.assertIn(content, [p.read_text() for p in path.parent.glob(f"{path.name}.corrupt-*")])
+            worker.store.close_audio_sessions()
+
+    def test_advanced_settings_failed_replace_preserves_previous_file_and_memory(self):
+        settings = json.loads(json.dumps(DEFAULT_SETTINGS))
+        settings["vad"]["default"]["min_silence_duration"] = 0.9
+        save_runtime_settings(self.temp.name, settings)
+        path = Path(self.temp.name) / "advanced-settings.json"
+        previous = path.read_bytes()
+        with patch("backend.config.os.replace", side_effect=OSError("test interrupted save")):
+            with self.assertRaises(OSError):
+                save_runtime_settings(self.temp.name, DEFAULT_SETTINGS)
+        self.assertEqual(path.read_bytes(), previous)
+        self.assertEqual(SETTINGS, settings)
+        self.assertEqual(list(path.parent.glob(f".{path.name}-*")), [])
 
     def test_advanced_settings_drop_retired_system_audio_gate(self):
         settings = json.loads(json.dumps(DEFAULT_SETTINGS))
@@ -3248,14 +3615,11 @@ class WorkerTest(unittest.TestCase):
 
     def test_model_downloads_have_checksums(self):
         for model in self.worker.models.catalog.values():
-            # Single-file GGUF models are fetched directly (no tar archive), so
-            # they carry no archive checksum; skip the archive requirement.
-            if model.get("kind") in {"llama-chat", "llama-translation"}:
-                continue
             if model.get("downloads"):
-                self.assertTrue(all(item.get("sha256") for item in model["downloads"]))
+                for item in model["downloads"]:
+                    self.assertRegex(item.get("sha256", ""), r"^[a-f0-9]{64}$", model["id"])
             else:
-                self.assertTrue(model.get("archive_sha256"), model["id"])
+                self.assertRegex(model.get("archive_sha256", ""), r"^[a-f0-9]{64}$", model["id"])
 
     def test_model_extraction_rejects_paths_outside_the_install_directory(self):
         archive = Path(self.temp.name) / "unsafe.tar.bz2"
@@ -4311,13 +4675,14 @@ class WorkerTest(unittest.TestCase):
                 "segment.text",
                 "meeting.export",
                 "meeting.bundle",
+                "meeting.bundle-files",
             )
         )
         with (
             patch("backend.worker.Worker"),
             patch("backend.worker.threading.Thread") as thread,
             patch("backend.worker.ThreadPoolExecutor") as executor,
-            patch("sys.stdin", io.StringIO(commands)),
+            patch("sys.stdin", SimpleNamespace(encoding="utf-8", buffer=io.BytesIO(commands.encode("utf-8")))),
         ):
             main()
         # Translation is serialized through a single-worker executor; every other
@@ -4339,6 +4704,7 @@ class WorkerTest(unittest.TestCase):
                 "segment.text",
                 "meeting.export",
                 "meeting.bundle",
+                "meeting.bundle-files",
             ],
         )
 
@@ -4509,10 +4875,13 @@ class WorkerTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "database failed"):
                 self.worker.stop({"meeting_id": meeting["id"], "duration_ms": 0})
         self.assertEqual(order, ["cleanup", "database"])
-        self.assertIsNone(self.worker.active)
+        self.assertEqual(self.worker.active, meeting["id"])
         self.assertIsNone(self.worker.live_postprocessing)
         # 整句识别是唯一结果，必须排空后才结束会议。
         postprocessing.shutdown.assert_called_once_with(wait=True)
+        result = self.worker.stop({"meeting_id": meeting["id"], "duration_ms": 0})
+        self.assertEqual(result["status"], "ready")
+        self.assertIsNone(self.worker.active)
 
 
     def test_voiceprint_sample_audio_is_removed_with_profile(self):
@@ -4539,6 +4908,94 @@ class WorkerTest(unittest.TestCase):
         self.assertFalse(
             (self.worker.store.speaker_profiles_dir / profile["id"]).exists()
         )
+
+    def test_voiceprint_paths_survive_relocation_and_cannot_escape_profile(self):
+        store = self.worker.store
+        profile = store.ensure_speaker_profile("Speaker")
+        directory = store.speaker_profiles_dir / profile["id"]
+        directory.mkdir()
+        audio = directory / "sample.wav"
+        audio.write_bytes(b"audio")
+        store.save_speaker_profile_sample("Speaker", [1., 0.], "sample", profile["id"], str(audio), 100)
+        with store.connect() as db:
+            self.assertEqual(db.execute("SELECT audio_path FROM speaker_profile_samples").fetchone()[0], "sample.wav")
+            db.execute("UPDATE speaker_profile_samples SET audio_path=?", (str(Path("/previous/data/speaker-profiles") / profile["id"] / audio.name),))
+        sample = store.list_speaker_profile_samples(profile["id"])[0]
+        self.assertEqual(sample["audio_path"], str(audio))
+        # 同一文件从旧绝对路径转存为相对路径时不能被当作旧样本删掉。
+        store.save_speaker_profile_sample("Speaker", [1., 0.], "sample", profile["id"], str(audio), 100)
+        self.assertTrue(audio.exists())
+        store.delete_speaker_profile_sample(profile["id"], sample["id"])
+        self.assertFalse(audio.exists())
+        outside = store.root / "outside.wav"
+        outside.write_bytes(b"keep")
+        audio.symlink_to(outside)
+        for invalid in [str(outside), "../outside.wav", str(audio)]:
+            with self.assertRaisesRegex(ValueError, "inside its profile directory"):
+                store.save_speaker_profile_sample("Speaker", [1., 0.], "bad", profile["id"], invalid)
+            store._delete_sample_audio(profile["id"], invalid)
+        self.assertEqual(outside.read_bytes(), b"keep")
+
+    def test_voiceprint_repeated_enrollment_replaces_audio_without_orphans(self):
+        source = Path(self.temp.name) / "source.wav"
+        source.write_bytes(b"test")
+        tracker = Mock()
+        tracker.embedding.return_value = [1.0, 0.0]
+        with patch.object(self.worker.voice_profiles, "_samples", return_value=([0.1] * 1600, 16000)), patch("backend.voice_profiles.SpeakerTracker", return_value=tracker):
+            payload = {"name": "Speaker", "path": str(source)}
+            first = self.worker.voice_profiles.enroll(payload)
+            payload["profile_id"] = first["id"]
+            old = Path(self.worker.store.list_speaker_profile_samples(first["id"])[0]["audio_path"])
+            second = self.worker.voice_profiles.enroll(payload)
+            samples = self.worker.store.list_speaker_profile_samples(first["id"])
+            self.assertFalse(second["added"])
+            self.assertFalse(old.exists())
+            self.assertEqual(len(samples), 1)
+            self.assertEqual(list(old.parent.glob("*.wav")), [Path(samples[0]["audio_path"])])
+            other = self.worker.store.ensure_speaker_profile("Other")
+            with self.assertRaisesRegex(ValueError, "another voiceprint"):
+                self.worker.voice_profiles.enroll({**payload, "name": "Other", "profile_id": other["id"]})
+            self.assertEqual(list(old.parent.glob("*.wav")), [Path(samples[0]["audio_path"])])
+            self.assertEqual(list((old.parent.parent / other["id"]).glob("*.wav")), [])
+            with patch.object(self.worker.store, "save_speaker_profile_sample", side_effect=RuntimeError("test save failure")):
+                with self.assertRaises(RuntimeError):
+                    self.worker.voice_profiles.enroll(payload)
+            self.assertEqual(list(old.parent.glob("*.wav")), [Path(samples[0]["audio_path"])])
+
+    def test_voiceprint_learning_reads_only_selected_windows(self):
+        source = Path(self.temp.name) / "playback.wav"
+        source.write_bytes(b"test")
+        tracker = Mock()
+        tracker.embedding.return_value = [1.0, 0.0]
+        meeting = {"id": "meeting", "audio": {"playback": {"mic": str(source)}}, "segments": [
+            {"id": f"s{index}", "speaker": "spk-1", "track": "mic", "version": "live", "text": "sentence.", "start_ms": index * 50, "end_ms": (index + 1) * 50}
+            for index in range(2)
+        ]}
+        with patch("backend.voice_profiles.SpeakerTracker", return_value=tracker), patch("backend.voice_profiles.read_mono_wav_window", return_value=([0.1] * 800, 16000)) as read:
+            self.worker.voice_profiles.learn_from_meeting(meeting, "spk-1", "Speaker")
+        self.assertEqual([call.args for call in read.call_args_list], [(str(source), 0, 50), (str(source), 50, 100)])
+        self.assertTrue(all(len(call.args[0]) == 800 for call in tracker.embedding.call_args_list))
+
+    def test_live_task_failures_are_reported_without_waiting_for_recording_lock(self):
+        self.worker.active = "meeting"
+        pool = ThreadPoolExecutor(max_workers=1)
+        self.worker.live_postprocessing = pool
+        finished = threading.Event()
+        release = threading.Event()
+        def fail():
+            release.wait(2)
+            raise RuntimeError("test flush failed")
+        try:
+            with self.worker.state.lock:
+                future = self.worker._submit_live_task(fail)
+                future.add_done_callback(lambda _: finished.set())
+                release.set()
+                self.assertTrue(finished.wait(2))
+            warnings = [event for event in self.events if event.get("type") == "worker.warning"]
+            self.assertEqual(warnings[-1]["payload"], {"meeting_id": "meeting", "code": "live_processing_failed", "message": "test flush failed"})
+        finally:
+            pool.shutdown()
+            self.worker.active = None
 
     def test_named_speaker_creates_profile_before_audio_is_long_enough(self):
         profile = self.worker.store.ensure_speaker_profile("小林")
@@ -4614,11 +5071,13 @@ class WorkerTest(unittest.TestCase):
         )
         self.worker.stop({"meeting_id": meeting["id"], "duration_ms": 0})
         control = self.worker.tasks.begin("meeting.refine", meeting["id"])
-        try:
-            # 现在删除会先请求取消后台任务再删除，不再抛错阻塞。
-            self.worker.delete_meeting({"meeting_id": meeting["id"]})
-        finally:
+        def finish_cancelled_task():
+            control.cancelled.wait(2)
             self.worker.tasks.finish("meeting.refine", meeting["id"], control)
+        task = threading.Thread(target=finish_cancelled_task)
+        task.start()
+        self.worker.delete_meeting({"meeting_id": meeting["id"]})
+        task.join(2)
         self.assertTrue(control.cancelled.is_set())
         self.assertIsNotNone(self.worker.store.get_meeting(meeting["id"])["deleted_at"])
 
@@ -4917,49 +5376,73 @@ class WorkerTest(unittest.TestCase):
             ["b-model"],
         )
 
-    def test_startup_convergence_repairs_every_meeting_at_once(self):
-        """启动维护把全库失效的识别模型一次性收敛，而不是等某条运行路径撞上再修。
+    def test_startup_maintenance_preserves_historical_model_assignments(self):
+        meeting = self.worker.store.create_meeting({
+            "title": "历史精修", "language": "zh", "refined_model_id": "retired-origin",
+        })
+        self.worker.store.replace_segments(meeting["id"], [{
+            "segment_id": "mic-0", "text": "旧稿", "start_ms": 0, "end_ms": 500,
+        }], model_id="retired-origin", language="zh")
+        self.worker._startup_maintenance()
+        detail = self.worker.store.get_meeting(meeting["id"])
+        self.assertEqual(detail["refined_model_id"], "retired-origin")
+        self.assertEqual(detail["transcript_model_id"], "retired-origin")
+        # 用户改下一次使用的模型不会改写当前稿子的来源。
+        self.worker.store.update_meeting(meeting["id"], {"refined_model_id": "funasr-nano-int8"})
+        self.assertEqual(self.worker.store.get_meeting(meeting["id"])["transcript_model_id"], "retired-origin")
 
-        这里覆盖三种失效：指向退役模型、指向清单里不存在的模型、以及带不动该会议语言的
-        模型。可用模型必须原样保留——收敛只修"不可用"，不碰"用户还没下载"的合法型号。
-        """
-        retired_id = next(
-            model["id"] for model in self.worker.models.catalog.values() if model.get("retired")
-        )
-        # Parakeet 覆盖 25 种欧洲语言、不含中文 → 型号可用但带不动 zh，属于"语言不匹配"。
-        meetings = {
-            "retired": self.worker.store.create_meeting(
-                {"title": "退役", "language": "zh", "refined_model_id": retired_id}
-            ),
-            "unknown": self.worker.store.create_meeting(
-                {"title": "已下架", "language": "zh", "refined_model_id": "long-gone-model"}
-            ),
-            "mismatch": self.worker.store.create_meeting(
-                {"title": "语言不匹配", "language": "zh", "refined_model_id": "parakeet-tdt-0.6b-v3-int8"}
-            ),
-            "usable": self.worker.store.create_meeting(
-                {"title": "可用", "language": "zh", "refined_model_id": "funasr-nano-int8"}
-            ),
-        }
-        repaired = self.worker.converge_refined_models()
+    def test_legacy_segments_without_word_timestamps_migrate_without_data_loss(self):
+        meeting = self.worker.store.create_meeting({"title": "legacy", "language": "zh", "refined_model_id": "old-origin"})
+        with self.worker.store.connect() as db:
+            db.execute("DROP TABLE segments")
+            db.execute("CREATE TABLE segments (id TEXT, meeting_id TEXT, revision INTEGER DEFAULT 0, "
+                       "version TEXT, track TEXT, start_ms INTEGER, end_ms INTEGER, speaker TEXT, "
+                       "text TEXT, translation TEXT, user_edited INTEGER DEFAULT 0, PRIMARY KEY(id, version))")
+            db.execute("INSERT INTO segments VALUES(?,?,0,'postprocess','mic',0,500,'local-user','旧稿',NULL,0)",
+                       ("mic-0", meeting["id"]))
+            db.execute("ALTER TABLE meetings DROP COLUMN transcript_model_id")
+            db.execute("PRAGMA user_version=0")
+        upgraded = Store(self.temp.name)
+        detail = upgraded.get_meeting(meeting["id"])
+        self.assertEqual(detail["segments"][0]["text"], "旧稿")
+        self.assertEqual(detail["segments"][0]["word_timestamps"], [])
+        self.assertEqual(detail["transcript_model_id"], "old-origin")
+        with upgraded.connect() as db:
+            self.assertEqual([row["name"] for row in db.execute("PRAGMA table_info(segments)") if row["pk"]],
+                             ["id", "meeting_id", "version"])
 
-        self.assertEqual(
-            sorted(repaired),
-            sorted(meetings[key]["id"] for key in ("retired", "unknown", "mismatch")),
-        )
-        for key in ("retired", "unknown", "mismatch"):
-            self.assertEqual(
-                self.worker.store.get_meeting(meetings[key]["id"])["refined_model_id"],
-                self.worker._default_refined_model("zh"),
-                f"{key} 应被收敛到该语言的默认识别模型",
-            )
-        # 可用的型号不得被动过。
-        self.assertEqual(
-            self.worker.store.get_meeting(meetings["usable"]["id"])["refined_model_id"],
-            "funasr-nano-int8",
-        )
-        # 幂等：再跑一次没有任何改写。
-        self.assertEqual(self.worker.converge_refined_models(), [])
+    def test_re_refinement_excludes_orphan_user_subtitles_in_all_views(self):
+        meeting = self.worker.store.create_meeting({"title": "revision", "language": "zh", "refined_model_id": "funasr-nano-int8"})
+        old = {"segment_id": "mic-0", "text": "旧稿", "start_ms": 0, "end_ms": 500}
+        self.worker.store.replace_segments(meeting["id"], [old])
+        self.worker.store.save_segment_texts(meeting["id"], [{"segment_id": "mic-0", "text": "人工稿"}])
+        new = {"segment_id": "mic-100", "text": "新稿", "start_ms": 100, "end_ms": 600}
+        self.worker.store.replace_segments(meeting["id"], [new], "postprocess-1", 1, model_id="new-origin", language="zh")
+        full = self.worker.store.get_meeting(meeting["id"])
+        compact = self.worker.store.get_meeting(meeting["id"], compact=True)
+        self.assertTrue(any(item["version"] == "user" for item in full["segments"]), "keep history")
+        for segments in [latest_segments(full["segments"]), full["current_segments"], compact["segments"]]:
+            self.assertEqual([item["text"] for item in segments], ["新稿"])
+        self.assertEqual(full["transcript_revision"], 1)
+        self.assertEqual(full["transcript_model_id"], "new-origin")
+
+    def test_jsonl_accepts_large_unicode_notes_and_preserves_request_id(self):
+        notes = "会议" * 100000
+        commands = json.dumps({"id": "large-notes", "type": "meeting.update", "payload": {"notes": notes}}, ensure_ascii=True) + "\n"
+        with patch("backend.worker.Worker") as worker, patch("sys.stdin", SimpleNamespace(encoding="utf-8", buffer=io.BytesIO(commands.encode()))):
+            main()
+        worker.return_value.handle.assert_called_once()
+        self.assertEqual(worker.return_value.handle.call_args.args[0]["payload"]["notes"], notes)
+        self.assertEqual(worker.return_value.response.call_args.args[0], "large-notes")
+
+    def test_delete_waits_for_task_cancellation_and_keeps_data_on_timeout(self):
+        meeting = self.worker.store.create_meeting({"title": "busy", "language": "zh", "refined_model_id": "funasr-nano-int8"})
+        control = self.worker.tasks.begin("meeting.refine", meeting["id"])
+        with self.assertRaisesRegex(ValueError, "Wait for background"):
+            self.worker._cancel_meeting_tasks(meeting["id"], timeout=0)
+        self.assertTrue(control.cancelled.is_set())
+        self.assertIsNone(self.worker.store.get_meeting(meeting["id"])["deleted_at"])
+        self.worker.tasks.finish("meeting.refine", meeting["id"], control)
 
     def test_power_saving_column_is_dropped_on_upgrade(self):
         """下架功能的列走 _drop_retired_columns，不只是从建表语句里删掉。

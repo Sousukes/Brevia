@@ -50,7 +50,7 @@ def collect_definitions():
         try:
             tree = ast.parse(open(path, encoding="utf-8").read(), path)
         except SyntaxError:
-            continue
+            raise
         base = Path(path).stem
         for name, kind in iter_names(tree):
             modules[base][name] = kind
@@ -75,7 +75,7 @@ def collect_usage():
             try:
                 tree = ast.parse(text, path)
                 for node in ast.walk(tree):
-                    if isinstance(node, ast.Name):
+                    if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
                         usage.add(node.id)
                     elif isinstance(node, ast.Attribute):
                         usage.add(node.attr)
@@ -83,7 +83,7 @@ def collect_usage():
                         for token in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", node.value):
                             usage.add(token)
             except SyntaxError:
-                pass
+                raise
         else:
             for token in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", text):
                 usage.add(token)

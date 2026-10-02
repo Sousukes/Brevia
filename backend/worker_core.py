@@ -3,7 +3,6 @@
 import json
 import os
 import re
-import logging
 import threading
 import time
 from collections import deque
@@ -38,7 +37,6 @@ def sanitize_unicode(value, depth=0):
     return value
 
 
-logger = logging.getLogger(__name__)
 
 
 class WorkerCore:
@@ -225,6 +223,7 @@ class WorkerCore:
                 "task.cancel": self.cancel_task,
                 "meeting.export": self.export,
                 "meeting.bundle": self.bundle,
+                "meeting.bundle-files": self.bundle_files,
                 "meeting.refinement-recover": self.recover_refinement,
                 "meeting.refine": self.refine,
                 "summary.generate": self.summarize,
@@ -242,7 +241,7 @@ class WorkerCore:
                 "workspace.update": lambda value: self.store.update_workspace(
                     value["workspace_id"], value["updates"]
                 ),
-                "workspace.delete": lambda value: self.store.delete_workspace(value["workspace_id"]),
+                "workspace.delete": self.delete_workspace,
                 "workspace.reorder": lambda value: self.store.reorder_workspaces(value["workspace_ids"]),
                 "workspace.assign": lambda value: self.store.assign_meeting_to_workspace(
                     value["meeting_id"], value["workspace_id"]
@@ -273,30 +272,6 @@ class WorkerCore:
     def _startup_maintenance(self):
         """完成不影响首屏的清理与磁盘统计。"""
         purged = self.store.purge_expired()
-        # 种子示例或异常中断可能留下「有 manifest 但数据库无记录」的会议目录
-        # （例如 seed_examples 的 DB 事务回滚、但音频已复制）。此前只在用户手动
-        # 清理时才回收，这里补一次启动期兜底，避免孤儿目录长期占盘。
-        try:
-            self.store.cleanup_orphan_meeting_dirs()
-        except Exception:
-            logger.exception("orphan meeting directory cleanup failed")
-        # 会议引用的识别模型一次性收敛：退役/已下架/带不动该语言的 id 统一改写成该语言
-        # 当前的默认模型。以前这件事散在 resume / reconfigure / refine 三条运行路径里各做
-        # 一次（漏一条就表现为"某条路径加载不了模型"），这里在启动时统一收敛一次。
-        # 单行坏数据不能让整个维护线程中断——后面的 app.maintenance 事件还要照常发出。
-        try:
-            repaired = self.converge_refined_models()
-        except Exception:
-            logger.exception("refined-model convergence failed")
-            repaired = []
-        if repaired:
-            # 改写用户数据必须留痕：用户升级后发现某场会议的识别模型变了，日志要能解释
-            # 为什么。前端从同一事件的 meetings 里已经能拿到收敛后的值，不再单列字段。
-            logger.info(
-                "converged refined_model_id for %d meeting(s): %s",
-                len(repaired),
-                ", ".join(repaired),
-            )
         for profile in self.store.list_speaker_profiles():
             if self._is_default_speaker_name(profile["name"]):
                 self.store.delete_speaker_profile(profile["id"])

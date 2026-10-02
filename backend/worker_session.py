@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from collections import deque
 from difflib import SequenceMatcher
 from pathlib import Path
+from uuid import uuid4
 
 from .asr import DEFAULT_REFINED_MODEL_ID, RefinedASR, SentenceVAD
 from .audio_io import convert_to_pcm_wav
@@ -92,23 +93,25 @@ class RecordingSessionMixin:
         source = Path(payload["path"])
         if not source.is_file():
             raise ValueError("Audio file not found")
-        meeting = self.store.create_meeting(payload)
-        destination = (
-            self.store.meetings_dir / meeting["id"] / "audio" / "playback-mic.wav"
-        )
-        try:
-            convert_to_pcm_wav(source, destination)
-            import wave
+        payload["meeting_id"] = payload.get("meeting_id") or str(uuid4())
+        with self.tasks.running("meeting.import", payload["meeting_id"]):
+            meeting = self.store.create_meeting(payload)
+            destination = (
+                self.store.meetings_dir / meeting["id"] / "audio" / "playback-mic.wav"
+            )
+            try:
+                convert_to_pcm_wav(source, destination)
+                import wave
 
-            with wave.open(str(destination)) as audio:
-                duration_ms = round(audio.getnframes() * 1000 / audio.getframerate())
-            result = self.store.finish_imported_meeting(meeting["id"], duration_ms)
-        except Exception:
-            self.store.soft_delete(meeting["id"])
-            self.store.permanent_delete(meeting["id"])
-            raise
-        self.emit("meeting.imported", {"meeting_id": result["id"], "meeting": result})
-        return result
+                with wave.open(str(destination)) as audio:
+                    duration_ms = round(audio.getnframes() * 1000 / audio.getframerate())
+                result = self.store.finish_imported_meeting(meeting["id"], duration_ms)
+            except Exception:
+                self.store.soft_delete(meeting["id"])
+                self.store.permanent_delete(meeting["id"])
+                raise
+            self.emit("meeting.imported", {"meeting_id": result["id"], "meeting": result})
+            return result
 
     @synchronized_recording
     def resume(self, payload):
@@ -438,36 +441,6 @@ class RecordingSessionMixin:
             self._flush_sentences()
         return {"samples": total}
 
-    def _submit_live_task(self, task, *args):
-        """把任务提交到实时后处理线程池，并保证异常不被静默吞掉。
-
-        ``ThreadPoolExecutor`` 会把任务异常存进返回的 ``Future``；调用方从不取用
-        ``Future``，因此 ``_flush_subtitle_tails`` / ``_emit_draft`` 里的异常（DB busy、
-        磁盘满等）会完全无声——段落反复 flush 失败却没有任何告警。这里统一包一层：
-        记日志并向上发一条 ``worker.warning``。
-        """
-        if not self.live_postprocessing:
-            return
-
-        def run():
-            try:
-                task(*args)
-            except Exception as error:  # noqa: BLE001 - 必须兜住，否则被线程池丢弃
-                logger.exception("live postprocessing task failed")
-                try:
-                    self.emit(
-                        "worker.warning",
-                        {
-                            "meeting_id": self.active,
-                            "code": "live_postprocessing_failed",
-                            "message": str(error),
-                        },
-                    )
-                except Exception:
-                    logger.exception("failed to report live postprocessing error")
-
-        self.live_postprocessing.submit(run)
-
     def _flush_sentences(self):
         if not (self.vad and self.asr):
             return
@@ -515,10 +488,21 @@ class RecordingSessionMixin:
                 path.unlink(missing_ok=True)
             raise
         try:
-            self.live_postprocessing.submit(self._decode_sentence, self.asr, event, path)
+            self._submit_live_task(self._decode_sentence, self.asr, event, path)
         except Exception:
             path.unlink(missing_ok=True)
             raise
+
+    def _submit_live_task(self, function, *args):
+        meeting_id = self.active
+
+        def completed(future):
+            if not future.cancelled() and (error := future.exception()) is not None:
+                self.emit("worker.warning", {"meeting_id": meeting_id, "code": "live_processing_failed", "message": str(error)})
+
+        future = self.live_postprocessing.submit(function, *args)
+        future.add_done_callback(completed)
+        return future
 
     def _decode_sentence(self, asr, event, path):
         """每段只提交一次 final；不读活动会话锁，stop 可安全等待队列排空。"""
@@ -960,11 +944,16 @@ class RecordingSessionMixin:
         self._active(payload["meeting_id"])
         meeting_id = self.active
         try:
-            self._flush_sentences()
-        finally:
-            self._release_active_session()
-        meeting = self.store.finish_meeting(meeting_id, payload["duration_ms"])
-        meeting = self.store.get_meeting(meeting["id"])
+            try:
+                self._flush_sentences()
+            finally:
+                self._release_active_session()
+            meeting = self.store.finish_meeting(meeting_id, payload["duration_ms"])
+            meeting = self.store.get_meeting(meeting["id"])
+        except Exception:
+            # 资源已释放，但录音尚未落盘成功：保留会话 ID，允许原结束操作重试。
+            self.active = meeting_id
+            raise
         self.emit("meeting.stopped", {"meeting_id": meeting_id, "meeting": meeting})
         return meeting
 

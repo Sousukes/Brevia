@@ -105,7 +105,7 @@ function renderWorkspaceNav() {
  * @param {string} workspaceId - 工作区 ID
  */
 async function switchWorkspace(workspaceId) {
-  if (workspaceId === activeWorkspaceId && activeLibraryNav === 'all-meetings' && activeView === 'home') return;
+  if (workspaceId === activeWorkspaceId && activeLibraryNav === 'all-meetings' && activeView === 'home' && !pageTransition) return;
   if (activeView === 'live' && meetingActive) appActions.minimizeMeeting();
   const applyWorkspace = async () => {
     activeWorkspaceId = workspaceId;
@@ -119,12 +119,7 @@ async function switchWorkspace(workspaceId) {
     updateHomeViewTitle();
     appActions.filterMeetings();
   };
-  if (activeView !== 'home') {
-    await appActions.showView('home');
-    await applyWorkspace();
-    return;
-  }
-  await appActions.transitionPage(document.querySelector('#home-view'), document.querySelector('#home-view'), applyWorkspace);
+  await appActions.transitionPage(document.querySelector(`#${activeView}-view`), document.querySelector('#home-view'), applyWorkspace);
 }
 
 const clearWorkspaceDropTarget = () => document.querySelectorAll('.workspace-item.is-drop-target').forEach((item) => item.classList.remove('is-drop-target'));

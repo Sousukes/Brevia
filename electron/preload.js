@@ -1,6 +1,13 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const invoke = (channel) => (payload = {}) => ipcRenderer.invoke(channel, payload);
+const invoke = (channel) => async (payload = {}) => {
+  const result = await ipcRenderer.invoke(channel, payload);
+  if (result?.__brevia_error) {
+    // 普通对象能完整穿过 contextBridge；Error 的额外字段会丢失。
+    throw { message: result.__brevia_error.code, ...result.__brevia_error };
+  }
+  return result;
+};
 
 // 单一共享分发器：一个 ipcRenderer 监听器将事件分发到每种类型的处理器集合
 // 这避免了每次 window.brevia.on() 调用时累积新的 'brevia:event' 监听器

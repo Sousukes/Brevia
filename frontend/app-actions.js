@@ -12,7 +12,7 @@
    会抛出明确错误，而不是 undefined is not a function。 */
 const APP_ACTION_NAMES = [
   // ui-components.js
-  'scheduleDetailNotesSave', 'showToast',
+  'updateDetailNotesDraft', 'showToast',
   // workspaces.js
   'filterMeetings', 'renderMeetingList', 'openConfirmation', 'selectLibraryNav',
   'transitionPage', 'minimizeMeeting', 'showView',

@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { runInNewContext } from 'node:vm';
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { Writable } from 'node:stream';
+import { pathToFileURL } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { applyPendingMove, currentDirectory, readLocation, recordingsDirectory, setFirstRunDirectories } = require('./model-location');
@@ -110,7 +112,34 @@ try {
 } finally {
   await rm(modelLocationRoot, { recursive: true, force: true });
 }
-const { configureMacUpdater, createDisplayMediaHandler, isNewerVersion, registerScreenPermission, requiredModelsFrom, systemAudioSupported, workerError } = require('./main-logic');
+const { audioFileURL, configureMacUpdater, createDisplayMediaHandler, isNewerVersion, registerScreenPermission, requiredModelsFrom, systemAudioSupported, workerError, writeAtomicFile, migrateLegacyData } = require('./main-logic');
+
+const audioRoot = await mkdtemp(path.join(tmpdir(), 'brevia-audio-'));
+try {
+  const recordings = path.join(audioRoot, 'external-recordings');
+  const profiles = path.join(audioRoot, 'data', 'speaker-profiles');
+  await mkdir(recordings);
+  await mkdir(profiles, { recursive: true });
+  const outside = path.join(audioRoot, 'private.txt');
+  await writeFile(outside, 'private');
+  for (const directory of [recordings, profiles]) {
+    const audio = path.join(directory, 'recording.wav');
+    await writeFile(audio, 'audio');
+    assert.equal(await audioFileURL(audio, [recordings, profiles]), pathToFileURL(await realpath(audio)).href);
+  }
+  await assert.rejects(audioFileURL(outside, [recordings, profiles]), /Invalid audio path/);
+  await assert.rejects(audioFileURL(recordings, [recordings, profiles]), /Invalid audio path/);
+  await symlink(audioRoot, path.join(recordings, 'escape'), process.platform === 'win32' ? 'junction' : 'dir');
+  await assert.rejects(audioFileURL(path.join(recordings, 'escape', 'private.txt'), [recordings, profiles]), /Invalid audio path/);
+} finally { await rm(audioRoot, { recursive: true, force: true }); }
+
+const windowsLogic = { exports: {} };
+runInNewContext(await readFile(new URL('./main-logic.js', import.meta.url), 'utf8'), {
+  module: windowsLogic,
+  require: (name) => name === 'node:path' ? path.win32 : name === 'node:fs/promises' ? { realpath: async (value) => value } : require(name),
+});
+await windowsLogic.exports.audioFileURL('c:\\users\\ALICE\\brevia\\meetings\\a.wav', ['C:\\Users\\Alice\\brevia\\meetings']);
+await assert.rejects(windowsLogic.exports.audioFileURL('D:\\Recordings-other\\a.wav', ['D:\\Recordings']), /Invalid audio path/);
 
 const screen = { id: 'screen:0:0' };
 let selected;
@@ -188,6 +217,88 @@ const oneLine = (decl) => { const start = mainSource.indexOf(decl); return mainS
 const schemaBlock = (decl) => { const start = mainSource.indexOf(decl); return mainSource.slice(start, mainSource.indexOf('\n});', start) + 5); };
 const asyncFn = (name) => { const start = mainSource.indexOf(`async function ${name}(`); return mainSource.slice(start, mainSource.indexOf('\n}\n', start) + 2); };
 
+const timers = new Map();
+let nextTimer = 0;
+const workerClientContext = {
+  Buffer,
+  maximumCommandBytes: 32 * 1024 * 1024,
+  command: z.object({ type: z.string(), payload: z.record(z.string(), z.unknown()) }),
+  storageMigrationInProgress: false,
+  destructiveOperationInProgress: false,
+  app: { isQuitting: false },
+  workerError,
+  writeLog: () => {},
+  setTimeout: (callback, ms) => { const timer = ++nextTimer; timers.set(timer, { callback, ms }); return timer; },
+  clearTimeout: (timer) => timers.delete(timer),
+};
+const timeoutStart = mainSource.indexOf('const workerRequestTimeouts = ');
+runInNewContext([
+  oneLine('const dataTaskCommands = '),
+  mainSource.slice(timeoutStart, mainSource.indexOf(']);', timeoutStart) + 3),
+  mainSource.slice(mainSource.indexOf('class WorkerClient {'), mainSource.indexOf('\nconst worker = new WorkerClient();')),
+  'this.WorkerClient = WorkerClient;',
+].join('\n'), workerClientContext);
+const requests = new workerClientContext.WorkerClient();
+requests.sendEvent = () => {};
+requests.active = { meeting_id: 'recording' };
+const writes = [], completeWrites = [];
+requests.process = { exitCode: null, stdin: new Writable({ highWaterMark: 1, write(chunk, _, done) { writes.push(JSON.parse(chunk.toString())); completeWrites.push(done); } }) };
+const firstRequest = requests.request('meeting.list');
+const secondRequest = requests.request('meeting.get', { meeting_id: 'meeting' });
+assert.equal(writes.length, 1, 'backpressure keeps the second request outside the pipe');
+assert.equal(requests.outbox.length, 1);
+assert.equal(timers.get(requests.pending.get('cmd-1').timer).ms, 60000, 'unlisted channels have a finite default timeout');
+const expired = assert.rejects(secondRequest, /timed out/);
+const expiry = requests.pending.get('cmd-2').timer;
+const expire = timers.get(expiry).callback;
+timers.delete(expiry);
+expire();
+await expired;
+assert.equal(requests.recycleRequested, true, 'a timed-out worker is recycled once the recording ends');
+completeWrites.shift()();
+await new Promise(setImmediate);
+assert.equal(writes.length, 1, 'a queued request that expired is never sent');
+requests.receive({ id: 'cmd-1', ok: true, result: [] });
+await firstRequest;
+assert.equal(timers.size, 0);
+workerClientContext.destructiveOperationInProgress = true;
+await assert.rejects(requests.request('meeting.import', {}), (error) => error.code === 'error.tasks.running');
+workerClientContext.destructiveOperationInProgress = false;
+
+const safetyContext = { worker: requests, refinementWorker: { active: null } };
+runInNewContext([
+  oneLine('const dataTaskCommands = '),
+  'let destructiveOperationInProgress = false;',
+  oneLine('const destructiveCommands = '),
+  asyncFn('requestWithTaskSafety'),
+  'this.requestWithTaskSafety = requestWithTaskSafety;',
+].join('\n'), safetyContext);
+requests.pending.set('import', { type: 'meeting.import' });
+for (const type of ['storage.clear', 'storage.cleanup', 'models.delete']) {
+  await assert.rejects(safetyContext.requestWithTaskSafety(type, {}), (error) => error.code === 'error.tasks.running');
+}
+requests.pending.clear();
+
+const longRequest = requests.request('meeting.refine', { meeting_id: 'meeting' });
+const beforeProgress = requests.pending.get('cmd-3').timer;
+requests.receive({ type: 'refinement.progress', payload: { meeting_id: 'other' } });
+assert.equal(requests.pending.get('cmd-3').timer, beforeProgress, 'other meetings cannot prolong a stalled task');
+requests.receive({ type: 'refinement.progress', payload: { meeting_id: 'meeting' } });
+assert.ok(!timers.has(beforeProgress), 'task progress renews its inactivity deadline');
+const following = requests.request('meeting.list');
+assert.equal(writes.length, 2);
+completeWrites.shift()();
+await new Promise(setImmediate);
+assert.equal(writes.length, 3, 'the next request waits for the previous write callback');
+const failedLong = assert.rejects(longRequest, /test pipe failure/);
+const failedFollowing = assert.rejects(following, /test pipe failure/);
+completeWrites.shift()(new Error('test pipe failure'));
+requests.process.stdin.on('error', () => {});
+await Promise.all([failedLong, failedFollowing]);
+assert.equal(requests.pending.size, 0);
+assert.equal(requests.outbox.length, 0);
+assert.equal(timers.size, 0);
+
 const activeMeeting = { meeting_id: 'meeting-1', started_at: Date.now() };
 const stopContext = { worker: { active: activeMeeting, request: async () => { throw new Error('offline'); } } };
 runInNewContext(`${asyncFn('stopActiveMeeting')}\nthis.stopActiveMeeting = stopActiveMeeting;`, stopContext);
@@ -200,13 +311,15 @@ assert.equal(stopContext.worker.active, null, 'a confirmed stop clears the activ
 const configDir = await mkdtemp(path.join(tmpdir(), 'brevia-summary-config-'));
 const configFile = path.join(configDir, 'summary-models.json');
 const aiConfigFile = path.join(configDir, 'ai-assist.json');
-const configContext = { z, readFile, summaryConfigPath: () => configFile, aiAssistConfigPath: () => aiConfigFile };
+const configContext = { z, readFile, writeAtomicFile, summaryConfigPath: () => configFile, aiAssistConfigPath: () => aiConfigFile };
 runInNewContext([
   oneLine('const summaryProviderIds = '),
   schemaBlock('const summaryProviderEntry = '),
   schemaBlock('const summaryConfig = '),
   asyncFn('readSummaryConfig'),
+  asyncFn('writeSummaryConfig'),
   'this.readSummaryConfig = readSummaryConfig;',
+  'this.writeSummaryConfig = writeSummaryConfig;',
 ].join('\n'), configContext);
 const readConfig = configContext.readSummaryConfig;
 const writeConfig = (value) => writeFile(configFile, typeof value === 'string' ? value : JSON.stringify(value));
@@ -231,7 +344,9 @@ runInNewContext([
   schemaBlock('const aiAssistConfig = '),
   schemaBlock('const aiAssistConfigV1 = '),
   asyncFn('readAiAssistConfig'),
+  asyncFn('writeAiAssistConfig'),
   'this.readAiAssistConfig = readAiAssistConfig;',
+  'this.writeAiAssistConfig = writeAiAssistConfig;',
 ].join('\n'), configContext);
 await writeFile(aiConfigFile, JSON.stringify({ version: 1, enabled: true, proactivity: 'assist' }));
 assert.deepEqual(JSON.parse(JSON.stringify(await configContext.readAiAssistConfig())), { version: 2, enabled: true, proactivity: 'assist', provider: 'built-in', providers: {} }, 'AI assist v1 keeps its switch and proactivity after migration');
@@ -239,6 +354,18 @@ assert.deepEqual(JSON.parse(JSON.stringify(await configContext.readAiAssistConfi
 await writeConfig({ version: 2, provider: 'custom-claude', providers: { 'custom-claude': { model: 'x', endpoint: 'https://example.com/v1', keyReference: 'summary-1', keyLength: 8 } } });
 await writeFile(aiConfigFile, JSON.stringify({ version: 1, enabled: true, proactivity: 'auto' }));
 assert.deepEqual(JSON.parse(JSON.stringify(await configContext.readAiAssistConfig())), { version: 2, enabled: true, proactivity: 'auto', provider: 'custom-claude', providers: { 'custom-claude': { model: 'x', endpoint: 'https://example.com/v1', keyReference: 'summary-1', keyLength: 8 } } }, 'AI assist v1 migration carries over the online summary provider');
+for (const [save, load, file, value] of [
+  [configContext.writeSummaryConfig, readConfig, configFile, { ...storedConfig, enabled: false }],
+  [configContext.writeAiAssistConfig, configContext.readAiAssistConfig, aiConfigFile, { ...storedConfig, enabled: false, proactivity: 'quiet' }],
+]) {
+  await save(value);
+  assert.deepEqual(JSON.parse(await readFile(file, 'utf8')), value, 'saving writes the validated config to disk');
+  assert.deepEqual(JSON.parse(JSON.stringify(await load())), value, 'the saved config survives a fresh disk read');
+  await assert.rejects(save({ ...value, provider: 'removed-provider' }));
+  assert.deepEqual(JSON.parse(await readFile(file, 'utf8')), value, 'invalid saves preserve the previous config');
+  await Promise.all(Array.from({ length: 8 }, (_, i) => save({ ...value, enabled: Boolean(i % 2) })));
+  assert.equal(typeof (await load()).enabled, 'boolean', 'concurrent saves leave a complete config');
+}
 await rm(configDir, { recursive: true, force: true });
 
 // share.open-external 只放行社交网页(https)与邮件(mailto),其余 scheme 一律拒绝,
@@ -252,7 +379,6 @@ for (const blocked of ['file:///etc/passwd', 'http://insecure.example', 'javascr
   assert.throws(() => shareGuard(blocked), /Unsupported share URL/, `${blocked} is rejected`);
 }
 
-console.log('Electron behavior tests passed');
 
 // ── worker 错误 → 结构化判定 ────────────────────────────────────────────────────
 // 「模型没装」由 error_code/error_models 决定，不再正则解析文本。这条同时证明：
@@ -290,3 +416,84 @@ assert.equal(requiredModelsFrom(undefined), null);
 const dirty = workerError({ error: 'x', error_code: 'model_not_installed', error_models: ['ok', 7, null] });
 assert.deepEqual(requiredModelsFrom(dirty), ['ok']);
 assert.equal(workerError({ error: 'x' }).code, undefined);
+
+// Migration failure preserves the database until all recording/config files have moved.
+const migrationRoot = await mkdtemp(path.join(tmpdir(), 'brevia-migration-regression-'));
+try {
+  const source = path.join(migrationRoot, 'legacy'), target = path.join(migrationRoot, 'data');
+  await mkdir(path.join(source, 'meetings'), { recursive: true });
+  await writeFile(path.join(source, 'meetings', 'audio.wav'), 'audio');
+  await writeFile(path.join(source, 'brevia.db'), 'database');
+  await writeFile(path.join(source, 'advanced-settings.json'), '{}');
+  await mkdir(path.join(source, 'models'));
+  await writeFile(path.join(source, 'models-location.json'), JSON.stringify({ current: path.join(source, 'models'), recordings: path.join(source, 'meetings') }));
+  await writeFile(path.join(source, 'ai-assist.json'), '{"enabled":true}');
+  const fsPromises = require('node:fs/promises');
+  const migrationModule = { exports: {} };
+  let block = true, crossVolume = false;
+  runInNewContext(await readFile(new URL('./main-logic.js', import.meta.url), 'utf8'), {
+    module: migrationModule,
+    require: (name) => name === 'node:fs/promises' ? { ...fsPromises, rename: async (from, to) => {
+      if (from === path.join(source, 'meetings') && block) throw Object.assign(new Error('locked'), { code: 'EACCES' });
+      if (crossVolume && path.dirname(from) === source) throw Object.assign(new Error('cross volume'), { code: 'EXDEV' });
+      return fsPromises.rename(from, to);
+    } } : require(name),
+  });
+  await assert.rejects(migrationModule.exports.migrateLegacyData(source, target), /locked/);
+  assert.equal(await readFile(path.join(source, 'brevia.db'), 'utf8'), 'database');
+  assert.equal(await readFile(path.join(source, 'meetings', 'audio.wav'), 'utf8'), 'audio');
+  block = false; crossVolume = true;
+  await migrationModule.exports.migrateLegacyData(source, target);
+  assert.equal(await readFile(path.join(target, 'brevia.db'), 'utf8'), 'database');
+  assert.equal(await readFile(path.join(target, 'meetings', 'audio.wav'), 'utf8'), 'audio');
+  assert.equal(await readFile(path.join(target, 'ai-assist.json'), 'utf8'), '{"enabled":true}');
+  assert.equal(currentDirectory(target), path.join(target, 'models'));
+  assert.equal(recordingsDirectory(target), path.join(target, 'meetings'));
+  await assert.rejects(readFile(path.join(target, '.brevia-data-migration.json')), { code: 'ENOENT' });
+  await migrateLegacyData(source, target);
+  const config = path.join(target, 'config.json');
+  await Promise.all(Array.from({ length: 12 }, (_, number) => writeAtomicFile(config, JSON.stringify({ number }))));
+  assert.ok(Number.isInteger(JSON.parse(await readFile(config, 'utf8')).number));
+  for (const value of ['null', '{broken', '{"current":"../escape"}', '{"cleanup":42}']) {
+    const location = path.join(target, 'models-location.json');
+    await writeFile(location, value);
+    assert.throws(() => currentDirectory(target), /Cannot read/);
+    assert.equal(await readFile(location, 'utf8'), value, 'invalid metadata remains available for recovery');
+  }
+} finally { await rm(migrationRoot, { recursive: true, force: true }); }
+
+// Parent exit must not cancel process-group escalation while descendants survive.
+const processSignals = [], processTimers = new Map();
+const processContext = {
+  process: { platform: 'darwin', kill: (pid, signal) => processSignals.push([pid, signal]) },
+  setTimeout(callback) { processTimers.set(1, callback); return { unref() {} }; },
+  clearTimeout() { processTimers.clear(); },
+};
+runInNewContext(mainSource.slice(mainSource.indexOf('const stoppingProcessGroups = '), mainSource.indexOf('let storageMigrationInProgress')), processContext);
+const processChild = { pid: 456, exitCode: null, signalCode: null, once(event, callback) { this.exited = callback; } };
+processContext.child = processChild;
+runInNewContext('stopProcess(child, 1)', processContext);
+processChild.exitCode = 0;
+processChild.exited?.();
+assert.equal(processTimers.size, 1);
+processTimers.get(1)();
+assert.deepEqual(processSignals, [[-456, 'SIGTERM'], [-456, 'SIGKILL']]);
+
+// Only a local top-level application frame may call privileged IPC.
+const ipcHandlers = new Map(), ipcRoot = '/brevia-test';
+const ipcContext = { path, pathToFileURL, packagedRoot: ipcRoot, ipcMain: { handle: (channel, callback) => ipcHandlers.set(channel, callback) }, writeLog() {}, logText: String };
+runInNewContext(mainSource.slice(mainSource.indexOf('function handleIpc('), mainSource.indexOf('const benchmarkRefinement')), ipcContext);
+ipcContext.handleIpc('secret.set', () => 'allowed');
+ipcContext.handleIpc('floating-caption.close', () => 'closed');
+const frame = { url: pathToFileURL(path.join(ipcRoot, 'frontend', 'index.html')).href + '?test=1' };
+const event = { senderFrame: frame, sender: { mainFrame: frame } };
+assert.equal(await ipcHandlers.get('secret.set')(event), 'allowed');
+frame.url = 'https://example.com';
+assert.ok((await ipcHandlers.get('secret.set')(event)).__brevia_error);
+frame.url = pathToFileURL(path.join(ipcRoot, 'frontend', 'floating-caption.html')).href;
+assert.ok((await ipcHandlers.get('secret.set')(event)).__brevia_error);
+assert.equal(await ipcHandlers.get('floating-caption.close')(event), 'closed');
+event.sender.mainFrame = {};
+assert.ok((await ipcHandlers.get('floating-caption.close')(event)).__brevia_error);
+
+console.log('Electron behavior tests passed');

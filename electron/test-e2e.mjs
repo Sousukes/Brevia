@@ -46,7 +46,9 @@ function venvPython() {
   return candidates.find((candidate) => existsSync(candidate)) || null;
 }
 
-const electronBin = electronBinary();
+// 指向打包应用的可执行文件时，同一套检查使用随包 worker，不借用开发环境 Python。
+const packagedApp = process.env.BREVIA_E2E_APP;
+const electronBin = packagedApp || electronBinary();
 const pythonBin = venvPython();
 
 if (process.env.BREVIA_SKIP_E2E === '1') {
@@ -137,16 +139,19 @@ async function waitForTarget(port, deadline, exited) {
 const sandboxRoot = path.join(root, '.e2e-tmp');
 rmSync(sandboxRoot, { recursive: true, force: true });
 const dataDir = path.join(sandboxRoot, 'data');
+const recordingsDir = path.join(sandboxRoot, 'recordings');
 const userDataDir = path.join(sandboxRoot, 'userdata');
 mkdirSync(dataDir, { recursive: true });
+mkdirSync(recordingsDir, { recursive: true });
 mkdirSync(userDataDir, { recursive: true });
 
 const port = await freePort();
-const childEnv = { ...process.env, BREVIA_DATA_DIR: dataDir };
+const childEnv = { ...process.env, BREVIA_DATA_DIR: dataDir, BREVIA_MEETINGS_DIR: recordingsDir };
 // 只在开发机的 venv 真实存在时覆盖；CI 用 setup-python，写死 .venv 路径会让 worker 起不来。
-if (process.env.BREVIA_PYTHON || pythonBin) childEnv.BREVIA_PYTHON = process.env.BREVIA_PYTHON || pythonBin;
+if (packagedApp) delete childEnv.BREVIA_PYTHON;
+else if (process.env.BREVIA_PYTHON || pythonBin) childEnv.BREVIA_PYTHON = process.env.BREVIA_PYTHON || pythonBin;
 const child = spawn(electronBin, [
-  '.',
+  ...(packagedApp ? [] : ['.']),
   '--no-sandbox',
   `--user-data-dir=${userDataDir}`,
   `--remote-debugging-port=${port}`,
@@ -210,6 +215,8 @@ try {
     if (state.result?.value === 'complete') break;
     if (Date.now() > reloadDeadline) { failures.push('reload 后 20 秒内未完成加载'); break; }
   }
+  const initialized = await client.send('Runtime.evaluate', { expression: 'initializationPromise', awaitPromise: true, returnByValue: true });
+  check(!initialized.exceptionDetails, '后台初始化必须完成后再测试交互');
   // 加载完成后给事件队列一点时间把加载期异常送过来。
   await delay(300);
 
@@ -235,6 +242,29 @@ try {
   })()`;
 
   const result = await client.send('Runtime.evaluate', { expression: probe, returnByValue: true, awaitPromise: false });
+  const savedConfig = await client.send('Runtime.evaluate', { expression: `(async () => {
+    const config = { version: 2, enabled: false, proactivity: 'quiet', provider: 'built-in', providers: {} };
+    await window.brevia.aiAssist.config.save(config);
+    return JSON.stringify(await window.brevia.aiAssist.config.get()) === JSON.stringify(config);
+  })()`, awaitPromise: true, returnByValue: true });
+  check(savedConfig.result?.value === true, 'AI 笔记设置经真实 IPC 保存后应从磁盘完整读回');
+  const audioPlayback = await client.send('Runtime.evaluate', { expression: `(async () => {
+    const data = await window.brevia.initialize();
+    const meeting = await window.brevia.meeting.get({ meeting_id: data.meetings[0].id });
+    const source = meeting.audio.playback.mix || meeting.audio.playback.mic || meeting.audio.playback.system;
+    const url = await window.brevia.audioUrl(source);
+    const audio = new Audio();
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Audio metadata timed out')), 10000);
+      audio.onloadedmetadata = () => { clearTimeout(timer); resolve(); };
+      audio.onerror = () => { clearTimeout(timer); reject(new Error('Audio playback failed')); };
+      audio.src = url;
+    });
+    const duration = audio.duration;
+    audio.removeAttribute('src'); audio.load();
+    return Number.isFinite(duration) && duration > 0;
+  })()`, awaitPromise: true, returnByValue: true });
+  check(audioPlayback.result?.value === true, '数据目录之外的录音应通过真实 audio.url IPC 并成功加载播放器');
   if (result.exceptionDetails) {
     failures.push(`探针求值抛错：${result.exceptionDetails.exception?.description || result.exceptionDetails.text}`);
   }
@@ -259,7 +289,31 @@ try {
   const importUi = await client.send('Runtime.evaluate', { expression: `(() => { applyLanguage('fr'); const button = document.querySelector('#import-recording'); const label = button.querySelector('.import-recording-label'); return { radius: getComputedStyle(button).borderTopLeftRadius, referenceRadius: getComputedStyle(document.querySelector('.new-meeting')).borderTopLeftRadius, label: label.textContent, clipped: label.scrollWidth > label.clientWidth, heading: document.querySelector('#prepare-view h1').textContent }; })()`, returnByValue: true });
   check(importUi.result?.value?.radius === importUi.result?.value?.referenceRadius, `导入按钮圆角不一致：${JSON.stringify(importUi.result?.value)}`);
   check(importUi.result?.value?.label === 'Importer un enregistrement' && importUi.result?.value?.heading === 'Importer un enregistrement' && !importUi.result?.value?.clipped, `导入界面法语文案不完整：${JSON.stringify(importUi.result?.value)}`);
-  const aiOnboarding = await client.send('Runtime.evaluate', { expression: `(() => { applyLanguage('zh'); openOnboardingAi(); const page = document.querySelector('.onboarding-ai-setup-page'); const cards = page.querySelectorAll('.onboarding-ai-feature'); const toggle = page.querySelector('[name="onboarding-ai-enabled"]'); const select = page.querySelector('[name="onboarding-ai-proactivity"]'); toggle.checked = false; toggle.dispatchEvent(new Event('change', { bubbles: true })); const off = page.querySelector('[data-onboarding-ai-demo]').dataset.mode; toggle.checked = true; select.value = 'auto'; select.dispatchEvent(new Event('change', { bubbles: true })); return { cards: cards.length, choices: page.querySelectorAll('[name="onboarding-ai-way"]').length, off, on: page.querySelector('[data-onboarding-ai-demo]').dataset.mode, aligned: Math.abs(cards[0].getBoundingClientRect().width - cards[1].getBoundingClientRect().width) < 1, summaryVisible: getComputedStyle(page.querySelector('.app-demo-summary-body')).opacity === '1' }; })()`, returnByValue: true });
+  const storageMove = await client.send('Runtime.evaluate', { expression: `(async () => {
+    let finish;
+    const pending = withStorageMigration(() => new Promise((resolve) => { finish = resolve; }));
+    const dialog = document.querySelector('.storage-migration-dialog');
+    const modal = dialog.matches(':modal');
+    const cancel = new Event('cancel', { cancelable: true });
+    dialog.dispatchEvent(cancel);
+    let duplicateRan = false;
+    await withStorageMigration(() => { duplicateRan = true; });
+    document.querySelector('.new-meeting').focus();
+    const focusContained = dialog.contains(document.activeElement);
+    const visible = dialog.getBoundingClientRect().width > 0 && !!dialog.querySelector('progress');
+    finish();
+    await pending;
+    const cleaned = !storageMovePending && !document.querySelector('.storage-migration-dialog');
+    let failure = '';
+    try { await withStorageMigration(async () => { throw new Error('disk disconnected'); }); }
+    catch (error) { failure = error.message; }
+    return { modal, visible, focusContained, cancelPrevented: cancel.defaultPrevented, duplicateRan, cleaned,
+      failedCleanly: failure === 'disk disconnected' && !storageMovePending && !document.querySelector('.storage-migration-dialog') };
+  })()`, awaitPromise: true, returnByValue: true });
+  const move = storageMove.result?.value || {};
+  check(move.modal && move.visible && move.focusContained && move.cancelPrevented && !move.duplicateRan && move.cleaned && move.failedCleanly,
+    `Storage migration must block conflicting actions and restore controls after success/failure: ${JSON.stringify(move)}`);
+  const aiOnboarding = await client.send('Runtime.evaluate', { expression: `(async () => { if (onboardingPage) await new Promise((resolve) => dismissOnboardingPage(resolve)); applyLanguage('zh'); openOnboardingAi(); const page = document.querySelector('.onboarding-ai-setup-page'); const cards = page.querySelectorAll('.onboarding-ai-feature'); const toggle = page.querySelector('[name="onboarding-ai-enabled"]'); const select = page.querySelector('[name="onboarding-ai-proactivity"]'); toggle.checked = false; toggle.dispatchEvent(new Event('change', { bubbles: true })); const off = page.querySelector('[data-onboarding-ai-demo]').dataset.mode; toggle.checked = true; select.value = 'auto'; select.dispatchEvent(new Event('change', { bubbles: true })); return { cards: cards.length, choices: page.querySelectorAll('[name="onboarding-ai-way"]').length, off, on: page.querySelector('[data-onboarding-ai-demo]').dataset.mode, aligned: Math.abs(cards[0].getBoundingClientRect().width - cards[1].getBoundingClientRect().width) < 1, summaryVisible: getComputedStyle(page.querySelector('.app-demo-summary-body')).opacity === '1' }; })()`, awaitPromise: true, returnByValue: true });
   check(aiOnboarding.result?.value?.cards === 2 && aiOnboarding.result?.value?.choices === 2 && aiOnboarding.result?.value?.off === 'off' && aiOnboarding.result?.value?.on === 'auto' && aiOnboarding.result?.value?.aligned && aiOnboarding.result?.value?.summaryVisible, `AI 引导页布局或预览不正确：${JSON.stringify(aiOnboarding.result?.value)}`);
   const disabledDemo = await client.send('Runtime.evaluate', { expression: `(async () => {
     const toggle = onboardingPage.querySelector('[name="onboarding-ai-enabled"]');
@@ -279,14 +333,60 @@ try {
     return draft !== 'built-in' && summaryConfig.provider === previous;
   })()`, returnByValue: true });
   check(cancelledProvider.result?.value === true, '取消引导页供应商配置不能覆盖已保存选择');
+  const configDrafts = await client.send('Runtime.evaluate', { expression: `(() => {
+    for (const kind of ['summary-model', 'ai-assist']) {
+      openModal(kind);
+      const config = kind === 'summary-model' ? summaryConfigDraft : aiAssistConfigDraft;
+      config.provider = 'custom-openai';
+      renderModal(kind);
+      const values = { apiKey: 'test-only-issue-3-key', model: 'test-model', endpoint: 'https://example.test/v1' };
+      for (const [name, value] of Object.entries(values)) {
+        const field = settingsModal.querySelector('[name="' + name + '"]');
+        field.value = value;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      const key = settingsModal.querySelector('[name="apiKey"]');
+      key.focus();
+      refreshModelConfigModels();
+      if (document.activeElement !== key || key.value !== values.apiKey) return false;
+      renderModal(kind);
+      if (Object.entries(values).some(([name, value]) => settingsModal.querySelector('[name="' + name + '"]').value !== value)) return false;
+      config.provider = 'built-in'; renderModal(kind);
+      config.provider = 'custom-openai'; renderModal(kind);
+      if (settingsModal.querySelector('[name="apiKey"]').value !== values.apiKey || JSON.stringify(config).includes(values.apiKey)) return false;
+      closeModal();
+    }
+    return true;
+  })()`, returnByValue: true });
+  check(configDrafts.result?.value === true, '纪要与 AI 笔记输入应在刷新和供应商切换后保留，密钥不能进入可持久化配置');
+  const rapidNavigation = await client.send('Runtime.evaluate', { expression: `(async () => {
+    const homeIsActive = () => activeView === 'home' && document.querySelector('#home-view').classList.contains('active')
+      && document.querySelectorAll('body > .app-shell > .workspace > .view.active').length === 1 && document.querySelector('#all-meetings').classList.contains('active')
+      && crumb.textContent === catalog[locale].views.home && !document.querySelector('.app-shell').classList.contains('is-live-meeting');
+    await showView('home');
+    await Promise.all([showView('settings'), showView('prepare'), showView('home')]);
+    if (!homeIsActive()) return false;
+    await Promise.all([showView('settings'), showLibraryNav(activeLibraryNav)]);
+    if (!homeIsActive()) return false;
+    await Promise.all([showView('settings'), switchWorkspace(activeWorkspaceId)]);
+    if (!homeIsActive()) return false;
+    await Promise.all([showLibraryNav('recently-deleted'), showView('settings')]);
+    if (activeView !== 'settings' || !document.querySelector('#settings-view').classList.contains('active') || crumb.textContent !== catalog[locale].views.settings) return false;
+    await showLibraryNav('all-meetings');
+    return homeIsActive();
+  })()`, awaitPromise: true, returnByValue: true });
+  check(rapidNavigation.result?.value === true, '快速连续导航必须到达最后一个目标，且只保留一个活动页面');
   const aiOptions = await client.send('Runtime.evaluate', { expression: `(async () => { const page = document.querySelector('.onboarding-ai-setup-page'); const options = [...page.querySelector('[name="onboarding-ai-proactivity"]').options].map((option) => option.value); const icons = page.querySelectorAll('.onboarding-ai-icon svg').length; const toggle = page.querySelector('[name="onboarding-summary-enabled"]'); toggle.checked = false; toggle.dispatchEvent(new Event('change', { bubbles: true })); const disabled = [...page.querySelectorAll('[name="onboarding-ai-way"]')].every((option) => option.disabled); await finishAiOnboarding(); const saved = await window.brevia.summary.config.get(); return { options, icons, disabled, saved: saved.enabled }; })()`, awaitPromise: true, returnByValue: true });
   check(JSON.stringify(aiOptions.result?.value?.options) === '["assist","auto"]' && aiOptions.result?.value?.icons === 2 && aiOptions.result?.value?.disabled && aiOptions.result?.value?.saved === false, `AI 开关、图标或档位未正确保存：${JSON.stringify(aiOptions.result?.value)}`);
   const floatingBars = await client.send('Runtime.evaluate', { expression: `(() => { const live = document.querySelector('#live-view .floating-control-bar'); const player = document.querySelector('#detail-view .floating-control-bar'); const toggle = document.querySelector('#live-more-toggle'); toggle.click(); const menuOpen = !document.querySelector('#live-more-panel').hidden && toggle.getAttribute('aria-expanded') === 'true'; document.body.click(); const menuClosed = document.querySelector('#live-more-panel').hidden; const wasActive = meetingActive, wasSeconds = seconds; meetingActive = true; seconds = 57; document.querySelector('#mark-important').click(); const note = currentNotesMarkdown(); meetingActive = wasActive; seconds = wasSeconds; return { live: getComputedStyle(live).position, player: getComputedStyle(player).position, menuOpen, menuClosed, note }; })()`, returnByValue: true });
-  check(floatingBars.result?.value?.live === 'absolute' && floatingBars.result?.value?.player === 'absolute' && floatingBars.result?.value?.menuOpen && floatingBars.result?.value?.menuClosed && floatingBars.result?.value?.note?.includes('重点 · 00:57'), `悬浮控制栏操作不正确：${JSON.stringify(floatingBars.result?.value)}`);
-
-  await delay(350);
+  check(floatingBars.result?.value?.live === 'absolute' && floatingBars.result?.value?.player === 'relative' && floatingBars.result?.value?.menuOpen && floatingBars.result?.value?.menuClosed && floatingBars.result?.value?.note?.includes('重点 · 00:57'), `悬浮控制栏操作不正确：${JSON.stringify(floatingBars.result?.value)}`);
   const detailLayout = await client.send('Runtime.evaluate', { expression: `(async () => {
     await initializationPromise;
+    const tourDeadline = Date.now() + 10000;
+    while (!document.querySelector('.onboarding-tour-overlay')) {
+      if (Date.now() > tourDeadline) throw new Error('Onboarding tour did not appear');
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
     // Exercise list filtering while the tour replica exists, then reveal the real app.
     applyLanguage('en');
     document.querySelectorAll('.onboarding-page').forEach((page) => page.remove());
@@ -298,8 +398,9 @@ try {
       for (const theme of ['light', 'dark']) {
         applyTheme(theme);
         const panel = document.querySelector('#detail-view .final-transcript').getBoundingClientRect();
+        const notes = document.querySelector('#detail-view .notes').getBoundingClientRect();
         const player = document.querySelector('#detail-view .player').getBoundingClientRect();
-        if (panel.width <= 0 || panel.height <= 0 || panel.bottom > player.top + 1) failures.push(code + '/' + theme + ': transcript hidden or overlaps player');
+        if (panel.width <= 0 || panel.height <= 0 || notes.height <= 0 || Math.max(panel.bottom, notes.bottom) > player.top + 1) failures.push(code + '/' + theme + ': meeting content hidden or overlaps player');
       }
       if (document.querySelectorAll('[data-settings-path]').length !== 2) failures.push(code + ': duplicate storage rows');
       const error = storageErrorMessage(new Error('Chosen recording folder is no longer empty'));
@@ -309,8 +410,50 @@ try {
     return failures;
   })()`, awaitPromise: true, returnByValue: true });
   check(Array.isArray(detailLayout.result?.value) && detailLayout.result.value.length === 0, `多语言/主题布局回归：${JSON.stringify(detailLayout)}`);
+  const editingRegression = await client.send('Runtime.evaluate', { expression: `(async () => {
+    await initializationPromise;
+    const meeting = await window.brevia.meeting.get({ meeting_id: breviaClient.state.initialized.meetings[0].id });
+    const chosen = refinedModelOptions(meeting.language).at(-1)?.[0];
+    if (chosen) meeting.refined_model_id = chosen;
+    applyBackendDetail(meeting);
+    const selected = !chosen || uiData.detail.refinedModelId === chosen;
+    uiData.detail.summary = { markdown: 'saved memo', hasFull: true };
+    renderMeetingDetail();
+    document.querySelector('[data-open-summary-edit]').click();
+    inlineSummaryEditor.setMode('markdown');
+    const draft = '***draft***\\n---heading\\n___abc';
+    const field = document.querySelector('[data-inline-summary-editor] textarea');
+    field.value = draft;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    applyLanguage('ja');
+    const localizedDraft = inlineSummaryEditor.getMarkdown() === draft && inlineSummaryEditor.getMode() === 'markdown';
+    applyBackendDetail(meeting);
+    const refreshedDraft = inlineSummaryEditor.getMarkdown() === draft;
+    for (let index = 0; index < 30; index += 1) renderMeetingDetail();
+    return { selected, localizedDraft, refreshedDraft, editing: uiData.detail.summaryEditing };
+  })()`, awaitPromise: true, returnByValue: true });
+  check(editingRegression.result?.value?.selected && editingRegression.result?.value?.localizedDraft && editingRegression.result?.value?.refreshedDraft && editingRegression.result?.value?.editing, `草稿/模型回归：${JSON.stringify(editingRegression)}`);
+  const documentObject = await client.send('Runtime.evaluate', { expression: 'document' });
+  const listenersBefore = await client.send('DOMDebugger.getEventListeners', { objectId: documentObject.result.objectId });
+  await client.send('Runtime.evaluate', { expression: 'for (let index = 0; index < 30; index += 1) renderMeetingDetail();' });
+  const listenersAfter = await client.send('DOMDebugger.getEventListeners', { objectId: documentObject.result.objectId });
+  check(listenersBefore.listeners.length === listenersAfter.listeners.length, '重建编辑器不应增加 document 监听器数量');
+  const captionClose = await client.send('Runtime.evaluate', { expression: `(async () => {
+    let closed = 0;
+    const unsubscribe = window.brevia.on('floating-caption.closed', () => { closed += 1; });
+    for (let index = 0; index < 2; index += 1) {
+      await window.brevia.floatingCaption.show();
+      await window.brevia.floatingCaption.close();
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    unsubscribe();
+    document.querySelector('[data-cancel-inline-summary-edit]').click();
+    applyLanguage('zh');
+    return closed;
+  })()`, awaitPromise: true, returnByValue: true });
+  check(captionClose.result?.value === 2, `悬浮字幕关闭通知缺失：${JSON.stringify(captionClose)}`);
   await client.send('Emulation.setDeviceMetricsOverride', { width: 880, height: 720, deviceScaleFactor: 1, mobile: false });
-  const minimumWindow = await client.send('Runtime.evaluate', { expression: `({ activeView, className: document.querySelector('#detail-view').className, display: getComputedStyle(document.querySelector('#detail-view')).display, parentWidth: document.querySelector('#detail-view').parentElement.getBoundingClientRect().width, width: document.querySelector('#detail-view').getBoundingClientRect().width, sidebar: getComputedStyle(document.querySelector('.app-shell > .sidebar')).display })`, returnByValue: true });
+  const minimumWindow = await client.send('Runtime.evaluate', { expression: `({ activeView, className: document.querySelector('#detail-view').className, display: getComputedStyle(document.querySelector('#detail-view')).display, onboarding: [...document.querySelectorAll('.onboarding-page')].map(page => page.className), shell: getComputedStyle(document.querySelector('.app-shell')).display, parentWidth: document.querySelector('#detail-view').parentElement.getBoundingClientRect().width, width: document.querySelector('#detail-view').getBoundingClientRect().width, sidebar: getComputedStyle(document.querySelector('.app-shell > .sidebar')).display })`, returnByValue: true });
   check(minimumWindow.result?.value?.width > 500 && minimumWindow.result?.value?.sidebar !== 'none', `最小桌面窗口丢失内容或导航：${JSON.stringify(minimumWindow.result?.value)}`);
   await client.send('Emulation.clearDeviceMetricsOverride');
   check(pageErrors.length === 0, `交互期间渲染异常：${pageErrors.join('\n')}`);

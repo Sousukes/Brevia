@@ -3,7 +3,7 @@
 import re
 
 from .transcript import clock, latest_segments
-from .worker_common import ModelNotInstalled, TaskCancelled, managed_task, require
+from .worker_common import UserFacingError, ModelNotInstalled, TaskCancelled, managed_task, require
 
 # 内置翻译在本地运行捆绑的 Hy-MT2 GGUF 模型。
 TRANSLATION_MODEL_ID = "hy-mt2-1.8b-q4km"
@@ -284,12 +284,12 @@ class LLMWorkerMixin:
         """
         require(payload, "meeting_id", "provider", "model", "consent")
         if self.active:
-            raise ValueError("实时会议中，结束后再生成会议纪要。")
+            raise UserFacingError("error.summary.live_meeting", "实时会议中，结束后再生成会议纪要。")
         # Built-in 在本地运行捆绑的 GGUF；只有远程提供商需要端点。
         if (payload.get("provider") or "").lower() not in {"built-in", "builtin"}:
             require(payload, "endpoint")
         if not payload["consent"]:
-            raise ValueError("Transcript sharing was not confirmed")
+            raise UserFacingError("error.sharing_not_confirmed", "Transcript sharing was not confirmed")
         meeting = self.store.get_meeting(payload["meeting_id"])
         self.emit(
             "summary.started",
@@ -307,7 +307,7 @@ class LLMWorkerMixin:
             if str(item.get("text") or "").strip()
         )
         if not transcript:
-            raise ValueError("当前会议暂无逐字稿内容，请先完成转写后再生成会议纪要。")
+            raise UserFacingError("error.summary.no_transcript", "当前会议暂无逐字稿内容，请先完成转写后再生成会议纪要。")
         language = payload.get("language", "en")
         markdown = ""
         try:
@@ -337,14 +337,11 @@ class LLMWorkerMixin:
                     markdown = self._complete_with_retry(payload, prompt)
             self.wait_task(control)
             if not markdown:
-                raise ValueError("Summary response was empty")
+                raise UserFacingError("error.summary.empty_response", "Summary response was empty")
         except TaskCancelled:
             return {"cancelled": True}
         except ModelNotInstalled:
-            # 结构化错误必须原样上抛：下面那个笼统的 except 会把它压成普通 ValueError，
-            # error_code/error_models 到不了协议层，内置纪要模型缺失就触发不了
-            # 「先下载再重试」。旧行为会把失败文本写进纪要；这里不写，让下载后的重试
-            # 生成真正的纪要，而不是留下一条错误记录。
+            # 保留结构化错误，让调用方下载缺失模型后重试。
             raise
         except Exception as error:
             # 失败时不写纪要。旧实现会把错误文本（或半截输出）存进 raw_response，并在
@@ -357,10 +354,10 @@ class LLMWorkerMixin:
                 str(error),
                 re.IGNORECASE,
             ):
-                raise ValueError("Summary authentication failed") from error
+                raise UserFacingError("error.summary.authentication", "Summary authentication failed") from error
             # 带上底层原因，避免 Windows 等环境下内置模型加载/超时/空响应
             # 被笼统的 “Summary generation failed” 掩盖，无法定位。
-            raise ValueError(f"Summary generation failed: {error}") from error
+            raise UserFacingError("error.summary.failed", f"Summary generation failed: {error}") from error
         data = {"markdown": markdown}
         if not self.store.save_summary(meeting["id"], data, markdown):
             return {"cancelled": True}
@@ -446,7 +443,8 @@ class LLMWorkerMixin:
             blocks = blocks[:MAX_MERGE_INPUT_CHARS] + f"\n\n{marker}"
         return merge_summary_prompt([blocks], title, language), truncated
 
-    def translate(self, payload):
+    @managed_task("translation.generate", concurrent=True)
+    def translate(self, payload, control=None):
         """翻译一段字幕，并把译文写在同 ID 的所有版本上。
 
         段落在渲染器侧可能还没落库（final 事件先到）：此时用命令随带的段落内容建行，
@@ -463,7 +461,7 @@ class LLMWorkerMixin:
             "consent",
         )
         if not payload["consent"]:
-            raise ValueError("Transcript sharing was not confirmed")
+            raise UserFacingError("error.sharing_not_confirmed", "Transcript sharing was not confirmed")
         meeting = self.store.get_meeting(payload["meeting_id"])
         stored_segment = next((item for item in meeting["segments"] if item["id"] == payload["segment_id"]), None)
         segment = {"id": payload["segment_id"], **payload["segment"]} if payload.get("segment") else stored_segment
@@ -480,7 +478,7 @@ class LLMWorkerMixin:
             if not segment:
                 segment = next((item for item in meeting["segments"] if item["id"] == payload["segment_id"]), None)
         if not segment:
-            raise ValueError("Transcript segment not found")
+            raise UserFacingError("error.segment_not_found", "Transcript segment not found")
         target = LANGUAGE_NAMES.get(payload["target_language"], payload["target_language"])
         prompt = (
             f"Translate the following text into {target}. "

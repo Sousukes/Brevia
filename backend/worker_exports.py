@@ -1,21 +1,19 @@
 """聚焦的 worker 职责组件。"""
 
 import json
-import os
 import re
 import shutil
-import subprocess
 import zipfile
 from html import escape
 from pathlib import Path
 
-from .audio_io import PROCESS_TIMEOUT_SECONDS
 from .transcript import clock, latest_segments, srt_time
-from .worker_common import require
+from .worker_common import managed_task, require
 
 
 class ExportWorkerMixin:
-    def export(self, payload):
+    @managed_task("meeting.export", concurrent=True)
+    def export(self, payload, control=None):
         """导出逐字稿、纪要或录音。
 
         Args:
@@ -39,14 +37,9 @@ class ExportWorkerMixin:
             "audio": "[会议录音]",
         }.get(content_type, "")
         prefix = re.sub(r'[<>:"/\\|?*]+', "-", str(prefix))
-        # PDF 的实际产物是 {stem}.print.html（交给 Electron 渲染成 PDF），唯一性检查必须
-        # 针对真实文件名，否则连续导出两次 PDF 会算出同一个 stem 并覆盖同一个 print.html。
-        uniqueness = "print.html" if export_format == "pdf" else export_format
-        stem = self._available_export_stem(directory, f"{prefix}{safe_title}", uniqueness)
-        path = directory / f"{stem}.{export_format}"
         if content_type == "audio":
             return self._export_audio(
-                meeting, path, export_format, payload.get("track", "mix")
+                meeting, directory, f"{prefix}{safe_title}", export_format, payload.get("track", "mix")
             )
         if content_type not in {"transcript", "notes", "mynotes"}:
             raise ValueError("Export content must be transcript, notes, mynotes, or audio")
@@ -89,17 +82,23 @@ class ExportWorkerMixin:
                 if export_format == "md"
                 else "\n".join(lines)
             )
-        if export_format == "docx":
-            path = self._write_docx(directory, stem, content)
-        elif export_format == "pdf":
-            path = self._write_print_html(
-                directory,
-                stem,
-                content,
-                markdown=content_type in {"notes", "mynotes"},
-            )
-        else:
-            path.write_text(content, encoding="utf-8")
+        stem = self._available_export_stem(directory, f"{prefix}{safe_title}", export_format)
+        path = directory / f"{stem}.{'print.html' if export_format == 'pdf' else export_format}"
+        try:
+            if export_format == "docx":
+                path = self._write_docx(directory, stem, content)
+            elif export_format == "pdf":
+                path = self._write_print_html(
+                    directory,
+                    stem,
+                    content,
+                    markdown=content_type in {"notes", "mynotes"},
+                )
+            else:
+                path.write_text(content, encoding="utf-8")
+        except Exception:
+            path.unlink(missing_ok=True)
+            raise
         return {
             "path": str(path),
             "format": "html" if export_format == "pdf" else export_format,
@@ -109,14 +108,27 @@ class ExportWorkerMixin:
     @staticmethod
     def _available_export_stem(directory, stem, export_format):
         """为临时导出文件保留不会覆盖已有结果的名字。"""
+        if directory.resolve().parent != directory.parent.resolve():
+            raise ValueError("Invalid export directory")
         directory.mkdir(parents=True, exist_ok=True)
         for index in range(10000):
             candidate = f"{stem}{'' if index == 0 else f'({index})'}"
-            if not (directory / f"{candidate}.{export_format}").exists():
-                return candidate
+            extensions = ("pdf", "print.html") if export_format == "pdf" else (export_format,)
+            if any((directory / f"{candidate}.{extension}").exists() for extension in extensions):
+                continue
+            reservation = directory / f"{candidate}.{extensions[-1]}"
+            try:
+                reservation.touch(exist_ok=False)
+            except FileExistsError:
+                continue
+            if export_format == "pdf" and (directory / f"{candidate}.pdf").exists():
+                reservation.unlink()
+                continue
+            return candidate
         raise ValueError("Too many exports with the same name")
 
-    def bundle(self, payload):
+    @managed_task("meeting.bundle", concurrent=True)
+    def bundle(self, payload, control=None):
         """打包本地录音与 Markdown、TXT 逐字稿。"""
         require(payload, "meeting_id")
         meeting = self.store.get_meeting(payload["meeting_id"])
@@ -133,46 +145,87 @@ class ExportWorkerMixin:
             ),
             None,
         )
-        markdown = self.export({"meeting_id": meeting["id"], "format": "md"})["path"]
-        plain_text = self.export({"meeting_id": meeting["id"], "format": "txt"})["path"]
-        bundle = directory / f"{safe_title}.zip"
-        with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as archive:
-            if audio:
-                archive.write(audio, arcname=f"{safe_title}.wav")
-            archive.write(markdown, arcname=f"{safe_title}.md")
-            archive.write(plain_text, arcname=f"{safe_title}.txt")
-        Path(markdown).unlink(missing_ok=True)
-        Path(plain_text).unlink(missing_ok=True)
-        return {"path": str(bundle), "format": "zip", "recording_included": bool(audio)}
+        temporary = []
+        try:
+            for format in ("md", "txt"):
+                temporary.append(self.export({"meeting_id": meeting["id"], "format": format})["path"])
+            files = [
+                *([{"path": audio, "name": f"{safe_title}.wav"}] if audio else []),
+                *[{"path": source, "name": f"{safe_title}.{Path(source).suffix.lstrip('.')}"} for source in temporary],
+            ]
+            result = self.bundle_files({"meeting_id": meeting["id"], "name": safe_title, "files": files})
+        finally:
+            for source in temporary:
+                Path(source).unlink(missing_ok=True)
+        return {**result, "recording_included": bool(audio)}
 
-    def _export_audio(self, meeting, path, export_format, track):
-        """通过 ffmpeg 导出单轨或归一化混音。
+    @managed_task("meeting.bundle-files")
+    def bundle_files(self, payload, control=None):
+        """流式归档当前会议的导出与音频文件，拒绝其他目录与符号链接逃逸。"""
+        require(payload, "meeting_id", "files")
+        self.store.get_meeting(payload["meeting_id"], compact=True)
+        meeting_dir = self.store.meeting_dir(payload["meeting_id"])
+        directory = meeting_dir / "exports"
+        files = payload["files"]
+        if not isinstance(files, list) or not 1 <= len(files) <= 8:
+            raise ValueError("Choose between one and eight export files")
+        checked = []
+        names = set()
+        for item in files:
+            source = Path(item["path"]).resolve()
+            if not source.is_relative_to(meeting_dir.resolve()) or not any(source.is_relative_to(root.resolve()) for root in (directory, meeting_dir / "audio")):
+                raise ValueError("Invalid archive source")
+            if not source.is_file():
+                raise ValueError("Archive source is unavailable")
+            name = item["name"]
+            if not isinstance(name, str) or not name or "/" in name or "\\" in name or name in {".", ".."}:
+                raise ValueError("Invalid archive filename")
+            if name in names:
+                raise ValueError("Duplicate archive filename")
+            names.add(name)
+            checked.append((source, name))
+        title = re.sub(r'[<>:"/\\|?*]+', "-", str(payload.get("name") or "Brevia"))
+        stem = self._available_export_stem(directory, title, "zip")
+        destination = directory / f"{stem}.zip"
+        try:
+            with zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED) as archive:
+                for source, name in checked:
+                    self.wait_task(control)
+                    # ZIP64 与分块复制由标准库负责；取消时也能及时释放文件。
+                    with source.open("rb") as input_file, archive.open(name, "w", force_zip64=True) as output:
+                        while chunk := input_file.read(1024 * 1024):
+                            self.wait_task(control)
+                            output.write(chunk)
+            return {"path": str(destination), "format": "zip"}
+        except Exception:
+            destination.unlink(missing_ok=True)
+            raise
+
+    def _export_audio(self, meeting, directory, title, export_format, track):
+        """直接复制已保存的 WAV 回放录音。
 
         Returns:
             包含导出路径和格式的字典。
         """
-        if export_format not in {"flac", "wav", "m4a"}:
-            raise ValueError("Supported audio formats: flac, wav, m4a")
+        if export_format != "wav":
+            raise ValueError("Meeting audio is exported in its saved WAV format")
         playback = meeting["audio"]["playback"]
-        inputs = [playback[name] for name in ("mic", "system") if playback.get(name)]
-        if track in {"mic", "system", "vocals", "accompaniment"}:
-            inputs = [playback.get(track)] if playback.get(track) else []
-        if not inputs:
+        source = (
+            playback.get("mix") or playback.get("mic") or playback.get("system")
+            if track == "mix"
+            else playback.get(track)
+        )
+        if not source:
             raise ValueError("The selected audio track is empty")
-        ffmpeg = os.environ.get("BREVIA_FFMPEG") or shutil.which("ffmpeg")
-        if not ffmpeg:
-            raise ValueError("ffmpeg is required for audio export")
-        command = [ffmpeg, "-y", "-loglevel", "error"]
-        for source in inputs:
-            command.extend(["-i", source])
-        if len(inputs) == 2:
-            command.extend(
-                ["-filter_complex", "amix=inputs=2:duration=longest:normalize=1"]
-            )
-        if export_format == "m4a":
-            command.extend(["-c:a", "aac", "-b:a", "192k"])
-        command.append(str(path))
-        subprocess.run(command, check=True, timeout=PROCESS_TIMEOUT_SECONDS)
+        if not Path(source).resolve().is_relative_to(self.store.meeting_dir(meeting["id"]).resolve()):
+            raise ValueError("Invalid audio path")
+        stem = self._available_export_stem(directory, title, export_format)
+        path = directory / f"{stem}.{export_format}"
+        try:
+            shutil.copyfile(source, path)
+        except Exception:
+            path.unlink(missing_ok=True)
+            raise
         return {"path": str(path), "format": export_format}
 
     @staticmethod

@@ -22,6 +22,7 @@ from .audio_io import (
 )
 from .config import SETTINGS, SPEAKER_EMBEDDING_MODEL_ID, validate_num_speakers
 from .worker_common import (
+    UserFacingError,
     ModelNotInstalled,
     TaskCancelled,
     managed_task,
@@ -328,11 +329,6 @@ class RefinementWorkerMixin:
                          or not self.models.is_ready(refined_model_id)))):
             refined_model_id = self._default_refined_model(language)
         self._sentence_payload({"language": language, "refined_model_id": refined_model_id})
-        if refined_model_id != meeting["refined_model_id"]:
-            self.models.get(refined_model_id)
-            meeting = self.store.update_meeting(
-                meeting["id"], {"refined_model_id": refined_model_id}
-            )
         meeting = {**meeting, "language": language}
         num_speakers = int(
             payload.get(
@@ -354,7 +350,7 @@ class RefinementWorkerMixin:
             if meeting["audio"]["playback"].get(track)
         ]
         if not tracks:
-            raise ValueError("The meeting has no audio to refine")
+            raise UserFacingError("error.refinement.no_audio", "The meeting has no audio to refine")
         manifest = self.store.read_manifest(meeting["id"])
         is_imported_audio = manifest.get("source") == "audio_import" or (
             not manifest.get("tracks") and set(tracks) == {"mic"}
@@ -650,7 +646,8 @@ class RefinementWorkerMixin:
         refined_segments = paragraphs
         version, revision = self.store.next_refinement_version(meeting["id"])
         refined_segments = self.store.replace_segments(
-            meeting["id"], refined_segments, version, revision
+            meeting["id"], refined_segments, version, revision,
+            model_id=refined_model_id, language=language,
         )
         self.store.replace_speaker_turns(meeting["id"], turns)
         self.store.set_status(meeting["id"], "refined")
@@ -1801,11 +1798,13 @@ class RefinementWorkerMixin:
         只比 R 会漏掉 Y 与 Q 的交叠，UI 上就会出现同一时刻两人在说。
         """
         turns = sorted(turns, key=lambda turn: (turn["start_ms"], turn["end_ms"]))
-        deoverlapped = []
+        deoverlapped, active = [], []
         for turn in turns:
+            # ponytail: 只扫描仍有重叠的段落；密集重叠成为瓶颈时再换区间索引。
+            active = [previous for previous in active if previous["end_ms"] > turn["start_ms"]]
             current = dict(turn)
             dropped = False
-            for previous in deoverlapped:
+            for previous in active:
                 if previous["speaker"] == current["speaker"]:
                     continue
                 if current["start_ms"] >= previous["end_ms"]:
@@ -1822,6 +1821,7 @@ class RefinementWorkerMixin:
             if dropped:
                 continue
             deoverlapped.append(current)
+            active.append(current)
         return [turn for turn in deoverlapped if turn["end_ms"] > turn["start_ms"]]
 
     @staticmethod

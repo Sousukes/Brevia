@@ -21,7 +21,7 @@ from .worker_transcripts import TranscriptCommandMixin
 from .worker_ai_note import AiNoteWorkerMixin
 
 
-MAXIMUM_COMMAND_BYTES = 1024 * 1024
+MAXIMUM_COMMAND_BYTES = 32 * 1024 * 1024
 
 
 class Worker(
@@ -82,7 +82,7 @@ def main():
                 stream.reconfigure(encoding="utf-8", errors="replace")
             except (AttributeError, io.UnsupportedOperation, ValueError):
                 pass
-    # 审计类日志（例如启动时收敛会议引用的识别模型）必须真的落地：默认没有 handler，
+    # 后台维护日志必须落地：默认没有 handler，
     # logger.info 会被直接丢弃，而 Electron 主进程会把 worker 的 stderr 收进日志文件。
     logging.basicConfig(
         level=logging.INFO,
@@ -103,10 +103,11 @@ def main():
         max_workers=1, thread_name_prefix="brevia-translation"
     )
 
-    while line := sys.stdin.readline(MAXIMUM_COMMAND_BYTES + 1):
-        if len(line) > MAXIMUM_COMMAND_BYTES and not line.endswith("\n"):
-            while line and not line.endswith("\n"):
-                line = sys.stdin.readline(MAXIMUM_COMMAND_BYTES + 1)
+    input_stream = sys.stdin.buffer
+    while line := input_stream.readline(MAXIMUM_COMMAND_BYTES + 1):
+        if len(line) > MAXIMUM_COMMAND_BYTES and not line.endswith(b"\n"):
+            while line and not line.endswith(b"\n"):
+                line = input_stream.readline(MAXIMUM_COMMAND_BYTES + 1)
             worker.response(None, error=ValueError("Command is too large"))
             continue
         if not line.strip():
@@ -116,6 +117,8 @@ def main():
             continue
         try:
             command = json.loads(line)
+            if not isinstance(command, dict):
+                raise ValueError("Commands must be objects")
         except Exception as error:
             worker.response(None, error=error)
             continue
@@ -136,16 +139,17 @@ def main():
             "segment.speaker-profile-sample",
             "meeting.export",
             "meeting.bundle",
+            "meeting.bundle-files",
         }:
             threading.Thread(target=respond, args=(command,), daemon=True).start()
         else:
             respond(command)
 
+    translation_executor.shutdown(wait=True)
     worker.shutdown_active_session()
     worker.shutdown_ai_note()
     worker.shutdown_sidecars()
     worker.store.close_audio_sessions()
-    translation_executor.shutdown(wait=True)
 
 
 if __name__ == "__main__":

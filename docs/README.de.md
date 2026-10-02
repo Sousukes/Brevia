@@ -79,7 +79,7 @@ Herunterladbare Modelle fuer Satzerkennung, Nachbearbeitung, Sprachaktivitaetser
 ### Und mehr
 
 - **Audio-Import** — bring bestehende Aufnahmen fuer die Offline-Transkription in die gleiche Sprachpipeline.
-- **Vielseitige Exporte** — Transkripte und Notizen als Markdown, TXT, JSON, SRT, DOCX oder PDF; Audio als FLAC, WAV oder M4A.
+- **Vielseitige Exporte** — Transkripte und Notizen als Markdown, TXT, JSON, SRT, DOCX oder PDF; Audio als WAV.
 - **Ueberpruefbare Notizen** — schreibe in Rich Text oder Markdown und uebernimm nur hilfreiche KI-Vorschlaege.
 - **Meeting-Bibliothek und Arbeitsbereiche** — durchsuche Titel, Transkripte, Sprecher und Tags; ordne Meetings in Arbeitsbereichen und stelle kuerzlich geloeschte Meetings 30 Tage lang wieder her.
 - **Fokussierte Ansicht** — helle und dunkle Designs, Inline-Bearbeitung von Transkript und Zusammenfassung sowie ein optionales schwebendes Untertitelfenster halten die Meeting-Ansicht ruhig.

@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS meetings (
   language TEXT NOT NULL,
   target_language TEXT,
   refined_model_id TEXT NOT NULL,
+  transcript_model_id TEXT,
   speaker_segmentation_model_id TEXT,
   vad_model_id TEXT,
   num_speakers INTEGER NOT NULL DEFAULT -1,
@@ -153,8 +154,8 @@ def synchronized_storage_files(method):
 
 
 # 数据库结构版本：用 PRAGMA user_version 记录。结构迁移只在版本落后时执行一次，
-# 达标后启动热路径不再重复 PRAGMA 列检查；数据级清理（示例工作区等）仍按需运行。
-CURRENT_SCHEMA_VERSION = 1
+# 重型迁移只运行一次；缺列补齐和数据清理仍以实际结构为准。
+CURRENT_SCHEMA_VERSION = 2
 
 
 class StoreBase:
@@ -200,6 +201,13 @@ class StoreBase:
         任何中间版本（包括版本号被写高、但列并未真正补上的开发版）恢复到当前结构。
         """
         columns = {row["name"] for row in db.execute("PRAGMA table_info(meetings)")}
+        if "transcript_model_id" not in columns:
+            db.execute("ALTER TABLE meetings ADD COLUMN transcript_model_id TEXT")
+            db.execute(
+                "UPDATE meetings SET transcript_model_id=refined_model_id "
+                "WHERE EXISTS(SELECT 1 FROM segments s WHERE s.meeting_id=meetings.id "
+                "AND (s.version='postprocess' OR s.version GLOB 'postprocess-*'))"
+            )
         if "workspace_id" not in columns:
             db.execute(
                 "ALTER TABLE meetings ADD COLUMN workspace_id TEXT REFERENCES workspaces(id) ON DELETE SET NULL"
@@ -258,13 +266,19 @@ class StoreBase:
         """执行 user_version 控制的一次性结构迁移；达到目标版本后直接跳过。
 
         仅用于重建表这类不能每次启动都跑的重活；补列、删列等幂等修复放在
-        ``_drop_retired_columns``，按实际结构判断。
+        ``_ensure_columns`` 和 ``_drop_retired_columns``，按实际结构判断。
         """
         version = db.execute("PRAGMA user_version").fetchone()[0]
         if version >= CURRENT_SCHEMA_VERSION:
             return
         if version < 1:
             self._migrate_v1(db)
+        if version < 2:
+            db.execute(
+                "UPDATE meetings SET transcript_model_id=refined_model_id "
+                "WHERE EXISTS(SELECT 1 FROM segments s WHERE s.meeting_id=meetings.id "
+                "AND (s.version='postprocess' OR s.version GLOB 'postprocess-*'))"
+            )
         db.execute(f"PRAGMA user_version = {CURRENT_SCHEMA_VERSION}")
 
     def _drop_retired_columns(self, db):

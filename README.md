@@ -79,7 +79,7 @@ Downloadable models cover sentence transcription, offline refinement, voice acti
 ### And more
 
 - **Audio import** — bring in existing recordings for offline transcription through the same speech pipeline.
-- **Rich exports** — transcript and notes as Markdown, TXT, JSON, SRT, DOCX, or PDF; audio as FLAC, WAV, or M4A.
+- **Rich exports** — transcript and notes as Markdown, TXT, JSON, SRT, DOCX, or PDF; audio as WAV.
 - **Reviewable notes** — write in rich text or Markdown, then accept only the AI suggestions that help.
 - **Meeting library and workspaces** — search titles, transcripts, speakers, and tags; organize work into workspaces and restore recently deleted meetings for 30 days.
 - **Focused viewing** — light and dark themes, inline transcript/summary editing, and an optional floating-caption window keep the meeting view uncluttered.

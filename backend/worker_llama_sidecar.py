@@ -51,15 +51,35 @@ class _Sidecar:
         self.on_error = on_error
         self.process: Optional[subprocess.Popen] = None
         self.lock = threading.Lock()
+        self.lifecycle_lock = threading.Lock()
+        self.cancellation = None
 
-    def _ensure(self) -> bool:
-        """确保 sidecar 进程正在运行；失败时返回 False。"""
+    def _close(self, process):
+        """回收指定进程及管道，不影响随后启动的替代进程。"""
+        if process is None:
+            return
+        if self.process is process:
+            self.process = None
+        try:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=5)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        finally:
+            for stream in (process.stdin, process.stdout):
+                if stream:
+                    stream.close()
+
+    def _ensure(self):
+        """确保 sidecar 进程正在运行；失败时返回 None。"""
         if self.process and self.process.poll() is None:
-            return True
+            return self.process
+        self._close(self.process)
         try:
             # 显式 UTF-8 文本管道：Windows 下 subprocess 文本管道默认按系统 ANSI
             # 代码页编解码，与 sidecar 内部固定为 UTF-8 的 stdio 保持一致。
-            self.process = subprocess.Popen(
+            process = subprocess.Popen(
                 self.cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -69,64 +89,81 @@ class _Sidecar:
                 errors="replace",
                 bufsize=1,
             )
-            return True
+            self.process = process
+            return process
         except Exception as error:  # noqa: BLE001 - report and degrade
             self.on_error(f"Failed to start llama sidecar: {error}")
-            return False
+            return None
 
-    def request(self, request: dict, timeout_seconds=None) -> dict:
+    def request(self, request: dict, timeout_seconds=None, cancellation=None) -> dict:
         """发送请求并返回 sidecar 响应；``timeout_seconds`` 为空时用默认超时。"""
         with self.lock:
-            if not self._ensure():
-                return {"type": "error", "message": "Sidecar not available"}
+            with self.lifecycle_lock:
+                if cancellation is not None and cancellation.is_set():
+                    return {"type": "error", "message": "Sidecar request cancelled"}
+                process = self._ensure()
+                if process is None:
+                    return {"type": "error", "message": "Sidecar not available"}
+                self.cancellation = cancellation
             timed_out = threading.Event()
 
             def terminate():
                 timed_out.set()
-                if self.process and self.process.poll() is None:
-                    self.process.kill()
+                try:
+                    if process.poll() is None:
+                        process.kill()
+                except OSError:
+                    pass
 
             timer = threading.Timer(timeout_seconds or REQUEST_TIMEOUT_SECONDS, terminate)
             timer.start()
+            failed = True
             try:
-                self.process.stdin.write(json.dumps(request) + "\n")
-                self.process.stdin.flush()
-                line = self.process.stdout.readline()
+                process.stdin.write(json.dumps(request) + "\n")
+                process.stdin.flush()
+                line = process.stdout.readline()
                 if timed_out.is_set():
-                    self.process = None
                     return {"type": "error", "message": "Sidecar request timed out"}
                 if not line:
-                    self.process = None
                     return {"type": "error", "message": "Sidecar closed unexpectedly"}
-                return json.loads(line)
+                response = json.loads(line)
+                if not isinstance(response, dict):
+                    raise ValueError("Expected a response object")
+                failed = False
+                return response
             except Exception as error:  # noqa: BLE001 - surface to caller
-                self.process = None
                 return {"type": "error", "message": f"Sidecar communication error: {error}"}
             finally:
                 timer.cancel()
+                timer.join()
+                with self.lifecycle_lock:
+                    if failed or timed_out.is_set():
+                        self._close(process)
+                    self.cancellation = None
 
-    def cancel(self):
+    def cancel(self, cancellation=None):
         """立即终止在飞的推理（不持有锁，以便从请求等待中解除阻塞）。"""
-        process = self.process
-        if process and process.poll() is None:
-            try:
-                process.kill()
-            except Exception:  # noqa: BLE001 - best-effort cancellation
-                pass
-        self.process = None
+        if cancellation is not None:
+            cancellation.set()
+        with self.lifecycle_lock:
+            if cancellation is not None and self.cancellation is not cancellation:
+                return
+            self._close(self.process)
 
     def shutdown(self):
         """优雅地关闭 sidecar 进程。"""
         with self.lock:
-            if self.process and self.process.poll() is None:
+            process = self.process
+            if process is not None:
                 try:
-                    self.process.stdin.write(json.dumps({"type": "shutdown"}) + "\n")
-                    self.process.stdin.flush()
-                    self.process.wait(timeout=5)
+                    if process.poll() is None:
+                        process.stdin.write(json.dumps({"type": "shutdown"}) + "\n")
+                        process.stdin.flush()
+                        process.wait(timeout=5)
                 except Exception:  # noqa: BLE001 - best-effort cleanup
-                    self.process.kill()
+                    pass
                 finally:
-                    self.process = None
+                    self._close(process)
 
 
 class LlamaSidecarMixin:
@@ -244,7 +281,7 @@ class LlamaSidecarMixin:
             chat=True,
         )
 
-    def llama_generate_realtime(self, model_id: str, prompt: str) -> str:
+    def llama_generate_realtime(self, model_id: str, prompt: str, cancellation=None) -> str:
         """通过共享 ``assistant`` sidecar 运行实时短任务（短超时、可取消、限长输出）。
 
         Qwen3 系列（2B/4B）默认把思维链包在 <think> 块里，会占满实时任务本就有限的
@@ -268,19 +305,21 @@ class LlamaSidecarMixin:
             "top_p": 0.95,
             "stop_tokens": ["<|im_end|>", "<|endoftext|>"],
         }
-        response = self._get_sidecar(ASSISTANT_SIDECAR).request(request, timeout_seconds=REALTIME_TIMEOUT_SECONDS)
+        response = self._get_sidecar(ASSISTANT_SIDECAR).request(
+            request, timeout_seconds=REALTIME_TIMEOUT_SECONDS, cancellation=cancellation,
+        )
         if response.get("type") == "error":
             raise RuntimeError(f"Sidecar error: {response.get('message')}")
         if response.get("type") != "response":
             raise RuntimeError(f"Unexpected sidecar response: {response.get('type')}")
         return strip_reasoning(response.get("text", ""))
 
-    def cancel_sidecar(self, name: str):
+    def cancel_sidecar(self, name: str, cancellation=None):
         """取消命名 sidecar 的在飞推理（用于实时任务超时/取消）。"""
         with self._sidecars_lock:
             sidecar = self._sidecars.get(name)
         if sidecar:
-            sidecar.cancel()
+            sidecar.cancel(cancellation)
 
     def shutdown_sidecars(self):
         """优雅地关闭所有 sidecar 进程。"""

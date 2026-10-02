@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const { cp, lstat, mkdir, readFile, readdir, realpath, rename, rm, rmdir, writeFile } = require('node:fs/promises');
 const path = require('node:path');
+const { writeAtomicFile } = require('./main-logic');
 
 const file = (dataDir) => path.join(dataDir, 'models-location.json');
 const defaultDirectory = (dataDir) => path.join(dataDir, 'models');
@@ -11,20 +12,22 @@ const nested = (parent, child) => {
 };
 
 function readLocation(dataDir) {
-  try { return JSON.parse(fs.readFileSync(file(dataDir), 'utf8')); }
+  try {
+    const value = JSON.parse(fs.readFileSync(file(dataDir), 'utf8'));
+    const keys = new Set(['current', 'recordings', 'pending', 'pendingRecordings', 'cleanup', 'recordingsCleanup']);
+    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.entries(value).some(([key, item]) => !keys.has(key) || typeof item !== 'string' || !path.isAbsolute(item))) throw new Error('Invalid storage location metadata');
+    return value;
+  }
   catch (error) {
     if (error.code === 'ENOENT') return {};
-    throw error;
+    throw new Error(`Cannot read ${file(dataDir)}. Restore this file to keep the configured external folders. ${error.message}`, { cause: error });
   }
 }
 
 async function saveLocation(dataDir, value) {
-  await mkdir(dataDir, { recursive: true });
-  const temporary = `${file(dataDir)}.tmp`;
   const next = { ...readLocation(dataDir), ...value };
   for (const [key, item] of Object.entries(next)) if (item === null) delete next[key];
-  await writeFile(temporary, JSON.stringify(next), { mode: 0o600 });
-  await rename(temporary, file(dataDir));
+  await writeAtomicFile(file(dataDir), JSON.stringify(next));
 }
 
 function currentDirectory(dataDir, override) {

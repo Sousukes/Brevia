@@ -1,4 +1,101 @@
+const { cp, mkdir, open, readFile, realpath, rename, rm } = require('node:fs/promises');
+const { existsSync } = require('node:fs');
+const { randomUUID } = require('node:crypto');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+
 const modelscopeUpdateFeed = Object.freeze({ provider: 'generic', url: 'https://modelscope.cn/models/zyaztec/brevia-release/resolve/master' });
+
+async function writeAtomicFile(target, value) {
+  await mkdir(path.dirname(target), { recursive: true });
+  const temporary = `${target}.${randomUUID()}.tmp`;
+  try {
+    const file = await open(temporary, 'wx', 0o600);
+    try { await file.writeFile(value, 'utf8'); await file.sync(); }
+    finally { await file.close(); }
+    await rename(temporary, target);
+  } finally { await rm(temporary, { force: true }); }
+}
+
+async function migrateLegacyData(source, target) {
+  if (path.resolve(source) === path.resolve(target)) return;
+  const journal = path.join(target, '.brevia-data-migration.json');
+  if (!existsSync(source) && !existsSync(journal)) return;
+  const names = ['advanced-settings.json', 'meetings', 'models', 'models-location.json', 'speaker-profiles', 'summary-models.json', 'ai-assist.json', 'secrets', 'logs', 'brevia.db-shm', 'brevia.db-wal', 'brevia.db'];
+  let state;
+  if (existsSync(journal)) {
+    state = JSON.parse(await readFile(journal, 'utf8'));
+    if (state.source !== source || !Array.isArray(state.names) || state.names.some((name) => !names.includes(name)) || !/^[0-9a-f-]{36}$/.test(state.id)) throw new Error('Invalid migration journal');
+  } else {
+    // 两个完整数据库不能静默合并；没有源数据库的旧目录可为此前中断迁移的残留。
+    if (existsSync(path.join(source, 'brevia.db')) && existsSync(path.join(target, 'brevia.db'))) return;
+    for (const name of ['meetings', 'models', 'models-location.json']) {
+      if (existsSync(path.join(source, name)) && existsSync(path.join(target, name))) throw new Error(`Migration destination already exists: ${path.join(target, name)}`);
+    }
+    state = { source, id: randomUUID(), names: names.filter((name) => existsSync(path.join(source, name)) && !existsSync(path.join(target, name))), publishing: null };
+    if (!state.names.length) return;
+    await writeAtomicFile(journal, JSON.stringify(state));
+  }
+  for (const name of state.names) {
+    const from = path.join(source, name);
+    const to = path.join(target, name);
+    const staging = `${to}.${state.id}.brevia-migration`;
+    if (state.publishing === name && existsSync(to) && !existsSync(staging)) {
+      // 复制已提交、但源清理未完成。日志在发布之前落盘，只有本次拥有的目标可清理源。
+      await rm(from, { recursive: true, force: true });
+      state.publishing = null;
+      await writeAtomicFile(journal, JSON.stringify(state));
+    }
+    if (!existsSync(from)) continue;
+    if (existsSync(to)) throw new Error(`Migration destination already exists: ${to}`);
+    try { await rename(from, to); }
+    catch (error) {
+      if (error.code !== 'EXDEV') throw error;
+      // 目标卷内先完成复制再原子发布；中断后重复制仍在源目录中的最新文件。
+      await rm(staging, { recursive: true, force: true });
+      await cp(from, staging, { recursive: true, errorOnExist: true, force: false });
+      state.publishing = name;
+      await writeAtomicFile(journal, JSON.stringify(state));
+      await rename(staging, to);
+      await rm(from, { recursive: true, force: true });
+      state.publishing = null;
+      await writeAtomicFile(journal, JSON.stringify(state));
+    }
+    await rm(staging, { recursive: true, force: true });
+    if (state.publishing) {
+      state.publishing = null;
+      await writeAtomicFile(journal, JSON.stringify(state));
+    }
+  }
+  // 旧默认目录可能被显式写入配置；移动数据后同步其路径，外置目录保持原值。
+  if (state.names.includes('models-location.json')) {
+    const locationFile = path.join(target, 'models-location.json');
+    const location = JSON.parse(await readFile(locationFile, 'utf8'));
+    let changed = false;
+    for (const key of ['current', 'recordings']) {
+      if (!location[key]) continue;
+      const relative = path.relative(source, location[key]);
+      if (['models', 'meetings'].some((name) => state.names.includes(name) && (relative === name || relative.startsWith(`${name}${path.sep}`)))) {
+        location[key] = path.join(target, relative);
+        changed = true;
+      }
+    }
+    if (changed) await writeAtomicFile(locationFile, JSON.stringify(location));
+  }
+  await rm(journal);
+}
+
+async function audioFileURL(filePath, directories) {
+  const resolved = await realpath(filePath);
+  for (const directory of directories) {
+    let parent;
+    try { parent = await realpath(directory); }
+    catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+    const relative = path.relative(parent, resolved);
+    if (relative && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)) return pathToFileURL(resolved).href;
+  }
+  throw new Error('Invalid audio path');
+}
 
 function configureMacUpdater(updater) {
   updater.autoDownload = false;
@@ -71,6 +168,7 @@ function requiredModelsFrom(error) {
 }
 
 module.exports = {
+  audioFileURL,
   configureMacUpdater,
   createDisplayMediaHandler,
   isNewerVersion,
@@ -78,4 +176,6 @@ module.exports = {
   requiredModelsFrom,
   systemAudioSupported,
   workerError,
+  writeAtomicFile,
+  migrateLegacyData,
 };

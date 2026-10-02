@@ -79,7 +79,7 @@ Des modeles telechargeables couvrant la transcription par phrases, l'affinage ap
 ### Et plus encore
 
 - **Import audio** — apportez des enregistrements existants pour une transcription hors ligne via le meme pipeline.
-- **Exports riches** — transcriptions et notes en Markdown, TXT, JSON, SRT, DOCX ou PDF ; audio en FLAC, WAV ou M4A.
+- **Exports riches** — transcriptions et notes en Markdown, TXT, JSON, SRT, DOCX ou PDF ; audio en WAV.
 - **Notes verifiables** — ecrivez en texte enrichi ou Markdown et acceptez seulement les suggestions IA utiles.
 - **Bibliotheque et espaces de travail** — recherchez titres, transcriptions, intervenants et etiquettes ; classez les reunions dans des espaces et restaurez celles supprimees pendant 30 jours.
 - **Vue concentree** — themes clair et sombre, edition en ligne des transcriptions et resumes, et fenetre optionnelle de sous-titres flottants gardent l'ecran de reunion epure.

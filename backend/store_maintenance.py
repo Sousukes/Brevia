@@ -2,6 +2,9 @@
 
 import json
 import shutil
+from itertools import groupby
+
+from .transcript import latest_segments
 
 
 def _is_file(path):
@@ -63,26 +66,22 @@ class MaintenanceStoreMixin:
             value["meeting_duration_ms"] = db.execute(
                 "SELECT COALESCE(SUM(duration_ms),0) AS total FROM meetings WHERE deleted_at IS NULL"
             ).fetchone()["total"]
-            # 同一场会议的精修段落（postprocess）会与实时段落（live）同时留存；
-            # 直接 COUNT(*) 会把两者相加、指标虚高一倍。这里在有精修版本时排除 live，
-            # 与展示/导出所用的 latest_segments「精修覆盖实时」保持一致。
-            value["subtitle_count"] = db.execute(
-                "SELECT COUNT(*) AS total FROM segments s "
-                "WHERE s.version != 'live' OR NOT EXISTS ("
-                "  SELECT 1 FROM segments r WHERE r.meeting_id = s.meeting_id "
-                "  AND r.version LIKE 'postprocess%')"
-            ).fetchone()["total"]
-            value["subtitle_lines"] = db.execute(
-                "SELECT COALESCE(SUM(LENGTH(text)-LENGTH(REPLACE(text, char(10),''))+1),0) AS total "
-                "FROM segments s "
-                "WHERE s.version != 'live' OR NOT EXISTS ("
-                "  SELECT 1 FROM segments r WHERE r.meeting_id = s.meeting_id "
-                "  AND r.version LIKE 'postprocess%')"
-            ).fetchone()["total"]
+            # 与展示、导出共用版本选择；逐场读取，避免累计全部历史稿到内存。
+            rows = db.execute(
+                "SELECT s.meeting_id,s.id,s.version,s.revision,s.start_ms,s.text "
+                "FROM segments s JOIN meetings m ON m.id=s.meeting_id "
+                "WHERE m.deleted_at IS NULL ORDER BY s.meeting_id,s.start_ms"
+            )
+            value["subtitle_count"] = value["subtitle_lines"] = 0
+            for _, segments in groupby(rows, key=lambda row: row["meeting_id"]):
+                current = latest_segments([dict(row) for row in segments])
+                value["subtitle_count"] += len(current)
+                value["subtitle_lines"] += sum(item["text"].count("\n") + 1 for item in current)
             summaries = [
                 row["data"]
                 for row in db.execute(
-                    "SELECT data FROM summaries WHERE data IS NOT NULL"
+                    "SELECT s.data FROM summaries s JOIN meetings m ON m.id=s.meeting_id "
+                    "WHERE s.data IS NOT NULL AND m.deleted_at IS NULL"
                 )
             ]
             value["summary_count"] = len(summaries)

@@ -73,6 +73,8 @@ class AudioStoreMixin:
                 take = min((chunk_samples - in_chunk) * 2, len(data) - offset)
                 name = f"{track}-{chunk_index:05d}.wav"
                 path = self.meeting_dir(meeting_id) / "audio" / name
+                if not path.resolve().is_relative_to(self.meeting_dir(meeting_id).resolve()):
+                    raise ValueError("Invalid audio path")
                 frame = data[offset : offset + take]
                 output = session["writers"].get(name)
                 if output is None:
@@ -97,6 +99,8 @@ class AudioStoreMixin:
                     session["last_checkpoint"] = 0.0
                 state["samples"] += take // 2
                 offset += take
+                if state["samples"] % chunk_samples == 0:
+                    session["writers"].pop(name).close()
 
         target_samples = round(max(0, start_ms) * sample_rate / 1000)
         while state["samples"] < target_samples:

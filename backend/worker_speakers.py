@@ -2,11 +2,12 @@
 
 import re
 
-from .worker_common import require
+from .worker_common import managed_task, require
 
 
 class SpeakerCommandMixin:
-    def assign_segment_speaker(self, payload):
+    @managed_task("segment.speaker", concurrent=True)
+    def assign_segment_speaker(self, payload, control=None):
         """将段落分配给指定说话人，可选是否同时注册声纹。"""
         if self._is_default_speaker_name(payload["name"]):
             return self.store.get_meeting(payload["meeting_id"])
@@ -49,7 +50,8 @@ class SpeakerCommandMixin:
         self.emit("speaker-profile.updated", {"profile": profile})
         return self.store.get_meeting(payload["meeting_id"])
 
-    def add_segment_speaker_profile_sample(self, payload):
+    @managed_task("segment.speaker-profile-sample", concurrent=True)
+    def add_segment_speaker_profile_sample(self, payload, control=None):
         """仅在用户明确选择时，将一段已保存对话加入既有声纹档案。"""
         require(payload, "meeting_id", "segment_id", "profile_id")
         profile = self.store.speaker_profile(payload["profile_id"])
@@ -70,7 +72,8 @@ class SpeakerCommandMixin:
         self.emit("speaker-profile.updated", {"profile": profile})
         return self.store.get_meeting(payload["meeting_id"])
 
-    def rename_speaker(self, payload):
+    @managed_task("speaker.rename", concurrent=True)
+    def rename_speaker(self, payload, control=None):
         """保存会议内名称，并把真人命名实时同步到本地人员库。
 
         人工把说话人命名为真实姓名，是明确的身份意图；即便会议仍在进行、
@@ -106,14 +109,16 @@ class SpeakerCommandMixin:
             )
         )
 
-    def enroll_speaker_profile(self, payload):
+    @managed_task("speaker-profile.enroll", concurrent=True)
+    def enroll_speaker_profile(self, payload, control=None):
         """从用户选定的单人语音录音注册或补充本地人员声纹。"""
         require(payload, "name", "path")
         result = self.voice_profiles.enroll(payload)
         self.emit("speaker-profile.updated", {"profile": result})
         return result
 
-    def verify_speaker_profile(self, payload):
+    @managed_task("speaker-profile.verify", concurrent=True)
+    def verify_speaker_profile(self, payload, control=None):
         """验证一段临时选择的音频是否匹配指定本地声纹。"""
         require(payload, "profile_id", "path")
         return self.voice_profiles.verify(payload)

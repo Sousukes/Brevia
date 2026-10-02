@@ -2,6 +2,8 @@
 
 import threading
 from functools import wraps
+from contextlib import contextmanager
+from uuid import uuid4
 
 
 SCHEMA_VERSION = 1
@@ -107,6 +109,14 @@ def default_refined_model_for_language(models, language, is_ready=None):
     return (installed or declared)["id"]
 
 
+class UserFacingError(ValueError):
+    """稳定错误码用于本地化；原始消息仅用于日志与诊断。"""
+
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.code = code
+
+
 class ModelNotInstalled(RuntimeError):
     """模型文件不在本地（或缺失必要文件）。
 
@@ -168,20 +178,15 @@ def synchronized_recording(method):
     return synchronized
 
 
-def managed_task(task):
+def managed_task(task, concurrent=False):
     """注册一个长时运行任务，并在完成后始终释放其注册记录。"""
 
     def decorate(method):
         @wraps(method)
         def managed(self, payload, *args, **kwargs):
             meeting_id = payload.get("meeting_id")
-            if not meeting_id:
-                return method(self, payload, *args, **kwargs)
-            control = self.tasks.begin(task, meeting_id)
-            try:
+            with self.tasks.running(task, meeting_id, concurrent=concurrent) as control:
                 return method(self, payload, control, *args, **kwargs)
-            finally:
-                self.tasks.finish(task, meeting_id, control)
 
         return managed
 
@@ -219,6 +224,17 @@ class TaskRegistry:
         self._controls = {}
         self._lock = threading.Lock()
 
+    @contextmanager
+    def running(self, task, meeting_id, concurrent=False):
+        """方法装饰器与导入创建流程共用任务生命周期。"""
+        if concurrent:
+            task = f"{task}:{uuid4()}"
+        control = self.begin(task, meeting_id)
+        try:
+            yield control
+        finally:
+            self.finish(task, meeting_id, control)
+
     def begin(self, task, meeting_id):
         """启动任务并返回其暂停控制事件；已运行时抛出异常。"""
         key = (task, meeting_id)
@@ -226,9 +242,9 @@ class TaskRegistry:
             if task == "summary.generate" and any(
                 running_task == task for running_task, _meeting_id in self._controls
             ):
-                raise ValueError("A meeting summary is already running")
+                raise UserFacingError("error.tasks.running", "A meeting summary is already running")
             if key in self._controls:
-                raise ValueError("Task is already running")
+                raise UserFacingError("error.tasks.running", "Task is already running")
             control = TaskControl()
             self._controls[key] = control
             return control

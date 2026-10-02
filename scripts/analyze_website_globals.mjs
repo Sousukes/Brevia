@@ -6,9 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', 'website');
-const files = ['demo-engine.js', 'demo-timeline.js', 'demo-scenarios-v3-part1.js',
-  'demo-scenarios-v3-part2.js', 'demo-main.js', 'demo-single.js', 'demo-home.js',
-  'demo-ai-assist.js', 'site-header.js'];
+const files = fs.readdirSync(ROOT).filter((file) => file.endsWith('.js'));
 
 const decls = new Map();
 const body = new Map();

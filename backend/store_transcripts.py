@@ -123,7 +123,7 @@ class TranscriptStoreMixin:
         revision = max((row["revision"] for row in rows), default=-1) + 1
         return ("postprocess" if revision == 0 else f"postprocess-{revision}", revision)
 
-    def replace_segments(self, meeting_id, segments, version="postprocess", revision=0):
+    def replace_segments(self, meeting_id, segments, version="postprocess", revision=0, *, model_id=None, language=None):
         """原子替换一次精修生成的全部段落，保留用户编辑版本。"""
         with self.connect() as db:
             segment_ids = set()
@@ -156,6 +156,11 @@ class TranscriptStoreMixin:
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                 [_segment_row(item) for item in normalized],
             )
+            if model_id is not None:
+                db.execute(
+                    "UPDATE meetings SET transcript_model_id=?, refined_model_id=?, language=?, status='refined' WHERE id=?",
+                    (model_id, model_id, language, meeting_id),
+                )
         return normalized
 
     def save_translation(self, meeting_id, segment_id, translation):

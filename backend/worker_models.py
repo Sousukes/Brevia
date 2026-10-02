@@ -6,7 +6,7 @@ import time
 from .asr import (
     DownloadCancelled,
 )
-from .worker_common import TaskCancelled, model_supports_language, require
+from .worker_common import TaskCancelled, require
 
 
 class ModelTaskWorkerMixin:
@@ -56,38 +56,6 @@ class ModelTaskWorkerMixin:
             download["cancelled"].set()
             download["paused"].clear()
         return {"model_id": model_id, "status": "cancelling"}
-
-    def converge_refined_models(self):
-        """把全库会议引用的失效识别模型一次性收敛到当前可用模型。
-
-        会议的 ``refined_model_id`` 可能指向已退役、已从清单移除、或带不动该会议语言的模型
-        （升级、模型下架、清单调整都会造成）。这类 id 在加载时必然失败，而修复以前散在
-        ``resume`` / ``reconfigure`` / ``refine`` 三条运行路径里各自处理——漏掉任何一条，
-        用户就会在"某条路径"上撞到加载失败，且现场已经来不及补救。
-
-        这里在启动维护里统一做一次；运行路径上的 ``_repair_refined_model`` 仍然保留，负责
-        处理"启动之后才失效"的情况（例如会话进行中用户删了模型文件）。
-
-        Returns:
-            被改写的会议 id 列表（便于日志与维护事件上报）。
-        """
-        repaired = []
-        for meeting_id, language, model_id in self.store.list_refined_model_assignments():
-            model = self.models.get(model_id) if model_id and self.models.is_known(model_id) else None
-            usable = (
-                model is not None
-                and not model.get("retired")
-                and "refined" in model.get("stages", [])
-                and model_supports_language(model, language)
-            )
-            if usable:
-                continue
-            replacement = self._default_refined_model(language)
-            if replacement == model_id:
-                continue
-            self.store.update_meeting(meeting_id, {"refined_model_id": replacement})
-            repaired.append(meeting_id)
-        return repaired
 
     def wait_task(self, control):
         """等待任务控制事件解除暂停。"""
@@ -164,5 +132,7 @@ class ModelTaskWorkerMixin:
             == payload["model_id"]
         ):
             raise ValueError("Cannot delete the model used by the active meeting")
+        if self.tasks.has_any() or payload["model_id"] in self.model_downloads:
+            raise ValueError("Wait for background tasks to finish before deleting models")
         self.models.delete(payload["model_id"])
         return {"model_id": payload["model_id"], "deleted": True}

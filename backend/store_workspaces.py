@@ -73,18 +73,17 @@ class WorkspaceStoreMixin:
                     "UPDATE workspaces SET deleted_at = NULL, updated_at = ? WHERE id = ?",
                     (now, existing["id"]),
                 )
-                return self.get_workspace(existing["id"])
-
-            max_pos = db.execute(
-                "SELECT MAX(position) as max_pos FROM workspaces"
-            ).fetchone()
-            position = (max_pos["max_pos"] or -1) + 1
-            workspace_id = str(uuid4())
-            db.execute(
-                """INSERT INTO workspaces (id, name, description, position, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (workspace_id, name, description, position, now, now),
-            )
+                workspace_id = existing["id"]
+            else:
+                position = db.execute(
+                    "SELECT COALESCE(MAX(position), -1) + 1 FROM workspaces"
+                ).fetchone()[0]
+                workspace_id = str(uuid4())
+                db.execute(
+                    """INSERT INTO workspaces (id, name, description, position, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (workspace_id, name, description, position, now, now),
+                )
 
         return self.get_workspace(workspace_id)
 
@@ -156,7 +155,7 @@ class WorkspaceStoreMixin:
                 raise ValueError(f"Workspace '{workspace_id}' not found")
 
             db.execute(
-                "UPDATE meetings SET deleted_at = ?, previous_workspace_id = workspace_id, workspace_id = NULL "
+                "UPDATE meetings SET deleted_at = ?, previous_workspace_id = workspace_id "
                 "WHERE workspace_id = ? AND deleted_at IS NULL",
                 (utc_now(), workspace_id),
             )

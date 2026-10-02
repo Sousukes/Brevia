@@ -2,6 +2,7 @@
 // 避免重复 addModule(重复调用虽无害但会产生冗余的网络/解析开销)。
 const workletContexts = new WeakMap();
 const stoppedMediaTracks = new WeakSet();
+const maximumQueuedAudioSamples = 16000 * 15;
 async function loadAudioWorklet(context) {
   if (workletContexts.get(context)) return;
   await context.audioWorklet.addModule('./audio-processor.js');
@@ -37,9 +38,10 @@ function describeMicError(error) {
 }
 
 class AudioCapture {
-  constructor(send, onLevel) {
+  constructor(send, onLevel, onError = null) {
     this.send = send;
     this.onLevel = onLevel;
+    this.onError = onError;
     this.pendingStreams = [];
     this.sources = [];
     this.preview = null;
@@ -220,16 +222,42 @@ class AudioCapture {
   }
 
   enqueue(resource, pcm, startMs) {
-    if (!pcm.length) return;
-    const send = async () => {
-      const bytes = new Uint8Array(pcm.buffer);
-      let binary = '';
-      for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-      try {
-        await this.send({ meeting_id: this.meetingId, track: resource.track, pcm: btoa(binary), sample_rate: 16000, start_ms: startMs });
-      } catch (error) { console.error('Audio frame failed', error); }
-    };
-    resource.inFlight = resource.inFlight ? resource.inFlight.then(send) : send();
+    if (!pcm.length || this.failure) return;
+    resource.pendingPcm ||= [];
+    resource.pendingSamples ||= 0;
+    if (!resource.pendingPcm.length) resource.pendingStartMs = startMs;
+    resource.pendingPcm.push(pcm);
+    resource.pendingSamples += pcm.length;
+    if (resource.pendingSamples > maximumQueuedAudioSamples) this.fail(new Error('error.audio_backpressure'));
+    if (resource.inFlight) return;
+    // 每轨只保留一个请求；积压帧合并成下一批，避免无限 Promise 链。
+    resource.inFlight = (async () => {
+      while (resource.pendingPcm.length) {
+        const batch = new Int16Array(resource.pendingSamples);
+        let offset = 0;
+        for (const frame of resource.pendingPcm) { batch.set(frame, offset); offset += frame.length; }
+        const batchStart = resource.pendingStartMs;
+        resource.pendingPcm = [];
+        resource.pendingSamples = 0;
+        const bytes = new Uint8Array(batch.buffer);
+        let binary = '';
+        for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+        await this.send({ meeting_id: this.meetingId, track: resource.track, pcm: btoa(binary), sample_rate: 16000, start_ms: batchStart });
+      }
+    })().catch((error) => {
+      resource.pendingPcm = [];
+      resource.pendingSamples = 0;
+      this.fail(error);
+    }).finally(() => { resource.inFlight = null; });
+  }
+
+  fail(error) {
+    if (this.failure) return;
+    this.failure = error;
+    this.stopping = true;
+    for (const { stream } of this.sources) stopMediaStream(stream);
+    console.error('Audio capture failed', error);
+    this.onError?.(error);
   }
 
   flush(resource) {
@@ -309,11 +337,11 @@ class AudioCapture {
       this.sources = [];
       await Promise.allSettled(sources.map((resource) => this.flush(resource)));
       this.stopping = true;
-      await Promise.allSettled(sources.map(({ pending }) => pending()));
       await Promise.all([
         ...pendingStreams.map(({ stream }) => this.release({ stream })),
         ...[preview, ...sources].filter(Boolean).map((resource) => this.release(resource)),
       ]);
+      await Promise.allSettled(sources.map(({ pending }) => pending()));
     })();
     return this.stopPromise;
   }
@@ -324,6 +352,7 @@ window.breviaClient = window.brevia ? {
   capture: null,
   preview: null,
   onLevel: null,
+  onCaptureError: null,
   micDeviceId: '',
   // 设置要使用的麦克风设备(空串表示系统默认)。同时应用到现有与后续创建的采集实例。
   setMicDevice(deviceId) {
@@ -349,7 +378,7 @@ window.breviaClient = window.brevia ? {
   },
   async start(payload, inputs, micDeviceId) {
     await this.stopPreview();
-    this.capture = new AudioCapture(window.brevia.meeting.audio, this.onLevel);
+    this.capture = new AudioCapture(window.brevia.meeting.audio, this.onLevel, (error) => this.onCaptureError?.(error));
     this.capture.micDeviceId = micDeviceId ?? this.micDeviceId;
     let meeting;
     try {
@@ -416,11 +445,12 @@ window.breviaClient = window.brevia ? {
       console.error('Audio capture cleanup failed', error);
     }
     try {
-      return await window.brevia.meeting.stop({ meeting_id: meetingId, duration_ms: durationMs });
-    } finally {
-      this.capture = null;
+      const meeting = await window.brevia.meeting.stop({ meeting_id: meetingId, duration_ms: durationMs });
       this.state.meeting = null;
       this.state.inputs = null;
+      return meeting;
+    } finally {
+      this.capture = null;
     }
   },
 } : null;
