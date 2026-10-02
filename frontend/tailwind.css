@@ -586,7 +586,20 @@ html[data-theme="dark"] .notes-find-pop{border-color: #454545; }
   #settings-view .settings-folder-row { @apply col-span-12 flex min-w-0 items-center justify-between gap-4 border border-[#e6e2d8] px-4 py-3; }
   .update-card { @apply col-span-12 flex items-center justify-between gap-6 border border-black p-4; }.update-card h2 { @apply m-0 text-[20px] leading-6 font-normal tracking-[-.03em]; }.update-card p { @apply mt-1 text-[12px] leading-5 text-[#6b655f]; }.update-button { @apply shrink-0 border border-black bg-black px-4 py-2 text-[12px] text-white transition-opacity duration-300 hover:opacity-70 disabled:cursor-wait disabled:opacity-50; }.update-actions { @apply flex shrink-0 items-center; gap: clamp(.375rem, 1.2vw, 1rem); }.update-notes { @apply shrink-0 text-[12px] text-[#4d4944] transition-opacity duration-300 hover:opacity-70; }
   /* 更新日志弹窗 */
-  .whatsnew-list { @apply grid gap-6; }.whatsnew-entry { @apply border-b border-[#e6e2d8] pb-6 last:border-0 last:pb-0; }.whatsnew-entry > header { @apply flex items-baseline justify-between gap-4; }.whatsnew-entry h3 { @apply m-0 text-[16px] font-normal tracking-[-.02em]; }.whatsnew-entry h3 em { @apply ml-2 border border-black px-1.5 py-0.5 text-[10px] font-normal not-italic text-black; }.whatsnew-entry time { @apply shrink-0 text-[11px] text-[#8b857e]; }.whatsnew-entry section { @apply mt-4 grid grid-cols-[auto_1fr] gap-x-6; }.whatsnew-entry h4 { @apply m-0 text-[11px] font-normal uppercase tracking-[.1em] text-[#8b857e]; }.whatsnew-entry ul { @apply m-0 grid content-start gap-1.5 p-0 text-[13px] leading-6 text-[#4d4944]; }.whatsnew-entry li { @apply list-none pl-4; position: relative; }.whatsnew-entry li::before { @apply absolute left-0 top-[.65em] size-1 rounded-full bg-[#8b857e]; content: ''; }.whatsnew-empty { @apply m-0 text-[13px] text-[#8b857e]; }
+  .whatsnew-list { @apply grid gap-6; }
+  .whatsnew-entry { @apply border-b pb-6 last:border-0 last:pb-0; border-color: var(--color-text-faint); }
+  .whatsnew-heading { @apply inline-flex w-full flex-wrap items-baseline justify-between gap-3; }
+  .whatsnew-entry > summary { cursor: pointer; }
+  .whatsnew-entry h3 { @apply m-0 text-[16px] font-medium tracking-[-.02em]; color: var(--color-text); }
+  .whatsnew-entry h3 em { @apply ml-2 border px-1.5 py-0.5 text-[10px] font-normal not-italic; color: var(--color-text-muted); }
+  .whatsnew-entry time { @apply shrink-0 text-[11px]; color: var(--color-text-muted); }
+  .whatsnew-entry section { @apply mt-5 grid gap-2; }
+  .whatsnew-entry h4 { @apply m-0 text-[12px] font-medium; color: var(--color-text); }
+  .whatsnew-entry ul { @apply m-0 grid content-start gap-2 pl-4 text-[13px] leading-6; color: var(--color-text-body); }
+  .whatsnew-entry li { list-style: disc; overflow-wrap: anywhere; }
+  .whatsnew-entry a { color: var(--color-link); text-decoration: underline; text-underline-offset: 3px; }
+  .whatsnew-entry footer { @apply mt-5 text-[12px]; }
+  .whatsnew-summary, .whatsnew-empty { @apply my-3 text-[13px] leading-6; color: var(--color-text-muted); }
   dialog.storage-migration-dialog { margin: auto; width: min(480px, calc(100vw - 48px)); }
   .storage-migration-dialog::backdrop { background: rgb(0 0 0 / .3); }
   .storage-migration-dialog h2 { margin: 0; font-size: 18px; font-weight: 500; }
@@ -1006,8 +1019,7 @@ html[data-theme="dark"] .ai-suggestion-type, html[data-theme="dark"] .ai-suggest
 html[data-theme="dark"] .ai-suggestion-accept { color: #f1eee8; }
 html[data-theme="dark"] .ai-suggestion-ignore:hover, html[data-theme="dark"] .ai-topic-divider:hover, html[data-theme="dark"] .ai-suggestion-badge:hover { color: #fff; }
 html[data-theme="dark"] .status { color: #ddd; }
-html[data-theme="dark"] .update-card { border-color: #eee; } html[data-theme="dark"] .update-card h2 { color: #fff; } html[data-theme="dark"] .update-card p { color: #a6a19a; } html[data-theme="dark"] .update-button { border-color: #fff; background: #fff; color: #262626; } html[data-theme="dark"] .update-notes { border-color: #fff; color: #ddd; } html[data-theme="dark"] .whatsnew-entry { border-color: #454545; } html[data-theme="dark"] .whatsnew-entry h3, html[data-theme="dark"] .whatsnew-entry h3 em { color: #fff; } html[data-theme="dark"] .whatsnew-entry h3 em { border-color: #eee; } html[data-theme="dark"] .whatsnew-entry time, html[data-theme="dark"] .whatsnew-entry h4, html[data-theme="dark"] .whatsnew-empty { color: #a6a19a; } html[data-theme="dark"] .whatsnew-entry ul { color: #ddd; } html[data-theme="dark"] .whatsnew-entry li::before { background: #a6a19a; }
-html[data-theme="dark"] .model-library-size, html[data-theme="dark"] .model-library-readonly, html[data-theme="dark"] .model-library-total { color: #8b857e; }
+html[data-theme="dark"] .update-card { border-color: #eee; } html[data-theme="dark"] .update-card h2 { color: #fff; } html[data-theme="dark"] .update-card p { color: #a6a19a; } html[data-theme="dark"] .update-button { border-color: #fff; background: #fff; color: #262626; } html[data-theme="dark"] .update-notes { border-color: #fff; color: #ddd; } html[data-theme="dark"] .model-library-size, html[data-theme="dark"] .model-library-readonly, html[data-theme="dark"] .model-library-total { color: #8b857e; }
 html[data-theme="dark"] .model-library-item > span > p, html[data-theme="dark"] .model-library-tags span{ color: #a6a19a; } html[data-theme="dark"] .model-library-tags span{ border-color: #454545; } html[data-theme="dark"] .model-library-tags .model-library-installed { border-color: #3da866; color: #72c991; }
 html[data-theme="dark"] .model-library-headline, html[data-theme="dark"] .model-library-rating b { color: #fff; }
 /* 模型库 / 首启选型卡片：新增的手写组件类必须有暗色规则（RELEASING.md §3）。

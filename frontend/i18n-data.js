@@ -5768,7 +5768,10 @@ const appCopy = {
       "changes": "其他",
       "date": "日期",
       "current": "当前版本",
-      "empty": "暂无更新日志"
+      "empty": "暂无更新日志",
+      "security": "安全",
+      "contributors": "新贡献者",
+      "fullChangelog": "完整更新记录"
     },
     "en": {
       "title": "What’s new",
@@ -5780,7 +5783,10 @@ const appCopy = {
       "changes": "Other",
       "date": "Date",
       "current": "Current version",
-      "empty": "No changelog yet"
+      "empty": "No changelog yet",
+      "security": "Security",
+      "contributors": "New Contributors",
+      "fullChangelog": "Full Changelog"
     },
     "es": {
       "title": "Novedades",
@@ -5792,7 +5798,10 @@ const appCopy = {
       "changes": "Otros",
       "date": "Fecha",
       "current": "Versión actual",
-      "empty": "Aún no hay historial de cambios"
+      "empty": "Aún no hay historial de cambios",
+      "security": "Seguridad",
+      "contributors": "Nuevos colaboradores",
+      "fullChangelog": "Historial completo"
     },
     "ja": {
       "title": "更新履歴",
@@ -5804,7 +5813,10 @@ const appCopy = {
       "changes": "その他",
       "date": "日付",
       "current": "現在のバージョン",
-      "empty": "更新履歴はまだありません"
+      "empty": "更新履歴はまだありません",
+      "security": "セキュリティ",
+      "contributors": "新しい貢献者",
+      "fullChangelog": "すべての変更"
     },
     "ko": {
       "title": "새로운 기능",
@@ -5816,7 +5828,10 @@ const appCopy = {
       "changes": "기타",
       "date": "날짜",
       "current": "현재 버전",
-      "empty": "아직 업데이트 기록이 없습니다"
+      "empty": "아직 업데이트 기록이 없습니다",
+      "security": "보안",
+      "contributors": "새 기여자",
+      "fullChangelog": "전체 변경 내역"
     },
     "fr": {
       "title": "Nouveautés",
@@ -5828,7 +5843,10 @@ const appCopy = {
       "changes": "Autres",
       "date": "Date",
       "current": "Version actuelle",
-      "empty": "Pas encore de journal des versions"
+      "empty": "Pas encore de journal des versions",
+      "security": "Sécurité",
+      "contributors": "Nouveaux contributeurs",
+      "fullChangelog": "Journal complet"
     },
     "de": {
       "title": "Neuerungen",
@@ -5840,7 +5858,10 @@ const appCopy = {
       "changes": "Sonstiges",
       "date": "Datum",
       "current": "Aktuelle Version",
-      "empty": "Noch kein Änderungsprotokoll"
+      "empty": "Noch kein Änderungsprotokoll",
+      "security": "Sicherheit",
+      "contributors": "Neue Mitwirkende",
+      "fullChangelog": "Vollständiges Änderungsprotokoll"
     },
     "ru": {
       "title": "Что нового",
@@ -5852,7 +5873,10 @@ const appCopy = {
       "changes": "Прочее",
       "date": "Дата",
       "current": "Текущая версия",
-      "empty": "Журнал версий пока пуст"
+      "empty": "Журнал версий пока пуст",
+      "security": "Безопасность",
+      "contributors": "Новые участники",
+      "fullChangelog": "Полный список изменений"
     }
   },
   "voiceFeaturesCopy": {

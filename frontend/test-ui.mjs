@@ -2029,6 +2029,28 @@ assert.match(text(html), /ui-data\.js[\s\S]*ui-components\.js[\s\S]*app\.js/);
 const summaryAppSource = text(app);
 const summaryFn = (name) => { const start = summaryAppSource.indexOf(`function ${name}(`); return summaryAppSource.slice(start, summaryAppSource.indexOf('\n}\n', start) + 2); };
 const summaryConst = (decl, multiline = false) => { const start = summaryAppSource.indexOf(decl); return multiline ? summaryAppSource.slice(start, summaryAppSource.indexOf('\n};', start) + 3) : summaryAppSource.slice(start, summaryAppSource.indexOf('\n', start) + 1); };
+const changelogContext = {
+  locale: 'zh', whatsNewCopy: localeContext.window.BreviaLocaleData.appCopy.whatsNewCopy,
+  escapeHtml: (value) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
+  whatsNewLog: [{ version: '1.2.2', date: '2026-10-02', current: true, previousVersion: '1.2.1',
+    zh: { summary: '中文摘要', what: [{ text: '<新增>', commit: '4b1f51e' }] },
+    en: { summary: 'English summary', what: [{ text: 'New feature', commit: '4b1f51e' }] },
+    contributors: [{ login: 'Sousukes', pr: 4 }] }, { version: '1.2.1', en: { fixed: ['Legacy entry'] } }],
+};
+runInNewContext(summaryFn('renderWhatsNewList'), changelogContext);
+for (const code of ['zh', 'en']) {
+  changelogContext.locale = code;
+  const rendered = changelogContext.renderWhatsNewList();
+  assert.ok(rendered.includes(code === 'zh' ? '中文摘要' : 'English summary'));
+  assert.ok(rendered.includes(`/commit/4b1f51e`));
+  assert.ok(rendered.includes('/compare/v1.2.1...v1.2.2'));
+  assert.ok(rendered.includes(changelogContext.whatsNewCopy[code].contributors));
+  assert.ok(rendered.includes('https://github.com/Sousukes'));
+  assert.ok(rendered.includes('/pull/4'));
+  assert.ok(rendered.includes('<details class="whatsnew-entry"><summary>'));
+  assert.ok(rendered.includes('Legacy entry'));
+  assert.ok(!rendered.includes('<新增>'));
+}
 // 模型库每个模型的长描述必须覆盖全部 8 种界面语言：它只认 `modelLibraryBackground[locale]`，
 // 缺语种会静默回退英文（es 曾长期只有 zh/en）。
 const modelLibraryBackgroundContext = {};

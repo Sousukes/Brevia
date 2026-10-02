@@ -455,6 +455,26 @@ try {
   await client.send('Emulation.setDeviceMetricsOverride', { width: 880, height: 720, deviceScaleFactor: 1, mobile: false });
   const minimumWindow = await client.send('Runtime.evaluate', { expression: `({ activeView, className: document.querySelector('#detail-view').className, display: getComputedStyle(document.querySelector('#detail-view')).display, onboarding: [...document.querySelectorAll('.onboarding-page')].map(page => page.className), shell: getComputedStyle(document.querySelector('.app-shell')).display, parentWidth: document.querySelector('#detail-view').parentElement.getBoundingClientRect().width, width: document.querySelector('#detail-view').getBoundingClientRect().width, sidebar: getComputedStyle(document.querySelector('.app-shell > .sidebar')).display })`, returnByValue: true });
   check(minimumWindow.result?.value?.width > 500 && minimumWindow.result?.value?.sidebar !== 'none', `最小桌面窗口丢失内容或导航：${JSON.stringify(minimumWindow.result?.value)}`);
+  const changelog = await client.send('Runtime.evaluate', { expression: `(async () => {
+    const errors = [];
+    for (const code of ['zh', 'en']) for (const theme of ['light', 'dark']) {
+      applyLanguage(code); applyTheme(theme);
+      await openModal('whats-new');
+      const current = settingsModal.querySelector('.whatsnew-entry.is-current');
+      const body = settingsModal.querySelector('.modal-body');
+      if (!current || !current.textContent.includes(whatsNewLog[0].version)) errors.push(code + ': missing current version');
+      if (body.scrollWidth > body.clientWidth + 1) errors.push(code + '/' + theme + ': horizontal overflow');
+      const history = settingsModal.querySelector('details.whatsnew-entry');
+      if (!history || history.open) errors.push(code + ': history must start collapsed');
+      history.querySelector('summary').click();
+      if (!history.open || !history.querySelector('section')) errors.push(code + ': history cannot be expanded');
+      if (whatsNewLog[0].contributors?.length && !current.textContent.includes(whatsNewCopy[code].contributors)) errors.push(code + ': missing contributors');
+      for (const anchor of current.querySelectorAll('a')) if (!anchor.href.startsWith('https://github.com/') || anchor.target !== '_blank') errors.push('unsafe release link');
+    }
+    closeModal(); applyLanguage('zh'); applyTheme('light');
+    return errors;
+  })()`, awaitPromise: true, returnByValue: true });
+  check(Array.isArray(changelog.result?.value) && changelog.result.value.length === 0, `双语更新日志布局或链接异常：${JSON.stringify(changelog)}`);
   await client.send('Emulation.clearDeviceMetricsOverride');
   check(pageErrors.length === 0, `交互期间渲染异常：${pageErrors.join('\n')}`);
 

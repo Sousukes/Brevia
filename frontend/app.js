@@ -1790,22 +1790,32 @@ function renderWhatsNewModal() {
   settingsModal.querySelector('.modal-close').setAttribute('aria-label', (modalCopy[locale] || modalCopy.en).close);
   settingsModal.querySelector('.modal-body').innerHTML = renderWhatsNewList();
 }
-/** 渲染更新日志列表。@returns {string} 弹窗主体 HTML。 */
+/** 当前版本展开、历史版本折叠；分类条目附提交引用与首次贡献者。 */
 function renderWhatsNewList() {
   const copy = whatsNewCopy[locale] || whatsNewCopy.en;
   if (!whatsNewLog || !whatsNewLog.length) return `<p class="whatsnew-empty">${escapeHtml(copy.empty)}</p>`;
   const localized = (entry) => entry[locale] || entry.en || entry.zh || {};
+  const repository = 'https://github.com/zerolovesea/Brevia';
+  const link = (url, label) => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
   return `<div class="whatsnew-list">${whatsNewLog.map((entry) => {
     const { version, date, current } = entry;
     const content = localized(entry);
-    const sections = [['what', copy.what], ['fixed', copy.fixed], ['improved', copy.improved], ['changes', copy.changes]]
+    const sections = [['what', copy.what], ['improved', copy.improved], ['fixed', copy.fixed], ['security', copy.security], ['changes', copy.changes]]
       .map(([key, label]) => {
         const items = content[key];
         if (!items || !items.length) return '';
-        return `<section><h4>${escapeHtml(label)}</h4><ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section>`;
+        return `<section><h4>${escapeHtml(label)}</h4><ul>${items.map((item) => {
+          const text = typeof item === 'string' ? item : item.text;
+          const reference = /^[a-f0-9]{7,40}$/.test(item.commit || '') ? ` ${link(`${repository}/commit/${item.commit}`, item.commit.slice(0, 7))}` : '';
+          return `<li>${escapeHtml(text)}${reference}</li>`;
+        }).join('')}</ul></section>`;
       })
       .join('');
-    return `<article class="whatsnew-entry${current ? ' is-current' : ''}"><header><h3>v${escapeHtml(version)}${current ? `<em>${escapeHtml(copy.current)}</em>` : ''}</h3>${date ? `<time>${escapeHtml(date)}</time>` : ''}</header>${sections}</article>`;
+    const contributors = entry.contributors?.length ? `<section><h4>${escapeHtml(copy.contributors)}</h4><ul>${entry.contributors.map(({ login, pr }) => `<li>${link(`https://github.com/${encodeURIComponent(login)}`, `@${login}`)} · ${link(`${repository}/pull/${pr}`, `#${pr}`)}</li>`).join('')}</ul></section>` : '';
+    const footer = entry.previousVersion ? `<footer>${link(`${repository}/compare/v${entry.previousVersion}...v${version}`, copy.fullChangelog)}</footer>` : '';
+    const heading = `<div class="whatsnew-heading"><h3>v${escapeHtml(version)}${current ? `<em>${escapeHtml(copy.current)}</em>` : ''}</h3>${date ? `<time datetime="${escapeHtml(date)}">${escapeHtml(date)}</time>` : ''}</div>`;
+    const body = `${content.summary ? `<p class="whatsnew-summary">${escapeHtml(content.summary)}</p>` : ''}${sections}${contributors}${footer}`;
+    return current ? `<article class="whatsnew-entry is-current"><header>${heading}</header>${body}</article>` : `<details class="whatsnew-entry"><summary>${heading}</summary>${body}</details>`;
   }).join('')}</div>`;
 }
 /** 显示设置模态框并播放进入动画；可选聚焦内部元素。@param {string} [focusSelector] 打开后聚焦的模态框内元素。@returns {void} */
