@@ -4931,7 +4931,8 @@ class WorkerTest(unittest.TestCase):
         store.save_speaker_profile_sample("Speaker", [1., 0.], "sample", profile["id"], str(audio), 100)
         with store.connect() as db:
             self.assertEqual(db.execute("SELECT audio_path FROM speaker_profile_samples").fetchone()[0], "sample.wav")
-            db.execute("UPDATE speaker_profile_samples SET audio_path=?", (str(Path("/previous/data/speaker-profiles") / profile["id"] / audio.name),))
+            previous = store.root.parent / "previous" / "data" / "speaker-profiles" / profile["id"] / audio.name
+            db.execute("UPDATE speaker_profile_samples SET audio_path=?", (str(previous),))
         sample = store.list_speaker_profile_samples(profile["id"])[0]
         self.assertEqual(sample["audio_path"], str(audio))
         # 同一文件从旧绝对路径转存为相对路径时不能被当作旧样本删掉。
