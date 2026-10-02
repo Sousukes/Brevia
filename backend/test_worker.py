@@ -890,6 +890,18 @@ class WorkerTest(unittest.TestCase):
         finally:
             stalled.shutdown()
 
+    def test_sidecar_close_releases_stdout_when_stdin_flush_fails(self):
+        sidecar = _Sidecar(["sidecar"], Mock())
+        child = Mock()
+        child.poll.return_value = 0
+        child.stdin.close.side_effect = BrokenPipeError("pipe already closed")
+        sidecar.process = child
+        sidecar._close(child)
+        self.assertIsNone(sidecar.process)
+        child.wait.assert_called_once_with(timeout=5)
+        child.stdin.close.assert_called_once()
+        child.stdout.close.assert_called_once()
+
     def test_sidecar_protocol_failure_and_cancellation_reap_real_processes(self):
         for reply in ('invalid-json', '[]'):
             sidecar = _Sidecar([sys.executable, '-u', '-c',

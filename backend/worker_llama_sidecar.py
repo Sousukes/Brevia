@@ -69,7 +69,11 @@ class _Sidecar:
         finally:
             for stream in (process.stdin, process.stdout):
                 if stream:
-                    stream.close()
+                    try:
+                        stream.close()
+                    except OSError:
+                        # stdin.close 可能刷新已断开的管道；仍须继续关闭 stdout。
+                        pass
 
     def _ensure(self):
         """确保 sidecar 进程正在运行；失败时返回 None。"""
