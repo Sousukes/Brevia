@@ -9038,6 +9038,10 @@ const whatsNewLog = [
         {
           "text": "为 IPC 请求设置有限超时并加强输入校验，避免后端无响应时操作无限等待。",
           "commit": "45adfaf"
+        },
+        {
+          "text": "修复取消 AI 推理时关闭已断开管道可能抛出异常的问题，确保子进程和两端管道均被回收。",
+          "commit": "8f6e4592dff69c9b74009a2f6def393b6d489481"
         }
       ],
       "security": [
@@ -9103,6 +9107,10 @@ const whatsNewLog = [
         {
           "text": "Added finite IPC deadlines and stronger input validation to prevent operations from waiting indefinitely on an unresponsive worker.",
           "commit": "45adfaf"
+        },
+        {
+          "text": "Fixed a broken-pipe race when cancelling AI inference, ensuring the child process and both pipes are released.",
+          "commit": "8f6e4592dff69c9b74009a2f6def393b6d489481"
         }
       ],
       "security": [
