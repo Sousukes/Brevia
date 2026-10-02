@@ -364,7 +364,7 @@ for (const [save, load, file, value] of [
   await assert.rejects(save({ ...value, provider: 'removed-provider' }));
   assert.deepEqual(JSON.parse(await readFile(file, 'utf8')), value, 'invalid saves preserve the previous config');
   await Promise.all(Array.from({ length: 8 }, (_, i) => save({ ...value, enabled: Boolean(i % 2) })));
-  assert.equal(typeof (await load()).enabled, 'boolean', 'concurrent saves leave a complete config');
+  assert.equal((await load()).enabled, true, 'concurrent saves preserve the last requested config');
 }
 await rm(configDir, { recursive: true, force: true });
 
@@ -453,7 +453,29 @@ try {
   await migrateLegacyData(source, target);
   const config = path.join(target, 'config.json');
   await Promise.all(Array.from({ length: 12 }, (_, number) => writeAtomicFile(config, JSON.stringify({ number }))));
-  assert.ok(Number.isInteger(JSON.parse(await readFile(config, 'utf8')).number));
+  assert.equal(JSON.parse(await readFile(config, 'utf8')).number, 11);
+  // Emulate Windows rejecting concurrent replacements; a failed save must not poison the queue.
+  const atomicModule = { exports: {} };
+  let replacing = false, failNext = true;
+  runInNewContext(await readFile(new URL('./main-logic.js', import.meta.url), 'utf8'), {
+    module: atomicModule,
+    require: (name) => name === 'node:fs/promises' ? { ...fsPromises, rename: async (from, to) => {
+      assert.equal(replacing, false, 'replacements of one target cannot overlap');
+      replacing = true;
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        if (failNext) { failNext = false; throw new Error('locked'); }
+        return await fsPromises.rename(from, to);
+      } finally { replacing = false; }
+    } } : require(name),
+  });
+  const saves = Array.from({ length: 8 }, (_, number) => atomicModule.exports.writeAtomicFile(config, JSON.stringify({ number })));
+  const outcomes = await Promise.allSettled(saves);
+  assert.equal(outcomes[0].status, 'rejected');
+  assert.match(outcomes[0].reason.message, /locked/);
+  assert.ok(outcomes.slice(1).every((result) => result.status === 'fulfilled'));
+  assert.equal(JSON.parse(await readFile(config, 'utf8')).number, 7);
+  assert.equal((await fsPromises.readdir(target)).some((name) => name.endsWith('.tmp')), false);
   for (const value of ['null', '{broken', '{"current":"../escape"}', '{"cleanup":42}']) {
     const location = path.join(target, 'models-location.json');
     await writeFile(location, value);

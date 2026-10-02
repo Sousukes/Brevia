@@ -6,15 +6,26 @@ const { pathToFileURL } = require('node:url');
 
 const modelscopeUpdateFeed = Object.freeze({ provider: 'generic', url: 'https://modelscope.cn/models/zyaztec/brevia-release/resolve/master' });
 
+const pendingFileWrites = new Map();
+
 async function writeAtomicFile(target, value) {
-  await mkdir(path.dirname(target), { recursive: true });
-  const temporary = `${target}.${randomUUID()}.tmp`;
-  try {
-    const file = await open(temporary, 'wx', 0o600);
-    try { await file.writeFile(value, 'utf8'); await file.sync(); }
-    finally { await file.close(); }
-    await rename(temporary, target);
-  } finally { await rm(temporary, { force: true }); }
+  target = path.resolve(target);
+  const previous = pendingFileWrites.get(target);
+  const writing = (async () => {
+    // Serialize replacements of the same file, preserving save order on Windows too.
+    await previous?.catch(() => {});
+    await mkdir(path.dirname(target), { recursive: true });
+    const temporary = `${target}.${randomUUID()}.tmp`;
+    try {
+      const file = await open(temporary, 'wx', 0o600);
+      try { await file.writeFile(value, 'utf8'); await file.sync(); }
+      finally { await file.close(); }
+      await rename(temporary, target);
+    } finally { await rm(temporary, { force: true }); }
+  })();
+  pendingFileWrites.set(target, writing);
+  try { await writing; }
+  finally { if (pendingFileWrites.get(target) === writing) pendingFileWrites.delete(target); }
 }
 
 async function migrateLegacyData(source, target) {
