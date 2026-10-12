@@ -1,0 +1,184 @@
+[
+  {
+    "name": "desktop-library",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-prepare",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-import",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-settings",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-models",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-advanced",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-storage",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-voiceprints",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-phone",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-workspace-create",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-confirmation",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-tasks",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-task-paused",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-task-minimized",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-live",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-live-dark",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-detail",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-export",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-language",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-onboarding-models",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-onboarding-ai",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-onboarding-ai-config",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-onboarding-phone",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-onboarding-pairing",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-onboarding-permissions",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  },
+  {
+    "name": "desktop-tour",
+    "width": 1440,
+    "height": 900,
+    "overflow": false,
+    "font": "-apple-system, \"SF Pro Text\", \"Helvetica Neue\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif"
+  }
+]
