@@ -30,6 +30,7 @@
   --color-recording: #ff0000;
   --color-recording-border: #e05252; /* 边框色需满足非文本 3.0 对比（原 #ff8a8a 仅 2.17） */
   --color-surface: #fff;
+  --color-overlay: #fff;
   --color-navigation: #fafafa;
   --color-line: #eaeaea;
   --color-selected: #f2f2f2;
@@ -40,7 +41,7 @@
   --color-text-muted: #666666; /* 次要文字：说明、标签、发言人 */
   --color-text-subtle: #767676; /* 三级文字：占位、更多操作 */
   --color-text-body: #444444; /* 长文本正文：建议、引导条目 */
-  --color-text-strong: #000; /* 强调文字：标题 */
+  --color-text-strong: #222222; /* 强调文字：标题 */
   --color-text-inverse: #fff; /* 反相文字：填充按钮上的字 */
   --color-text-faint: #767676; /* 极弱文字：引导页序号 */
 }
@@ -64,7 +65,8 @@
   }
   button,
   input,
-  select {
+  select,
+  textarea {
     font: inherit;
   }
   button {
@@ -1340,9 +1342,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 3px 7px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 6px;
     color: var(--color-text-muted);
-    font-size: 12px;
+    font-size: 16px;
     line-height: 1;
     transition: color 0.3s ease;
   }
@@ -1350,8 +1354,8 @@
     color: var(--color-text);
   }
   .notes-toolbar button svg {
-    width: 14px;
-    height: 14px;
+    width: 20px;
+    height: 20px;
     display: block;
   }
   .notes-toolbar button b,
@@ -2445,7 +2449,7 @@
     @apply mb-4 max-w-xl text-[12px] leading-6 text-[#767676];
   }
   .refined-fulltext-body {
-    @apply whitespace-pre-wrap text-[15px] leading-7 text-[#222222];
+    @apply whitespace-pre-wrap text-[18px] leading-[1.65] text-(--color-text);
   }
   #detail-view .player {
     @apply gap-5;
@@ -4464,11 +4468,14 @@ html[data-theme="dark"] .language-options button[aria-current="true"] {
   color: #fff;
 }
 html[data-theme="dark"] .primary-action,
-html[data-theme="dark"] .new-meeting,
 html[data-theme="dark"] .play {
   border-color: #fff;
   background: #fff;
   color: #191919;
+}
+html[data-theme="dark"] .new-meeting {
+  background: transparent;
+  color: var(--color-text);
 }
 html[data-theme="dark"] .import-recording {
   border-color: #333333;
@@ -5480,15 +5487,16 @@ html[data-theme="dark"] {
   --color-success-border: #3da866;
   --color-recording: #ff6b6b;
   --color-recording-border: #ff5d5d;
-  --color-surface: #242424;
+  --color-surface: #191919;
+  --color-overlay: #242424;
   --color-navigation: #151515;
   --color-line: #333333;
   --color-selected: #303030;
-  --color-text: #fff;
+  --color-text: #f2f2f2;
   --color-text-muted: #b0b0b0;
   --color-text-subtle: #b0b0b0;
   --color-text-body: #d6d6d6;
-  --color-text-strong: #fff;
+  --color-text-strong: #f2f2f2;
   --color-text-inverse: #191919;
   --color-text-faint: #b0b0b0;
 }

@@ -97,7 +97,7 @@ function renderWorkspaceNav() {
   allMeetingsNav.setAttribute('aria-controls', workspaceContainer.id);
 
   workspaceContainer.innerHTML = `
-    <div class="workspace-subnav-content">
+    <div class="workspace-subnav-content"><h3>${t('工作区')}</h3>
       ${workspaceSubItems}
       <button class="new-workspace" data-new-workspace>
         ${interfaceIcon('plus')} ${t('新建工作区')}
@@ -191,18 +191,18 @@ document.addEventListener('drop', async (event) => {
 function updateHomeViewTitle() {
   const eyebrow = document.querySelector('#home-eyebrow');
   const slogan = document.querySelector('#home-slogan');
-
-  if (activeWorkspaceId === '') {
-    if (eyebrow) eyebrow.textContent = t('会议库');
-    if (slogan) slogan.textContent = t('每一场对话，都留有依据。');
-  } else {
-    const workspace = workspaces.find((w) => w.id === activeWorkspaceId);
-    if (workspace) {
-      if (eyebrow) eyebrow.textContent = `${t('会议库')} · ${workspace.name}`;
-      if (slogan) slogan.textContent = workspace.description || t('工作区会议');
-    }
-  }
+  const workspace = workspaces.find((item) => item.id === activeWorkspaceId);
+  const deleted = activeLibraryNav === 'recently-deleted';
+  if (eyebrow) eyebrow.textContent = deleted ? t('最近删除') : workspace?.name || t('会议库');
+  if (slogan)
+    slogan.textContent = deleted
+      ? BreviaI18n.trashCopy(locale).slogan
+      : workspace?.description || t('所有对话，清晰归档。');
+  document.querySelector('#workspace-edit').hidden = !workspace || deleted;
 }
+document
+  .querySelector('#workspace-edit')
+  .addEventListener('click', () => showEditWorkspaceDialog(activeWorkspaceId));
 
 /**
  * 显示新建工作区对话框
@@ -227,7 +227,7 @@ function showNewWorkspaceDialog(assignMeetingId, onCreated) {
             <input name="name" type="text" maxlength="30" required autofocus />
           </label>
           <label>
-            ${t('描述')} <small>${t('（可选）')}</small>
+            <span>${t('描述')} <small>${t('（可选）')}</small></span>
             <textarea name="description" maxlength="100" rows="2"></textarea>
           </label>
           <div class="modal-form-actions">
@@ -341,7 +341,7 @@ function showEditWorkspaceDialog(workspaceId) {
             <input name="name" type="text" maxlength="30" value="${escapeHtml(workspace.name)}" required autofocus />
           </label>
           <label>
-            ${t('描述')} <small>${t('（可选）')}</small>
+            <span>${t('描述')} <small>${t('（可选）')}</small></span>
             <textarea name="description" maxlength="100" rows="2">${escapeHtml(workspace.description)}</textarea>
           </label>
           <div class="modal-form-actions">

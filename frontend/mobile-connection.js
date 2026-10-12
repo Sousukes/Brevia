@@ -22,6 +22,10 @@
       if (/[\u3400-\u9fff]/.test(key)) staticCopy.push({ node, key });
     }
   }
+  const attributeCopy = [...pairDialog.querySelectorAll('[aria-label]')].map((node) => ({
+    node,
+    key: node.getAttribute('aria-label'),
+  }));
   const imageCopy = [
     ...dialog.querySelectorAll('img[alt]'),
     ...pairDialog.querySelectorAll('img[alt]'),
@@ -33,6 +37,7 @@
     staticCopy.forEach(({ node, key }) => {
       node.textContent = t(key);
     });
+    attributeCopy.forEach(({ node, key }) => node.setAttribute('aria-label', t(key)));
     imageCopy.forEach(({ node, key }) => {
       node.alt = t(key);
     });
@@ -97,11 +102,20 @@
       const value = await api.pair();
       await render(value);
       expires = value.expires;
+      document.getElementById('mobile-retry-pairing').hidden = true;
+      document.getElementById('mobile-copy-pin').disabled = false;
+      renderCountdown();
       pairing.hidden = false;
       pairDialog.querySelector('#mobile-qr').src = value.qr;
       pairDialog.querySelector('#mobile-pin').textContent = value.pin;
       localize();
       showPairDialog();
+    } catch (error) {
+      expires = 0;
+      pairing.hidden = true;
+      document.getElementById('mobile-retry-pairing').hidden = false;
+      showPairDialog();
+      throw error;
     } finally {
       pairingBusy = false;
     }
@@ -118,6 +132,9 @@
       : value.enabled
         ? '等待设备连接'
         : '服务已关闭';
+    const service = dialog.querySelector('#mobile-service-state');
+    service.textContent = t(connectionStatus);
+    service.dataset.connected = String(connected.length > 0);
     document.getElementById('mobile-nav').classList.toggle('is-connected', connected.length > 0);
     document.getElementById('mobile-nav').title = `${t('设备连接')} · ${t(connectionStatus)}`;
     document.getElementById('mobile-sidebar-status').textContent = connected.length
@@ -132,7 +149,21 @@
         showPairDialog();
         const request = value.approval;
         const copy = document.createElement('p');
-        copy.textContent = `${request.name} ${t('请求连接。请核对手机上的校验码：')}${request.verification}`;
+        copy.className = 'mobile-request-copy';
+        const deviceName = document.createElement('b');
+        deviceName.textContent = request.name;
+        const requestLabel = document.createElement('span');
+        requestLabel.textContent = t('请求与 Brevia 建立连接。');
+        const hint = document.createElement('span');
+        hint.textContent = t('校验词');
+        const verification = document.createElement('strong');
+        verification.className = 'mobile-verification';
+        verification.textContent = request.verification;
+        copy.append(deviceName, requestLabel, hint, verification);
+        const requestInfo = document.createElement('div');
+        requestInfo.className = 'mobile-request-info';
+        requestInfo.insertAdjacentHTML('afterbegin', interfaceIcon('phone'));
+        requestInfo.append(copy);
         const deny = document.createElement('button');
         deny.className = 'secondary';
         deny.textContent = t('拒绝');
@@ -147,7 +178,12 @@
           });
         deny.onclick = () => respond(false);
         allow.onclick = () => respond(true);
-        approval.append(copy, deny, allow);
+        const actions = document.createElement('div');
+        actions.className = 'mobile-request-actions';
+        const confirmation = document.createElement('small');
+        confirmation.textContent = t('电脑确认后才建立信任。');
+        actions.append(deny, allow, confirmation);
+        approval.append(requestInfo, actions);
         if (newRequest) deny.focus({ preventScroll: true });
       }
     }
@@ -160,6 +196,7 @@
         const empty = document.createElement('p');
         empty.className = 'mobile-device-empty';
         empty.textContent = t('尚未连接设备');
+        empty.insertAdjacentHTML('afterbegin', interfaceIcon('phone'));
         devices.append(empty);
       }
       for (const device of value.devices || []) {
@@ -200,6 +237,8 @@
         revoke.className = 'secondary';
         revoke.textContent = t('取消信任');
         revoke.onclick = () => run(async () => render(await api.revoke({ id: device.id })));
+        row.insertAdjacentHTML('afterbegin', interfaceIcon('phone'));
+        row.dataset.connected = String(device.connected);
         row.append(name, facts, revoke);
         devices.append(row);
       }
@@ -243,6 +282,7 @@
       await render(value);
     });
   pairDialog.querySelector('#mobile-close-pairing').onclick = stopPairing;
+  pairDialog.querySelector('#mobile-dismiss-pairing').onclick = stopPairing;
   pairDialog.addEventListener('cancel', (event) => {
     event.preventDefault();
     stopPairing();
@@ -263,18 +303,44 @@
   window.brevia.on('mobile.discovered', () => {
     void run(pair);
   });
-  setInterval(() => {
-    if (expires && Date.now() > expires) {
-      void closePairDialog();
-      message('配对码已过期，请重新显示配对码。');
+  function renderCountdown() {
+    if (!expires) return;
+    const remaining = Math.max(0, Math.ceil((expires - Date.now()) / 1000));
+    document.getElementById('mobile-address').textContent =
+      `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+    if (!remaining) {
+      expires = 0;
+      pairing.hidden = true;
+      document.getElementById('mobile-copy-pin').disabled = true;
+      document.getElementById('mobile-retry-pairing').hidden = false;
+      pairDialog.querySelector('#mobile-pair-error').textContent =
+        t('配对码已过期，请重新显示配对码。');
     }
-    void poll();
-  }, 2000);
+  }
+  document.getElementById('mobile-copy-pin').onclick = () =>
+    run(async () => {
+      await window.brevia.share.copyText({
+        text: document.getElementById('mobile-pin').textContent,
+      });
+      showToast(t('已复制到剪贴板'));
+    });
+  document.getElementById('mobile-retry-pairing').onclick = () =>
+    run(async () => {
+      await closePairDialog();
+      await pair();
+    });
+  setInterval(renderCountdown, 1000);
+  setInterval(() => void poll(), 2000);
   window.addEventListener('brevia:language-changed', () => {
     localize();
     if (lastStatus) void render(lastStatus);
     else void poll();
   });
+  for (const mount of [
+    ...dialog.querySelectorAll('[data-interface-icon]'),
+    ...pairDialog.querySelectorAll('[data-interface-icon]'),
+  ])
+    mount.innerHTML = interfaceIcon(mount.dataset.interfaceIcon);
   localize();
   void poll();
 })();

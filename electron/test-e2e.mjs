@@ -9,7 +9,8 @@
  * 不引入新依赖：用 Node 内置的 fetch + WebSocket 直接讲 CDP。
  */
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { request as httpsRequest } from 'node:https';
 import { createServer } from 'node:net';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -272,15 +273,15 @@ try {
   await delay(300);
 
   const compactWindow = await client.send('Runtime.evaluate', {
-    expression: `({ width:outerWidth, height:outerHeight, scale:outerWidth/innerWidth, overflow:document.body.scrollWidth>innerWidth })`,
+    expression: `({ width:outerWidth, height:outerHeight, scale:outerWidth/innerWidth, viewportWidth:innerWidth, viewportHeight:innerHeight, overflow:document.body.scrollWidth>innerWidth })`,
     returnByValue: true,
   });
   check(
-    compactWindow.result?.value?.width <= 1280 &&
-      compactWindow.result.value.height <= 800 &&
-      Math.abs(compactWindow.result.value.scale - 1280 / 1440) < 0.02 &&
+    compactWindow.result?.value?.viewportWidth <= 1280 &&
+      compactWindow.result.value.viewportHeight <= 800 &&
+      Math.abs(compactWindow.result.value.scale - 1) < 0.02 &&
       !compactWindow.result.value.overflow,
-    `桌面窗口应按 1280×800 与 88.9% 基准显示，重载后保持缩放：${JSON.stringify(compactWindow.result?.value)}`,
+    `桌面页面应直接使用 1280×800 与 100% 缩放，重载后保持一致：${JSON.stringify(compactWindow.result?.value)}`,
   );
 
   const probe = `(() => {
@@ -409,7 +410,7 @@ try {
     `导入按钮圆角不一致：${JSON.stringify(importUi.result?.value)}`,
   );
   check(
-    importUi.result?.value?.label === 'Importer un enregistrement' &&
+    importUi.result?.value?.label === 'Importer un fichier audio local' &&
       importUi.result?.value?.heading === 'Importer un fichier audio local' &&
       !importUi.result?.value?.clipped,
     `导入界面法语文案不完整：${JSON.stringify(importUi.result?.value)}`,
@@ -642,8 +643,8 @@ try {
     returnByValue: true,
   });
   check(
-    floatingBars.result?.value?.live === 'absolute' &&
-      floatingBars.result?.value?.player === 'relative' &&
+    floatingBars.result?.value?.live === 'relative' &&
+      floatingBars.result?.value?.player === 'static' &&
       floatingBars.result?.value?.menuOpen &&
       floatingBars.result?.value?.menuClosed &&
       floatingBars.result?.value?.note?.includes('重点 · 00:57'),
@@ -686,7 +687,7 @@ try {
         const panel = document.querySelector('#detail-view .final-transcript').getBoundingClientRect();
         const notes = document.querySelector('#detail-view .notes').getBoundingClientRect();
         const player = document.querySelector('#detail-view .player').getBoundingClientRect();
-        if (panel.width <= 0 || panel.height <= 0 || notes.height <= 0 || Math.max(panel.bottom, notes.bottom) > player.top + 1) failures.push(code + '/' + theme + ': meeting content hidden or overlaps player');
+        if (panel.width <= 0 || panel.height <= 0 || notes.height <= 0 || panel.bottom > player.top + 1 || notes.bottom > innerHeight + 1) failures.push(code + '/' + theme + ': meeting content hidden or overlaps player');
       }
       if (document.querySelectorAll('[data-settings-path]').length !== 2) failures.push(code + ': duplicate storage rows');
       const error = storageErrorMessage(new Error('Chosen recording folder is no longer empty'));
@@ -800,7 +801,7 @@ try {
     returnByValue: true,
   });
   check(
-    Math.abs(scaleAfterCaption.result?.value - 1280 / 1440) < 0.02,
+    Math.abs(scaleAfterCaption.result?.value - 1) < 0.02,
     '打开及关闭独立字幕窗口后，主应用仍保持默认缩放',
   );
   await client.send('Emulation.setDeviceMetricsOverride', {
@@ -847,6 +848,10 @@ try {
   await client.send('Emulation.clearDeviceMetricsOverride');
   const mergedAiSettings = await client.send('Runtime.evaluate', {
     expression: `(async () => {
+    const settled = async predicate => {
+      const deadline=Date.now()+5000;
+      while(!predicate()) { if(Date.now()>deadline) throw new Error('AI settings save timed out'); await new Promise(resolve=>setTimeout(resolve,25)); }
+    };
     meetingActive = false;
     summaryConfig.enabled = false;
     aiAssistConfig.enabled = false;
@@ -855,67 +860,51 @@ try {
     await showView('settings');
     const cards = [...document.querySelectorAll('[data-settings-modal]')].map(button => button.dataset.settingsModal);
     await openModal('ai-features');
-    const page = onboardingPage;
-    const initial = page.dataset.aiSettings === 'true' && page.querySelector('#ai-features-title').textContent === 'AI 功能'
-      && page.classList.contains('modal-backdrop') && !page.classList.contains('onboarding-page')
-      && getComputedStyle(document.querySelector('.app-shell')).display !== 'none'
-      && !page.querySelector('[name="onboarding-summary-enabled"]').checked
-      && !page.querySelector('[name="onboarding-ai-enabled"]').checked
-      && page.querySelector('[name="onboarding-ai-proactivity"]').value === 'quiet';
-    page.querySelector('[name="onboarding-summary-enabled"]').checked = true;
-    page.querySelector('[name="onboarding-ai-enabled"]').checked = true;
-    page.querySelector('[data-onboarding-ai-skip]').click();
-    await new Promise(resolve => setTimeout(resolve, 350));
-    const cancelled = !onboardingPage && !summaryConfig.enabled && !aiAssistConfig.enabled;
-    await openModal('ai-features');
-    onboardingPage.querySelector('[data-configure-ai-notes]').click();
+    const initial = settingsModal.classList.contains('settings-page')
+      && settingsModal.querySelectorAll('[data-ai-settings-tab]').length===2
+      && !settingsModal.querySelector('[data-summary-enabled]').checked
+      && !onboardingPage && getComputedStyle(document.querySelector('.app-shell')).display !== 'none';
+    await openModal('ai-assist');
+    settingsModal.querySelector('[data-ai-settings-enabled]').click();
+    closeModal(); await new Promise(resolve => setTimeout(resolve,350));
+    const cancelled = !aiAssistConfig.enabled && !summaryConfig.enabled;
+    await openModal('ai-assist');
     const notesConfig = !!settingsModal.querySelector('.ai-assist-config-form');
-    closeModal();
-    const enableNotes = onboardingPage.querySelector('[name="onboarding-ai-enabled"]');
-    enableNotes.checked = true;
-    enableNotes.dispatchEvent(new Event('change', { bubbles: true }));
-    const opened = !onboardingPage.querySelector('.onboarding-ai-levels .flow-select-options').hidden;
-    onboardingPage.querySelector('[data-flow-select-choice="onboarding-ai-proactivity"][data-value="auto"]').click();
-    const selected = opened && onboardingPage.querySelector('[name="onboarding-ai-proactivity"]').value === 'auto'
-      && onboardingPage.querySelector('[data-flow-select-choice="onboarding-ai-proactivity"][data-value="auto"]').getAttribute('aria-checked') === 'true';
-    enableNotes.checked = false;
-    enableNotes.dispatchEvent(new Event('change', { bubbles: true }));
-    await finishAiOnboarding(undefined, true);
-    await new Promise(resolve => setTimeout(resolve, 350));
+    settingsModal.querySelector('[name="proactivity"][value="auto"]').click();
+    const selected = aiAssistConfigDraft.proactivity==='auto';
+    settingsModal.querySelector('form').requestSubmit();
+    await settled(()=>settingsModal.hidden);
     const summary = await window.brevia.summary.config.get();
     const notes = await window.brevia.aiAssist.config.get();
-    const saved = !summary.enabled && !notes.enabled && notes.proactivity === 'auto' && !onboardingPage;
+    const saved = !summary.enabled && !notes.enabled && notes.proactivity==='auto';
     const model = modelCatalog.find(item => item.kind === 'llama-chat').id;
     modelPaths.set(model, '/tmp/e2e-ai-model');
-    summaryConfig.provider = 'built-in';
-    summaryConfig.providers = { 'built-in': { model } };
-    aiAssistConfig.provider = 'built-in';
-    aiAssistConfig.providers = { 'built-in': { model } };
+    summaryConfig.provider='built-in'; summaryConfig.providers={'built-in':{model}};
+    aiAssistConfig.provider='built-in'; aiAssistConfig.providers={'built-in':{model}};
     await openModal('ai-features');
-    onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked = true;
-    await finishAiOnboarding(undefined, true);
-    await new Promise(resolve => setTimeout(resolve, 350));
+    { const enabled=settingsModal.querySelector('[data-summary-enabled]'); enabled.click(); await settled(()=>!enabled.disabled); }
     const summaryOnly = summaryConfig.enabled && !aiAssistConfig.enabled;
+    await openModal('ai-assist');
+    const restored = !settingsModal.querySelector('[data-ai-settings-enabled]').checked
+      && settingsModal.querySelector('[name="proactivity"][value="auto"]').checked;
     await openModal('ai-features');
-    const restored = onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked
-      && !onboardingPage.querySelector('[name="onboarding-ai-enabled"]').checked
-      && onboardingPage.querySelector('[name="onboarding-ai-proactivity"]').value === 'auto';
-    onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked = false;
-    onboardingPage.querySelector('[name="onboarding-ai-enabled"]').checked = true;
-    await finishAiOnboarding(undefined, true);
-    await new Promise(resolve => setTimeout(resolve, 350));
+    { const enabled=settingsModal.querySelector('[data-summary-enabled]'); enabled.click(); await settled(()=>!enabled.disabled); }
+    await openModal('ai-assist');
+    settingsModal.querySelector('[data-ai-settings-enabled]').click();
+    settingsModal.querySelector('form').requestSubmit();
+    await settled(()=>settingsModal.hidden);
     const independent = summaryOnly && restored && !(await window.brevia.summary.config.get()).enabled
       && (await window.brevia.aiAssist.config.get()).enabled;
-    let dismissible = true;
-    for (const close of ['button', 'backdrop', 'escape']) {
+    let dismissible=true;
+    for (const close of ['button','backdrop','escape']) {
       await openModal('ai-features');
-      if (close === 'button') onboardingPage.querySelector('[data-close-ai-features]').click();
-      else if (close === 'backdrop') onboardingPage.click();
-      else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await new Promise(resolve => setTimeout(resolve, 350));
-      dismissible = dismissible && !onboardingPage && !document.body.classList.contains('modal-open');
+      if(close==='button') settingsModal.querySelector('.modal-close').click();
+      else if(close==='backdrop') settingsModal.click();
+      else document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+      await new Promise(resolve=>setTimeout(resolve,350));
+      dismissible=dismissible && settingsModal.hidden && !document.body.classList.contains('modal-open');
     }
-    return { cards, initial, cancelled, notesConfig, saved, selected, independent, dismissible, closed: !onboardingPage };
+    return { cards, initial, cancelled, notesConfig, saved, selected, summaryOnly, restored, independent, dismissible, closed: settingsModal.hidden };
   })()`,
     awaitPromise: true,
     returnByValue: true,
@@ -960,12 +949,12 @@ try {
   const mobileLive = await client.send('Runtime.evaluate', {
     expression: `(async () => {
     aiAssistConfig.enabled = false;
-    const meeting = {id:'a126fdcc-e5a5-40d5-92da-c7064e031654', title:'手机联动测试', language:'zh', tags:['手机录音'], notes:'已有重点', segments:[], status:'recording'};
+    const meeting = {id:'a126fdcc-e5a5-40d5-92da-c7064e031654', title:'手机联动测试', language:'zh', tags:['手机录音'], notes:'已有重点', segments:[{id:'mobile-initial',speaker_name:'不应显示',text:'初次接管字幕',start_ms:0,end_ms:1000}], status:'recording'};
     syncBackendMeeting(meeting);
     adoptMobileMeeting(meeting);
     await new Promise(resolve => setTimeout(resolve, 400));
     const live = activeView === 'live' && meetingActive && document.querySelector('#pause').disabled && !document.querySelector('#end-meeting').disabled;
-    const source = !document.querySelector('.mobile-source-tag');
+    const source = !document.querySelector('.mobile-source-tag') && !document.querySelector('#transcript-scroll .speaker-name') && document.querySelector('[data-ai-assist-empty]').hidden && document.querySelector('#live-input-label').textContent===t('手机录音');
     const unique = uiData.meetings.filter(m => m.id === meeting.id).length === 1;
     minimizeMeeting(); await showView('home');
     const mini = !miniMeeting.hidden && !miniMeeting.querySelector('.mobile-source-tag') && miniTitle.textContent === meeting.title && getComputedStyle(taskCards).position === 'absolute' && miniMeeting.getBoundingClientRect().bottom <= document.querySelector('.sidebar').getBoundingClientRect().bottom;
@@ -1064,6 +1053,142 @@ try {
       tourNavigation.result.value.speakerCount === 0,
     '五步演示必须可导航，样例区域不可操作，实时段落不显示说话人',
   );
+  const onboardingFit = await client.send('Runtime.evaluate', {
+    expression: `(async()=>{
+      const errors=[];
+      applyLanguage('zh'); applyTheme('light');
+      const steps=[['language',()=>openOnboardingLanguage('zh')],['permissions',()=>openOnboardingPermissions()],['models',()=>openOnboardingSetup()],['ai',()=>openOnboardingAi()],['phone',()=>openOnboardingMobile()],['tour',()=>openOnboardingTour()]];
+      for(const [name,open] of steps){
+        await open();
+        await new Promise(resolve=>setTimeout(resolve,100));
+        onboardingPage.getAnimations({subtree:true}).filter(a=>a.effect.getComputedTiming().iterations!==Infinity).forEach(a=>a.finish());
+        const pages=name==='tour'?5:1;
+        for(let i=0;i<pages;i++){
+          if(name==='tour') updateOnboardingTour(onboardingPage,i);
+          const content=onboardingPage.querySelector('.onboarding-page-content');
+          const actions=onboardingPage.querySelector('.onboarding-actions,.onboarding-tour-actions');
+          const bounds=actions?.getBoundingClientRect();
+          if(content.scrollHeight>content.clientHeight+1) errors.push(name+'/'+i+': page overflow '+content.scrollHeight+'/'+content.clientHeight);
+          if(!bounds || bounds.bottom>innerHeight+1 || bounds.top<0) errors.push(name+'/'+i+': footer outside viewport');
+        }
+        await new Promise(resolve=>dismissOnboardingPage(resolve));
+      }
+      await showView('settings');
+      const voice=document.getElementById('speaker-profiles-entry');
+      renderSettingsView();
+      if(document.getElementById('speaker-profiles-entry')!==voice || !document.getElementById('app-update-entry')) errors.push('settings entries lost');
+      const directory=document.querySelector('#settings-view .settings-grid');
+      if(directory.scrollHeight>directory.clientHeight+1) errors.push('settings directory requires scrolling '+directory.scrollHeight+'/'+directory.clientHeight);
+      const toggle=document.querySelector('[data-toggle-notes-toolbar]');
+      const toolbar=document.getElementById('live-notes-toolbar');
+      if(!toolbar.hidden) errors.push('toolbar initially expanded');
+      toggle.click();
+      if(toolbar.hidden || toggle.getAttribute('aria-expanded')!=='true') errors.push('toolbar cannot expand');
+      toggle.click();
+      if(!toolbar.hidden) errors.push('toolbar cannot collapse');
+      return errors;
+    })()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  check(
+    Array.isArray(onboardingFit.result?.value) && onboardingFit.result.value.length === 0,
+    `引导页默认满屏及应用入口回归：${JSON.stringify(onboardingFit)}`,
+  );
+  const phonePair = await client.send('Runtime.evaluate', {
+    expression: `(async()=>{
+      openOnboardingMobile();
+      onboardingPage.querySelector('[data-onboarding-mobile-pair]').click();
+      const deadline=Date.now()+10000;
+      while(!document.querySelector('#mobile-pair-dialog').open && Date.now()<deadline) await new Promise(r=>setTimeout(r,25));
+      const status=await window.brevia.mobile.status();
+      return {status,pin:document.querySelector('#mobile-pin').textContent,visible:!document.querySelector('#mobile-pairing').hidden,error:document.querySelector('#mobile-pair-error').textContent};
+    })()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  const pairState = phonePair.result?.value;
+  check(
+    pairState?.visible && /^\d{6}$/.test(pairState.pin) && !pairState.error,
+    `引导页应从真实配对服务显示二维码与配对码：${JSON.stringify(phonePair)}`,
+  );
+  if (pairState?.visible && pairState.status.addresses.length) {
+    const certificate = JSON.parse(
+      readFileSync(path.join(dataDir, 'mobile', 'identity.json'), 'utf8'),
+    ).cert;
+    const response = new Promise((resolve, reject) => {
+      const request = httpsRequest(
+        {
+          hostname: '127.0.0.1',
+          port: new URL(pairState.status.addresses[0]).port,
+          path: '/pair',
+          method: 'POST',
+          ca: certificate,
+          checkServerIdentity: () => undefined,
+          headers: { 'Content-Type': 'application/json' },
+        },
+        (reply) => {
+          reply.resume();
+          reply.on('end', () => resolve(reply.statusCode));
+        },
+      );
+      request.on('error', reject);
+      request.setTimeout(10000, () => request.destroy(new Error('Phone approval timed out')));
+      request.end(
+        JSON.stringify({ name: '<UI test phone>', code: pairState.pin, nonce: 'b'.repeat(32) }),
+      );
+    });
+    const approval = await client.send('Runtime.evaluate', {
+      expression: `(async()=>{
+        const deadline=Date.now()+6000;
+        while(!document.querySelector('.mobile-request-actions') && Date.now()<deadline) await new Promise(r=>setTimeout(r,25));
+        const status=await window.brevia.mobile.status();
+        const info=document.querySelector('.mobile-request-info');
+        const actions=document.querySelector('.mobile-request-actions');
+        const safe=info?.querySelector('b')?.textContent==='<UI test phone>' && !info.querySelector('ui');
+        const verification=info?.querySelector('.mobile-verification')?.textContent===status.approval?.verification;
+        const focused=document.activeElement===actions?.querySelector('button');
+        const dialog=document.querySelector('#mobile-pair-dialog');
+        const footer=dialog.querySelector('.mobile-pair-actions').getBoundingClientRect();
+        const fits=dialog.scrollHeight<=dialog.clientHeight+1 && footer.bottom<=innerHeight+1;
+        return {safe,verification,focused,fits,bounds:{height:dialog.clientHeight,scroll:dialog.scrollHeight,footer:footer.bottom,viewport:innerHeight}};
+      })()`,
+      awaitPromise: true,
+      returnByValue: true,
+    });
+    check(
+      ['safe', 'verification', 'focused', 'fits'].every(
+        (key) => approval.result?.value?.[key] === true,
+      ),
+      `真实手机请求应安全显示设备名、校验词且默认焦点在拒绝：${JSON.stringify(approval)}`,
+    );
+    if (process.env.BREVIA_DESIGN_CAPTURE_DIR) {
+      const output = path.resolve(process.env.BREVIA_DESIGN_CAPTURE_DIR);
+      mkdirSync(output, { recursive: true });
+      await client.send('Emulation.setDeviceMetricsOverride', {
+        width: 0,
+        height: 0,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      const shot = await client.send('Page.captureScreenshot', {
+        format: 'png',
+        captureBeyondViewport: false,
+      });
+      writeFileSync(
+        path.join(output, 'desktop-onboarding-pairing-request.png'),
+        Buffer.from(shot.data, 'base64'),
+      );
+    }
+    await client.send('Runtime.evaluate', {
+      expression: "document.querySelector('.mobile-request-actions button').click()",
+    });
+    check((await response) === 403, '电脑拒绝后真实配对请求应返回 403');
+  }
+  await client.send('Runtime.evaluate', {
+    expression: `(async()=>{document.querySelector('#mobile-close-pairing').click();await new Promise(r=>setTimeout(r,300));await new Promise(resolve=>dismissOnboardingPage(resolve));})()`,
+    awaitPromise: true,
+  });
   const workspaceSubmit = await client.send('Runtime.evaluate', {
     expression: `(async()=>{
       showNewWorkspaceDialog();
@@ -1103,6 +1228,134 @@ try {
     '确认弹窗默认聚焦取消，Tab 留在弹窗，关闭后恢复背景交互',
   );
 
+  const restoration = await client.send('Runtime.evaluate', {
+    expression: `(async () => {
+      if (onboardingPage) await new Promise(resolve => dismissOnboardingPage(resolve));
+      closeModal(); await new Promise(resolve => setTimeout(resolve,250));
+      meetingActive=false; await showView('settings'); openModal('ai-features');
+      const tabs=settingsModal.querySelectorAll('[data-ai-settings-tab]').length===2;
+      const summaryEnabled=summaryConfig.enabled;
+      settingsModal.querySelector('[data-ai-settings-tab="ai-assist"]').click();
+      const notes=settingsModal.querySelector('[data-ai-settings-enabled]');
+      notes.click();
+      const independent=summaryConfig.enabled===summaryEnabled && aiAssistConfigDraft.enabled===notes.checked;
+      const levels=settingsModal.querySelectorAll('[name="proactivity"]').length===3;
+      const draft=aiAssistConfigDraft; draft.proactivity='auto';
+      settingsModal.querySelector('[data-open-models-from-config]').click();
+      settingsModal.querySelector('.modal-close').click();
+      const modelReturn=activeModal==='ai-assist' && aiAssistConfigDraft===draft && draft.proactivity==='auto';
+      closeModal(); await new Promise(resolve => setTimeout(resolve,250));
+      setPrepareMode('record'); await showView('prepare');
+      const speakers=new FormData(prepareForm).get('meeting-speakers')==='-1';
+      const language=prepareForm.querySelector('[name="meeting-language"]').closest('.flow-select');
+      language.querySelector('[data-flow-select-toggle]').click();
+      const menu=language.querySelector('.flow-select-options'), menuRect=menu.getBoundingClientRect();
+      const menusVisible=menuRect.top>=0 && menuRect.bottom<=innerHeight && menuRect.height>0 && menu.contains(document.elementFromPoint(menuRect.left+12,menuRect.top+12));
+      document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+      const button=prepareForm.querySelector('.primary-action'); button.scrollIntoView({block:'nearest'});
+      const prepareReachable=button.getBoundingClientRect().bottom<=innerHeight+1;
+      const data=await window.brevia.initialize();
+      const meeting=await window.brevia.meeting.get({meeting_id:data.meetings[0].id});
+      applyBackendDetail(meeting); await showView('detail');
+      const detail=document.querySelector('#detail-view');
+      const content=detail.querySelector('.detail-layout').getBoundingClientRect();
+      const player=detail.querySelector('.player').getBoundingClientRect();
+      const reading=content.height>100 && player.bottom<=innerHeight+1 && Math.abs(player.width-detail.querySelector('.final-transcript').getBoundingClientRect().width)<2;
+      const threeTabs=detail.querySelectorAll('[data-detail-tab]').length===3;
+      detail.querySelector('[data-detail-tab="transcript"]').click();
+      detail.querySelector('[data-transcript-version="original"]').click();
+      const search=detail.querySelector('[data-transcript-search]');
+      search.value='__no_matching_segment__'; search.dispatchEvent(new Event('input',{bubbles:true}));
+      const filtered=[...detail.querySelectorAll('.transcript-body .segment,.transcript-body .refined-fulltext')].every(row=>row.hidden);
+      search.value=''; search.dispatchEvent(new Event('input',{bubbles:true}));
+      detail.querySelector('[data-detail-tab="summary"]').click();
+      const summaryVisible=detail.querySelector('.summary-preview').getBoundingClientRect().height>100;
+      applyBackendDetail({...meeting,transcript_revision:0,segments:meeting.segments.filter(segment=>segment.version!=='live')});
+      const rawUnavailable=detail.querySelector('[data-transcript-version=original]').disabled && uiData.detail.originalTranscript.length===0;
+      applyBackendDetail(meeting);
+      showRefinementProgress(42,100,'Layout test',meeting.id,'正在识别');
+      toggleTaskCardMinimized(refinementCard,refinementCard.querySelector('[data-minimize-task-card]'));
+      showRefinementProgress(56,100,'Layout test',meeting.id,'正在识别');
+      const minimizedProgress=refinementCard.querySelector('.task-mini-percent').textContent==='56%';
+      refinementCard.classList.remove('is-minimized'); refinementCard.hidden=true;
+      return {tabs,independent,levels,modelReturn,speakers,menusVisible,prepareReachable,reading,threeTabs,filtered,summaryVisible,rawUnavailable,minimizedProgress};
+    })()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  const restorationChecks = restoration.result?.value;
+  check(
+    restorationChecks && Object.values(restorationChecks).every(Boolean),
+    `设计还原交互、独立 AI 配置及可见布局：${JSON.stringify(restorationChecks || restoration.exceptionDetails)}`,
+  );
+
+  const visualFeedback = await client.send('Runtime.evaluate', {
+    expression: `(async()=>{
+      const errors=[];
+      closeModal();await new Promise(resolve=>setTimeout(resolve,250));
+      applyLanguage('zh');applyTheme('light');
+      const visible=element=>{const r=element.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom<=innerHeight+1&&r.top>=0&&element.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));};
+      for(const mode of ['record','import']){
+        setPrepareMode(mode);await showView('prepare');
+        const button=prepareForm.querySelector('.primary-action'),view=document.getElementById('prepare-view');
+        const r=button.getBoundingClientRect(),v=view.getBoundingClientRect(),padding=parseFloat(getComputedStyle(view).paddingBottom);
+        if(!visible(button)||Math.abs(r.bottom-(v.bottom-padding))>2) errors.push(mode+': footer not aligned '+r.bottom+'/'+(v.bottom-padding));
+        if(view.scrollHeight>view.clientHeight+1) errors.push(mode+': default page needs scrolling');
+      }
+      setPrepareMode('record');await showView('prepare');
+      const primaryFields=[...prepareForm.querySelectorAll('.form-grid label')];
+      if(primaryFields.length!==3 || primaryFields.some(field=>Math.abs(field.getBoundingClientRect().left-primaryFields[0].getBoundingClientRect().left)>1)) errors.push('record: main fields are not one column');
+      const speakerInput=prepareForm.querySelector('[name="meeting-speakers"]');
+      const previousSpeakers=speakerInput.value;
+      speakerInput.value='4';renderPrepareSelects();setPrepareMode('import');
+      if(new FormData(prepareForm).get('meeting-speakers')!=='4' || !prepareForm.querySelector('[data-prepare-processing] [name="meeting-speakers"]')) errors.push('prepare: processing values lost when moving fields');
+      setPrepareMode('record');prepareForm.querySelector('[name="meeting-speakers"]').value=previousSpeakers;renderPrepareSelects();
+      const data=await window.brevia.initialize();const meeting=await window.brevia.meeting.get({meeting_id:data.meetings[0].id});
+      summaryGeneratingMeetingId=undefined;applyBackendDetail(meeting);await showView('detail');await new Promise(resolve=>setTimeout(resolve,350));
+      uiData.detail.summary={markdown:'# Review\\n\\nSaved memo',hasFull:true};renderMeetingDetail();setDetailLayoutMode('transcript');
+      const detail=document.getElementById('detail-view');
+      for(const code of ['zh','en','es','ja','ko','fr','de','ru']){
+        applyLanguage(code);
+        for(const action of ['data-open-summary-edit','data-copy-summary','data-regenerate-summary']){
+          const button=detail.querySelector('['+action+']');
+          if(!button||!visible(button)||!button.textContent.trim()) errors.push(code+': action not visible '+action);
+        }
+      }
+      applyLanguage('zh');
+      const player=detail.querySelector('.player'),source=player.querySelector('.player-source');
+      if(!source.contains(playerTime)||!source.contains(playerDuration)||!source.textContent.includes('/')) errors.push('playback times separated');
+      if(getComputedStyle(player).borderRadius!=='0px'||getComputedStyle(player).boxShadow!=='none') errors.push('player still floating card');
+      if(Math.abs(detail.querySelector('.notes').getBoundingClientRect().top-detail.querySelector('.detail-head').getBoundingClientRect().top)>2) errors.push('summary top misaligned');
+      if(!visible(detail.querySelector('[data-export-detail]'))) errors.push('export action occluded');
+      detail.querySelector('[data-open-summary-edit]').click();
+      for(const action of ['data-cancel-inline-summary-edit','data-save-inline-summary']) if(!visible(detail.querySelector('['+action+']'))) errors.push('edit footer outside viewport');
+      if(parseFloat(getComputedStyle(detail.querySelector('.notes-editor')).fontSize)!==17) errors.push('legacy editor font');
+      inlineSummaryEditor.setMode('markdown');
+      if(getComputedStyle(detail.querySelector('.notes-input')).fontFamily!==getComputedStyle(document.body).fontFamily) errors.push('textarea font mismatch');
+      detail.querySelector('[data-cancel-inline-summary-edit]').click();
+      for(const theme of ['light','dark']){
+        applyTheme(theme);
+        const expected=theme==='dark'?'rgb(25, 25, 25)':'rgb(255, 255, 255)';
+        if(getComputedStyle(document.body).backgroundColor!==expected||getComputedStyle(player).backgroundColor!==expected) errors.push(theme+': canvas background');
+        if(getComputedStyle(document.querySelector('.sidebar .new-meeting')).backgroundColor!=='rgba(0, 0, 0, 0)') errors.push(theme+': legacy navigation fill');
+      }
+      applyTheme('light');applyBackendDetail(meeting);
+      openOnboardingPermissions();await new Promise(resolve=>setTimeout(resolve,150));
+      for(const status of onboardingPage.querySelectorAll('.permission-status.is-granted')){
+        const mark=getComputedStyle(status.querySelector('.check-icon'));
+        if(mark.backgroundColor==='rgba(0, 0, 0, 0)'||mark.borderRadius!=='50%') errors.push('granted status lacks filled check');
+      }
+      await new Promise(resolve=>dismissOnboardingPage(resolve));
+      return errors;
+    })()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  check(
+    Array.isArray(visualFeedback.result?.value) && visualFeedback.result.value.length === 0,
+    `本轮视觉反馈回归：${JSON.stringify(visualFeedback.result?.value || visualFeedback.exceptionDetails)}`,
+  );
+
   // 显式启用时导出真实 Electron 渲染图，供设计稿对照；默认测试不产生图片。
   if (process.env.BREVIA_DESIGN_CAPTURE_DIR) {
     const output = path.resolve(process.env.BREVIA_DESIGN_CAPTURE_DIR);
@@ -1133,7 +1386,9 @@ try {
       ['desktop-library', `showView('home')`],
       ['desktop-prepare', `setPrepareMode('record'); showView('prepare')`],
       ['desktop-import', `setPrepareMode('import'); showView('prepare')`],
-      ['desktop-settings', `showView('settings')`],
+      ['desktop-settings', `renderSettingsView(); showView('settings')`],
+      ['desktop-ai-summary', `openModal('ai-features')`],
+      ['desktop-ai-notes', `openModal('ai-assist')`],
       ['desktop-models', `openModal('models')`],
       ['desktop-advanced', `openModal('advanced-settings')`],
       ['desktop-storage', `openModal('storage')`],
@@ -1158,12 +1413,23 @@ try {
       ],
       [
         'desktop-live',
-        `(async()=>{closeModal(); await new Promise(resolve=>setTimeout(resolve,250)); meetingActive=true; document.querySelector('#live-name').textContent='产品周会'; document.querySelector('#transcript-scroll').innerHTML=uiData.live.transcript.map(entry=>renderTranscriptSegment({...entry,showSpeaker:false})).join(''); await showView('live'); })()`,
+        `(async()=>{closeModal(); await new Promise(resolve=>setTimeout(resolve,250)); meetingActive=true; document.querySelector('#live-name').textContent='产品周会'; document.querySelector('#transcript-scroll').innerHTML=uiData.live.transcript.map(entry=>renderTranscriptSegment({...entry,showSpeaker:false})).join(''); await showView('live'); liveNotesEditor?.setMarkdown('# 产品周会\\n\\n## 本周进展\\n\\n- 完成新用户引导设计评审。\\n- 本周交付测试版本。\\n\\n## 重点\\n\\n周五完成内部验收，下周开始小范围发布。'); })()`,
       ],
       ['desktop-live-dark', `applyTheme('dark')`],
       [
         'desktop-detail',
-        `(async()=>{meetingActive=false; miniMeeting.hidden=true; applyTheme('light'); document.querySelectorAll('#task-cards > aside').forEach(card=>card.hidden=true); const row=[...document.querySelectorAll('.meeting-list [data-meeting-id]')].at(-1); await openMeetingRow(row);})()`,
+        `(async()=>{meetingActive=false; miniMeeting.hidden=true; applyTheme('light'); document.querySelectorAll('#task-cards > aside').forEach(card=>card.hidden=true); const row=[...document.querySelectorAll('.meeting-list [data-meeting-id]')].at(-1); summaryGeneratingMeetingId=undefined; await openMeetingRow(row);detailActiveTab='notes';setDetailLayoutMode('transcript');uiData.detail.notes='# 产品周会\\n\\n## 本周进展\\n\\n- 新用户引导已完成设计评审。\\n- 本周交付测试版本，开展内部验收。\\n\\n## 待办\\n\\n- 产品团队跟进验收。\\n- 开发同步修复进度。';renderMeetingDetail();})()`,
+      ],
+      [
+        'desktop-detail-transcript',
+        `document.querySelector('[data-detail-tab=transcript]').click()`,
+      ],
+      ['desktop-detail-summary', `document.querySelector('[data-detail-tab=summary]').click()`],
+      ['desktop-detail-edit', `document.querySelector('[data-open-summary-edit]').click()`],
+      ['desktop-detail-edit-markdown', `inlineSummaryEditor.setMode('markdown')`],
+      [
+        'desktop-detail-ready',
+        `document.querySelector('[data-cancel-inline-summary-edit]').click()`,
       ],
       ['desktop-export', `openModal('export')`],
       [
@@ -1188,7 +1454,7 @@ try {
       ],
       [
         'desktop-onboarding-pairing',
-        `onboardingPage.querySelector('[data-onboarding-mobile-pair]').click()`,
+        `(async()=>{onboardingPage.querySelector('[data-onboarding-mobile-pair]').click(); const until=Date.now()+10000; while(!document.getElementById('mobile-pair-dialog').open && Date.now()<until) await new Promise(resolve=>setTimeout(resolve,50)); if(!document.getElementById('mobile-pair-dialog').open) throw new Error('配对弹窗未打开');})()`,
       ],
       [
         'desktop-onboarding-permissions',
@@ -1199,10 +1465,19 @@ try {
         `(async()=>{await new Promise(resolve=>dismissOnboardingPage(resolve)); openOnboardingTour(); updateOnboardingTour(onboardingPage,2);})()`,
       ],
     ];
+    captures.push(
+      ...Array.from({ length: 5 }, (_, i) => [
+        'desktop-tour-step-' + i,
+        `updateOnboardingTour(onboardingPage,${i})`,
+      ]),
+    );
     const measurements = [];
     for (const [name, expression] of captures) {
       await evaluate(expression);
-      await delay(400);
+      await delay(500);
+      await evaluate(
+        `document.getAnimations().filter(animation=>animation.effect.getComputedTiming().iterations!==Infinity).forEach(animation=>animation.finish())`,
+      );
       const shot = await client.send('Page.captureScreenshot', {
         format: 'png',
         captureBeyondViewport: false,
@@ -1214,7 +1489,7 @@ try {
         imageWidth: png.readUInt32BE(16),
         imageHeight: png.readUInt32BE(20),
         ...(await evaluate(
-          `({ width:innerWidth, height:innerHeight, windowWidth:outerWidth, windowHeight:outerHeight, overflow:document.body.scrollWidth>innerWidth, font:getComputedStyle(document.body).fontFamily })`,
+          `({ width:innerWidth, height:innerHeight, windowWidth:outerWidth, windowHeight:outerHeight, overflow:document.body.scrollWidth>innerWidth, font:getComputedStyle(document.body).fontFamily, onboarding:[...document.querySelectorAll('.onboarding-page-content')].map(e=>({height:e.clientHeight,scroll:e.scrollHeight})), actions:[...document.querySelectorAll('.onboarding-actions,.onboarding-tour-actions')].map(e=>({bottom:e.getBoundingClientRect().bottom})) })`,
         )),
       });
     }

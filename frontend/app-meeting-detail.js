@@ -69,10 +69,22 @@ function applyBackendDetail(meeting) {
     uiData.detail.transcriptEditing = false;
     uiData.detail.transcriptDraft = {};
     detailActiveTab = 'notes';
+    uiData.detail.transcriptVersion = 'refined';
+    uiData.detail.transcriptSearch = '';
     uiData.detail.translationTarget = meeting.target_language || '';
   }
   const { revision, segments: ordered } = latestTranscriptSegments(meeting);
   const speakerNames = new Map(meeting.speakers.map((speaker) => [speaker.id, speaker.name]));
+  const original = meeting.segments?.filter((segment) => segment.version === 'live') || [];
+  uiData.detail.hasOriginalTranscript = original.length > 0 || revision === null;
+  if (!uiData.detail.hasOriginalTranscript) uiData.detail.transcriptVersion = 'refined';
+  uiData.detail.originalTranscript = (
+    original.length
+      ? original.sort((a, b) => a.start_ms - b.start_ms)
+      : revision === null
+        ? ordered
+        : []
+  ).map((segment) => renderSegmentData(segment, revision === null, speakerNames));
   uiData.detail.transcript = ordered.map((segment) =>
     renderSegmentData(segment, true, speakerNames),
   );

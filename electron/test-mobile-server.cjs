@@ -4,6 +4,10 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
+const { mock } = require('node:test');
+const QRCode = require('qrcode');
+const realNetworkInterfaces = os.networkInterfaces;
+const interfaces = mock.method(os, 'networkInterfaces');
 const { MobileServer } = require('./mobile-server');
 
 (async () => {
@@ -64,6 +68,43 @@ const { MobileServer } = require('./mobile-server');
   }
   try {
     await server.init();
+    const ipv4 = (address, internal = false) => ({ address, internal, family: 'IPv4' });
+    interfaces.mock.mockImplementation(() => ({
+      VPN: [ipv4('198.18.0.1')],
+      Tailscale: [ipv4('100.64.0.1')],
+      'vEthernet (WSL)': [ipv4('172.24.0.1')],
+      'Ethernet 2': [ipv4('169.254.10.20')],
+      Ethernet: [ipv4('192.168.3.200'), { address: 'fe80::1', family: 'IPv6' }],
+      'Wi-Fi': [ipv4('10.0.0.20')],
+      Loopback: [ipv4('127.0.0.1', true)],
+      Public: [ipv4('8.8.8.8')],
+      Missing: undefined,
+    }));
+    assert.deepEqual(server.status().addresses, [
+      `https://192.168.3.200:${server.port}`,
+      `https://10.0.0.20:${server.port}`,
+      `https://172.24.0.1:${server.port}`,
+      `https://169.254.10.20:${server.port}`,
+    ]);
+    const qr = mock.method(QRCode, 'toDataURL');
+    try {
+      const pairing = await server.openPairing();
+      const payload = JSON.parse(qr.mock.calls[0].arguments[0]);
+      assert.equal(payload.address, pairing.addresses[0]);
+      assert.equal(payload.address, `https://192.168.3.200:${server.port}`);
+      assert.equal(payload.v, 1);
+      assert.equal(payload.fingerprint, server.fingerprint);
+      assert.equal(payload.secret, server.pairing.secret);
+      interfaces.mock.mockImplementation(() => ({ VPN: [ipv4('198.18.0.1')] }));
+      assert.deepEqual(server.status().addresses, []);
+      await assert.rejects(server.openPairing(), /局域网 IPv4/);
+      assert.equal(server.pairing, null);
+      assert.equal(qr.mock.callCount(), 1, 'no QR code without a usable LAN address');
+    } finally {
+      qr.mock.restore();
+      interfaces.mock.mockImplementation(realNetworkInterfaces);
+      interfaces.mock.restore();
+    }
     await call('GET', '/identity');
     await call('GET', '/identity');
     assert.equal(discoveryPrompts, 1);

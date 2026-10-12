@@ -203,9 +203,32 @@ class MobileServer {
     return this.status();
   }
   status() {
-    const addresses = Object.values(networkInterfaces())
-      .flat()
-      .filter((n) => n && !n.internal && n.family === 'IPv4')
+    // 地址范围与手机端 DesktopConnection.endpoint 保持一致，避免二维码被手机拒绝。
+    const addresses = Object.entries(networkInterfaces())
+      .flatMap(([name, entries]) =>
+        (entries || [])
+          .filter((n) => {
+            if (!n || n.internal || n.family !== 'IPv4') return false;
+            const [a, b] = n.address.split('.').map(Number);
+            return (
+              a === 10 ||
+              (a === 172 && b >= 16 && b <= 31) ||
+              (a === 192 && b === 168) ||
+              (a === 169 && b === 254)
+            );
+          })
+          .map((n) => ({
+            address: n.address,
+            // shortcut: 名称只能识别常见虚拟网卡，多实体网卡选错时再引入路由检测。
+            priority:
+              Number(
+                /virtual|vethernet|vmware|vbox|docker|wsl|vpn|tailscale|zerotier|wireguard|^(utun|tun|tap)\d*/i.test(
+                  name,
+                ),
+              ) + (n.address.startsWith('169.254.') ? 2 : 0),
+          })),
+      )
+      .sort((a, b) => a.priority - b.priority)
       .map((n) => `https://${n.address}:${this.port}`);
     return {
       enabled: !!this.server,
@@ -252,16 +275,19 @@ class MobileServer {
   }
   async openPairing() {
     await this.enable();
+    this.pairing = null;
+    const status = this.status();
+    if (!status.addresses.length)
+      throw fail(409, '未找到可用的局域网 IPv4 地址，请连接 Wi-Fi 或以太网后重试。');
     this.pairing = {
       pin: String(randomInt(100000, 1000000)),
       secret: randomBytes(24).toString('hex'),
       expires: Date.now() + 120000,
       attempts: 0,
     };
-    const status = this.status();
     const payload = JSON.stringify({
       v: 1,
-      address: status.addresses[0] || '',
+      address: status.addresses[0],
       fingerprint: this.fingerprint,
       secret: this.pairing.secret,
     });

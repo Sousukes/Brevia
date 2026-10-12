@@ -129,13 +129,13 @@ assert.match(
 );
 assert.match(
   text(html),
-  /class="floating-control-bar live-control-bar"[^]*id="pause"[^]*id="end-meeting"[^]*id="mark-important"[^]*id="live-more-toggle"/,
-  'live controls follow pause, end, mark, more order',
+  /class="floating-control-bar live-control-bar"[^]*id="pause"[^]*id="mark-important"[^]*id="end-meeting"[^]*id="live-more-toggle"/,
+  'live controls follow pause, mark, end, more order',
 );
 assert.match(
   text(html),
-  /class="player floating-control-bar"[^]*id="player-time"[^]*id="play"[^]*id="player-duration"[^]*id="progress"/,
-  'playback controls and timeline stay in the compact floating bar',
+  /class="player floating-control-bar"[^]*id="player-time"[^]*id="player-duration"[^]*id="play"[^]*id="progress"/,
+  'playback time and duration precede the controls and timeline',
 );
 assert.match(
   text(tailwind),
@@ -2262,11 +2262,11 @@ assert.match(
   text(tailwind),
   /\.share-platform\s+svg\s+\{\s+@apply\s+row-span-2\s+h-5\s+w-5\s+shrink-0/,
 );
-assert.match(text(components), /data-regenerate-summary[^]*summaryActionIcons\.refresh/);
-assert.match(text(components), /data-copy-summary[^]*summaryActionIcons\.copy/);
+assert.match(text(components), /data-regenerate-summary/);
+assert.match(text(components), /data-copy-summary[^]*interfaceIcon\('copy'\)/);
 assert.match(text(app), /data-copy-summary[\s\S]{0,300}share\s*\.copyText/);
 assert.match(text(app), /trashCopy\(locale\)\.slogan/);
-assert.match(text(components), /data-open-summary-edit[^]*summaryActionIcons\.edit/);
+assert.match(text(components), /data-open-summary-edit[^]*interfaceIcon\('edit'\)/);
 assert.match(text(js), /data-regenerate-summary/);
 assert.match(
   text(app),
@@ -3145,7 +3145,7 @@ assert.match(text(css), /\.mini-playback\{/);
 assert.match(text(js), /function openOnboardingLanguage/);
 assert.match(text(js), /type="radio" name="locale"/);
 assert.match(text(js), /data-language-wheel-value/);
-assert.match(text(js), /onboarding-actions onboarding-page-copy/);
+assert.match(text(js), /onboarding-actions"><button class="modal-action" type="submit"/);
 assert.match(text(js), /onboarding-language-page/);
 assert.doesNotMatch(text(js), /data-onboarding-exit/);
 assert.match(text(js), /onboarding-page/);
@@ -3177,7 +3177,10 @@ assert.match(text(js), /updateOnboardingLanguageCopy/);
 assert.match(text(js), /function openOnboardingSetup/);
 assert.doesNotMatch(text(js), /name="onboarding-performance-mode"/);
 assert.doesNotMatch(text(js), /'zipformer-ctc-zh-streaming-int8'/);
-assert.match(text(js), /className = 'onboarding-page onboarding-active'/);
+assert.match(
+  text(js),
+  /className = 'onboarding-page onboarding-active onboarding-language-overlay'/,
+);
 assert.match(text(js), /onboarding-page onboarding-active onboarding-\$\{kind\}-overlay/);
 assert.doesNotMatch(text(js), /onboarding-page onboarding-active onboarding-\$\{kind\}-page/);
 assert.doesNotMatch(text(js), /document\.body\.classList\.(?:add|remove)\('onboarding-active'\)/);
@@ -3212,7 +3215,7 @@ assert.match(text(js), /function preferredModelForLanguage\(/);
 assert.match(text(js), /data-onboarding-estimate/);
 assert.doesNotMatch(text(js), /onboardingModelSelectionCopy/);
 assert.match(text(js), /onboarding-model-grid/);
-assert.match(text(js), /onboardingSecurityCopy/);
+assert.match(text(js), /onboarding-folder-section\" open/);
 assert.match(text(js), /src="\.\/assets\/brevia-logo\.svg"/);
 assert.match(
   text(i18nData),
@@ -3535,7 +3538,8 @@ assert.match(
   /if \(!state\.lastFinalized\.text && !state\.current\.text\) followLiveCaption = true;/,
 );
 assert.match(text(floatingCaption), /captionContainer\.scrollTop = captionContainer\.scrollHeight/);
-assert.match(text(floatingCaptionHtml), /max-height: 220px;[\s\S]*overflow-y: auto;/);
+assert.match(text(floatingCaptionHtml), /\.caption-shell \{[^}]*display: flex;[^}]*height: 100vh;/);
+assert.match(text(floatingCaptionHtml), /max-height: none;[\s\S]*overflow-y: auto;/);
 assert.match(
   text(floatingCaptionHtml),
   /\.caption-controls \{[\s\S]*z-index: 1;[\s\S]*opacity: 1;/,
@@ -3552,7 +3556,7 @@ assert.match(text(electronMain), /translationPending: floatingCaptionState\.tran
 assert.match(text(js), /function showRefinementProgress/);
 assert.match(text(js), /function refinementTitle\(meetingId\)/);
 assert.match(text(js), /refinementTitle\(meeting_id\), meeting_id, stage/);
-assert.match(text(js), /\$\{copy\.title\} - \$\{refinementMeetingTitle\}/);
+assert.match(text(js), /target\.textContent = refinementMeetingTitle/);
 assert.match(text(js), /\$\{copy\.waiting\} · \$\{Math\.round\(ratio \* 100\)\}%/);
 assert.equal(localeContext.window.BreviaLocaleData.catalog.en.labels['转写中'], 'Transcribing');
 
@@ -3791,7 +3795,10 @@ const summaryContext = {
   onboardingOnlineProvider: false,
   onboardingBuiltinProvider: false,
   chinaModelSourceToggle: () => '<input data-china-model-source />',
-  settingsModal: { querySelector: (selector) => summaryNodes[selector] },
+  settingsModal: {
+    classList: { contains: () => false },
+    querySelector: (selector) => summaryNodes[selector],
+  },
 };
 runInNewContext(`${text(components)}\nthis.escapeHtml = escapeHtml;`, summaryContext);
 // escapeHtml 是所有模型名/会议名/用户文本进 innerHTML 的唯一出口，它就是 XSS 边界。
@@ -3840,7 +3847,7 @@ assert.doesNotMatch(
   /data-generate-summary/,
 );
 runInNewContext(
-  `${summaryConst('const summaryProviders = ')}${summaryConst('const summaryProviderPresets = ', true)}\n${summaryFn('summaryProviderLabel')}${summaryFn('providerEntry')}${summaryFn('builtinModelPicker')}${summaryFn('builtinModelEmptyState')}${summaryConst('const RECOMMENDED_BUILTIN_MODEL_ID = ')}${summaryFn('renderModelConfigFields')}${summaryFn('renderModelConfigForm')}${summaryFn('renderSummaryModelForm')}${summaryFn('renderSummaryModelModal')}`,
+  `${summaryConst('const summaryProviders = ')}${summaryConst('const summaryProviderPresets = ', true)}\n${summaryFn('summaryProviderLabel')}${summaryFn('providerEntry')}${summaryFn('builtinModelPicker')}${summaryFn('builtinModelEmptyState')}${summaryConst('const RECOMMENDED_BUILTIN_MODEL_ID = ')}${summaryFn('renderModelConfigFields')}${summaryFn('renderModelConfigForm')}${summaryFn('renderSummaryModelForm')}${summaryFn('renderAiSettingsTabs')}${summaryFn('renderAiServiceChoice')}${summaryFn('renderSummaryModelModal')}`,
   summaryContext,
 );
 const summaryCatalogModels = [
@@ -4132,7 +4139,8 @@ assert.match(text(components), /command === 'highlight'/);
 assert.match(text(html), /data-live-notes-root\s*><div\s+class="ai-assist-empty"/);
 assert.doesNotMatch(text(html), /notes-mode-tabs/);
 assert.doesNotMatch(text(html), /data-transcript-search/);
-assert.doesNotMatch(text(app), /data-transcript-search/);
+assert.match(text(components), /data-transcript-search/);
+assert.match(text(app), /function filterDetailTranscript/);
 assert.match(
   text(tailwind),
   /\.notes-find-pop\s+\{\s+position:\s+absolute;[^}]*top:\s+64px;[^}]*width:\s+min\(26rem/,
@@ -4347,8 +4355,34 @@ assert.match(
   'refinement sends its own settings without a translation target',
 );
 
+// 设置可下载模型与已安装模型共同展示；默认值优先已安装，切换服务不会丢失密钥草稿。
+summaryContext.locale = 'zh';
+summaryContext.settingsModal.classList.contains = () => true;
+summaryContext.modelCatalog = summaryCatalogModels;
+summaryContext.modelPaths = new Map([['qwen3.5-4b-q4km', '/tmp/installed']]);
+summaryContext.selectedBuiltinModel = '';
+summaryContext.summaryConfigDraft = {
+  version: 2,
+  enabled: false,
+  provider: 'built-in',
+  providers: {},
+};
+summaryContext.renderSummaryModelModal();
+assert.match(summaryNodes['.modal-body'].innerHTML, /data-ai-settings-tab="summary-model"/);
+assert.match(summaryNodes['.modal-body'].innerHTML, /data-ai-settings-tab="ai-assist"/);
+assert.match(summaryNodes['.modal-body'].innerHTML, /name="model" value="qwen3.5-4b-q4km"/);
+assert.doesNotMatch(summaryNodes['.modal-body'].innerHTML, /type="submit" disabled/);
+const onlineDraft = { provider: 'openai', providers: {} };
+summaryContext.modelConfigSecrets.set(onlineDraft, { openai: 'draft-key' });
+const onlineMarkup = summaryContext.renderModelConfigFields(onlineDraft, '').markup;
+assert.match(onlineMarkup, /value="draft-key"/);
+assert.match(onlineMarkup, /data-toggle-secret/);
+assert.doesNotMatch(onlineMarkup, /data-value="built-in"/);
+summaryContext.settingsModal.classList.contains = () => false;
+
 // 进阶设置表单必须覆盖 settings.json 的每个字段，并把两层配置渲染成可保存的路径。
 const advancedContext = {
+  interfaceIcon: summaryContext.interfaceIcon,
   window: localeContext.window,
   locale: 'zh',
   escapeHtml: (value) => String(value ?? ''),

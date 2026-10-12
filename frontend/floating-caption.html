@@ -25,21 +25,28 @@
         -webkit-user-select: none;
       }
 
-      .caption-shell {
-        position: relative;
-      }
+      .caption-shell { display: flex; flex-direction: column; height: 100vh; position: relative; --caption-size: 20px; }
+      .caption-header { flex:none; display:flex; align-items:center; gap:12px; padding:10px 48px 10px 16px; background:#fafafa; border-bottom:1px solid #eaeaea; border-radius:12px 12px 0 0; font-size:14px; color:#666; }
+      .caption-header strong { margin-right:auto; font-weight:500; }
+      .caption-header button { border:0; background:transparent; color:inherit; min-width:28px; min-height:28px; font:inherit; cursor:pointer; }
+      .caption-header button[aria-pressed="true"] { color:#222; background:#eaeaea; border-radius:4px; }
+      .caption-header button:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+      .caption-size-value { font-variant-numeric:tabular-nums; }
+
 
       .caption-container {
-        padding: 16px 44px 16px 20px;
-        min-height: 116px;
+        padding: 16px 20px;
+        border-top: 0;
+        border-radius: 0 0 12px 12px;
+        flex: 1;
+        min-height: 0;
         position: relative;
         background: #ffffff;
 
-        -webkit-
         border: 1px solid #eaeaea;
-        border-radius: 12px;
+        border-radius: 0 0 12px 12px;
         box-shadow: 0 4px 16px rgba(0,0,0,.08);
-        max-height: 220px;
+        max-height: none;
         overflow-y: auto;
         overscroll-behavior: contain;
         scrollbar-color: rgba(255, 255, 255, 0.48) transparent;
@@ -64,8 +71,8 @@
 
       .caption-controls {
         position: absolute;
-        top: 8px;
-        right: 8px;
+        top: 14px;
+        right: 12px;
         z-index: 1;
         display: flex;
         gap: 8px;
@@ -84,7 +91,7 @@
         height: 20px;
         border: none;
         background: transparent;
-        color: rgba(255, 255, 255, 0.72);
+        color: #666666;
         cursor: pointer;
         font-size: 0;
         line-height: 1;
@@ -116,7 +123,7 @@
       }
 
       .caption-text {
-        font-size: clamp(20px, 2vw, 32px);
+        font-size: var(--caption-size);
         line-height: 1.5;
         font-weight: normal;
         color: #222222;
@@ -132,10 +139,10 @@
       }
 
       .caption-finalized {
-        font-size: clamp(16px, 1.6vw, 24px);
+        font-size: var(--caption-size);
         line-height: 1.4;
         font-weight: normal;
-        color: rgba(255, 255, 255, 0.82);
+        color: #666666;
         text-shadow: none;
         word-wrap: break-word;
         overflow-wrap: break-word;
@@ -202,7 +209,9 @@
         body, .caption-text { color: #f2f2f2; }
         .caption-container, .caption-container:hover { background: #191919; border-color: #333333; }
         .caption-translation { color: #b0b0b0; }
-        .close-btn { color: #f2f2f2; }
+        .close-btn, .caption-finalized { color: #b0b0b0; }
+        .caption-header { background:#151515; border-color:#333; color:#b0b0b0; }
+        .caption-header button[aria-pressed="true"] { color:#f2f2f2; background:#333; }
       }
       @media (prefers-reduced-motion: reduce) {
         .caption-fade { animation: none; }
@@ -211,7 +220,26 @@
   </head>
   <body>
     <div class="caption-shell">
-      <div class="caption-controls">
+      <header class="caption-header"
+        ><strong>Brevia · <span data-caption-title>实时字幕</span></strong
+        ><button id="caption-pin" type="button" aria-pressed="true" aria-label="置顶"
+          ><svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m16 3 5 5-3 1-4 4 1 4-3 3-4-4-4-4 3-3 4 1 4-4 1-3Z" />
+            <path d="m8 16-5 5" /></svg></button
+        ><button id="caption-smaller" type="button" aria-label="减小字号">A−</button
+        ><span class="caption-size-value">20</span
+        ><button id="caption-larger" type="button" aria-label="增大字号">A+</button></header
+      ><div class="caption-controls">
         <button class="close-btn" id="close-btn" title="" aria-label="">×</button>
       </div>
       <div class="caption-container" id="caption-container">

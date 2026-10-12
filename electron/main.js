@@ -62,7 +62,11 @@ function handleIpc(channel, callback) {
         !(
           page === mainPage ||
           (page === captionPage &&
-            ['floating-caption.close', 'floating-caption.move'].includes(channel))
+            [
+              'floating-caption.close',
+              'floating-caption.move',
+              'floating-caption.set-always-on-top',
+            ].includes(channel))
         )
       )
         throw new Error('Untrusted IPC sender');
@@ -2081,14 +2085,15 @@ function createWindow() {
   const window = new BrowserWindow({
     width: Math.min(1280, width),
     height: Math.min(800, height),
+    useContentSize: true,
     minWidth: 880,
     minHeight: 640,
     show: false,
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      // 与 1440×900 设计稿按相同比例缩小，页面重载后仍保持一致。
-      zoomFactor: 1280 / 1440,
+      // 页面直接以 1280×800 CSS 像素布局，不再通过浏览器缩放压缩字体。
+      zoomFactor: 1,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,

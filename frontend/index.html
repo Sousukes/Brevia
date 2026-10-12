@@ -47,12 +47,12 @@
             data-interface-icon="upload"
             aria-hidden="true"
           ></span
-          ><span class="import-recording-label">导入录音</span></button
+          ><span class="import-recording-label">导入本地音频</span></button
         >
         <nav>
           <div class="workspace-container"></div>
           <button class="nav-item active" id="all-meetings" data-view="home" aria-expanded="true"
-            ><span data-interface-icon="document" aria-hidden="true"></span> 所有会议</button
+            ><span data-interface-icon="document" aria-hidden="true"></span> 会议库</button
           >
           <button class="nav-item" id="recently-deleted" data-view="home"
             ><span data-interface-icon="trash" aria-hidden="true"></span> 最近删除</button
@@ -142,8 +142,9 @@
 
       <section class="workspace">
         <header class="window-bar"
-          ><div class="traffic"><i></i><i></i><i></i></div><span id="crumb">所有会议</span
-          ><small class="app-credit">Powered by zerolovesea</small
+          ><div class="traffic"><i></i><i></i><i></i></div
+          ><strong class="window-wordmark" translate="no">Brevia</strong
+          ><span id="crumb">所有会议</span><small class="app-credit">Powered by zerolovesea</small
           ><div class="window-actions"
             ><small id="app-version">v—</small
             ><a
@@ -183,9 +184,13 @@
 
         <section class="view active" id="home-view">
           <div class="page-head"
+            ><button class="back" id="trash-back" type="button" data-view="home" hidden
+              ><span data-interface-icon="back"></span>返回会议库</button
             ><div
               ><button class="eyebrow" id="home-eyebrow" type="button" disabled>会议库</button
               ><h1 id="home-slogan">每一场对话，都留有依据。</h1></div
+            ><button class="secondary" id="workspace-edit" type="button" hidden
+              ><span data-interface-icon="edit"></span>编辑工作区</button
             ><button class="primary-action" data-view="prepare" data-prepare-mode="record"
               ><span data-interface-icon="plus" aria-hidden="true"></span>开始会议</button
             ></div
@@ -226,8 +231,9 @@
           <button class="back" data-view="home">← 返回会议库</button
           ><div class="prepare-layout"
             ><div
-              ><h1>开始一场会议</h1
               ><form id="meeting-form"
+                ><header class="prepare-heading"
+                  ><h1>开始一场会议</h1><p data-prepare-description></p></header
                 ><section class="audio-import" hidden>
                   <div class="audio-dropzone" tabindex="0" role="button" aria-label="选择音频文件">
                     <span data-interface-icon="document" aria-hidden="true"></span
@@ -253,9 +259,14 @@
                       value="会议"
                       maxlength="120"
                       required /></label
-                  ><div class="form-grid"></div></div
+                  ><div class="form-grid"></div
+                  ><div class="prepare-extra-settings" data-prepare-extra-settings></div></div
+                ><section class="prepare-processing" hidden
+                  ><h2>处理选项</h2><div data-prepare-processing></div></section
+                ><p class="prepare-error" data-prepare-error role="alert" hidden></p
                 ><fieldset
                   ><legend>录制来源</legend
+                  ><p class="prepare-source-description" data-prepare-source-description></p
                   ><div class="capture-settings"
                     ><label>采集模式<span id="capture-mode-mount"></span></label
                     ><label id="mic-device-setting"
@@ -308,7 +319,7 @@
           <div class="live-layout"
             ><section class="live-notes"
               ><header class="live-section-head"
-                ><p class="eyebrow">我的笔记</p
+                ><p class="eyebrow"><span data-interface-icon="document"></span>我的笔记</p
                 ><button
                   class="ai-assist-toggle"
                   data-ai-assist-toggle
@@ -318,6 +329,15 @@
                   ><span class="ai-assist-toggle-star" data-interface-icon="ai"></span>
                   <span data-ai-assist-toggle-label>AI 笔记</span></button
                 ><button class="text-button" data-ai-request type="button" hidden>请求建议</button
+                ><button
+                  class="icon-button"
+                  data-toggle-notes-toolbar
+                  type="button"
+                  aria-label="格式工具"
+                  title="格式工具"
+                  aria-controls="live-notes-toolbar"
+                  aria-expanded="false"
+                  ><span data-interface-icon="more"></span></button
                 ><button
                   class="live-mode-toggle"
                   data-toggle-live-mode="caption"
@@ -339,7 +359,7 @@
                 ><div class="ai-assist-empty" data-ai-assist-empty hidden></div></div></section
             ><section class="live-captions"
               ><header class="live-section-head"
-                ><p class="eyebrow">实时字幕</p
+                ><p class="eyebrow"><span data-interface-icon="waveform"></span>实时转写</p
                 ><button
                   class="live-mode-toggle"
                   data-toggle-live-mode="notes"
@@ -363,24 +383,23 @@
             ></div
           ><div class="floating-control-bar live-control-bar"
             ><div class="control-source"
-              ><svg
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-              >
-                <rect x="7" y="2" width="6" height="11" rx="3" />
-                <path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v3m-3 0h6" /></svg
+              ><span data-live-source-icon
+                ><svg
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                >
+                  <rect x="7" y="2" width="6" height="11" rx="3" />
+                  <path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v3m-3 0h6" /></svg></span
               ><i class="input-meter" data-live-mic-level aria-hidden="true"></i
               ><span id="live-input-label">输入良好</span></div
             ><div class="control-primary"
               ><button class="pause-button" id="pause"
                 ><span data-interface-icon="pause" aria-hidden="true"></span
                 ><span>暂停</span></button
-              ><button class="end-button" id="end-meeting">结束会议</button></div
-            ><div class="control-secondary"
               ><button class="mark-button" id="mark-important" type="button" title="重点"
                 ><svg
                   viewBox="0 0 20 20"
@@ -392,6 +411,8 @@
                 >
                   <path d="M5 3h10v14l-5-3-5 3z" /></svg
                 ><span>重点</span></button
+              ><button class="end-button" id="end-meeting">结束会议</button></div
+            ><div class="control-secondary"
               ><div class="live-more"
                 ><button
                   class="live-more-toggle"
@@ -475,20 +496,11 @@
                 stroke-linejoin="round"
               >
                 <path d="m10 3-5 5 5 5" /></svg></button></div
-          ><section class="player floating-control-bar"
-            ><div class="player-source"
-              ><svg
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 8v4h3l4 3V5L6 8H3z" />
-                <path d="M13 7a4 4 0 0 1 0 6m2-9a8 8 0 0 1 0 12" /></svg
-              ><span>本地录音</span><span class="player-time" id="player-time">00:00</span></div
+          ><section class="player floating-control-bar">
+            <div class="player-source"
+              ><span class="player-time" id="player-time">00:00</span
+              ><span aria-hidden="true">/</span
+              ><span class="player-duration" id="player-duration">00:00</span></div
             ><div class="player-actions"
               ><button class="skip" type="button" aria-label="后退 15 秒"
                 ><span data-interface-icon="skip-back" aria-hidden="true"></span></button
@@ -497,7 +509,6 @@
               ><button class="skip" type="button" aria-label="前进 15 秒"
                 ><span data-interface-icon="skip-forward" aria-hidden="true"></span></button></div
             ><div class="player-meta"
-              ><span class="player-duration" id="player-duration">00:00</span
               ><div class="player-speed flow-select"
                 ><button
                   class="flow-select-toggle"
@@ -561,9 +572,16 @@
     <script src="./onboarding.js"></script>
     <script src="./app.js"></script>
     <div id="mobile-dialog" hidden
-      ><div class="modal-form-actions"
-        ><button class="modal-action" id="mobile-pair">连接新设备</button></div
-      ><div id="mobile-devices"></div>
+      ><div class="mobile-device-grid"
+        ><section class="mobile-connect-panel"
+          ><h3>手机连接</h3><p>手机录音，电脑转写。也可以离线录音，稍后确认上传。</p
+          ><span class="mobile-service-state" id="mobile-service-state"></span
+          ><div class="modal-form-actions"
+            ><button class="modal-action" id="mobile-pair">连接新设备</button></div
+          ></section
+        ><section class="mobile-trusted-panel"
+          ><h3>信任设备</h3><div id="mobile-devices"></div></section
+      ></div>
       <section class="mobile-install" aria-labelledby="mobile-install-title">
         <h3 id="mobile-install-title">安装Brevia手机端</h3>
         <p
@@ -586,7 +604,7 @@
               />
             </a>
             <div
-              ><h4>iPhone · TestFlight 内测</h4
+              ><h4><span data-interface-icon="apple"></span>iPhone · TestFlight 内测</h4
               ><p
                 >扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App
                 Store 正式上架。</p
@@ -614,7 +632,7 @@
               />
             </a>
             <div
-              ><h4>Android</h4>
+              ><h4><span data-interface-icon="android"></span>Android</h4>
               <p>扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。</p>
               <a
                 class="modal-action"
@@ -628,18 +646,42 @@
         </div> </section
       ><p id="mobile-dialog-status" role="status"></p
     ></div>
-    <dialog id="mobile-pair-dialog" aria-labelledby="mobile-pair-title">
+    <dialog
+      id="mobile-pair-dialog"
+      aria-labelledby="mobile-pair-title"
+      aria-describedby="mobile-pair-description"
+    >
       <header class="mobile-pair-header"
-        ><h2 id="mobile-pair-title">连接新设备</h2
-        ><button class="secondary" id="mobile-close-pairing">停止配对</button></header
-      >
+        ><div
+          ><h2 id="mobile-pair-title">连接新设备</h2
+          ><p id="mobile-pair-description"
+            >在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。</p
+          ></div
+        ><button class="icon-button" id="mobile-dismiss-pairing" type="button" aria-label="关闭"
+          ><span data-interface-icon="close"></span></button
+      ></header>
       <div id="mobile-pairing" hidden
-        ><img id="mobile-qr" alt="手机配对二维码" width="220" height="220" /><div
-          ><p id="mobile-pin"></p><p id="mobile-address">2 分钟内有效</p></div
+        ><div class="mobile-pair-qr"
+          ><img id="mobile-qr" alt="手机配对二维码" width="180" height="180" /></div
+        ><div class="mobile-pair-code"
+          ><h3>配对码</h3
+          ><div class="mobile-pin-field"
+            ><p id="mobile-pin"></p
+            ><button class="icon-button" id="mobile-copy-pin" type="button" aria-label="复制配对码"
+              ><span data-interface-icon="copy"></span></button></div
+          ><p class="mobile-pair-time"
+            >剩余时间 <strong id="mobile-address" role="timer">02:00</strong></p
+          ><p class="mobile-pair-hint"
+            ><span data-interface-icon="info"></span>请核对手机与电脑显示的校验词，再允许连接。</p
+          ></div
         ></div
       >
       <div id="mobile-approval" role="status"></div>
       <p id="mobile-pair-error" role="alert"></p>
+      <footer class="mobile-pair-actions"
+        ><button class="secondary" id="mobile-retry-pairing" type="button" hidden>重新配对</button
+        ><button class="secondary" id="mobile-close-pairing" type="button">取消配对</button></footer
+      >
     </dialog>
     <script src="./mobile-connection.js"></script>
   </body>

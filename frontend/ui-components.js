@@ -11,10 +11,19 @@ const checkIconSvg =
 /** 界面共用线框图标；名称固定，外部文本不参与 SVG 插值。 */
 function interfaceIcon(name) {
   const paths = {
+    chat: '<path d="M3 4h18v13H9l-6 4V4zM7 8h10M7 12h7"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3" cy="6" r=".8" fill="currentColor"/><circle cx="3" cy="12" r=".8" fill="currentColor"/><circle cx="3" cy="18" r=".8" fill="currentColor"/>',
+    copy: '<rect x="8" y="7" width="12" height="14" rx="2"/><path d="M16 7V3H4v14h4"/>',
+    laptop:
+      '<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M2 17h20v3H2zM8 7h8M8 11h6"/>',
     document: '<path d="M5 3h9l5 5v13H5zM14 3v5h5M8 12h8M8 16h8"/>',
     folder: '<path d="M3 7V5h7l2 2h9v13H3z"/>',
     microphone:
       '<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v5M8 22h8"/>',
+    apple:
+      '<path d="M13 6c0-3 2-4 4-4 0 2-1 4-4 4Z"/><path d="M17 12c0-2 1-3 3-4-1-2-4-3-6-2l-2 1-2-1C5 4 2 8 3 13c1 5 3 9 5 9l4-1 4 1c2 0 4-4 5-6-3-1-4-2-4-4Z"/>',
+    android:
+      '<path d="m7 3 2 3m8-3-2 3M5 11V9a7 7 0 0 1 14 0v2H5ZM5 13h14v6H5zM8 19v3m8-3v3M2 13v6m20-6v6"/><path d="M9 9h.01M15 9h.01"/>',
     phone: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/>',
     advanced:
       '<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>',
@@ -29,6 +38,8 @@ function interfaceIcon(name) {
     ai: '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>',
     globe:
       '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
+    eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+    back: '<path d="M20 12H4m6-6-6 6 6 6"/>',
     appearance: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v4M8 21h8"/>',
     storage:
       '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/>',
@@ -36,6 +47,8 @@ function interfaceIcon(name) {
     play: '<path d="m8 4 12 8-12 8z"/>',
     pause: '<path d="M8 4v16M16 4v16"/>',
     stop: '<rect x="5" y="5" width="14" height="14" rx="1"/>',
+    record:
+      '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/>',
     recording: '<circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/>',
     'play-circle': '<circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z"/>',
     plus: '<path d="M12 4v16M4 12h16"/>',
@@ -50,6 +63,9 @@ function interfaceIcon(name) {
     checkbox: '<rect x="4" y="4" width="16" height="16" rx="2"/>',
     more: '<path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/>',
     warning: '<path d="m12 3 10 18H2zM12 9v5M12 17h.01"/>',
+    'arrow-right': '<path d="M4 12h16m-6-6 6 6-6 6"/>',
+    edit: '<path d="m4 16 12-12 4 4L8 20H4zM14 6l4 4"/>',
+    person: '<circle cx="12" cy="7" r="4"/><path d="M4 21v-3c0-6 16-6 16 0v3"/>',
     'chevron-down': '<path d="m6 9 6 6 6-6"/>',
     'chevron-right': '<path d="m9 6 6 6-6 6"/>',
     'skip-back':
@@ -60,11 +76,23 @@ function interfaceIcon(name) {
   return `<svg class="interface-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.document}</svg>`;
 }
 /** 引导仅表达现有步骤；内容和提交事件仍由各步骤拥有。 */
-function renderOnboardingRail(kind) {
+function renderOnboardingRail(kind, displayLocale = locale) {
+  const translate = (key) =>
+    window.BreviaLocaleData.appCopy.stageLabels[key]?.[displayLocale] ||
+    window.BreviaLocaleData.catalog[displayLocale].labels[key] ||
+    key;
   const stages = ['language', 'permissions', 'setup', 'ai', 'phone', 'tour'];
   const active = Math.max(0, stages.indexOf(kind));
-  const labels = ['界面语言', '系统权限', '模型与存储', 'AI 功能', '手机连接', '功能演示'];
-  return `<aside class="onboarding-rail"><strong class="onboarding-wordmark">Brevia</strong><h2>${escapeHtml(t('让每一次对话，都有记录。'))}</h2><p>${escapeHtml(t('录制会议，转写内容，生成要点。'))}</p><div class="onboarding-mechanism">${['microphone', 'document', 'ai'].map((icon, index) => `<span>${interfaceIcon(icon)}<b>${escapeHtml(t(['录制会议', '转写文字', '生成笔记'][index]))}</b></span>`).join('')}</div><ol>${labels.map((label, index) => `<li${index === active ? ' aria-current="step"' : ''}><span>${index + 1}</span>${escapeHtml(t(label))}</li>`).join('')}</ol></aside>`;
+  const labels = ['语言', '权限', '模型与存储', 'AI 功能', '手机连接', '功能演示'];
+  const details = [
+    '选择界面语言',
+    '授予必要权限',
+    '选择 AI 模型与本地存储',
+    '配置记录与总结能力',
+    '可选，将手机与 Brevia 连接',
+    '快速了解核心功能',
+  ];
+  return `<aside class="onboarding-rail"><strong class="onboarding-wordmark" translate="no">Brevia</strong><h2>${escapeHtml(translate('让每一次对话，都有记录。'))}</h2><p>${escapeHtml(translate('录制会议，转写内容，生成要点，帮助你专注于真正重要的事。'))}</p><div class="onboarding-mechanism">${['microphone', 'document', 'list'].map((icon, index) => `${index ? `<i aria-hidden="true">${interfaceIcon('arrow-right')}</i>` : ''}<span>${interfaceIcon(icon)}<b>${escapeHtml(translate(['录制会议', '转写文字', '生成笔记'][index]))}</b><small>${escapeHtml(translate(['高质量录音', '快速准确', '提炼要点'][index]))}</small></span>`).join('')}</div><ol>${labels.map((label, index) => `<li${index === active ? ' aria-current="step"' : ''}><span>${index + 1}</span><div>${escapeHtml(translate(label))}<small>${escapeHtml(translate(details[index]))}</small></div></li>`).join('')}</ol></aside>`;
 }
 /** 设置导航与内容共用原有动作键，避免产生第二套设置状态。 */
 function renderSettingsNavigation(kind) {
@@ -76,9 +104,9 @@ function renderSettingsNavigation(kind) {
     ['speaker-profiles', '声纹管理', 'microphone'],
     ['device-connection', '设备连接', 'phone'],
     ['storage', '存储与隐私', 'storage'],
-    ['whats-new', '版本更新', 'info'],
+    ['whats-new', '关于与更新', 'info'],
   ];
-  return `<nav class="settings-navigation" aria-label="${escapeHtml(t('设置'))}"><h2>${escapeHtml(t('设置'))}</h2>${items.map(([key, label, icon]) => `<button type="button" data-settings-page="${key}"${key === kind ? ' aria-current="page"' : ''}>${interfaceIcon(icon)}<span>${escapeHtml(t(label))}</span></button>`).join('')}</nav>`;
+  return `<nav class="settings-navigation" aria-label="${escapeHtml(t('设置'))}"><h2>${escapeHtml(t('设置'))}</h2>${items.map(([key, label, icon]) => `<button type="button" data-settings-page="${key}"${key === (['summary-model', 'ai-assist'].includes(kind) ? 'ai-features' : kind) ? ' aria-current="page"' : ''}>${interfaceIcon(icon)}<span>${escapeHtml(t(label))}</span></button>`).join('')}</nav>`;
 }
 /** 会议纪要操作共用图标。 */
 const summaryActionIcons = {
@@ -255,7 +283,7 @@ function renderMeetingRow(
   const workspaceBadge = workspace
     ? `<div class="workspace-badge">${interfaceIcon('folder')}${escapeHtml(workspace.name)}</div>`
     : '';
-  return `<article class="meeting-row" data-meeting-index="${index}" data-selection-key="${escapeHtml(id || String(index))}" tabindex="0" aria-selected="false"${id ? ` data-meeting-id="${escapeHtml(id)}"` : ''}${!deleted && id ? ' draggable="true"' : ''}><span class="meeting-row-icon">${interfaceIcon('document')}</span><div class="meeting-main">${heading}<p>${escapeHtml(meta)}</p><div class="meeting-tags">${workspaceBadge}${tags
+  return `<article class="meeting-row" data-meeting-index="${index}" data-selection-key="${escapeHtml(id || String(index))}" tabindex="0" aria-selected="false"${id ? ` data-meeting-id="${escapeHtml(id)}"` : ''}${!deleted && id ? ' draggable="true"' : ''}><input class="meeting-row-checkbox" type="checkbox" data-select-meeting aria-label="${escapeHtml(t('选择'))} ${escapeHtml(title)}" /><span class="meeting-row-icon">${interfaceIcon('document')}</span><div class="meeting-main">${heading}<p>${escapeHtml(meta)}</p><div class="meeting-tags">${workspaceBadge}${tags
     .filter((tag) => tag !== '手机录音')
     .map((tag) => `<div class="tag">${escapeHtml(tag)}</div>`)
     .join(
@@ -269,6 +297,8 @@ function renderSettingsCard({ title, description, action, modal }) {
 /** 渲染语言相关的设置卡片，不重置其他视图。 */
 function renderSettingsView() {
   const mobileCard = document.getElementById('mobile-connection');
+  const speakerCard = document.getElementById('speaker-profiles-entry');
+  const aboutCard = document.getElementById('app-update-entry');
   document.querySelector('#settings-view .settings-grid').innerHTML =
     `<h2 class="settings-group">${escapeHtml(t('会议与 AI'))}</h2><section class="settings-card" id="installed-models">${interfaceIcon('model')}<h2>${t('模型库')}</h2><p>${t('下载和管理本地语音识别模型，为字幕、精修和说话人识别提供能力。')}</p><button class="secondary settings-row-action" data-settings-modal="models" aria-label="${escapeHtml(t('管理模型库'))}">${interfaceIcon('chevron-right')}</button></section>${uiData.settings.cards
       .filter((card) => card.modal !== 'storage')
@@ -280,6 +310,9 @@ function renderSettingsView() {
       .map(renderSettingsCard)
       .join('')}`;
   if (mobileCard) document.getElementById('storage').before(mobileCard);
+  if (speakerCard) document.getElementById('storage').before(speakerCard);
+  if (speakerCard && mobileCard) mobileCard.before(speakerCard);
+  if (aboutCard) document.querySelector('#settings-view .settings-grid').append(aboutCard);
   const grid = document.querySelector('#settings-view .settings-grid');
   grid.insertAdjacentHTML(
     'afterbegin',
@@ -298,8 +331,9 @@ function renderSettingsView() {
       ],
     )}</section><section class="settings-card settings-preferences">${interfaceIcon('appearance')}<h2>${escapeHtml(t('外观'))}</h2><p>${escapeHtml(t('切换主题'))}</p>${flowSelect(
       'interface-theme',
-      document.documentElement.dataset.theme || 'light',
+      typeof theme !== 'undefined' ? theme : 'system',
       [
+        ['system', t('跟随系统')],
         ['light', t('浅色')],
         ['dark', t('深色')],
       ],
@@ -799,14 +833,12 @@ function createNotesEditor(root, options = {}) {
       input.value = htmlToMarkdown(editor);
       editor.hidden = true;
       input.hidden = false;
-      toolbar.hidden = false;
       urlPop.hidden = true;
       tablePop.hidden = true;
     } else {
       editor.innerHTML = renderMarkdown(input.value);
       editor.hidden = false;
       input.hidden = true;
-      toolbar.hidden = false;
     }
   }
   /** 把当前选区的块格式标到工具栏上，让「引用」「标题」等开关状态可见（可再次点击关闭）。@returns {void} */
@@ -1216,14 +1248,16 @@ function renderMeetingSummary({ markdown, blocked = false, generating = false, e
   const blockedAttrs = blocked
     ? ` disabled title="${escapeHtml(t('实时会议中，结束后再生成会议纪要。'))}"`
     : '';
+  const tools =
+    !editing && !generating && markdown
+      ? `<div class="summary-tools"><button class="secondary" data-open-summary-edit type="button">${interfaceIcon('edit')}${t('编辑')}</button><button class="secondary" data-copy-summary type="button" aria-label="${escapeHtml(t('复制会议纪要'))}">${interfaceIcon('copy')}${t('复制')}</button></div>`
+      : '';
   const action = editing
-    ? `<span class="summary-actions"><button class="summary-action-icon" data-cancel-inline-summary-edit title="${escapeHtml(t('取消'))}" aria-label="${escapeHtml(t('取消'))}">${summaryActionIcons.cancel}</button><button class="summary-action-icon" data-save-inline-summary title="${escapeHtml(t('保存'))}" aria-label="${escapeHtml(t('保存'))}">${summaryActionIcons.save}</button></span>`
+    ? `<button class="secondary" data-cancel-inline-summary-edit type="button">${t('取消')}</button><button class="modal-action" data-save-inline-summary type="button">${summaryActionIcons.save}${t('保存')}</button>`
     : generating
-      ? ''
-      : markdown
-        ? `<span class="summary-actions"><button class="summary-action-icon" data-open-summary-edit title="${escapeHtml(t('编辑'))}" aria-label="${escapeHtml(t('编辑'))}">${summaryActionIcons.edit}</button><button class="summary-action-icon" data-copy-summary title="${escapeHtml(t('复制会议纪要'))}" aria-label="${escapeHtml(t('复制会议纪要'))}">${summaryActionIcons.copy}</button><button class="summary-action-icon" data-regenerate-summary title="${escapeHtml(t('重新生成'))}" aria-label="${escapeHtml(t('重新生成'))}"${blockedAttrs}>${summaryActionIcons.refresh}</button></span>`
-        : `<button class="text-button" data-generate-summary${blockedAttrs}>${t('生成')} →</button>`;
-  return `<div class="summary-preview"><div class="summary-head"><p class="eyebrow">${t('会议纪要')}</p>${action}</div>${editing ? `<div class="summary-inline-edit"><div data-inline-summary-editor></div></div>` : markdown ? `<div class="summary-body markdown-content">${renderMarkdown(cleanSummaryMarkdown(markdown))}</div>` : `<p class="summary-empty">${t('尚未生成')}</p>`}</div>`;
+      ? `<button class="modal-action" type="button" disabled>${interfaceIcon('ai')}${t('正在生成会议纪要')}</button>`
+      : `<button class="modal-action" ${markdown ? 'data-regenerate-summary' : 'data-generate-summary'} type="button"${blockedAttrs}>${interfaceIcon('ai')}${t(markdown ? '重新生成' : '生成')}</button>`;
+  return `<div class="summary-preview"><div class="summary-head"><p class="eyebrow">${t('会议纪要')}</p>${tools}</div>${markdown ? `<p class="summary-review-hint">${interfaceIcon('info')}${escapeHtml(t('AI 生成，请核对。'))}</p>` : ''}${editing ? `<div class="summary-inline-edit"><div data-inline-summary-editor></div></div>` : markdown ? `<div class="summary-body markdown-content">${renderMarkdown(cleanSummaryMarkdown(markdown))}</div>` : `<p class="summary-empty">${t('尚未生成')}</p>`}<div class="summary-actions">${action}${markdown && !editing && !generating ? `<span class="summary-save-state">${checkIconSvg}${t('已保存')}</span>` : ''}</div></div>`;
 }
 /** 在页面外壳可用后填充所有数据驱动的静态区域。@returns {void} */
 function renderStaticViews() {
@@ -1297,11 +1331,12 @@ function renderDetailTabbar() {
     detailActiveTab === 'transcript' &&
     d.transcriptEditable &&
     d.refinedMode !== 'fulltext' &&
-    d.refineState !== 'refining'
+    d.refineState !== 'refining' &&
+    !(d.hasRefined && d.transcriptVersion === 'original')
   )
     action = editTranscript;
   // 编辑期间收起精修入口：精修会按新的窗口重建段落 id，未保存的修改会失去归属。
-  return `<div class="tabbar"><div class="tabbar-tabs"><button class="tab${detailActiveTab === 'notes' ? ' active' : ''}" data-detail-tab="notes">${t('我的笔记')}</button><button class="tab${detailActiveTab === 'transcript' ? ' active' : ''}" data-detail-tab="transcript">${t('字幕')}</button></div><div class="tabbar-extra">${action}${detailActiveTab === 'transcript' && !d.transcriptEditing ? renderRefineStatus(d) : ''}</div></div>`;
+  return `<div class="tabbar"><div class="tabbar-tabs"><button class="tab${detailActiveTab === 'notes' ? ' active' : ''}" data-detail-tab="notes">${interfaceIcon('document')}${t('笔记')}</button><button class="tab${detailActiveTab === 'transcript' ? ' active' : ''}" data-detail-tab="transcript">${interfaceIcon('chat')}${t('逐字稿')}</button><button class="tab${detailActiveTab === 'summary' ? ' active' : ''}" data-detail-tab="summary">${interfaceIcon('document')}${t('会议纪要')}</button></div><div class="tabbar-extra">${action}${detailActiveTab === 'transcript' && !d.transcriptEditing ? renderRefineStatus(d) : ''}</div></div>`;
 }
 /** 刷新选定会议的逐字稿、笔记和摘要面板。@returns {void} */
 function renderMeetingDetail() {
@@ -1315,15 +1350,23 @@ function renderMeetingDetail() {
     ? `<div class="detail-notes-edit"><div data-detail-notes-root></div></div>`
     : `<div class="detail-notes-view">${d.notes && String(d.notes).trim() ? `<div class="detail-notes-content markdown-content">${renderMarkdown(d.notes)}</div>` : `<p class="detail-notes-empty">${t('会议中没有记录笔记。')}</p>`}</div>`;
   const hasRefined = Boolean(d.hasRefined && d.refinedTranscript.length);
-  const fulltextMode = hasRefined && d.refinedMode === 'fulltext';
-  const showingRefined = hasRefined && d.refinedMode === 'timestamps';
+  const fulltextMode =
+    hasRefined && d.transcriptVersion !== 'original' && d.refinedMode === 'fulltext';
+  const showingRefined =
+    hasRefined && d.transcriptVersion !== 'original' && d.refinedMode === 'timestamps';
   let transcriptBody;
   if (fulltextMode) {
     transcriptBody = `<div class="refined-fulltext"><p class="eyebrow">${t('精修全文')}</p><p class="refined-fulltext-hint">${t('经过会后模型整理后的完整转写文本。由于当前模型不提供时间戳，该版本不支持逐句音频定位。')}</p><div class="refined-fulltext-body">${escapeHtml(d.refinedFulltext)}</div></div>`;
   } else {
     // 编辑态下用草稿覆盖后端文本，使并发刷新不会吞掉尚未保存的输入。
     const draft = d.transcriptEditing ? d.transcriptDraft || {} : {};
-    transcriptBody = (showingRefined ? d.refinedTranscript : d.transcript)
+    transcriptBody = (
+      showingRefined
+        ? d.refinedTranscript
+        : d.transcriptVersion === 'original'
+          ? d.originalTranscript || d.transcript
+          : d.transcript
+    )
       .map((entry) => ({
         ...entry,
         text: draft[entry.segmentId] ?? entry.text,
@@ -1342,7 +1385,8 @@ function renderMeetingDetail() {
         }
       : null;
   document.querySelector('.final-transcript').innerHTML =
-    `${renderDetailTabbar()}<div class="detail-notes-panel" data-detail-panel="notes"${detailActiveTab !== 'notes' ? ' hidden' : ''}>${notesPanel}</div><div class="transcript-panel" data-detail-panel="transcript"${detailActiveTab !== 'transcript' ? ' hidden' : ''}><div class="transcript-body">${transcriptBody}</div></div>`;
+    `${renderDetailTabbar()}<div class="detail-notes-panel" data-detail-panel="notes"${detailActiveTab === 'transcript' ? ' hidden' : ''}>${notesPanel}</div><div class="transcript-panel" data-detail-panel="transcript"${detailActiveTab !== 'transcript' ? ' hidden' : ''}><div class="detail-transcript-toolbar"><div class="transcript-versions">${d.hasRefined ? `<button type="button" data-transcript-version="refined" aria-pressed="${d.transcriptVersion !== 'original'}">${t('精修字幕')}</button>` : ''}<button type="button" data-transcript-version="original"${d.hasOriginalTranscript === false ? ' disabled' : ''} aria-pressed="${!d.hasRefined || d.transcriptVersion === 'original'}">${t('原始转写')}</button></div><label class="search">${interfaceIcon('search')}<input type="search" data-transcript-search aria-label="${t('搜索')}" placeholder="${t('搜索')}" value="${escapeHtml(d.transcriptSearch || '')}" /></label><span data-transcript-results role="status"></span></div><div class="transcript-body">${transcriptBody}</div></div>`;
+  filterDetailTranscript();
   if (focusState) {
     const restored = [...document.querySelectorAll('[data-segment-text]')].find(
       (field) => field.dataset.segmentText === focusState.id,

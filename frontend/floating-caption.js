@@ -29,9 +29,9 @@ closeBtn.addEventListener('click', () => {
 // move 事件，且能可靠收到 up，避免「松手后 dragState 残留、窗口黏着鼠标」。
 let dragState = null;
 let dragPointerId = null;
-captionContainer.addEventListener('pointerdown', (event) => {
+function startCaptionDrag(event) {
   // 不在关闭按钮上开始拖拽；只响应主键。
-  if (event.target.closest('.close-btn') || event.button !== 0) return;
+  if (event.target.closest('button') || event.button !== 0) return;
 
   dragState = {
     startX: event.screenX,
@@ -43,6 +43,26 @@ captionContainer.addEventListener('pointerdown', (event) => {
   } catch {
     /* 某些环境不支持指针捕获。 */
   }
+}
+captionContainer.addEventListener('pointerdown', startCaptionDrag);
+document.querySelector('.caption-header').addEventListener('pointerdown', startCaptionDrag);
+let captionFontSize = 20;
+for (const [id, delta] of [
+  ['caption-smaller', -2],
+  ['caption-larger', 2],
+])
+  document.getElementById(id).addEventListener('click', () => {
+    captionFontSize = Math.min(32, Math.max(14, captionFontSize + delta));
+    document
+      .querySelector('.caption-shell')
+      .style.setProperty('--caption-size', `${captionFontSize}px`);
+    document.querySelector('.caption-size-value').textContent = captionFontSize;
+  });
+document.getElementById('caption-pin').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  const next = button.getAttribute('aria-pressed') !== 'true';
+  await window.brevia.floatingCaption.setAlwaysOnTop({ alwaysOnTop: next });
+  button.setAttribute('aria-pressed', String(next));
 });
 
 captionContainer.addEventListener('pointermove', (event) => {
@@ -184,6 +204,14 @@ function setupListener() {
         closeBtn.setAttribute('aria-label', labels['关闭']);
         document.documentElement.lang = data.locale;
         document.title = labels['悬浮字幕'];
+        document.querySelector('[data-caption-title]').textContent = labels['实时字幕'];
+        document.getElementById('caption-pin').setAttribute('aria-label', labels['置顶'] || 'Pin');
+        document
+          .getElementById('caption-smaller')
+          .setAttribute('aria-label', labels['减小字号'] || 'Decrease text size');
+        document
+          .getElementById('caption-larger')
+          .setAttribute('aria-label', labels['增大字号'] || 'Increase text size');
       }
       // 如果我们从主进程接收到完整状态对象（在窗口加载时）
       if (data.lastFinalized !== undefined && data.current !== undefined) {
