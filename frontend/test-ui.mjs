@@ -110,7 +110,7 @@ assert.match(text(app), /const DEFAULT_REFINED_MODEL_ID = 'funasr-nano-int8';/);
 assert.match(text(app), /hint\.textContent = userFacingError\(error\.message\)/);
 assert.match(
   text(css),
-  /\.capture-settings\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,
+  /\.capture-settings\{[^}]*grid-template-columns:repeat\(1,minmax\(0,1fr\)\)/,
 );
 assert.match(
   text(tailwind),
@@ -139,7 +139,7 @@ assert.match(
 );
 assert.match(
   text(tailwind),
-  /\.secondary\s+\{\s+@apply\s+mt-7\s+appearance-none\s+bg-transparent/,
+  /\.secondary\s+\{\s+@apply\s+inline-flex\s+min-h-10/,
   'secondary actions do not fall back to a native light button in dark mode',
 );
 assert.match(
@@ -197,7 +197,7 @@ assert.match(
 );
 assert.match(
   text(tailwind),
-  /\.tab\s+\{\s+@apply\s+border-b\s+border-transparent\s+pb-4\s+text-\[13px\]\s+text-\[#6b655f\];\s+white-space:\s+nowrap;/,
+  /\.tab\s+\{\s+@apply\s+border-b\s+border-transparent\s+pb-4\s+text-\[13px\]\s+text-\[#666666\];\s+white-space:\s+nowrap;/,
   'narrow transcript tabs do not wrap per character',
 );
 assert.match(
@@ -1404,7 +1404,7 @@ assert.match(text(js), /function fitSegmentSubmenu/);
 assert.match(text(js), /submenu\.classList\.contains\('is-positioned'\)/);
 assert.match(text(css), /\.app-shell\{[^}]*grid-template-columns:272px minmax\(0,1fr\)/);
 assert.match(text(workspaces), /class="new-workspace"/);
-assert.match(text(tailwind), /#settings-view\s+\.settings-card\s+\{\s+@apply\s+p-4/);
+assert.match(text(tailwind), /#settings-view\s+\.settings-card\s+\{\s+@apply\s+min-h-20/);
 assert.match(text(tailwind), /#settings-view \.settings-grid \{[^}]*grid-auto-rows: max-content/);
 assert.match(
   text(tailwind),
@@ -1441,8 +1441,8 @@ assert.match(
   /\.required-models-card ul\{(?=[^}]*max-height:min\(28vh,14rem\))(?=[^}]*overflow:hidden auto)(?=[^}]*overscroll-behavior:contain)/,
 );
 assert.match(text(css), /#prepare-view\.active\{[^}]*overflow:hidden/);
-assert.match(text(css), /\.prepare-layout\{[^}]*grid-template-columns:minmax\(0,42rem\)/);
-assert.match(text(css), /\.prepare-layout\{[^}]*transform:scale\(var\(--prepare-scale,1\)\)/);
+assert.match(text(css), /\.prepare-layout\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
+assert.doesNotMatch(text(css), /\.prepare-layout\{[^}]*transform:scale/);
 assert.match(
   text(html),
   /id="import-recording"\s+data-view="prepare"\s+data-prepare-mode="import"/,
@@ -1528,7 +1528,7 @@ assert.doesNotMatch(text(workerSession), /_identify_speaker/);
 assert.doesNotMatch(text(workerSession), /tracker\.assign_embedding/);
 assert.doesNotMatch(text(workerSession), /SpeakerTracker/);
 assert.doesNotMatch(text(js), /name="num-speakers"[^>]*max="20"/);
-assert.match(text(js), /styles\.paddingTop.*styles\.paddingBottom/);
+assert.match(text(js), /prepareLayout\.style\.removeProperty\('transform'\)/);
 assert.match(text(js), /new ResizeObserver\(\(\) => requestAnimationFrame\(fitPrepareLayout\)\)/);
 assert.doesNotMatch(text(css), /max-width:1100px|max-height:760px/);
 assert.match(
@@ -1562,7 +1562,7 @@ for (const code of ['en', 'es', 'ja', 'ko', 'fr', 'de', 'ru'])
     '导入录音',
   );
 assert.doesNotMatch(text(js), /data-pause-required-all|data-download-required-all/);
-assert.match(text(js), /data-pause-required="\$\{id\}" aria-label=.*Ⅱ/);
+assert.match(text(js), /interfaceIcon\(progress.paused \? 'play' : 'pause'\)/);
 assert.match(text(html), /id="home-slogan"/);
 assert.match(text(html), /id="home-eyebrow"[^>]*disabled/);
 assert.match(text(js), /function activeWorkspaceDescription\(\)/);
@@ -2214,7 +2214,7 @@ assert.doesNotMatch(text(css), /\.transcript-scroll \.segment p\{[^}]*-webkit-li
 assert.match(text(tailwind), /\.live-notes,\s+\.live-captions\s+\{\s+position:\s+absolute/);
 assert.match(
   text(tailwind),
-  /\.live-layout\.is-caption-mode\s+\.live-captions\s+\{\s+left:\s+0;\s+width:\s+calc\(100%\s+-\s+340px\)/,
+  /\.live-layout\.is-caption-mode\s+\.live-captions\s+\{\s+left:\s+0;\s+width:\s+calc\(100%\s+-\s+364px\)/,
 );
 assert.doesNotMatch(text(js), /live-translation-target|live-toggle|liveInputs/);
 assert.match(text(js), /formatSpeakerName\(payload\.speaker_name \|\| payload\.speaker\)/);
@@ -2782,7 +2782,7 @@ assert.match(
 );
 assert.match(
   text(tailwind),
-  /html\[\s*data-theme="dark",?\s*\]\s+label,\s+html\[\s*data-theme="dark",?\s*\]\s+legend\s+\{\s+color:\s+#a6a19a/,
+  /html\[\s*data-theme="dark",?\s*\]\s+label,\s+html\[\s*data-theme="dark",?\s*\]\s+legend\s+\{\s+color:\s+#b0b0b0/,
 );
 // ─── 语义令牌的对比度 ────────────────────────────────────────────────────────
 //
@@ -2791,8 +2791,8 @@ assert.match(
 // 只是出现的方式是"从不被覆盖"）。语义令牌把取值集中到一处后，就可以直接算对比度：
 // 这是「颜色可读」这件事唯一可自动化的判据。
 //
-// 阈值：四个角色色在两种主题、两种底色（页面 #fbfaf7/#262626、面板 #fff/#2e2e2e）上
-// 都必须 ≥ 4.5:1（WCAG AA 正文）。项目原有的次要灰 #8b857e 是 3.50/4.15，属于既有选择
+// 阈值：四个角色色在两种主题、两种底色（页面 #ffffff/#191919、面板 #fff/#242424）上
+// 都必须 ≥ 4.5:1（WCAG AA 正文）。项目原有的次要灰 #767676 是 3.50/4.15，属于既有选择
 // （用于 11px 以下的小标签），这里按 ≥ 3.0 守住"不再变差"，并在注释里注明它未达 AA。
 const relativeLuminance = (value) => {
   const hex = value.replace('#', '');
@@ -2841,7 +2841,7 @@ for (const role of [
     `--${role} 在两种主题下必须有不同取值，否则就是漏了暗色`,
   );
 }
-const CONTRAST_BACKGROUNDS = { light: ['#fbfaf7', '#ffffff'], dark: ['#262626', '#2e2e2e'] };
+const CONTRAST_BACKGROUNDS = { light: ['#ffffff', '#fafafa'], dark: ['#191919', '#242424'] };
 for (const [theme, backgrounds] of Object.entries(CONTRAST_BACKGROUNDS)) {
   const tokens = theme === 'light' ? lightTokens : darkTokens;
   for (const background of backgrounds) {
@@ -2859,8 +2859,8 @@ for (const [theme, backgrounds] of Object.entries(CONTRAST_BACKGROUNDS)) {
 // 而不是把阈值调低到刚好通过。
 for (const role of ['color-recording', 'color-recording-border']) {
   for (const [tokens, background] of [
-    [lightTokens, '#fbfaf7'],
-    [darkTokens, '#262626'],
+    [lightTokens, '#ffffff'],
+    [darkTokens, '#191919'],
   ]) {
     if (!tokens[role]) continue;
     assert.ok(
@@ -2870,11 +2870,11 @@ for (const role of ['color-recording', 'color-recording-border']) {
   }
 }
 // 既有的次要灰：未达 AA，但不得比现状更差（浅 3.50 / 暗 4.15）。
-assert.ok(contrastRatio('#8b857e', '#fbfaf7') >= 3.0, '次要灰在浅色下不得低于 3.0');
-assert.ok(contrastRatio('#8b857e', '#262626') >= 3.0, '次要灰在暗色下不得低于 3.0');
+assert.ok(contrastRatio('#767676', '#ffffff') >= 3.0, '次要灰在浅色下不得低于 3.0');
+assert.ok(contrastRatio('#767676', '#191919') >= 3.0, '次要灰在暗色下不得低于 3.0');
 // 正文字色必须远超 AA。
-assert.ok(contrastRatio('#26221e', '#fbfaf7') >= 7, '浅色正文对比度应达到 AAA');
-assert.ok(contrastRatio('#ffffff', '#262626') >= 7, '暗色正文对比度应达到 AAA');
+assert.ok(contrastRatio('#222222', '#ffffff') >= 7, '浅色正文对比度应达到 AAA');
+assert.ok(contrastRatio('#ffffff', '#191919') >= 7, '暗色正文对比度应达到 AAA');
 
 // ─── 令牌成对门禁 ──────────────────────────────────────────────────────────────
 //
@@ -2928,18 +2928,18 @@ assert.deepEqual(
 // DARK_AGNOSTIC 并写明理由。白名单不是"豁免名单"——每一条都是"这个类不需要暗色规则"
 // 的具体判断，新增条目必须能说清为什么。
 const DARK_AGNOSTIC = {
-  // 只用了 #8b857e：这个灰度就是现有暗色规则为次要文字选定的取值，浅色规则直接给出它，
+  // 只用了 #767676：这个灰度就是现有暗色规则为次要文字选定的取值，浅色规则直接给出它，
   // 两个主题下对比度都够，再写一条同值规则没有意义。
-  'export-builder-section': '仅 text-[#8b857e]，该灰度本身就是暗色下的次要文字取值',
-  'export-empty': '仅 text-[#8b857e]，同上',
-  'search-snippet-title': '仅 text-[#8b857e]，同上',
-  'segment-meta': '仅 text-[#8b857e]，同上',
-  'summary-model-hint': '仅 text-[#8b857e]，同上',
-  'window-actions': '仅 text-[#8b857e]，同上',
+  'export-builder-section': '仅 text-[#767676]，该灰度本身就是暗色下的次要文字取值',
+  'export-empty': '仅 text-[#767676]，同上',
+  'search-snippet-title': '仅 text-[#767676]，同上',
+  'segment-meta': '仅 text-[#767676]，同上',
+  'summary-model-hint': '仅 text-[#767676]，同上',
+  'window-actions': '仅 text-[#767676]，同上',
   // 刻意反相：浅色下白底黑字，暗色下依然是"亮底暗字"，对比正确（与 .modal-action 的暗色规则同构）。
   // 纯遮罩，没有前景内容，暗色下不需要调整。
   'modal-backdrop': '纯遮罩层，无前景内容',
-  // 与 .onboarding-page 同时挂载，由 `html[data-theme=dark] .onboarding-page{background:#262626}`
+  // 与 .onboarding-page 同时挂载，由 `html[data-theme=dark] .onboarding-page{background:#191919}`
   // 覆盖（属性选择器 0-2-0 高于本类的 0-1-0），本类的 bg-white 在暗色下不会生效。
   'onboarding-active': '由 .onboarding-page 的暗色规则覆盖（属性选择器特异性更高）',
 };
@@ -2995,12 +2995,12 @@ assert.deepEqual(
 // 「父类有暗色规则、子元素自身仍有浅色声明」。这三处曾因此在暗色下保持 2.63:1。
 assert.match(
   text(tailwind),
-  /html\[data-theme="dark"\]\s+\.notes-table-size\s+\{\s+color:\s+#8b857e;\s+\}/,
+  /html\[data-theme="dark"\]\s+\.notes-table-size\s+\{\s+color:\s+#767676;\s+\}/,
   '.notes-table-size 需要暗色规则',
 );
 assert.match(
   text(tailwind),
-  /html\[data-theme="dark"\]\s+\.onboarding-bundled\s+small\s+\{\s+color:\s+#8b857e;\s+\}/,
+  /html\[data-theme="dark"\]\s+\.onboarding-bundled\s+small\s+\{\s+color:\s+#767676;\s+\}/,
   '.onboarding-bundled small 需要暗色规则',
 );
 assert.match(
@@ -3140,10 +3140,10 @@ assert.match(
 );
 assert.match(text(js), /miniPlayback\.addEventListener\('dblclick'/);
 assert.match(text(css), /\.required-models-card li small\{[^}]*overflow-wrap:anywhere/);
-assert.match(text(css), /\.task-card-close\{[^}]*width:clamp\(1rem,2vw,1\.25rem\)/);
+assert.match(text(css), /\.task-card-close\{[^}]*width:calc\(var\(--spacing\) \* 7\)/);
 assert.match(text(css), /\.mini-playback\{/);
 assert.match(text(js), /function openOnboardingLanguage/);
-assert.match(text(js), /function initializeLanguageWheel/);
+assert.match(text(js), /type="radio" name="locale"/);
 assert.match(text(js), /data-language-wheel-value/);
 assert.match(text(js), /onboarding-actions onboarding-page-copy/);
 assert.match(text(js), /onboarding-language-page/);
@@ -3225,7 +3225,7 @@ assert.match(text(js), /class="onboarding-model-card\$\{isRecommended/);
 assert.match(text(css), /\.onboarding-model-card\{/);
 assert.match(
   text(css),
-  /\.onboarding-setup-page header\{[^}]*justify-items:center[^}]*text-align:center/,
+  /\.onboarding-setup-page header\{[^}]*justify-items:start[^}]*text-align:left/,
 );
 assert.match(text(js), /manifestDefaultRefinedModelId\(language\)/);
 assert.doesNotMatch(text(js), /name="onboarding-model-preference"/);
@@ -3235,7 +3235,7 @@ assert.match(text(js), /data-onboarding-back-language/);
 assert.match(text(js), /function openOnboardingPermissions/);
 assert.match(text(js), /data-request-onboarding-permission/);
 assert.match(text(js), /onboarding-permission-action/);
-assert.match(text(js), /onboarding-permission-granted/);
+assert.match(text(js), /onboarding-permission\$\{granted \? ' is-granted'/);
 assert.match(text(js), /data-onboarding-mic-level/);
 assert.match(text(js), /breviaClient\?\.previewMic\(\)/);
 assert.match(text(js), /const granted = permissionGranted\(permission\);/);
@@ -3244,10 +3244,7 @@ assert.match(text(css), /\.onboarding-permission-title\{[^}]*align-items:center/
 assert.match(text(css), /\.onboarding-mic-meter\{[^}]*width:calc\(var\(--spacing\) \* 32\)/);
 assert.match(text(js), /const permissionPoll = window\.setInterval/);
 assert.match(text(js), /window\.clearInterval\(permissionPoll\)/);
-assert.match(
-  text(js),
-  /const\s+placeholders\s+=\s+steps\s*\.map[\s\S]*?onboarding-permission-complete/,
-);
+assert.match(text(js), /const\s+placeholders\s+=\s+steps\s*\.map[\s\S]*?aria-busy="true"/);
 assert.match(text(js), /function openOnboardingLanguage[\s\S]*?openOnboardingPermissions\(\);/);
 assert.match(text(js), /data-storage-path/);
 assert.match(text(js), /storage\.setupLocations/);
@@ -3259,7 +3256,7 @@ assert.match(text(js), /data-skip-onboarding-permissions/);
 assert.match(text(js), /dismissOnboardingPage\(openOnboardingSetup\)/);
 assert.doesNotMatch(text(js), /function openOnboardingWelcome/);
 assert.match(text(js), /const page = onboardingPage/);
-assert.match(text(js), /page\.querySelector\('\[name="locale"\]'\)\.value/);
+assert.match(text(js), /page\.querySelector\('\[name="locale"\]:checked'\)\.value/);
 assert.match(text(js), /finally \{\s*switchingLanguage = false/);
 for (const selector of [
   '.settings-grid',
@@ -3588,7 +3585,7 @@ for (const copy of [
 ])
   assert.match(text(i18nData), new RegExp(copy));
 assert.doesNotMatch(text(css), /\.status\.complete:before/);
-assert.match(text(css), /\.page-head>div\{[^}]*min-height:/);
+assert.match(text(css), /\.page-head>div\{[^}]*min-width:0/);
 assert.doesNotMatch(text(js), /renderModelRow/);
 assert.match(text(components), /id="installed-models"[\s\S]*data-settings-modal="models"/);
 assert.match(text(js), /Object\.values\(modalCopy\)\.forEach/);
@@ -3604,8 +3601,8 @@ assert.match(text(js), /addProfileSample/);
 assert.match(text(js), /data-create-segment-profile/);
 assert.match(text(i18nData), /Create voiceprint/);
 assert.match(text(css), /\.final-transcript\{[^}]*overflow:hidden/);
-assert.match(text(css), /#prepare-view\.active\{[^}]*height:calc\(100dvh - 4rem\)/);
-assert.match(text(css), /#detail-view\.active\{[^}]*height:calc\(100dvh - 4rem\)/);
+assert.match(text(css), /#prepare-view\.active\{[^}]*height:calc\(100dvh - 3rem\)/);
+assert.match(text(css), /#detail-view\.active\{[^}]*height:calc\(100dvh - 3rem\)/);
 assert.doesNotMatch(text(tailwind), /\.dual-track-panel|\.track-player|\.dual-track-empty/);
 assert.doesNotMatch(
   text(css),
@@ -3774,7 +3771,7 @@ for (const code of Object.keys(modelLibraryBackground)) {
   );
 }
 const summaryNodes = {
-  h2: { textContent: '' },
+  '.modal-title h2': { textContent: '' },
   '.modal-title p': { textContent: '' },
   '.modal-body': { innerHTML: '' },
 };
@@ -3867,7 +3864,7 @@ assert.doesNotMatch(
   onboardingSummaryHtml,
   /data-flow-select-choice="provider"|data-summary-enabled|data-china-model-source/,
 );
-assert.equal(summaryNodes.h2.textContent, 'AI 会议纪要');
+assert.equal(summaryNodes['.modal-title h2'].textContent, 'AI 会议纪要');
 assert.equal(
   summaryNodes['.modal-title p'].textContent,
   '会议结束后，AI 自动把整场对话整理成会议纪要及待办事项。',
@@ -3980,7 +3977,7 @@ for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
     `${code} is missing the custom-openai label`,
   );
   assert.ok(summaryHtml.includes(copy.save), `${code} is missing the save label`);
-  assert.equal(summaryNodes.h2.textContent, copy.title);
+  assert.equal(summaryNodes['.modal-title h2'].textContent, copy.title);
 }
 summaryContext.locale = 'zh';
 summaryContext.modelCatalog = [
@@ -4097,11 +4094,11 @@ assert.doesNotMatch(
   /function organizeNotes|function factCheckNotes|function recallWorkspace|function askMeeting/,
 );
 assert.doesNotMatch(text(html), /data-ai-actions|data-ai-action/);
-assert.match(text(html), /class="brand-mark"[^>]*>言/);
+assert.match(text(html), /class="brand-mark"[^>]*>B/);
 assert.match(text(html), /class="new-meeting-label">开始会议/);
 assert.match(
   text(app),
-  /classList\.toggle\(\s*'is-live-meeting',\s+\(activeView\s+===\s+'live'\s+&&\s+meetingActive\)\s+\|\|\s+activeView\s+===\s+'detail',?\s*\)/,
+  /classList\.toggle\(\s*'is-live-meeting',\s+activeView\s+===\s+'live'\s+&&\s+meetingActive,?\s*\)/,
 );
 assert.match(text(tailwind), /\.app-shell\.is-live-meeting:has\(\.sidebar:hover\)/);
 assert.match(text(tailwind), /\.sidebar:has\(\.task-cards > :not\(\[hidden\]\)\)::after/);
@@ -4310,12 +4307,12 @@ assert.match(
 );
 assert.match(
   text(app),
-  /button\.textContent = `\$\{paused \? '▶' : 'Ⅱ'\} \$\{t\(paused \? '继续' : '暂停'\)\}`;\s*renderRecordingState\(paused\);/,
+  /button\.innerHTML = .*interfaceIcon\(paused \? 'play' : 'pause'\).*;\s*renderRecordingState\(paused\);/,
   'the pause button also refreshes the recording state',
 );
 assert.match(
   text(components),
-  /class="status \$\{status\.tone\}\$\{status\.paused \? ' is-paused' : ''\}"/,
+  /\$\{status\.paused \? ' is-paused' : ''\}/,
   'paused meetings are marked in the library list',
 );
 // 暂停态改用警示色（令牌），不再沿用录制红——断言角色而不是字面值。
@@ -4896,7 +4893,7 @@ const mobileRow = componentContext.renderMeetingRow(
   { id: 'mobile', title: 'Phone', meta: '', tags: ['手机录音', '讨论'], status: {} },
   0,
 );
-assert.match(mobileRow, /class="meeting-status"><span class="meeting-source">/);
+assert.match(mobileRow, /<h2>Phone<span class="meeting-source">/);
 assert.doesNotMatch(mobileRow, /class="tag">手机录音/);
 assert.match(mobileRow, /class="tag">讨论/);
 

@@ -1,6 +1,30 @@
 // Shared mobile UI, recording notifications and error messages. Keep placeholders consistent.
 const translations = {
   "en": {
+    "下一步": "Next",
+    "用于会后整理，实时转写不标注说话人。":
+        "Used after the meeting. Live transcripts do not label speakers.",
+
+    "记录这一刻的重要信息": "Record what matters at this moment",
+    "按需授权": "Permissions as needed",
+    "仅在需要时申请权限，保护你的隐私。":
+        "Permissions are requested only when needed to protect your privacy.",
+    "用于录制会议音频。": "Records meeting audio.",
+    "首次录音时申请。": "Requested on your first recording.",
+    "本地网络": "Local network",
+    "用于发现和连接电脑。": "Discovers and connects to your computer.",
+    "连接电脑时申请。": "Requested when connecting to your computer.",
+    "相机": "Camera",
+    "仅用于扫描配对二维码。": "Only scans pairing QR codes.",
+    "首次扫码时申请。": "Requested on your first scan.",
+    "可以使用手动配对，不必开启相机。": "You can pair manually without camera access.",
+    "我知道了": "Got it",
+    "手机录音，电脑转写。": "Record on your phone. Transcribe on your computer.",
+    "转写和笔记会回到这里。": "Transcripts and notes will appear here.",
+    "开始使用": "Get started",
+    "稍后": "Later",
+    "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。":
+        "Recording can continue while locked. Calls, force stop or system limits may interrupt it; check the status when you return.",
     "后台下载更新，完成后返回此处安装。":
         "Download in the background, then return here to install.",
     "当前地区暂无可用的商店版本": "No App Store version is available in this region.",
@@ -300,6 +324,30 @@ const translations = {
         "Recording can continue while locked. Calls, force-stop or system limits can interrupt it; check the status when you return.\n\nAndroid uses a microphone foreground service. Allow recording notifications. If battery restrictions stop the app, adjust system settings. Return to the app to resume after pausing.",
   },
   "es": {
+    "下一步": "Siguiente",
+    "用于会后整理，实时转写不标注说话人。":
+        "Se usa después de la reunión. La transcripción en directo no etiqueta hablantes.",
+
+    "记录这一刻的重要信息": "Anota lo importante de este momento",
+    "按需授权": "Permisos cuando se necesitan",
+    "仅在需要时申请权限，保护你的隐私。":
+        "Solo se solicitan permisos cuando son necesarios para proteger tu privacidad.",
+    "用于录制会议音频。": "Graba el audio de la reunión.",
+    "首次录音时申请。": "Se solicita en la primera grabación.",
+    "本地网络": "Red local",
+    "用于发现和连接电脑。": "Descubre y conecta con el ordenador.",
+    "连接电脑时申请。": "Se solicita al conectar con el ordenador.",
+    "相机": "Cámara",
+    "仅用于扫描配对二维码。": "Solo escanea códigos QR de emparejamiento.",
+    "首次扫码时申请。": "Se solicita en el primer escaneo.",
+    "可以使用手动配对，不必开启相机。": "Puedes emparejar manualmente sin acceso a la cámara.",
+    "我知道了": "Entendido",
+    "手机录音，电脑转写。": "Graba en el móvil. Transcribe en el ordenador.",
+    "转写和笔记会回到这里。": "Las transcripciones y notas aparecerán aquí.",
+    "开始使用": "Empezar",
+    "稍后": "Más tarde",
+    "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。":
+        "La grabación puede continuar con la pantalla bloqueada. Las llamadas o restricciones pueden interrumpirla; revisa el estado al volver.",
     "后台下载更新，完成后返回此处安装。":
         "Descarga en segundo plano y vuelve aquí para instalar.",
     "当前地区暂无可用的商店版本":
@@ -601,6 +649,28 @@ const translations = {
         "La grabación puede continuar con la pantalla bloqueada. Las llamadas, el cierre forzado o los límites del sistema pueden interrumpirla; comprueba el estado al volver.\n\nAndroid usa un servicio de micrófono en primer plano. Permite las notificaciones. Si el ahorro de batería cierra la app, ajusta el sistema. Vuelve a la app para continuar tras pausar.",
   },
   "ja": {
+    "下一步": "次へ",
+    "用于会后整理，实时转写不标注说话人。": "会議後の整理に使用します。リアルタイム文字起こしに話者名は表示しません。",
+
+    "记录这一刻的重要信息": "この瞬間の重要な情報を記録",
+    "按需授权": "必要なときに許可",
+    "仅在需要时申请权限，保护你的隐私。": "プライバシーを守るため、必要なときだけアクセスを求めます。",
+    "用于录制会议音频。": "会議の音声を録音します。",
+    "首次录音时申请。": "初回の録音時に求めます。",
+    "本地网络": "ローカルネットワーク",
+    "用于发现和连接电脑。": "コンピューターを検出して接続します。",
+    "连接电脑时申请。": "コンピューター接続時に求めます。",
+    "相机": "カメラ",
+    "仅用于扫描配对二维码。": "ペアリング QR コードの読み取りのみに使用します。",
+    "首次扫码时申请。": "初回の読み取り時に求めます。",
+    "可以使用手动配对，不必开启相机。": "カメラを使わず手動でペアリングできます。",
+    "我知道了": "わかりました",
+    "手机录音，电脑转写。": "スマホで録音、パソコンで文字起こし。",
+    "转写和笔记会回到这里。": "文字起こしとノートがここに表示されます。",
+    "开始使用": "使い始める",
+    "稍后": "後で",
+    "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。":
+        "ロック中も録音できます。着信、強制終了、システム制限で中断する場合があるため、戻ったら状態を確認してください。",
     "后台下载更新，完成后返回此处安装。": "バックグラウンドでダウンロードし、完了後ここに戻ってインストールします。",
     "当前地区暂无可用的商店版本": "この地域では App Store 版を利用できません。",
     "下载完成，点击安装更新": "ダウンロード完了。タップしてインストール。",
@@ -872,6 +942,28 @@ const translations = {
         "ロック中も録音できます。着信、強制終了、システム制限で中断される場合があるため、戻ったら状態を確認してください。\n\nAndroid はマイクのフォアグラウンドサービスを使用します。録音通知を許可してください。省電力設定でアプリが停止する場合はシステム設定を調整してください。一時停止後はアプリに戻って再開してください。",
   },
   "ko": {
+    "下一步": "다음",
+    "用于会后整理，实时转写不标注说话人。": "회의 후 정리에 사용됩니다. 실시간 전사에는 화자를 표시하지 않습니다.",
+
+    "记录这一刻的重要信息": "이 순간의 중요한 정보를 기록하세요",
+    "按需授权": "필요할 때 권한 허용",
+    "仅在需要时申请权限，保护你的隐私。": "개인정보 보호를 위해 필요한 경우에만 권한을 요청합니다.",
+    "用于录制会议音频。": "회의 오디오를 녹음합니다.",
+    "首次录音时申请。": "첫 녹음 시 요청합니다.",
+    "本地网络": "로컬 네트워크",
+    "用于发现和连接电脑。": "컴퓨터를 검색하고 연결합니다.",
+    "连接电脑时申请。": "컴퓨터 연결 시 요청합니다.",
+    "相机": "카메라",
+    "仅用于扫描配对二维码。": "페어링 QR 코드 스캔에만 사용합니다.",
+    "首次扫码时申请。": "첫 스캔 시 요청합니다.",
+    "可以使用手动配对，不必开启相机。": "카메라 없이 수동으로 페어링할 수 있습니다.",
+    "我知道了": "알겠습니다",
+    "手机录音，电脑转写。": "휴대폰으로 녹음하고 컴퓨터로 전사하세요.",
+    "转写和笔记会回到这里。": "전사 내용과 노트가 여기에 표시됩니다.",
+    "开始使用": "시작하기",
+    "稍后": "나중에",
+    "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。":
+        "화면 잠금 후에도 녹음이 계속될 수 있습니다. 통화나 시스템 제한으로 중단될 수 있으니 돌아온 후 확인하세요.",
     "后台下载更新，完成后返回此处安装。": "백그라운드에서 다운로드한 후 여기로 돌아와 설치하세요.",
     "当前地区暂无可用的商店版本": "이 지역에서는 App Store 버전을 사용할 수 없습니다.",
     "下载完成，点击安装更新": "다운로드 완료. 눌러서 설치하세요.",
@@ -1143,6 +1235,31 @@ const translations = {
         "잠금 후에도 녹음할 수 있습니다. 통화, 강제 종료, 시스템 제한으로 중단될 수 있으니 돌아온 후 상태를 확인하세요.\n\nAndroid는 마이크 포그라운드 서비스를 사용합니다. 녹음 알림을 허용하세요. 절전 정책이 앱을 종료하면 시스템 설정을 조정하세요. 일시정지 후에는 앱에서 재개하세요.",
   },
   "fr": {
+    "下一步": "Suivant",
+    "用于会后整理，实时转写不标注说话人。":
+        "Utilisé après la réunion. La transcription en direct ne nomme pas les intervenants.",
+
+    "记录这一刻的重要信息": "Notez les informations importantes à cet instant",
+    "按需授权": "Permissions selon vos besoins",
+    "仅在需要时申请权限，保护你的隐私。":
+        "Les permissions sont demandées uniquement si nécessaire pour protéger votre vie privée.",
+    "用于录制会议音频。": "Enregistre le son de la réunion.",
+    "首次录音时申请。": "Demandé au premier enregistrement.",
+    "本地网络": "Réseau local",
+    "用于发现和连接电脑。": "Recherche votre ordinateur et s’y connecte.",
+    "连接电脑时申请。": "Demandé à la connexion avec l’ordinateur.",
+    "相机": "Caméra",
+    "仅用于扫描配对二维码。": "Sert uniquement à scanner les codes QR d’association.",
+    "首次扫码时申请。": "Demandé au premier scan.",
+    "可以使用手动配对，不必开启相机。": "Vous pouvez associer manuellement sans caméra.",
+    "我知道了": "Compris",
+    "手机录音，电脑转写。":
+        "Enregistrez sur votre téléphone. Transcrivez sur votre ordinateur.",
+    "转写和笔记会回到这里。": "Les transcriptions et notes apparaîtront ici.",
+    "开始使用": "Commencer",
+    "稍后": "Plus tard",
+    "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。":
+        "L’enregistrement peut continuer écran verrouillé. Appels et restrictions peuvent l’interrompre ; vérifiez son état au retour.",
     "后台下载更新，完成后返回此处安装。":
         "Téléchargez en arrière-plan, puis revenez ici pour installer.",
     "当前地区暂无可用的商店版本": "Aucune version App Store disponible dans cette région.",
@@ -1448,6 +1565,30 @@ const translations = {
         "L’enregistrement peut continuer écran verrouillé. Appels, arrêt forcé ou limites système peuvent l’interrompre ; vérifiez l’état au retour.\n\nAndroid utilise un service de microphone au premier plan. Autorisez les notifications. Si l’économie de batterie arrête l’app, ajustez les réglages système. Revenez dans l’app pour reprendre après une pause.",
   },
   "de": {
+    "下一步": "Weiter",
+    "用于会后整理，实时转写不标注说话人。":
+        "Für die Nachbearbeitung. Live-Transkripte zeigen keine Sprechernamen.",
+
+    "记录这一刻的重要信息": "Wichtige Informationen zu diesem Moment notieren",
+    "按需授权": "Berechtigungen bei Bedarf",
+    "仅在需要时申请权限，保护你的隐私。":
+        "Berechtigungen werden nur bei Bedarf angefordert, um Ihre Privatsphäre zu schützen.",
+    "用于录制会议音频。": "Nimmt Besprechungsaudio auf.",
+    "首次录音时申请。": "Bei der ersten Aufnahme angefordert.",
+    "本地网络": "Lokales Netzwerk",
+    "用于发现和连接电脑。": "Findet Ihren Computer und verbindet sich mit ihm.",
+    "连接电脑时申请。": "Beim Verbinden mit dem Computer angefordert.",
+    "相机": "Kamera",
+    "仅用于扫描配对二维码。": "Scannt ausschließlich QR-Codes zur Kopplung.",
+    "首次扫码时申请。": "Beim ersten Scan angefordert.",
+    "可以使用手动配对，不必开启相机。": "Sie können ohne Kamerazugriff manuell koppeln.",
+    "我知道了": "Verstanden",
+    "手机录音，电脑转写。": "Am Telefon aufnehmen. Am Computer transkribieren.",
+    "转写和笔记会回到这里。": "Transkripte und Notizen erscheinen hier.",
+    "开始使用": "Loslegen",
+    "稍后": "Später",
+    "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。":
+        "Die Aufnahme kann bei gesperrtem Bildschirm fortgesetzt werden. Anrufe und Systembeschränkungen können sie unterbrechen; prüfen Sie danach den Status.",
     "后台下载更新，完成后返回此处安装。":
         "Im Hintergrund herunterladen und anschließend hier installieren.",
     "当前地区暂无可用的商店版本": "In dieser Region ist keine App-Store-Version verfügbar.",
@@ -1751,6 +1892,30 @@ const translations = {
         "Aufnahme ist bei gesperrtem Bildschirm möglich. Anrufe, erzwungenes Beenden oder Systemlimits können sie unterbrechen; prüfen Sie den Status nach der Rückkehr.\n\nAndroid verwendet einen Mikrofon-Vordergrunddienst. Aufnahmebenachrichtigungen erlauben. Bei Beendigung durch Energiesparregeln die Systemeinstellungen anpassen. Nach einer Pause in der App fortsetzen.",
   },
   "ru": {
+    "下一步": "Далее",
+    "用于会后整理，实时转写不标注说话人。":
+        "Для обработки после встречи. В расшифровке в реальном времени нет имён говорящих.",
+
+    "记录这一刻的重要信息": "Запишите важную информацию в этот момент",
+    "按需授权": "Разрешения по необходимости",
+    "仅在需要时申请权限，保护你的隐私。":
+        "Для защиты вашей приватности разрешения запрашиваются только по необходимости.",
+    "用于录制会议音频。": "Записывает аудио встречи.",
+    "首次录音时申请。": "Запрашивается при первой записи.",
+    "本地网络": "Локальная сеть",
+    "用于发现和连接电脑。": "Находит компьютер и подключается к нему.",
+    "连接电脑时申请。": "Запрашивается при подключении к компьютеру.",
+    "相机": "Камера",
+    "仅用于扫描配对二维码。": "Только сканирует QR-коды сопряжения.",
+    "首次扫码时申请。": "Запрашивается при первом сканировании.",
+    "可以使用手动配对，不必开启相机。": "Можно выполнить сопряжение вручную без камеры.",
+    "我知道了": "Понятно",
+    "手机录音，电脑转写。": "Запись на телефоне. Расшифровка на компьютере.",
+    "转写和笔记会回到这里。": "Расшифровки и заметки появятся здесь.",
+    "开始使用": "Начать",
+    "稍后": "Позже",
+    "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。":
+        "Запись может продолжаться при блокировке. Звонки и ограничения системы могут её прервать; проверьте состояние после возвращения.",
     "后台下载更新，完成后返回此处安装。":
         "Загрузите в фоне, затем вернитесь сюда для установки.",
     "当前地区暂无可用的商店版本": "В этом регионе нет доступной версии в App Store.",

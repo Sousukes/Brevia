@@ -41,7 +41,7 @@
       document.querySelector('#pause').textContent = t('在手机控制录音');
     if (currentMeetingDetail?.tags?.includes('手机录音'))
       document.querySelector('#detail-view .detail-title .eyebrow').textContent = t('手机录音');
-    document.querySelector('#mobile-manage').textContent = t('查看与管理');
+    document.querySelector('#mobile-manage').setAttribute('aria-label', t('查看与管理'));
     dialog.querySelector('#mobile-dialog-status').textContent = messageKey ? t(messageKey) : '';
   }
   function message(key) {

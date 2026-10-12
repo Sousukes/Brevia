@@ -304,6 +304,72 @@ const mainSource = (await readFile(new URL('./main.js', import.meta.url), 'utf8'
   /\r\n/g,
   '\n',
 );
+// 文件预选不会导入会议；重试和取消仍走原有后端调用边界。
+const importHandlers = new Map();
+const importRequests = [];
+let importDialogCount = 0;
+let importDialogResult = { canceled: false, filePaths: ['/tmp/picked.wav'] };
+let importSize = 64;
+let importIsFile = true;
+let importFails = false;
+runInNewContext(
+  mainSource.slice(
+    mainSource.indexOf('let selectedImportAudio = null;'),
+    mainSource.indexOf("handleIpc('meeting.audio'"),
+  ),
+  {
+    z,
+    path,
+    meetingStart: z.object({ title: z.string() }),
+    stat: async () => ({ size: importSize, isFile: () => importIsFile }),
+    dialog: {
+      showOpenDialog: async () => {
+        importDialogCount++;
+        return importDialogResult;
+      },
+    },
+    worker: {
+      request: async (method, value) => {
+        if (importFails) throw new Error('worker unavailable');
+        importRequests.push({ method, value });
+        return { id: 'imported' };
+      },
+    },
+    resetFloatingCaptionState: () => {},
+    handleIpc: (channel, handler) => importHandlers.set(channel, handler),
+  },
+);
+const selectImportAudio = (payload = {}) =>
+  importHandlers.get('meeting.select-audio')(null, payload);
+const importAudio = (payload) => importHandlers.get('meeting.import')(null, payload);
+const selectedAudio = await selectImportAudio();
+assert.equal(selectedAudio.path, '/tmp/picked.wav');
+assert.equal(selectedAudio.size, 64);
+assert.equal(importRequests.length, 0, '选择文件不能创建会议');
+for (const file of ['relative.wav', '/tmp/not-audio.pdf']) {
+  await assert.rejects(selectImportAudio({ path: file }), /Unsupported audio file/);
+}
+importSize = 0;
+await assert.rejects(selectImportAudio({ path: '/tmp/empty.wav' }), /Invalid audio file/);
+importSize = 64;
+importIsFile = false;
+await assert.rejects(selectImportAudio({ path: '/tmp/folder.wav' }), /Invalid audio file/);
+importIsFile = true;
+await selectImportAudio({ path: '/tmp/dropped.MP3' });
+importFails = true;
+await assert.rejects(
+  importAudio({ title: 'Meeting', path: '/tmp/dropped.MP3' }),
+  /worker unavailable/,
+);
+importFails = false;
+await importAudio({ title: 'Meeting', path: '/tmp/dropped.MP3' });
+assert.equal(importDialogCount, 1, '预选后重试不重复打开文件选择器');
+assert.equal(importRequests[0].method, 'meeting.import');
+assert.equal(importRequests[0].value.path, '/tmp/dropped.MP3');
+importDialogResult = { canceled: true, filePaths: [] };
+assert.equal(await selectImportAudio(), null);
+assert.equal(await importAudio({ title: 'Meeting', path: '/tmp/arbitrary.wav' }), null);
+assert.equal(importRequests.length, 1, '未预选路径和取消操作不能直接导入');
 const workerEventBlock = mainSource.slice(
   mainSource.indexOf('const workerEvent ='),
   mainSource.indexOf('const workerMessage ='),

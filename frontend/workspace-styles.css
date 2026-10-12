@@ -68,8 +68,8 @@
 }
 
 .workspace-item.active {
-  background-color: rgba(38, 34, 30, 0.08);
-  color: rgba(38, 34, 30, 0.92);
+  background-color: rgba(34, 34, 34, 0.08);
+  color: rgba(34, 34, 34, 0.92);
   font-weight: 500;
 }
 
@@ -95,7 +95,7 @@
 }
 
 .workspace-icon.public {
-  color: #6b655f;
+  color: #666666;
 }
 
 /* 工作区标签 */
@@ -122,7 +122,7 @@
   z-index: 50;
   min-width: 12rem;
   padding: 0.25rem;
-  border: 1px solid #cfc9c0;
+  border: 1px solid #d6d6d6;
   background: #fff;
 }
 
@@ -139,8 +139,8 @@
 
 .meeting-workspace-menu .menu-item:hover,
 .meeting-workspace-menu .menu-item.active {
-  background: #f1eee8;
-  color: #26221e;
+  background: #f2f2f2;
+  color: #222222;
 }
 .meeting-workspace-menu .menu-item > span:nth-child(2) {
   min-width: 0;
@@ -155,12 +155,12 @@
 .meeting-workspace-menu .menu-separator {
   height: 1px;
   margin: 0.25rem 0;
-  background: #e6e2d8;
+  background: #eaeaea;
 }
 
 [data-theme="dark"] .meeting-workspace-menu {
   border-color: #666;
-  background: #2e2e2e;
+  background: #242424;
 }
 [data-theme="dark"] .meeting-workspace-menu .menu-item {
   color: #ddd;
@@ -171,7 +171,7 @@
   color: #fff;
 }
 [data-theme="dark"] .meeting-workspace-menu .menu-separator {
-  background: #454545;
+  background: #333333;
 }
 
 /* 新建工作区按钮 */
@@ -248,7 +248,7 @@
 .workspace-form input[type="text"]:focus,
 .workspace-form textarea:focus {
   outline: none;
-  border-color: #26221e;
+  border-color: #222222;
 }
 
 .workspace-form textarea {

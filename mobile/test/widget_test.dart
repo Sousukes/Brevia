@@ -15,9 +15,75 @@ import 'package:brevia_mobile/swipe_delete.dart';
 import 'package:brevia_mobile/app_model.dart';
 import 'package:brevia_mobile/storage.dart';
 import 'package:brevia_mobile/connection.dart';
+import 'package:brevia_mobile/onboarding.dart';
+import 'package:brevia_mobile/recording_controls.dart';
 
 void main() {
   setUp(() => uiLanguage = 'zh');
+
+  testWidgets('onboarding explains request timing and persists completion', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: breviaTheme(Brightness.light),
+        home: const OnboardingGate(child: Text('library-ready')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('下一步'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('下一步'));
+    await tester.pumpAndSettle();
+    for (final label in ['首次录音时申请。', '连接电脑时申请。', '首次扫码时申请。']) {
+      await tester.scrollUntilVisible(
+        find.text(label),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(label), findsOneWidget);
+    }
+    expect(find.text('允许'), findsNothing);
+    await tester.tap(find.text('我知道了'));
+    await tester.pumpAndSettle();
+    expect(find.text('library-ready'), findsOneWidget);
+    expect(
+      (await SharedPreferences.getInstance()).getBool('onboardingComplete'),
+      isTrue,
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      MaterialApp(home: const OnboardingGate(child: Text('returning-user'))),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('returning-user'), findsOneWidget);
+  });
+
+  testWidgets('recording commands are icon-only and blocked while pending', (
+    tester,
+  ) async {
+    var commands = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: breviaTheme(Brightness.light),
+        home: Scaffold(
+          body: RecordingControls(
+            paused: false,
+            pending: true,
+            onPause: () => commands++,
+            onMark: () => commands++,
+            onEnd: () => commands++,
+          ),
+        ),
+      ),
+    );
+    expect(find.text('暂停'), findsNothing);
+    for (final label in ['暂停', '重点', '结束']) {
+      await tester.tap(find.byTooltip(label));
+    }
+    expect(commands, 0);
+  });
 
   testWidgets(
     'transcription activity stops for inactive states and reduced motion',
@@ -162,7 +228,7 @@ void main() {
       model.notifyListeners();
       await tester.pump();
       expect(find.text('Partial transcript'), findsOneWidget);
-      expect(find.textContaining('发言人'), findsOneWidget);
+      expect(find.textContaining('发言人'), findsNothing);
       expect(dots, findsNWidgets(3));
       await tester.tap(find.text('笔记'));
       await tester.pump(const Duration(milliseconds: 300));
@@ -414,11 +480,11 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.tap(find.text('结束'));
+    await tester.tap(find.byTooltip('结束'));
     await tester.pump();
     expect(model.ends, 1);
     expect(find.byType(BottomSheet), findsNothing);
-    await tester.tap(find.text('结束'));
+    await tester.tap(find.byTooltip('结束'));
     expect(model.ends, 1);
     model.saved.complete();
     await tester.pumpAndSettle();
@@ -673,13 +739,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('会议语言'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('录音选项'),
+        find.text('工作区'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('录音选项'));
-      await tester.pumpAndSettle();
       expect(find.text('工作区'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('识别模型'),
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('识别模型'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.scrollUntilVisible(
@@ -758,7 +827,8 @@ void main() {
       ),
     );
     await tester.pump(Duration(milliseconds: 300));
-    expect(find.text('暂停'), findsOneWidget);
+    expect(find.byTooltip('暂停'), findsOneWidget);
+    expect(find.text('暂停'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('笔记'));
     await tester.pump(Duration(milliseconds: 300));

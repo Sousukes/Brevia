@@ -20,137 +20,17 @@ import 'recorder.dart';
 import 'storage.dart';
 import 'startup.dart';
 import 'swipe_delete.dart';
+import 'design_system.dart';
+import 'recording_controls.dart';
+import 'onboarding.dart';
+import 'pairing_illustration.dart';
+export 'design_system.dart' show breviaTheme;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final model = AppModel();
   runApp(BreviaApp(model: model, initialize: model.initialize));
-}
-
-ThemeData breviaTheme(Brightness brightness) {
-  final dark = brightness == Brightness.dark;
-  final ink = dark ? Color(0xfff1eee8) : Color(0xff26221e);
-  final canvas = dark ? Color(0xff262626) : Color(0xfffbfaf7);
-  final muted = dark ? Color(0xffa6a19a) : Color(0xff6b655f);
-  final line = dark ? Color(0xff454545) : Color(0xffe6e2d8);
-  final sheet = dark ? Color(0xff2e2e2e) : Colors.white;
-  final scheme = ColorScheme.fromSeed(seedColor: ink, brightness: brightness)
-      .copyWith(
-        primary: ink,
-        onPrimary: canvas,
-        surface: canvas,
-        onSurface: ink,
-        onSurfaceVariant: muted,
-        outline: line,
-        outlineVariant: line,
-        surfaceTint: Colors.transparent,
-        error: dark ? Color(0xffc48686) : Color(0xffa65b5b),
-      );
-  final base = ThemeData(
-    useMaterial3: true,
-    colorScheme: scheme,
-    scaffoldBackgroundColor: canvas,
-  );
-  return base.copyWith(
-    splashFactory: NoSplash.splashFactory,
-    appBarTheme: AppBarTheme(
-      backgroundColor: canvas,
-      foregroundColor: ink,
-      centerTitle: true,
-      titleTextStyle: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: ink,
-      ),
-      elevation: 0,
-      scrolledUnderElevation: 0,
-    ),
-    textTheme: base.textTheme.copyWith(
-      headlineLarge: TextStyle(
-        fontSize: 32,
-        height: 1.25,
-        fontWeight: FontWeight.w600,
-        color: ink,
-      ),
-      headlineSmall: TextStyle(
-        fontSize: 24,
-        height: 1.4,
-        fontWeight: FontWeight.w600,
-        color: ink,
-      ),
-      titleLarge: TextStyle(
-        fontSize: 20,
-        height: 1.4,
-        fontWeight: FontWeight.w600,
-        color: ink,
-      ),
-      bodySmall: TextStyle(fontSize: 13, height: 1.5, color: muted),
-      bodyLarge: TextStyle(fontSize: 17, height: 1.7, color: ink),
-      bodyMedium: TextStyle(fontSize: 16, height: 1.55, color: ink),
-    ),
-    dividerTheme: DividerThemeData(
-      color: dark ? Color(0xff454545) : Color(0xffe6e2d8),
-      thickness: 1,
-      space: 32,
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: false,
-      contentPadding: EdgeInsets.all(16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: line),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: line),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: ink),
-      ),
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: Size(48, 54),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        minimumSize: Size(48, 54),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    ),
-    bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: sheet,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-    ),
-    listTileTheme: ListTileThemeData(
-      iconColor: ink,
-      contentPadding: EdgeInsets.zero,
-      minVerticalPadding: 20,
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: canvas,
-      height: 72,
-      elevation: 0,
-      indicatorColor: Colors.transparent,
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (states) => TextStyle(
-          fontSize: 12,
-          color: states.contains(WidgetState.selected) ? ink : muted,
-        ),
-      ),
-    ),
-  );
 }
 
 class BreviaApp extends StatelessWidget {
@@ -178,7 +58,7 @@ class BreviaApp extends StatelessWidget {
           ? Home(model: model)
           : Startup(
               initialize: initialize!,
-              child: Home(model: model),
+              child: OnboardingGate(child: Home(model: model)),
             ),
     ),
   );
@@ -248,7 +128,6 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int tab = 0;
   String query = '';
-  bool searching = false;
   AppModel get model => widget.model;
   @override
   void initState() {
@@ -498,19 +377,18 @@ class _HomeState extends State<Home> {
             ),
           ),
         ),
-        if (searching)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: TextField(
-              autofocus: true,
-              onChanged: (v) => setState(() => query = v),
-              decoration: InputDecoration(
-                hintText: tr("搜索本机会议"),
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
-              ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: TextField(
+            onChanged: (v) => setState(() => query = v),
+            decoration: InputDecoration(
+              hintText: tr("搜索本机会议"),
+              fillColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+              prefixIcon: Icon(Icons.search),
+              isDense: true,
             ),
           ),
+        ),
         SizedBox(height: 24),
         Expanded(
           child: values.isEmpty
@@ -604,6 +482,20 @@ class _HomeState extends State<Home> {
                                         m['localOnly'] == true)),
                             onDelete: () => deleteRecord(m),
                             child: ListTile(
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerLowest,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.description_outlined,
+                                  size: 22,
+                                ),
+                              ),
                               contentPadding: EdgeInsets.zero,
                               minVerticalPadding: 16,
                               title: Text(
@@ -652,17 +544,6 @@ class _HomeState extends State<Home> {
                   ),
                 ),
         ),
-        Padding(
-          padding: EdgeInsets.all(24),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: model.busy ? null : prepare,
-              icon: Icon(Icons.mic_none),
-              label: Text(model.busy ? tr("正在准备…") : tr("新建录音")),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -679,19 +560,19 @@ class _HomeState extends State<Home> {
               toolbarHeight: 88,
               actions: [
                 if (tab == 0)
-                  IconButton(
-                    tooltip: tr("搜索会议"),
-                    onPressed: () => setState(() {
-                      searching = !searching;
-                      if (!searching) query = '';
-                    }),
-                    icon: Icon(searching ? Icons.close : Icons.search),
+                  Center(
+                    child: FilledButton.icon(
+                      onPressed: model.busy ? null : prepare,
+                      icon: Icon(Icons.add, size: 20),
+                      label: Text(model.busy ? tr("正在准备…") : tr("新建录音")),
+                      style: FilledButton.styleFrom(minimumSize: Size(48, 44)),
+                    ),
                   ),
                 SizedBox(width: 12),
               ],
               title: Text(
-                [tr("会议"), tr("连接"), tr("设置")][tab],
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w600),
+                ['Brevia', tr("连接"), tr("设置")][tab],
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
             ),
       body: SafeArea(
@@ -725,7 +606,7 @@ class _HomeState extends State<Home> {
               label: tr("会议"),
             ),
             NavigationDestination(
-              icon: Icon(Icons.laptop_outlined),
+              icon: Icon(Icons.link_outlined),
               label: tr("连接"),
             ),
             NavigationDestination(
@@ -1336,6 +1217,30 @@ class _MeetingPageState extends State<MeetingPage> {
   }
 
   bool ending = false;
+  bool recordingCommandPending = false;
+
+  Future<void> toggleRecording() async {
+    if (recordingCommandPending || ending) return;
+    setState(() => recordingCommandPending = true);
+    try {
+      await report(context, () async {
+        final m = meeting;
+        final active =
+            widget.model.live?['id'] == widget.id &&
+            (widget.model.serviceRunning || widget.model.engine != null);
+        if (!active) {
+          await widget.model.start(m['title'], existing: widget.id);
+        } else {
+          await widget.model.command(
+            widget.id,
+            m['state'] == 'recording' ? 'pause' : 'resume',
+          );
+        }
+      });
+    } finally {
+      if (mounted) setState(() => recordingCommandPending = false);
+    }
+  }
 
   Future<void> end() async {
     if (ending) return;
@@ -1378,14 +1283,21 @@ class _MeetingPageState extends State<MeetingPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              tr("记录重点 · {0}", [durationText(meeting['samples'] ?? 0)]),
+              tr("记录重点 · {0}", [durationText(sample)]),
               style: Theme.of(ctx).textTheme.titleLarge,
             ),
             SizedBox(height: 24),
+            Text(tr("备注（选填）")),
+            SizedBox(height: 8),
             TextField(
               controller: text,
               maxLength: 200,
-              decoration: InputDecoration(labelText: tr("备注（选填）")),
+              minLines: 4,
+              maxLines: 6,
+              decoration: InputDecoration(
+                hintText: tr("记录这一刻的重要信息"),
+                fillColor: Theme.of(ctx).colorScheme.surface,
+              ),
             ),
             SizedBox(height: 16),
             FilledButton(
@@ -1512,7 +1424,9 @@ class _MeetingPageState extends State<MeetingPage> {
                         )
                       : null,
                   child: Text(
-                    '${durationText((s['start_ms'] as num? ?? 0) * 16)}   ${mobileSpeakerName(s['speaker_name'] ?? s['speaker'])}',
+                    ended
+                        ? '${durationText((s['start_ms'] as num? ?? 0) * 16)}   ${mobileSpeakerName(s['speaker_name'] ?? s['speaker'])}'
+                        : durationText((s['start_ms'] as num? ?? 0) * 16),
                   ),
                 ),
                 SelectableText(
@@ -1766,7 +1680,7 @@ class _MeetingPageState extends State<MeetingPage> {
                     for (final (i, text)
                         in (ended
                             ? [(1, tr("笔记")), (0, tr("转写")), (2, tr("重点"))]
-                            : [(0, tr("转写")), (1, tr("笔记"))]))
+                            : [(0, tr("转写")), (1, tr("笔记")), (2, tr("重点"))]))
                       Expanded(
                         child: AnimatedContainer(
                           duration: MediaQuery.disableAnimationsOf(context)
@@ -1878,14 +1792,13 @@ class _MeetingPageState extends State<MeetingPage> {
                   ),
                 ),
               Container(
-                margin: EdgeInsets.fromLTRB(12, 8, 12, 12),
+                margin: EdgeInsets.fromLTRB(24, 8, 24, 16),
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Color(0xff2e2e2e)
-                      : Colors.white,
-                  border: Border.all(color: Theme.of(context).dividerColor),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  border: Border(
+                    top: BorderSide(color: Theme.of(context).dividerColor),
+                  ),
                 ),
                 child: ended
                     ? Column(
@@ -1985,61 +1898,12 @@ class _MeetingPageState extends State<MeetingPage> {
                           ),
                         ],
                       )
-                    : Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              icon: Icon(
-                                state == 'recording' && live
-                                    ? Icons.pause
-                                    : Icons.play_arrow,
-                                size: 18,
-                              ),
-                              onPressed: () => report(context, () async {
-                                if (!live) {
-                                  await widget.model.start(
-                                    m['title'],
-                                    existing: widget.id,
-                                  );
-                                } else {
-                                  await widget.model.command(
-                                    widget.id,
-                                    state == 'recording' ? 'pause' : 'resume',
-                                  );
-                                }
-                              }),
-                              label: Text(
-                                state == 'recording' && live
-                                    ? tr("暂停")
-                                    : tr("继续"),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              icon: Icon(Icons.bookmark_border, size: 18),
-                              onPressed: live ? mark : null,
-                              label: Text(tr("重点")),
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              icon: Icon(Icons.stop, size: 18),
-                              onPressed: ending ? null : end,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.error,
-                                side: BorderSide(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                              ),
-                              label: Text(tr("结束")),
-                            ),
-                          ),
-                        ],
+                    : RecordingControls(
+                        paused: state != 'recording' || !live,
+                        pending: recordingCommandPending || ending,
+                        onPause: toggleRecording,
+                        onMark: live ? () => report(context, mark) : null,
+                        onEnd: end,
                       ),
               ),
             ],
@@ -2078,34 +1942,32 @@ class SettingsPage extends StatelessWidget {
           uiLanguage == 'system' ? tr("跟随系统") : languageNames[uiLanguage]!,
         ),
         trailing: Icon(Icons.chevron_right),
-        onTap: () => showModalBottomSheet(
-          context: context,
-          showDragHandle: true,
-          isScrollControlled: true,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .85,
-          ),
-          builder: (ctx) => SafeArea(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
-              shrinkWrap: true,
-              children: [
-                for (final entry in {
-                  'system': tr("跟随系统"),
-                  ...languageNames,
-                }.entries)
-                  ListTile(
-                    title: Text(entry.value),
-                    trailing: uiLanguage == entry.key
-                        ? Icon(Icons.check)
-                        : null,
-                    onTap: () {
-                      model.setLanguage(entry.key);
-                      Navigator.pop(ctx);
-                    },
+        onTap: () => info(
+          context,
+          tr("界面语言"),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final entry in {
+                'system': tr("跟随系统"),
+                ...languageNames,
+              }.entries) ...[
+                ListTile(
+                  title: Text(entry.value),
+                  selected: uiLanguage == entry.key,
+                  trailing: Icon(
+                    uiLanguage == entry.key
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
                   ),
+                  onTap: () {
+                    model.setLanguage(entry.key);
+                    Navigator.pop(context);
+                  },
+                ),
+                Divider(height: 1),
               ],
-            ),
+            ],
           ),
         ),
       ),
@@ -2253,27 +2115,33 @@ class SettingsPage extends StatelessWidget {
             Icon(Icons.chevron_right),
           ],
         ),
-        onTap: () => showModalBottomSheet(
-          context: context,
-          showDragHandle: true,
-          builder: (ctx) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final e in {
-                  'system': tr("跟随系统"),
-                  'light': tr("浅色"),
-                  'dark': tr("深色"),
-                }.entries)
-                  ListTile(
-                    title: Text(e.value),
-                    onTap: () {
-                      model.setAppearance(e.key);
-                      Navigator.pop(ctx);
-                    },
+        onTap: () => info(
+          context,
+          tr("外观"),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final entry in {
+                'system': tr("跟随系统"),
+                'light': tr("浅色"),
+                'dark': tr("深色"),
+              }.entries) ...[
+                ListTile(
+                  title: Text(entry.value),
+                  selected: model.appearance == entry.key,
+                  trailing: Icon(
+                    model.appearance == entry.key
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
                   ),
+                  onTap: () {
+                    model.setAppearance(entry.key);
+                    Navigator.pop(context);
+                  },
+                ),
+                Divider(height: 1),
               ],
-            ),
+            ],
           ),
         ),
       ),
@@ -2382,22 +2250,28 @@ class _PrepareMeetingPageState extends State<PrepareMeetingPage> {
     void Function(String) changed,
   ) => Padding(
     padding: EdgeInsets.only(bottom: 24),
-    child: DropdownButtonFormField<String>(
-      key: ValueKey('$label:$value'),
-      initialValue: value,
-      isExpanded: true,
-      decoration: InputDecoration(labelText: label),
-      items: choices.entries
-          .map(
-            (e) => DropdownMenuItem(
-              value: e.key,
-              child: Text(e.value, overflow: TextOverflow.ellipsis),
-            ),
-          )
-          .toList(),
-      onChanged: (v) {
-        if (v != null) setState(() => changed(v));
-      },
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label),
+        SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          key: ValueKey('$label:$value'),
+          initialValue: value,
+          isExpanded: true,
+          items: choices.entries
+              .map(
+                (e) => DropdownMenuItem(
+                  value: e.key,
+                  child: Text(e.value, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
+          onChanged: (v) {
+            if (v != null) setState(() => changed(v));
+          },
+        ),
+      ],
     ),
   );
   @override
@@ -2406,14 +2280,7 @@ class _PrepareMeetingPageState extends State<PrepareMeetingPage> {
         offline ||
         models.any((m) => m['id'] == modelId && m['status'] == 'ready');
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: false,
-        toolbarHeight: 88,
-        title: Text(
-          tr(widget.upload ? "上传录音" : "准备录音"),
-          style: Theme.of(context).textTheme.headlineLarge,
-        ),
-      ),
+      appBar: AppBar(title: Text(tr(widget.upload ? "上传录音" : "新建录音"))),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
@@ -2447,45 +2314,12 @@ class _PrepareMeetingPageState extends State<PrepareMeetingPage> {
         child: ListView(
           padding: EdgeInsets.all(24),
           children: [
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).dividerColor),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    offline
-                        ? Icons.phone_iphone_outlined
-                        : Icons.laptop_outlined,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(offline ? tr("仅保存在手机") : widget.computer),
-                  ),
-                  SizedBox(width: 12),
-                  if (!offline)
-                    Icon(
-                      Icons.check_circle,
-                      color: Color(0xff16803c),
-                      size: 20,
-                    ),
-                ],
-              ),
-            ),
-            if (offline)
-              Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Text(tr("无需连接电脑。录音保存在本机，连接后由你主动上传。")),
-              ),
-            SizedBox(height: 32),
+            Text(tr("会议标题")),
+            SizedBox(height: 8),
             TextField(
               controller: title,
               maxLength: 120,
               decoration: InputDecoration(
-                labelText: tr("会议标题"),
-                floatingLabelBehavior: FloatingLabelBehavior.always,
                 counterText: '',
                 suffixIcon: IconButton(
                   tooltip: tr("清空标题"),
@@ -2499,6 +2333,8 @@ class _PrepareMeetingPageState extends State<PrepareMeetingPage> {
               language = v;
               selectDefault();
             }),
+            Text(tr("参会人数")),
+            SizedBox(height: 8),
             TextField(
               controller: participants,
               keyboardType: TextInputType.number,
@@ -2508,68 +2344,93 @@ class _PrepareMeetingPageState extends State<PrepareMeetingPage> {
               ],
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                labelText: tr("参会人数"),
                 hintText: tr("自动识别"),
-                helperText: tr("可留空；已知人数用于电脑端说话人区分。"),
+                helperText: tr("用于会后整理，实时转写不标注说话人。"),
                 helperMaxLines: 3,
               ),
             ),
             SizedBox(height: 24),
-            if (!widget.upload)
-              ListTile(
-                leading: Icon(Icons.mic_none),
-                title: Text(tr("手机内置麦克风")),
-                subtitle: Text(tr(offline ? "仅保存在手机" : "手机采集音频，电脑完成转写")),
+            if (!offline) ...[
+              select(tr("工作区"), workspace, {
+                '': tr("不指定工作区"),
+                for (final w in widget.options['workspaces'])
+                  w['id']: w['name'],
+              }, (v) => workspace = v),
+              select(
+                tr("识别模型"),
+                modelId,
+                models.isEmpty
+                    ? {'': tr("电脑暂无支持此语言的模型")}
+                    : {
+                        for (final m in models)
+                          m['id']:
+                              '${m['name']}${m['status'] == 'ready' ? '' : tr(" · 未安装")}',
+                      },
+                (v) => modelId = v,
               ),
-            Divider(),
-            if (!offline)
-              ListTile(
-                leading: Icon(Icons.laptop_outlined),
-                title: Text(ready ? tr("电脑已就绪") : tr("电脑尚未就绪")),
-                trailing: Icon(
-                  ready ? Icons.check_circle : Icons.info_outline,
-                  color: ready
-                      ? Color(0xff16803c)
-                      : Theme.of(context).colorScheme.error,
-                ),
+              select(tr("翻译为"), translation, {
+                '': tr("不翻译"),
+                for (final e in languages.entries.where((e) => e.key != 'auto'))
+                  e.key: e.value,
+              }, (v) => translation = v),
+            ],
+            SizedBox(height: 8),
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(8),
               ),
-            if (!offline) Divider(),
-            if (!offline)
-              ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                leading: Icon(Icons.tune),
-                title: Text(tr("录音选项")),
-                subtitle: Text(
-                  '${languages[language]} · ${translation.isEmpty ? tr("不翻译") : languages[translation]}',
-                ),
+              child: Row(
                 children: [
-                  SizedBox(height: 24),
-                  select(tr("工作区"), workspace, {
-                    '': tr("不指定工作区"),
-                    for (final w in widget.options['workspaces'])
-                      w['id']: w['name'],
-                  }, (v) => workspace = v),
-                  select(
-                    tr("识别模型"),
-                    modelId,
-                    models.isEmpty
-                        ? {'': tr("电脑暂无支持此语言的模型")}
-                        : {
-                            for (final m in models)
-                              m['id']:
-                                  '${m['name']}${m['status'] == 'ready' ? '' : tr(" · 未安装")}',
-                          },
-                    (v) => modelId = v,
+                  Icon(
+                    offline
+                        ? Icons.phone_iphone_outlined
+                        : Icons.laptop_outlined,
                   ),
-                  select(tr("翻译为"), translation, {
-                    '': tr("不翻译"),
-                    for (final e in languages.entries.where(
-                      (e) => e.key != 'auto',
-                    ))
-                      e.key: e.value,
-                  }, (v) => translation = v),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(offline ? tr("仅保存在手机") : widget.computer),
+                        SizedBox(height: 4),
+                        Text(
+                          tr(
+                            offline
+                                ? "无需连接电脑。录音保存在本机，连接后由你主动上传。"
+                                : "手机采集音频，电脑完成转写",
+                          ),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  if (!offline)
+                    Icon(
+                      Icons.check_circle,
+                      color: Color(0xff16803c),
+                      size: 20,
+                    ),
                 ],
               ),
+            ),
+
+            if (!widget.upload && offline) ...[
+              SizedBox(height: 24),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.mic_none, size: 40),
+                ),
+              ),
+            ],
             SizedBox(height: 24),
             if (!ready)
               Padding(
@@ -2586,85 +2447,6 @@ class _PrepareMeetingPageState extends State<PrepareMeetingPage> {
 }
 
 /// The same simple phone → transcript diagram as the connection reference.
-class PairingIllustration extends StatelessWidget {
-  const PairingIllustration({super.key});
-  @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: CustomPaint(
-      size: Size(280, 140),
-      painter: _PairingPainter(
-        Theme.of(context).colorScheme.onSurface,
-        Theme.of(context).dividerColor,
-      ),
-    ),
-  );
-}
-
-class _PairingPainter extends CustomPainter {
-  final Color ink, line;
-  const _PairingPainter(this.ink, this.line);
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = Paint()
-      ..color = ink
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(8, 20, 52, 102),
-        Radius.circular(8),
-      ),
-      stroke,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(154, 18, 118, 92),
-        Radius.circular(3),
-      ),
-      stroke,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(140, 112)
-        ..lineTo(280, 112)
-        ..lineTo(274, 119)
-        ..lineTo(146, 119)
-        ..close(),
-      stroke,
-    );
-    final red = Paint()
-      ..color = Color(0xffff3b30)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(30, 55, 9, 21), Radius.circular(5)),
-      Paint()..color = red.color,
-    );
-    canvas.drawArc(Rect.fromLTWH(25, 61, 19, 23), 0, 3.14159, false, red);
-    canvas.drawLine(Offset(34.5, 84), Offset(34.5, 91), red);
-    canvas.drawLine(Offset(29, 92), Offset(40, 92), red);
-    final muted = Paint()
-      ..color = ink.withValues(alpha: .25)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    for (var i = 0; i < 3; i++) {
-      canvas.drawCircle(
-        Offset(85 + i * 16, 72),
-        2.5,
-        Paint()..color = muted.color,
-      );
-      canvas.drawLine(
-        Offset(180, 48 + i * 15),
-        Offset(i == 2 ? 232 : 249, 48 + i * 15),
-        muted,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_PairingPainter old) => old.ink != ink || old.line != line;
-}
-
 bool waitingForComputer(Map<String, dynamic> meeting, AppModel? model) {
   final snapshot = meeting['snapshot'] as Map? ?? {};
   final task = snapshot['task'] as Map? ?? {};
@@ -2789,9 +2571,7 @@ class ConnectionRecoveryNotice extends StatelessWidget {
     margin: EdgeInsets.only(top: 20),
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Theme.of(context).brightness == Brightness.dark
-          ? Color(0xff40351f)
-          : Color(0xfffff4df),
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
       borderRadius: BorderRadius.circular(8),
     ),
     child: Column(

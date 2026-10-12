@@ -15,7 +15,7 @@ const {
   systemPreferences,
 } = require('electron');
 const { execFile, spawn } = require('node:child_process');
-const { appendFile, copyFile, mkdir, readFile, rm, writeFile } = require('node:fs/promises');
+const { appendFile, copyFile, mkdir, readFile, rm, stat, writeFile } = require('node:fs/promises');
 const { existsSync } = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -1325,17 +1325,41 @@ function registerIpc() {
     resetFloatingCaptionState();
     return result;
   });
+  // 仅允许导入由文件选择器或真实拖入 File 选中的路径；选择阶段不创建会议。
+  let selectedImportAudio = null;
+  const audioImportFilters = [
+    { name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'aac', 'ogg'] },
+  ];
+  handleIpc('meeting.select-audio', async (_, payload) => {
+    const { path: dropped } = z.object({ path: z.string().max(4096).optional() }).parse(payload);
+    const result = dropped
+      ? { canceled: false, filePaths: [dropped] }
+      : await dialog.showOpenDialog({ properties: ['openFile'], filters: audioImportFilters });
+    if (result.canceled) return null;
+    const file = result.filePaths[0];
+    const extension = path.extname(file).slice(1).toLowerCase();
+    if (!path.isAbsolute(file) || !audioImportFilters[0].extensions.includes(extension))
+      throw new Error('Unsupported audio file');
+    const metadata = await stat(file);
+    if (!metadata.isFile() || metadata.size === 0) throw new Error('Invalid audio file');
+    selectedImportAudio = file;
+    return { path: file, name: path.basename(file), size: metadata.size };
+  });
   handleIpc('meeting.import', async (_, payload) => {
     const value = meetingStart.extend({ path: z.string().optional() }).parse(payload);
-    const selected = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'aac', 'ogg'] }],
-    });
+    const selected =
+      selectedImportAudio && value.path === selectedImportAudio
+        ? { canceled: false, filePaths: [selectedImportAudio] }
+        : await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: audioImportFilters,
+          });
     if (selected.canceled) return null;
     const result = await worker.request('meeting.import', {
       ...value,
       path: selected.filePaths[0],
     });
+    selectedImportAudio = null;
     resetFloatingCaptionState();
     return result;
   });
@@ -2053,9 +2077,10 @@ async function installUpdate() {
 
 function createWindow() {
   const appUrl = pathToFileURL(path.join(packagedRoot, 'frontend', 'index.html')).href;
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const window = new BrowserWindow({
-    width: 1200,
-    height: 760,
+    width: Math.min(1440, width),
+    height: Math.min(900, height),
     minWidth: 880,
     minHeight: 640,
     show: false,
@@ -2067,6 +2092,7 @@ function createWindow() {
       sandbox: true,
     },
   });
+  window.webContents.setZoomFactor(1);
   const openExternal = (url) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
   };

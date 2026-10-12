@@ -12,6 +12,7 @@ function closeWorkspaceDialog(backdrop) {
   backdrop.classList.add('modal-leave');
   setTimeout(() => {
     backdrop.remove();
+    if (backdrop.returnFocus?.isConnected) backdrop.returnFocus.focus();
     document.body.classList.remove('modal-open');
   }, 200);
 }
@@ -57,7 +58,7 @@ function renderWorkspaceNav() {
   // 构建工作区子项 HTML
   const workspaceSubItems = [
     `<button class="workspace-item ${activeWorkspaceId === '' ? 'active' : ''}" data-workspace-id="">
-      <span class="workspace-label">${t('公开工作区')}</span>
+      ${interfaceIcon('folder')}<span class="workspace-label">${t('公开工作区')}</span>
       <span class="workspace-count">${publicCount}</span>
     </button>`,
     ...workspaces
@@ -68,7 +69,7 @@ function renderWorkspaceNav() {
         return `<button class="workspace-item ${activeWorkspaceId === workspace.id ? 'active' : ''}"
                 data-workspace-id="${escapeHtml(workspace.id)}"
                 data-workspace-name="${escapeHtml(workspace.name)}">
-        <span class="workspace-label">${escapeHtml(workspace.name)}</span>
+        ${interfaceIcon('folder')}<span class="workspace-label">${escapeHtml(workspace.name)}</span>
         <span class="workspace-count">${count}</span>
       </button>`;
       })
@@ -99,7 +100,7 @@ function renderWorkspaceNav() {
     <div class="workspace-subnav-content">
       ${workspaceSubItems}
       <button class="new-workspace" data-new-workspace>
-        <span>+</span> ${t('新建工作区')}
+        ${interfaceIcon('plus')} ${t('新建工作区')}
       </button>
     </div>
   `;
@@ -208,7 +209,8 @@ function updateHomeViewTitle() {
  */
 function showNewWorkspaceDialog(assignMeetingId, onCreated) {
   const backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop';
+  backdrop.className = 'modal-backdrop workspace-dialog';
+  backdrop.returnFocus = document.activeElement;
   backdrop.innerHTML = `
     <section class="modal-panel" role="dialog" aria-modal="true">
       <header class="modal-head">
@@ -216,7 +218,7 @@ function showNewWorkspaceDialog(assignMeetingId, onCreated) {
           <h2>${t('新建工作区')}</h2>
           <p>${t('创建一个新的工作区来组织会议')}</p>
         </div>
-        <button class="modal-close" type="button" data-close-modal aria-label="${t('关闭')}">×</button>
+        <button class="modal-close" type="button" data-close-modal aria-label="${t('关闭')}">${interfaceIcon('close')}</button>
       </header>
       <div class="modal-body">
         <form class="workspace-form" data-workspace-form>
@@ -285,6 +287,9 @@ function showNewWorkspaceDialog(assignMeetingId, onCreated) {
   // 提交表单
   backdrop.querySelector('[data-workspace-form]').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const submit = e.target.querySelector('[type="submit"]');
+    if (submit.disabled) return;
+    submit.disabled = true;
     const formData = new FormData(e.target);
     const payload = {
       name: formData.get('name').trim(),
@@ -303,6 +308,8 @@ function showNewWorkspaceDialog(assignMeetingId, onCreated) {
       appActions.showToast(t('工作区已创建'));
     } catch (error) {
       appActions.showToast(error.message);
+    } finally {
+      submit.disabled = false;
     }
   });
 }
@@ -316,7 +323,8 @@ function showEditWorkspaceDialog(workspaceId) {
   if (!workspace) return;
 
   const backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop';
+  backdrop.className = 'modal-backdrop workspace-dialog';
+  backdrop.returnFocus = document.activeElement;
   backdrop.innerHTML = `
     <section class="modal-panel" role="dialog" aria-modal="true">
       <header class="modal-head">
@@ -324,7 +332,7 @@ function showEditWorkspaceDialog(workspaceId) {
           <h2>${t('编辑工作区')}</h2>
           <p>${escapeHtml(workspace.name)}</p>
         </div>
-        <button class="modal-close" type="button" data-close-modal aria-label="${t('关闭')}">×</button>
+        <button class="modal-close" type="button" data-close-modal aria-label="${t('关闭')}">${interfaceIcon('close')}</button>
       </header>
       <div class="modal-body">
         <form class="workspace-form" data-workspace-form>
@@ -419,6 +427,9 @@ function showEditWorkspaceDialog(workspaceId) {
   // 提交表单
   backdrop.querySelector('[data-workspace-form]').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const submit = e.target.querySelector('[type="submit"]');
+    if (submit.disabled) return;
+    submit.disabled = true;
     const formData = new FormData(e.target);
     const updates = {
       name: formData.get('name').trim(),
@@ -436,6 +447,8 @@ function showEditWorkspaceDialog(workspaceId) {
       appActions.showToast(t('工作区已更新'));
     } catch (error) {
       appActions.showToast(error.message);
+    } finally {
+      submit.disabled = false;
     }
   });
 }
@@ -470,7 +483,7 @@ function showWorkspaceAssignMenu(meetingIndex, anchorRect) {
     </div>
     <div class="menu-separator"></div>
     <button type="button" data-new-workspace-assign data-meeting-index="${meetingIndex}" class="menu-item">
-      <span>+</span> ${t('新建工作区')}
+      ${interfaceIcon('plus')} ${t('新建工作区')}
     </button>
   `;
 

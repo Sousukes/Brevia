@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./workspace-styles.css" />
     <link rel="stylesheet" href="./detail-header.css" />
+    <link rel="stylesheet" href="./design-layout.css" />
   </head>
   <body>
     <div class="startup-splash" id="startup-splash" aria-hidden="true"
@@ -28,11 +29,11 @@
     <main class="app-shell" aria-live="polite">
       <aside class="sidebar" aria-label="主导航">
         <button class="brand" data-view="home" aria-label="Brevia 首页"
-          ><span class="brand-mark" aria-hidden="true">言</span
-          ><img src="./assets/brevia-logo.svg" alt="brevia"
-        /></button>
+          ><span class="brand-mark" aria-hidden="true">B</span
+          ><span class="brand-name">Brevia</span></button
+        >
         <button class="new-meeting" data-view="prepare" data-prepare-mode="record"
-          ><span class="new-meeting-icon">+</span
+          ><span class="new-meeting-icon" data-interface-icon="plus" aria-hidden="true"></span
           ><span class="new-meeting-label">开始会议</span></button
         >
         <button
@@ -41,18 +42,21 @@
           data-view="prepare"
           data-prepare-mode="import"
           type="button"
-          ><span class="import-recording-icon" aria-hidden="true">↥</span
+          ><span
+            class="import-recording-icon"
+            data-interface-icon="upload"
+            aria-hidden="true"
+          ></span
           ><span class="import-recording-label">导入录音</span></button
         >
         <nav>
           <div class="workspace-container"></div>
           <button class="nav-item active" id="all-meetings" data-view="home" aria-expanded="true"
-            ><span>⌂</span> 所有会议</button
+            ><span data-interface-icon="document" aria-hidden="true"></span> 所有会议</button
           >
           <button class="nav-item" id="recently-deleted" data-view="home"
-            ><span>◷</span> 最近删除</button
+            ><span data-interface-icon="trash" aria-hidden="true"></span> 最近删除</button
           >
-          <button class="nav-item" data-view="settings"><span>⚙</span> 设置</button>
         </nav>
         <button class="mobile-sidebar-card" id="mobile-nav" type="button"
           ><span class="mobile-sidebar-heading"
@@ -70,44 +74,47 @@
             ><strong>设备连接</strong><i id="mobile-nav-dot"></i></span
           ><span id="mobile-sidebar-status">等待设备连接</span></button
         >
+        <button class="nav-item sidebar-settings" data-view="settings"
+          ><span data-interface-icon="settings" aria-hidden="true"></span> 设置</button
+        >
         <div class="task-cards" id="task-cards"
           ><aside class="processing-card" id="refinement-progress" hidden aria-live="polite"
             ><header class="task-card-heading"
-              ><p>正在精修</p
+              ><span class="task-kind-icon" data-interface-icon="document"></span><p>正在精修</p
               ><span class="task-card-actions"
                 ><button
                   class="task-card-close"
                   data-minimize-task-card
                   type="button"
                   aria-label="最小化"
-                  >—</button
+                  ><span data-interface-icon="minimize"></span></button
                 ><button
                   class="task-card-close"
                   data-dismiss-task-card
                   type="button"
                   aria-label="关闭"
-                  >×</button
-                ></span
-              ></header
+                  ><span data-interface-icon="close"></span></button></span></header
             ><strong id="refinement-percent">准备中</strong
             ><div class="task-card-progress"
               ><div class="processing-bar" aria-hidden="true"><i id="refinement-bar"></i></div
               ><button
-                class="task-card-close"
+                class="task-card-close task-card-pause"
                 data-pause-task
                 type="button"
                 aria-label="暂停"
                 disabled
-                >Ⅱ</button
-              ></div
-            ></aside
+                ><span data-interface-icon="pause" aria-hidden="true"></span></button></div></aside
           ><button class="mini-meeting" id="mini-meeting" hidden
-            ><span class="mini-recording"><i></i> 正在录制</span
+            ><header class="task-card-heading"
+              ><span class="task-kind-icon" data-interface-icon="recording"></span
+              ><p class="mini-recording"><i></i> 正在录制</p></header
             ><strong id="mini-title">会议</strong><time id="mini-timer">00:00:00</time
-            ><span class="mini-resume"><span>继续会议</span> →</span></button
+            ><span class="mini-resume"><span>继续会议</span></span></button
           ><section class="mini-playback" id="mini-playback" hidden
-            ><span id="mini-playback-state">正在播放</span><strong id="mini-playback-title"></strong
-            ><p id="mini-playback-caption"></p
+            ><header class="task-card-heading"
+              ><span class="task-kind-icon" data-interface-icon="play-circle"></span
+              ><p id="mini-playback-state">正在播放</p></header
+            ><strong id="mini-playback-title"></strong><p id="mini-playback-caption"></p
             ><div class="mini-playback-controls"
               ><div
                 class="processing-bar mini-playback-seek"
@@ -119,7 +126,8 @@
                 aria-valuemax="0"
                 aria-valuenow="0"
                 ><i id="mini-playback-progress"></i></div
-              ><button id="mini-playback-toggle" type="button" aria-label="暂停播放">Ⅱ</button
+              ><button id="mini-playback-toggle" type="button" aria-label="暂停播放"
+                ><span data-interface-icon="pause" aria-hidden="true"></span></button
               ><button
                 class="task-card-close"
                 id="mini-playback-close"
@@ -170,22 +178,22 @@
                 ><button data-language="ru" role="menuitem">Русский</button></div
               ></div
             ><button class="icon-button" id="theme-toggle" title="切换主题" aria-label="切换主题"
-              >◐</button
-            ></div
-          ></header
-        >
+              ><span data-interface-icon="appearance" aria-hidden="true"></span></button></div
+        ></header>
 
         <section class="view active" id="home-view">
           <div class="page-head"
             ><div
               ><button class="eyebrow" id="home-eyebrow" type="button" disabled>会议库</button
               ><h1 id="home-slogan">每一场对话，都留有依据。</h1></div
+            ><button class="primary-action" data-view="prepare" data-prepare-mode="record"
+              ><span data-interface-icon="plus" aria-hidden="true"></span>开始会议</button
             ></div
           >
           <div class="library-toolbar"
             ><div class="library-search"
               ><label class="search"
-                ><span>⌕</span
+                ><span data-interface-icon="search" aria-hidden="true"></span
                 ><input
                   id="meeting-search"
                   type="search"
@@ -218,11 +226,34 @@
           <button class="back" data-view="home">← 返回会议库</button
           ><div class="prepare-layout"
             ><div
-              ><p class="eyebrow">准备录制</p><h1>开始一场会议</h1
+              ><h1>开始一场会议</h1
               ><form id="meeting-form"
-                ><label
-                  >会议名称<input id="meeting-title" value="会议" maxlength="120" required /></label
-                ><div class="form-grid"></div
+                ><section class="audio-import" hidden>
+                  <div class="audio-dropzone" tabindex="0" role="button" aria-label="选择音频文件">
+                    <span data-interface-icon="document" aria-hidden="true"></span
+                    ><h2>选择文件或拖到这里</h2><p>支持 WAV、MP3、M4A、FLAC、AAC、OGG</p
+                    ><button class="secondary" data-select-import-audio type="button"
+                      >选择文件</button
+                    > </div
+                  ><div class="audio-import-selection" hidden
+                    ><span
+                      ><strong data-import-audio-name></strong
+                      ><small data-import-audio-size></small></span
+                    ><button
+                      class="icon-button"
+                      data-clear-import-audio
+                      type="button"
+                      aria-label="移除文件"
+                      ><span data-interface-icon="close"></span></button
+                  ></div> </section
+                ><div class="prepare-fields"
+                  ><label class="meeting-name-field"
+                    >会议名称<input
+                      id="meeting-title"
+                      value="会议"
+                      maxlength="120"
+                      required /></label
+                  ><div class="form-grid"></div></div
                 ><fieldset
                   ><legend>录制来源</legend
                   ><div class="capture-settings"
@@ -284,7 +315,7 @@
                   type="button"
                   aria-haspopup="true"
                   aria-expanded="false"
-                  ><span class="ai-assist-toggle-star">✦</span>
+                  ><span class="ai-assist-toggle-star" data-interface-icon="ai"></span>
                   <span data-ai-assist-toggle-label>AI 笔记</span></button
                 ><button class="text-button" data-ai-request type="button" hidden>请求建议</button
                 ><button
@@ -345,7 +376,9 @@
               ><i class="input-meter" data-live-mic-level aria-hidden="true"></i
               ><span id="live-input-label">输入良好</span></div
             ><div class="control-primary"
-              ><button class="pause-button" id="pause">Ⅱ 暂停</button
+              ><button class="pause-button" id="pause"
+                ><span data-interface-icon="pause" aria-hidden="true"></span
+                ><span>暂停</span></button
               ><button class="end-button" id="end-meeting">结束会议</button></div
             ><div class="control-secondary"
               ><button class="mark-button" id="mark-important" type="button" title="重点"
@@ -457,9 +490,12 @@
                 <path d="M13 7a4 4 0 0 1 0 6m2-9a8 8 0 0 1 0 12" /></svg
               ><span>本地录音</span><span class="player-time" id="player-time">00:00</span></div
             ><div class="player-actions"
-              ><button class="skip" type="button" aria-label="后退 15 秒">↶ 15</button
-              ><button class="play" id="play" aria-label="播放录音">▶</button
-              ><button class="skip" type="button" aria-label="前进 15 秒">15 ↷</button></div
+              ><button class="skip" type="button" aria-label="后退 15 秒"
+                ><span data-interface-icon="skip-back" aria-hidden="true"></span></button
+              ><button class="play" id="play" aria-label="播放录音"
+                ><span data-interface-icon="play" aria-hidden="true"></span></button
+              ><button class="skip" type="button" aria-label="前进 15 秒"
+                ><span data-interface-icon="skip-forward" aria-hidden="true"></span></button></div
             ><div class="player-meta"
               ><span class="player-duration" id="player-duration">00:00</span
               ><div class="player-speed flow-select"
@@ -468,7 +504,7 @@
                   data-flow-select-toggle
                   type="button"
                   aria-expanded="false"
-                  >1×<span>⌄</span></button
+                  >1×<span class="select-chevron" data-interface-icon="chevron-down"></span></button
                 ><input id="playback-rate" type="hidden" value="1" /><div
                   class="flow-select-options"
                   hidden
@@ -490,13 +526,20 @@
         </section>
 
         <section class="view" id="settings-view"
-          ><button class="back" data-view="home">← 返回会议库</button><p class="eyebrow">设置</p
-          ><h1>应用设置</h1><div class="settings-grid"></div
+          ><p class="eyebrow settings-description">管理 Brevia 的使用偏好、AI 能力与数据设置。</p
+          ><h1>设置</h1><div class="settings-grid"></div
           ><section class="settings-card" id="mobile-connection"
-            ><h2>设备连接</h2><p>连接同一局域网内的手机设备，查看连接状态与录音使用情况。</p
-            ><button class="secondary" id="mobile-manage">查看与管理</button></section
-          ></section
-        >
+            ><span data-interface-icon="phone" aria-hidden="true"></span><h2>设备连接</h2
+            ><p>连接同一局域网内的手机设备，查看连接状态与录音使用情况。</p
+            ><button
+              class="secondary settings-row-action"
+              id="mobile-manage"
+              aria-label="查看与管理"
+              ><span
+                data-interface-icon="chevron-right"
+                aria-hidden="true"
+              ></span></button></section
+        ></section>
       </section>
     </main>
     <div class="toast" id="toast" role="status"></div>
@@ -529,19 +572,30 @@
         >
         <div class="mobile-install-platforms">
           <div class="mobile-install-platform">
-            <div class="mobile-install-qr">
+            <a
+              class="mobile-install-qr"
+              href="https://apps.apple.com/app/testflight/id899247664"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <img
                 src="./assets/testflight-download.svg"
                 alt="扫描前往 App Store 安装 TestFlight"
                 width="128"
                 height="128"
               />
-            </div>
+            </a>
             <div
               ><h4>iPhone · TestFlight 内测</h4
               ><p
                 >扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App
                 Store 正式上架。</p
+              ><a
+                class="secondary"
+                href="https://apps.apple.com/app/testflight/id899247664"
+                target="_blank"
+                rel="noopener noreferrer"
+                >安装 TestFlight</a
               ></div
             >
           </div>
@@ -563,6 +617,7 @@
               ><h4>Android</h4>
               <p>扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。</p>
               <a
+                class="modal-action"
                 href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk"
                 target="_blank"
                 rel="noopener noreferrer"

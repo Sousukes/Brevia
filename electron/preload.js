@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const invoke =
   (channel) =>
@@ -53,6 +53,8 @@ contextBridge.exposeInMainWorld('brevia', {
   },
   meeting: {
     start: invoke('meeting.start'),
+    selectAudio: (file) =>
+      invoke('meeting.select-audio')(file ? { path: webUtils.getPathForFile(file) } : {}),
     import: invoke('meeting.import'),
     audio: invoke('meeting.audio'),
     pause: invoke('meeting.pause'),
