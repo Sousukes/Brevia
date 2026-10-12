@@ -271,6 +271,18 @@ try {
   // 加载完成后给事件队列一点时间把加载期异常送过来。
   await delay(300);
 
+  const compactWindow = await client.send('Runtime.evaluate', {
+    expression: `({ width:outerWidth, height:outerHeight, scale:outerWidth/innerWidth, overflow:document.body.scrollWidth>innerWidth })`,
+    returnByValue: true,
+  });
+  check(
+    compactWindow.result?.value?.width <= 1280 &&
+      compactWindow.result.value.height <= 800 &&
+      Math.abs(compactWindow.result.value.scale - 1280 / 1440) < 0.02 &&
+      !compactWindow.result.value.overflow,
+    `桌面窗口应按 1280×800 与 88.9% 基准显示，重载后保持缩放：${JSON.stringify(compactWindow.result?.value)}`,
+  );
+
   const probe = `(() => {
     const globals = ${JSON.stringify(moduleProbes.map(([, name]) => name))};
     const missing = globals.filter((name) => {
@@ -783,6 +795,14 @@ try {
     returnByValue: true,
   });
   check(captionClose.result?.value === 2, `悬浮字幕关闭通知缺失：${JSON.stringify(captionClose)}`);
+  const scaleAfterCaption = await client.send('Runtime.evaluate', {
+    expression: 'outerWidth / innerWidth',
+    returnByValue: true,
+  });
+  check(
+    Math.abs(scaleAfterCaption.result?.value - 1280 / 1440) < 0.02,
+    '打开及关闭独立字幕窗口后，主应用仍保持默认缩放',
+  );
   await client.send('Emulation.setDeviceMetricsOverride', {
     width: 880,
     height: 720,
@@ -1088,8 +1108,8 @@ try {
     const output = path.resolve(process.env.BREVIA_DESIGN_CAPTURE_DIR);
     mkdirSync(output, { recursive: true });
     await client.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440,
-      height: 900,
+      width: 0,
+      height: 0,
       deviceScaleFactor: 1,
       mobile: false,
     });
@@ -1108,6 +1128,7 @@ try {
     await evaluate(
       `(async () => { if (onboardingPage) await new Promise(resolve => dismissOnboardingPage(resolve)); closeModal(); await new Promise(resolve => setTimeout(resolve,250)); meetingActive=false; miniMeeting.hidden=true; clearInterval(timer); applyLanguage('zh'); applyTheme('light'); })()`,
     );
+    await delay(3500);
     const captures = [
       ['desktop-library', `showView('home')`],
       ['desktop-prepare', `setPrepareMode('record'); showView('prepare')`],
@@ -1147,7 +1168,7 @@ try {
       ['desktop-export', `openModal('export')`],
       [
         'desktop-language',
-        `meetingActive=false; applyTheme('light'); openOnboardingLanguage('zh')`,
+        `(async()=>{closeModal(); await new Promise(resolve=>setTimeout(resolve,250)); meetingActive=false; applyTheme('light'); openOnboardingLanguage('zh');})()`,
       ],
       [
         'desktop-onboarding-models',
@@ -1186,11 +1207,14 @@ try {
         format: 'png',
         captureBeyondViewport: false,
       });
-      writeFileSync(path.join(output, name + '.png'), Buffer.from(shot.data, 'base64'));
+      const png = Buffer.from(shot.data, 'base64');
+      writeFileSync(path.join(output, name + '.png'), png);
       measurements.push({
         name,
+        imageWidth: png.readUInt32BE(16),
+        imageHeight: png.readUInt32BE(20),
         ...(await evaluate(
-          `({ width:innerWidth, height:innerHeight, overflow:document.body.scrollWidth>innerWidth, font:getComputedStyle(document.body).fontFamily })`,
+          `({ width:innerWidth, height:innerHeight, windowWidth:outerWidth, windowHeight:outerHeight, overflow:document.body.scrollWidth>innerWidth, font:getComputedStyle(document.body).fontFamily })`,
         )),
       });
     }

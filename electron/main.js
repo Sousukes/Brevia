@@ -2079,20 +2079,21 @@ function createWindow() {
   const appUrl = pathToFileURL(path.join(packagedRoot, 'frontend', 'index.html')).href;
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const window = new BrowserWindow({
-    width: Math.min(1440, width),
-    height: Math.min(900, height),
+    width: Math.min(1280, width),
+    height: Math.min(800, height),
     minWidth: 880,
     minHeight: 640,
     show: false,
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      // 与 1440×900 设计稿按相同比例缩小，页面重载后仍保持一致。
+      zoomFactor: 1280 / 1440,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
     },
   });
-  window.webContents.setZoomFactor(1);
   const openExternal = (url) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
   };
