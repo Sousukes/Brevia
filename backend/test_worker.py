@@ -1327,6 +1327,41 @@ class WorkerTest(unittest.TestCase):
         finally:
             stalled.shutdown()
 
+    def test_sidecar_error_replies_reap_processes_and_success_reuses_them(self):
+        code = (
+            'import sys,json\n'
+            'for line in sys.stdin:\n'
+            ' request = json.loads(line)\n'
+            ' if request["type"] == "shutdown": break\n'
+            ' response = {"type":"error","message":"native load failed"} '
+            'if request["type"] == "generate" else {"type":"response","text":"ok"}\n'
+            ' print(json.dumps(response), flush=True)\n'
+        )
+        sidecar = _Sidecar([sys.executable, '-u', '-c', code], Mock())
+        self.addCleanup(sidecar.shutdown)
+        for attempt in range(6):
+            with self.subTest(attempt=attempt):
+                child = sidecar._ensure()
+                self.assertEqual(
+                    sidecar.request({'type': 'generate'}, timeout_seconds=5),
+                    {'type': 'error', 'message': 'native load failed'},
+                )
+                self.assertIsNotNone(child.poll())
+                self.assertTrue(child.stdin.closed and child.stdout.closed)
+                self.assertIsNone(sidecar.process)
+
+        self.assertEqual(
+            sidecar.request({'type': 'ping'}, timeout_seconds=5),
+            {'type': 'response', 'text': 'ok'},
+        )
+        child = sidecar.process
+        self.assertEqual(
+            sidecar.request({'type': 'ping'}, timeout_seconds=5),
+            {'type': 'response', 'text': 'ok'},
+        )
+        self.assertIs(sidecar.process, child)
+        self.assertIsNone(child.poll())
+
     def test_sidecar_close_releases_stdout_when_stdin_flush_fails(self):
         sidecar = _Sidecar(["sidecar"], Mock())
         child = Mock()

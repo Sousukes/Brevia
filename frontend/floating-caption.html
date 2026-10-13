@@ -18,6 +18,8 @@
 
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --caption-line: #d6d6d6;
+        font-weight: 500;
         background: transparent;
         color: #222222;
         overflow: hidden;
@@ -26,8 +28,8 @@
       }
 
       .caption-shell { display: flex; flex-direction: column; height: 100vh; position: relative; --caption-size: 20px; }
-      .caption-header { flex:none; display:flex; align-items:center; gap:12px; padding:10px 48px 10px 16px; background:#fafafa; border-bottom:1px solid #eaeaea; border-radius:12px 12px 0 0; font-size:14px; color:#666; }
-      .caption-header strong { margin-right:auto; font-weight:500; }
+      .caption-header { flex:none; display:flex; align-items:center; gap:12px; padding:10px 48px 10px 16px; background:#fafafa; border-bottom:1px solid var(--caption-line); border-radius:12px 12px 0 0; font-size:14px; color:#666; }
+      .caption-header strong { margin-right:auto; font-weight:600; }
       .caption-header button { border:0; background:transparent; color:inherit; min-width:28px; min-height:28px; font:inherit; cursor:pointer; }
       .caption-header button[aria-pressed="true"] { color:#222; background:#eaeaea; border-radius:4px; }
       .caption-header button:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
@@ -43,7 +45,7 @@
         position: relative;
         background: #ffffff;
 
-        border: 1px solid #eaeaea;
+        border: 1px solid var(--caption-line);
         border-radius: 0 0 12px 12px;
         box-shadow: 0 4px 16px rgba(0,0,0,.08);
         max-height: none;
@@ -125,7 +127,7 @@
       .caption-text {
         font-size: var(--caption-size);
         line-height: 1.5;
-        font-weight: normal;
+        font-weight: 500;
         color: #222222;
         text-shadow: none;
         letter-spacing: -0.035em;
@@ -141,7 +143,7 @@
       .caption-finalized {
         font-size: var(--caption-size);
         line-height: 1.4;
-        font-weight: normal;
+        font-weight: 500;
         color: #666666;
         text-shadow: none;
         word-wrap: break-word;
@@ -206,11 +208,12 @@
       }
 
       @media (prefers-color-scheme: dark) {
+        body { --caption-line: #4a4a4a; }
         body, .caption-text { color: #f2f2f2; }
-        .caption-container, .caption-container:hover { background: #191919; border-color: #333333; }
+        .caption-container, .caption-container:hover { background: #191919; border-color: var(--caption-line); }
         .caption-translation { color: #b0b0b0; }
         .close-btn, .caption-finalized { color: #b0b0b0; }
-        .caption-header { background:#151515; border-color:#333; color:#b0b0b0; }
+        .caption-header { background:#151515; border-color:var(--caption-line); color:#b0b0b0; }
         .caption-header button[aria-pressed="true"] { color:#f2f2f2; background:#333; }
       }
       @media (prefers-reduced-motion: reduce) {

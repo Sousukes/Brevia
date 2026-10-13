@@ -4,6 +4,7 @@ import 'i18n.dart';
 /// 只展示状态和发送动作；录音、传输和错误处理仍由会议控制器负责。
 class RecordingControls extends StatelessWidget {
   final bool paused, pending;
+  final bool localOnly;
   final VoidCallback onPause, onEnd;
   final VoidCallback? onMark;
   const RecordingControls({
@@ -13,11 +14,13 @@ class RecordingControls extends StatelessWidget {
     required this.onPause,
     required this.onEnd,
     this.onMark,
+    this.localOnly = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     Widget control(
       String label,
       IconData icon,
@@ -29,10 +32,22 @@ class RecordingControls extends StatelessWidget {
       icon: Icon(icon, size: 28),
       style: IconButton.styleFrom(
         minimumSize: const Size(56, 56),
-        backgroundColor: danger ? colors.error : colors.surfaceContainerLowest,
-        foregroundColor: danger ? colors.onError : colors.onSurface,
+        backgroundColor: danger
+            ? localOnly
+                  ? Colors.transparent
+                  : dark
+                  ? Colors.white
+                  : const Color(0xffff3b30)
+            : colors.surfaceContainerLowest,
+        foregroundColor: danger
+            ? localOnly || dark
+                  ? const Color(0xffff3b30)
+                  : Colors.white
+            : colors.onSurface,
         side: danger
-            ? BorderSide.none
+            ? localOnly
+                  ? const BorderSide(color: Color(0xffff3b30))
+                  : BorderSide.none
             : BorderSide(color: colors.outlineVariant),
       ),
     );

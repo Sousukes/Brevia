@@ -370,6 +370,61 @@ importDialogResult = { canceled: true, filePaths: [] };
 assert.equal(await selectImportAudio(), null);
 assert.equal(await importAudio({ title: 'Meeting', path: '/tmp/arbitrary.wav' }), null);
 assert.equal(importRequests.length, 1, '未预选路径和取消操作不能直接导入');
+// 批量导出逐项失败仍继续，成功文件与旧返回字段保持一致。
+const exportIds = [
+  '7b7d84f6-6f54-49d8-8c44-99f59cd98a01',
+  '7b7d84f6-6f54-49d8-8c44-99f59cd98a02',
+  '7b7d84f6-6f54-49d8-8c44-99f59cd98a03',
+];
+let batchExportHandler;
+let exportCanceled = false;
+const exportCopies = [];
+const exportPrepared = [];
+runInNewContext(
+  mainSource.slice(
+    mainSource.indexOf("handleIpc('meeting.export-many'"),
+    mainSource.indexOf("handleIpc('meeting.share'"),
+  ),
+  {
+    z,
+    path,
+    handleIpc: (_, handler) => {
+      batchExportHandler = handler;
+    },
+    dialog: { showOpenDialog: async () => ({ canceled: exportCanceled, filePaths: ['/exports'] }) },
+    existsSync: (file) =>
+      file === '/exports/transcript.md' ||
+      exportCopies.some(({ destination }) => destination === file),
+    prepareExport: async (payload) => {
+      exportPrepared.push(payload);
+      if (payload.meeting_id === exportIds[1]) throw new Error('recording unavailable');
+      return { path: '/source/transcript.md' };
+    },
+    copyFile: async (source, destination) => {
+      exportCopies.push({ source, destination });
+    },
+  },
+);
+const exportResult = JSON.parse(
+  JSON.stringify(await batchExportHandler(null, { meeting_ids: exportIds })),
+);
+assert.equal(exportPrepared.length, 3, '单项失败不阻止后续导出');
+assert.equal(exportResult.format, 'md');
+assert.deepEqual(exportResult.paths, ['/exports/transcript-2.md', '/exports/transcript-3.md']);
+assert.deepEqual(
+  exportResult.results.map(({ meeting_id, error }) => ({ meeting_id, error })),
+  exportIds.map((meeting_id, i) => ({
+    meeting_id,
+    error: i === 1 ? 'recording unavailable' : undefined,
+  })),
+);
+assert.equal(exportCopies.length, 2);
+exportCanceled = true;
+assert.equal(await batchExportHandler(null, { meeting_ids: exportIds }), null);
+assert.equal(exportPrepared.length, 3, '取消目录选择不进行导出');
+await assert.rejects(batchExportHandler(null, { meeting_ids: ['invalid'] }));
+await assert.rejects(batchExportHandler(null, { meeting_ids: Array(201).fill(exportIds[0]) }));
+
 const workerEventBlock = mainSource.slice(
   mainSource.indexOf('const workerEvent ='),
   mainSource.indexOf('const workerMessage ='),

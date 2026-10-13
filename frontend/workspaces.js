@@ -45,66 +45,106 @@ function getWorkspaceName(workspaceId) {
 /**
  * 渲染侧边栏工作区导航
  */
+let workspacePicker = null;
+function closeWorkspacePicker(restoreFocus = false) {
+  workspacePicker?.remove();
+  workspacePicker = null;
+  const selector = document.querySelector('#workspace-selector');
+  selector?.setAttribute('aria-expanded', 'false');
+  if (restoreFocus) selector?.focus({ preventScroll: true });
+}
+function workspaceMeetingCount(workspaceId) {
+  return (uiData.meetings || []).filter(
+    (meeting) =>
+      !meeting.deleted &&
+      (!meeting.isExample || meeting.exampleLocale === locale) &&
+      (meeting.workspaceId || '') === workspaceId,
+  ).length;
+}
+function renderWorkspacePickerItems() {
+  if (!workspacePicker) return;
+  const query = workspacePicker.querySelector('input').value.trim().toLocaleLowerCase();
+  const items = [{ id: '', name: t('公开工作区') }, ...workspaces].filter((item) =>
+    item.name.toLocaleLowerCase().includes(query),
+  );
+  workspacePicker.querySelector('.workspace-picker-list').innerHTML =
+    items
+      .map(
+        (item) =>
+          `<button type="button" class="workspace-item${item.id === activeWorkspaceId ? ' active' : ''}" data-workspace-id="${escapeHtml(item.id)}" title="${escapeHtml(item.name)} (${workspaceMeetingCount(item.id)})" aria-current="${item.id === activeWorkspaceId}">${interfaceIcon('folder')}<span class="workspace-label">${escapeHtml(item.name)}</span>${item.id === activeWorkspaceId ? interfaceIcon('check') : ''}</button>`,
+      )
+      .join('') || `<p class="page-empty">${escapeHtml(t('没有搜索结果'))}</p>`;
+}
+function positionWorkspacePicker(selector) {
+  const anchor = selector.getBoundingClientRect();
+  const edge = document.querySelector('.sidebar').getBoundingClientRect().right;
+  positionFloating(
+    workspacePicker,
+    { left: edge, right: edge, top: anchor.top, bottom: anchor.bottom },
+    ['right-center', 'right-end', 'right-start', 'left-end'],
+  );
+}
+function toggleWorkspacePicker() {
+  if (workspacePicker) return closeWorkspacePicker(true);
+  const selector = document.querySelector('#workspace-selector');
+  workspacePicker = document.createElement('section');
+  workspacePicker.className = 'workspace-picker';
+  workspacePicker.id = 'workspace-picker';
+  workspacePicker.setAttribute('popover', 'manual');
+  workspacePicker.setAttribute('aria-label', t('工作区'));
+  workspacePicker.innerHTML = `<label class="search">${interfaceIcon('search')}<input type="search" placeholder="${escapeHtml(t('搜索工作区'))}" aria-label="${escapeHtml(t('搜索工作区'))}" /></label><div class="workspace-picker-list"></div><button type="button" data-new-workspace>${interfaceIcon('plus')}${escapeHtml(t('新建工作区'))}</button>`;
+  // 浮层留在侧栏内，鼠标和焦点移动到菜单时不会收起录制侧栏。
+  document.querySelector('.sidebar').append(workspacePicker);
+  workspacePicker.showPopover();
+  selector.setAttribute('aria-expanded', 'true');
+  renderWorkspacePickerItems();
+  positionWorkspacePicker(selector);
+  workspacePicker.querySelector('input').addEventListener('input', renderWorkspacePickerItems);
+  workspacePicker.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeWorkspacePicker(true);
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const choices = [...workspacePicker.querySelectorAll('.workspace-item')];
+    if (!choices.length) return;
+    const current = choices.indexOf(document.activeElement);
+    const index =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? choices.length - 1
+          : (current + (event.key === 'ArrowUp' ? -1 : 1) + choices.length) % choices.length;
+    event.preventDefault();
+    choices[index].focus({ preventScroll: true });
+    choices[index].scrollIntoView({ block: 'nearest' });
+  });
+  workspacePicker.querySelector('input').focus({ preventScroll: true });
+}
 function renderWorkspaceNav() {
   const nav = document.querySelector('.sidebar nav');
   if (!nav) return;
-
-  // 获取各工作区的会议数量
-  const visibleMeetings = (uiData.meetings || []).filter(
-    (meeting) => !meeting.deleted && (!meeting.isExample || meeting.exampleLocale === locale),
-  );
-  const publicCount = visibleMeetings.filter((meeting) => !meeting.workspaceId).length;
-
-  // 构建工作区子项 HTML
-  const workspaceSubItems = [
-    `<button class="workspace-item ${activeWorkspaceId === '' ? 'active' : ''}" data-workspace-id="">
-      ${interfaceIcon('folder')}<span class="workspace-label">${t('公开工作区')}</span>
-      <span class="workspace-count">${publicCount}</span>
-    </button>`,
-    ...workspaces
-      .map((workspace) => {
-        const count = visibleMeetings.filter(
-          (meeting) => meeting.workspaceId === workspace.id,
-        ).length;
-        return `<button class="workspace-item ${activeWorkspaceId === workspace.id ? 'active' : ''}"
-                data-workspace-id="${escapeHtml(workspace.id)}"
-                data-workspace-name="${escapeHtml(workspace.name)}">
-        ${interfaceIcon('folder')}<span class="workspace-label">${escapeHtml(workspace.name)}</span>
-        <span class="workspace-count">${count}</span>
-      </button>`;
-      })
-      .join(''),
-  ].join('');
-
-  // 查找"所有会议"导航项
-  const allMeetingsNav = nav.querySelector('#all-meetings');
-  if (!allMeetingsNav) return;
-
-  // 查找或创建工作区容器
-  let workspaceContainer = nav.querySelector('.workspace-subnav');
-  if (!workspaceContainer) {
-    workspaceContainer = document.createElement('div');
-    workspaceContainer.className = 'workspace-subnav';
-    // 插入到"所有会议"之后，"最近删除"之前
-    const recentlyDeleted = nav.querySelector('#recently-deleted');
-    if (recentlyDeleted) {
-      nav.insertBefore(workspaceContainer, recentlyDeleted);
-    } else {
-      allMeetingsNav.parentNode.insertBefore(workspaceContainer, allMeetingsNav.nextSibling);
-    }
+  let container = nav.querySelector('.workspace-subnav');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'workspace-subnav workspace-container';
+    container.id = 'workspace-subnav';
+    nav.querySelector('#recently-deleted').after(container);
   }
-  workspaceContainer.id = 'workspace-subnav';
-  allMeetingsNav.setAttribute('aria-controls', workspaceContainer.id);
-
-  workspaceContainer.innerHTML = `
-    <div class="workspace-subnav-content"><h3>${t('工作区')}</h3>
-      ${workspaceSubItems}
-      <button class="new-workspace" data-new-workspace>
-        ${interfaceIcon('plus')} ${t('新建工作区')}
-      </button>
-    </div>
-  `;
+  const name = getWorkspaceName(activeWorkspaceId);
+  container.innerHTML = `<div class="workspace-subnav-content"><div class="workspace-heading"><h3>${escapeHtml(t('工作区'))}</h3><button class="new-workspace" type="button" data-new-workspace aria-label="${escapeHtml(t('新建工作区'))}" title="${escapeHtml(t('新建工作区'))}">${interfaceIcon('plus')}</button></div><button id="workspace-selector" type="button" class="workspace-item workspace-selector" data-workspace-id="${escapeHtml(activeWorkspaceId)}" aria-expanded="${Boolean(workspacePicker)}" aria-controls="workspace-picker" title="${escapeHtml(name)} (${workspaceMeetingCount(activeWorkspaceId)})">${interfaceIcon('folder')}<span class="workspace-label">${escapeHtml(name)}</span>${interfaceIcon('chevron-down')}</button></div>`;
+  if (workspacePicker) {
+    renderWorkspacePickerItems();
+    positionWorkspacePicker(container.querySelector('#workspace-selector'));
+  }
 }
+document.addEventListener('click', (event) => {
+  if (workspacePicker && !event.target.closest('.workspace-picker, #workspace-selector'))
+    closeWorkspacePicker();
+});
+window.addEventListener('resize', () => closeWorkspacePicker());
 
 /**
  * 切换活跃工作区
@@ -120,6 +160,7 @@ async function switchWorkspace(workspaceId) {
     return;
   if (activeView === 'live' && meetingActive) appActions.minimizeMeeting();
   const applyWorkspace = async () => {
+    clearMeetingSelection();
     activeWorkspaceId = workspaceId;
     localStorage.setItem('brevia-active-workspace', workspaceId);
     appActions.selectLibraryNav('all-meetings');
@@ -127,7 +168,7 @@ async function switchWorkspace(workspaceId) {
       try {
         await refreshBackendMeetings(false);
       } catch (error) {
-        appActions.showToast(error.message);
+        appActions.showToast(error.message, undefined, 'error');
       }
     }
     renderWorkspaceNav();
@@ -151,6 +192,7 @@ document.addEventListener('dragover', (event) => {
   event.preventDefault();
   clearWorkspaceDropTarget();
   target.classList.add('is-drop-target');
+  if (target.id === 'workspace-selector' && !workspacePicker) toggleWorkspacePicker();
 });
 document.addEventListener('dragleave', (event) => {
   const target = event.target.closest('.workspace-item');
@@ -178,10 +220,12 @@ document.addEventListener('drop', async (event) => {
     if (nextWorkspace) nextWorkspace.meeting_count += 1;
     meeting.workspaceId = workspaceId;
     meeting.workspace = workspaceId ? { name: getWorkspaceName(workspaceId) } : null;
+    document.querySelectorAll('.meeting-workspace-menu').forEach((menu) => menu.remove());
+    closeMeetingMenus();
     renderWorkspaceNav();
     appActions.renderMeetingList();
   } catch (error) {
-    appActions.showToast(error.message);
+    appActions.showToast(error.message, undefined, 'error');
   }
 });
 
@@ -208,6 +252,7 @@ document
  * 显示新建工作区对话框
  */
 function showNewWorkspaceDialog(assignMeetingId, onCreated) {
+  if (workspacePicker) closeWorkspacePicker(true);
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop workspace-dialog';
   backdrop.returnFocus = document.activeElement;
@@ -305,9 +350,9 @@ function showNewWorkspaceDialog(assignMeetingId, onCreated) {
       renderWorkspaceNav();
       closeDialog();
       document.removeEventListener('keydown', escHandler);
-      appActions.showToast(t('工作区已创建'));
+      appActions.showToast(t('工作区已创建'), undefined, 'success');
     } catch (error) {
-      appActions.showToast(error.message);
+      appActions.showToast(error.message, undefined, 'error');
     } finally {
       submit.disabled = false;
     }
@@ -323,10 +368,12 @@ function showEditWorkspaceDialog(workspaceId) {
   if (!workspace) return;
 
   const backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop workspace-dialog';
+  const anchor = document.querySelector('#workspace-edit');
+  const anchored = !anchor.hidden && activeView === 'home' && activeWorkspaceId === workspaceId;
+  backdrop.className = `modal-backdrop workspace-dialog${anchored ? ' workspace-edit-popover' : ''}`;
   backdrop.returnFocus = document.activeElement;
   backdrop.innerHTML = `
-    <section class="modal-panel" role="dialog" aria-modal="true">
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-label="${t('编辑工作区')}">
       <header class="modal-head">
         <div class="modal-title">
           <h2>${t('编辑工作区')}</h2>
@@ -340,10 +387,12 @@ function showEditWorkspaceDialog(workspaceId) {
             ${t('工作区名称')}
             <input name="name" type="text" maxlength="30" value="${escapeHtml(workspace.name)}" required autofocus />
           </label>
+          ${anchored ? `<details class="workspace-description"><summary>${t('描述')} ${t('（可选）')}${interfaceIcon('chevron-down')}</summary>` : ''}
           <label>
-            <span>${t('描述')} <small>${t('（可选）')}</small></span>
-            <textarea name="description" maxlength="100" rows="2">${escapeHtml(workspace.description)}</textarea>
+            ${anchored ? '' : `<span>${t('描述')} <small>${t('（可选）')}</small></span>`}
+            <textarea name="description" aria-label="${t('描述')}" maxlength="100" rows="2">${escapeHtml(workspace.description)}</textarea>
           </label>
+          ${anchored ? '</details>' : ''}
           <div class="modal-form-actions">
             <button type="button" class="secondary" data-close-modal>${t('取消')}</button>
             <button type="submit" class="modal-action">${t('保存更改')}</button>
@@ -356,6 +405,12 @@ function showEditWorkspaceDialog(workspaceId) {
 
   document.body.appendChild(backdrop);
   document.body.classList.add('modal-open');
+  const panel = backdrop.querySelector('.modal-panel');
+  const reposition = () => {
+    if (anchored) positionFloating(panel, anchor, ['bottom-end', 'top-end']);
+  };
+  reposition();
+  window.addEventListener('resize', reposition);
 
   // 触发进入动画
   backdrop.classList.remove('modal-leave');
@@ -372,6 +427,7 @@ function showEditWorkspaceDialog(workspaceId) {
   let escHandler;
   const closeDialog = () => {
     document.removeEventListener('keydown', escHandler);
+    window.removeEventListener('resize', reposition);
     closeWorkspaceDialog(backdrop);
   };
 
@@ -416,9 +472,9 @@ function showEditWorkspaceDialog(workspaceId) {
           appActions.renderMeetingList();
           closeDialog();
           document.removeEventListener('keydown', escHandler);
-          appActions.showToast(t('工作区已删除'));
+          appActions.showToast(t('工作区已删除'), undefined, 'success');
         } catch (error) {
-          appActions.showToast(error.message);
+          appActions.showToast(error.message, undefined, 'error');
         }
       },
     );
@@ -444,9 +500,9 @@ function showEditWorkspaceDialog(workspaceId) {
       updateHomeViewTitle();
       closeDialog();
       document.removeEventListener('keydown', escHandler);
-      appActions.showToast(t('工作区已更新'));
+      appActions.showToast(t('工作区已更新'), undefined, 'success');
     } catch (error) {
-      appActions.showToast(error.message);
+      appActions.showToast(error.message, undefined, 'error');
     } finally {
       submit.disabled = false;
     }
@@ -464,8 +520,9 @@ function showWorkspaceAssignMenu(meetingIndex, anchorRect) {
 
   const menu = document.createElement('div');
   menu.className = 'meeting-workspace-menu';
+  menu.dataset.meetingIndex = meetingIndex;
   menu.innerHTML = `
-    <div class="menu-section">
+    <h3>${escapeHtml(t('移至工作区'))}</h3><div class="menu-section">
       ${[{ id: '', name: t('公开工作区') }, ...workspaces]
         .map(
           (workspace) => `
@@ -473,7 +530,7 @@ function showWorkspaceAssignMenu(meetingIndex, anchorRect) {
                 data-assign-workspace="${escapeHtml(workspace.id)}"
                 data-meeting-index="${meetingIndex}"
                 class="menu-item ${meeting.workspaceId === workspace.id ? 'active' : ''}">
-          <span class="workspace-icon">${workspace.id ? '◆' : '⊕'}</span>
+          <span class="workspace-icon">${interfaceIcon('folder')}</span>
           <span>${escapeHtml(workspace.name)}</span>
           ${meeting.workspaceId === workspace.id ? `<span class="check">${checkIconSvg}</span>` : ''}
         </button>
@@ -489,10 +546,19 @@ function showWorkspaceAssignMenu(meetingIndex, anchorRect) {
 
   // 定位菜单
   menu.style.position = 'fixed';
-  menu.style.top = `${anchorRect.bottom + 4}px`;
-  menu.style.right = `${window.innerWidth - anchorRect.right}px`;
+  menu.style.maxHeight = `${window.innerHeight - 16}px`;
 
+  document.querySelectorAll('.meeting-workspace-menu').forEach((node) => node.remove());
   document.body.appendChild(menu);
+  positionWorkspaceAssignMenu(menu, anchorRect);
+  menu.querySelector('.active')?.focus({ preventScroll: true });
+  menu.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      menu.remove();
+      document.querySelector('[data-meeting-menu=\"' + meetingIndex + '\"]')?.focus();
+    }
+  });
 
   // 点击外部关闭
   const closeMenu = (e) => {
@@ -506,12 +572,38 @@ function showWorkspaceAssignMenu(meetingIndex, anchorRect) {
   return menu;
 }
 
+// 滚动或缩放后重新读取主菜单位置，保持连接与键盘焦点。
+function positionWorkspaceAssignMenu(menu, fallbackRect) {
+  const action = document.querySelector(
+    `[data-meeting-action="workspace"][data-meeting-index="${menu.dataset.meetingIndex}"]`,
+  );
+  const anchor = action?.getBoundingClientRect() || fallbackRect;
+  const parent = action?.closest('.meeting-menu').getBoundingClientRect() || fallbackRect;
+  if (!parent || !anchor) return;
+  menu.style.maxHeight = `${innerHeight - 16}px`;
+  const opensLeft = parent.left >= menu.offsetWidth + 16;
+  const left = opensLeft ? parent.left - menu.offsetWidth - 8 : parent.right + 8;
+  const top = Math.max(8, Math.min(parent.top, innerHeight - menu.offsetHeight - 8));
+  menu.style.left = `${Math.max(8, Math.min(left, innerWidth - menu.offsetWidth - 8))}px`;
+  menu.style.top = `${top}px`;
+  menu.style.setProperty(
+    '--submenu-connector-top',
+    `${Math.max(16, Math.min(anchor.top + anchor.height / 2 - top, menu.offsetHeight - 16))}px`,
+  );
+  menu.classList.toggle('opens-left', opensLeft);
+}
+
 /**
  * 分配会议到工作区
  * @param {string} meetingId - 会议 ID
  * @param {string} workspaceId - 工作区 ID
  */
 async function assignMeetingToWorkspace(meetingId, workspaceId) {
+  if (uiData.meetings.find((meeting) => meeting.id === meetingId)?.workspaceId === workspaceId) {
+    closeMeetingMenus();
+    document.querySelectorAll('.meeting-workspace-menu').forEach((menu) => menu.remove());
+    return;
+  }
   try {
     await window.brevia.workspace.assign({
       meeting_id: meetingId,
@@ -529,10 +621,11 @@ async function assignMeetingToWorkspace(meetingId, workspaceId) {
         : null;
     }
 
+    closeMeetingMenus();
     renderWorkspaceNav();
     appActions.renderMeetingList();
-    appActions.showToast(t('已移至') + ' ' + getWorkspaceName(workspaceId));
+    appActions.showToast(t('已移至') + ' ' + getWorkspaceName(workspaceId), undefined, 'success');
   } catch (error) {
-    appActions.showToast(error.message);
+    appActions.showToast(error.message, undefined, 'error');
   }
 }

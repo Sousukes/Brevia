@@ -138,7 +138,21 @@ ThemeData breviaTheme(Brightness brightness) {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: Size(48, 52),
+        foregroundColor: ink,
+        side: BorderSide(color: line),
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        textStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        minimumSize: Size(48, 48),
+        foregroundColor: ink,
         textStyle: TextStyle(
           fontFamily: fontFamily,
           fontSize: 16,

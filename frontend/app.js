@@ -1,8 +1,6 @@
 const views = [...document.querySelectorAll('.view')];
 const crumb = document.querySelector('#crumb');
 const toast = document.querySelector('#toast');
-const languageToggle = document.querySelector('#language-toggle');
-const languageOptions = document.querySelector('#language-options');
 const themeToggle = document.querySelector('#theme-toggle');
 const miniMeeting = document.querySelector('#mini-meeting');
 const miniPlayback = document.querySelector('#mini-playback');
@@ -19,7 +17,11 @@ const stackableTaskCardSelector =
   ':is(.processing-card, .mini-meeting, .mini-playback, .software-update-notice):not([hidden])';
 function syncTaskCardStack(active) {
   const cards = [...taskCards.children].filter((card) => card.matches(stackableTaskCardSelector));
-  active ||= cards.at(-1);
+  const toggle = document.querySelector('[data-toggle-task-stack]');
+  toggle.hidden = !cards.length;
+  toggle.querySelector('[data-task-count]').textContent = `${t('任务')} · ${cards.length}`;
+  active ||= cards.find((card) => !card.classList.contains('is-task-card-back')) || cards[0];
+  renderTaskSummary(cards, active);
   const completed = Number(active?.dataset.completed);
   const total = Number(active?.dataset.total);
   document
@@ -28,19 +30,52 @@ function syncTaskCardStack(active) {
       '--task-progress',
       total > 0 ? Math.min(1, Math.max(0, completed / total)) : 0,
     );
-  taskCards.style.setProperty('--task-card-back-count', Math.max(0, cards.length - 1));
   cards.forEach((card, index) => {
     const percent = card.querySelector('.task-mini-percent');
     if (percent) {
       const value = `${Math.round((Number(card.dataset.completed || 0) / Math.max(1, Number(card.dataset.total || 100))) * 100)}%`;
       if (percent.textContent !== value) percent.textContent = value;
     }
+    const pause = card.querySelector('[data-pause-task]');
+    if (card === miniPlayback && !card.querySelector('.task-card-actions')) {
+      const controls = document.createElement('span');
+      controls.className = 'task-card-actions';
+      miniPlaybackClose.innerHTML = interfaceIcon('close');
+      controls.append(miniPlaybackToggle, miniPlaybackClose);
+      card.querySelector('.task-card-heading').append(controls);
+    }
+    const actions = card.querySelector('.task-card-actions');
+    if (pause && actions && pause.parentElement !== actions) actions.prepend(pause);
     const isBack = card !== active;
     card.classList.add('task-card-stack-item');
-    card.style.setProperty('--task-card-index', index);
-    card.style.setProperty('--task-card-depth', Math.min(3, cards.length - 1 - index));
     card.style.zIndex = index + 1;
     card.classList.toggle('is-task-card-back', isBack);
+    const bar = card.querySelector('.processing-bar');
+    if (bar && bar.getAttribute('role') !== 'slider') {
+      bar.setAttribute('role', 'progressbar');
+      bar.setAttribute(
+        'aria-label',
+        card.querySelector('.task-card-heading p')?.textContent || t('任务'),
+      );
+      bar.setAttribute('aria-valuemin', '0');
+      bar.setAttribute('aria-valuemax', '100');
+      bar.setAttribute(
+        'aria-valuenow',
+        String(
+          Math.round(
+            Math.min(
+              1,
+              Math.max(
+                0,
+                Number(card.dataset.completed || 0) /
+                  Math.max(1, Number(card.dataset.total || 100)),
+              ),
+            ) * 100,
+          ),
+        ),
+      );
+      bar.removeAttribute('aria-hidden');
+    }
     if (isBack) {
       card.tabIndex = 0;
       card.setAttribute('role', 'button');
@@ -57,6 +92,12 @@ function syncTaskCardStack(active) {
     }
   });
 }
+document.querySelector('[data-toggle-task-stack]').addEventListener('click', (event) => {
+  const button = event.currentTarget;
+  const collapsed = button.getAttribute('aria-expanded') === 'true';
+  button.setAttribute('aria-expanded', String(!collapsed));
+  taskCards.classList.toggle('is-collapsed', collapsed);
+});
 function activateTaskCard(card) {
   if (
     !card?.matches(
@@ -67,18 +108,62 @@ function activateTaskCard(card) {
     return;
   taskCards.append(card);
   syncTaskCardStack(card);
+  taskCards.scrollTop = taskCards.scrollHeight;
 }
 new MutationObserver(() => syncTaskCardStack()).observe(taskCards, {
   childList: true,
   attributes: true,
-  attributeFilter: ['hidden'],
+  attributeFilter: ['hidden', 'data-completed', 'data-total', 'data-paused'],
+  characterData: true,
   subtree: true,
+});
+/** 收起侧栏只保留当前真实任务与数量；完整列表仍由原有任务节点拥有。 */
+function renderTaskSummary(cards, active) {
+  const summary = document.querySelector('[data-task-summary]');
+  if (!summary) return;
+  summary.hidden = !cards.length;
+  const heading = active?.querySelector('.task-card-heading p')?.textContent || t('任务');
+  const failed = cards.filter(
+    (card) => card.dataset.failed === 'true' || card.querySelector('.download-error-detail'),
+  ).length;
+  let status = t('处理中');
+  if (active?.dataset.paused === 'true') status = t('已暂停');
+  else if (active === miniMeeting) status = miniTimer.textContent;
+  else if (active === miniPlayback)
+    status = document.querySelector('#player-time')?.textContent || '00:00';
+  else if (Number(active?.dataset.total) > 0)
+    status =
+      Math.round(
+        Math.min(
+          1,
+          Math.max(0, Number(active.dataset.completed || 0) / Number(active.dataset.total)),
+        ) * 100,
+      ) + '%';
+  summary.querySelector('[data-task-summary-label]').textContent = t('任务');
+  const count = summary.querySelector('[data-task-summary-count]');
+  const value = summary.querySelector('[data-task-summary-status]');
+  count.textContent = cards.length;
+  value.textContent = active === miniMeeting ? status.replace(/^00:/, '') : status;
+  summary.classList.toggle('is-recording', active === miniMeeting);
+  summary.classList.toggle('has-errors', failed > 0);
+  const label = `${t('任务')} ${cards.length} · ${heading} · ${status}${failed ? ` · ${t('任务失败')} ${failed}` : ''}`;
+  summary.title = label;
+  summary.setAttribute('aria-label', label);
+}
+document.querySelector('[data-task-summary]').addEventListener('click', () => {
+  taskCards.classList.remove('is-collapsed');
+  document.querySelector('[data-toggle-task-stack]').setAttribute('aria-expanded', 'true');
+  const active = taskCards.querySelector('.task-card-stack-item:not(.is-task-card-back)');
+  (
+    active?.querySelector('button:not(:disabled)') || taskCards.querySelector('[tabindex]')
+  )?.focus();
+  active?.scrollIntoView({ block: 'nearest' });
 });
 function taskCardControls() {
   return `<span class="task-card-actions"><button class="task-card-close" data-minimize-task-card type="button" aria-label="${t('最小化')}">${interfaceIcon('minimize')}</button><button class="task-card-close" data-dismiss-task-card type="button" aria-label="${t('关闭')}">${interfaceIcon('close')}</button></span>`;
 }
 function taskPauseControl() {
-  return `<button class="task-card-close task-card-pause" data-pause-task type="button" aria-label="${t('暂停')}" disabled>${interfaceIcon('pause')}<span>${escapeHtml(t('暂停'))}</span></button>`;
+  return `<button class="task-card-close task-card-pause" data-pause-task type="button" aria-label="${t('暂停')}" title="${t('暂停')}" disabled>${interfaceIcon('pause')}<span>${escapeHtml(t('暂停'))}</span></button>`;
 }
 function setTaskCardTask(card, task, meetingId) {
   card.dataset.task = task;
@@ -88,6 +173,7 @@ function setTaskCardTask(card, task, meetingId) {
   button.disabled = false;
   button.innerHTML = interfaceIcon('pause') + '<span>' + escapeHtml(t('暂停')) + '</span>';
   button.setAttribute('aria-label', t('暂停'));
+  button.title = t('暂停');
 }
 function setTaskCardPaused(card, paused) {
   if (!card) return;
@@ -99,6 +185,7 @@ function setTaskCardPaused(card, paused) {
     escapeHtml(t(paused ? '继续' : '暂停')) +
     '</span>';
   button.setAttribute('aria-label', paused ? t('继续') : t('暂停'));
+  button.title = t(paused ? '继续' : '暂停');
   card.querySelector('.task-paused-status')?.remove();
   if (paused) {
     const status = document.createElement('span');
@@ -129,7 +216,7 @@ function toggleTaskCardMinimized(card, button) {
       .insertBefore(percent, card.querySelector('.task-card-actions'));
   }
   percent.textContent = `${Math.round((Number(card.dataset.completed || 0) / Math.max(1, Number(card.dataset.total || 100))) * 100)}%`;
-  button.innerHTML = interfaceIcon(minimized ? 'restore' : 'minimize');
+  button.innerHTML = interfaceIcon(minimized ? 'plus' : 'minimize');
   button.setAttribute('aria-label', t(minimized ? '还原' : '最小化'));
   window.setTimeout(() => card.classList.remove('task-card-resizing'), 180);
 }
@@ -211,7 +298,6 @@ const liveSegmentData = new Map();
 const maxLiveSegments = 500;
 let followLiveTranscript = true;
 let toastTimer;
-let switchingLanguage = false;
 // 镜像当前会议的实时配置，使实时面板控件能够反映（并驱动）热切换。
 let liveConfig = { language: 'auto', target_language: null, refined_model_id: null };
 // —— 设备能力（弱机检测）——
@@ -233,9 +319,10 @@ let floatingCaptionLocale = locale;
 const message = (key) => catalog[locale].messages[key];
 /** 当前机器的推荐设置 tag 标记。@param {boolean} show 是否显示。@returns {string} */
 const recommendTag = (show) =>
-  show
-    ? `<span class="model-library-tags recommend-tags"><span class="model-library-installed">${escapeHtml(t('当前机器的推荐设置'))}</span></span>`
-    : '';
+  show ? `<span class="flow-select-badge">${escapeHtml(t('当前机器的推荐设置'))}</span>` : '';
+const selectedMeetingKeys = new Set();
+let meetingSelectionMode = false;
+let meetingRenameDraft = null;
 renderStaticViews();
 document.querySelectorAll('[data-interface-icon]').forEach((mount) => {
   mount.innerHTML = interfaceIcon(mount.dataset.interfaceIcon);
@@ -285,8 +372,7 @@ const modelLibraryMetaCopy = window.BreviaLocaleData.appCopy.modelLibraryMetaCop
 const builtinModelIntro = window.BreviaLocaleData.appCopy.builtinModelIntro;
 /** 渲染一个评级维度的 3 级质量/速度刻度。@param {string} label 本地化的维度标签。@param {number} level 等级 1-3。@param {string} tierWord 本地化的等级名称。@returns {string} */
 function ratingScale(label, level, tierWord) {
-  const dots = [1, 2, 3].map((step) => `<i${step <= level ? ' class="on"' : ''}></i>`).join('');
-  return `<span class="model-library-rating"><small>${escapeHtml(label)}</small><b>${escapeHtml(tierWord)}</b><span class="rating-scale" aria-hidden="true">${dots}</span></span>`;
+  return `<span class="model-library-rating"><small>${escapeHtml(label)}</small><b>${escapeHtml(tierWord)}</b><span class="rating-scale" aria-hidden="true" style="--rating-level:${level}"><i></i></span></span>`;
 }
 /** 渲染模型库卡片的质量/速度刻度。档位直接取清单的 speed / quality（1..3）。
  *
@@ -449,6 +535,7 @@ let summaryConfig = { version: 2, enabled: true, provider: 'built-in', providers
 // 配置写入版本号：loadSummaryConfig 读取期间若发生保存，旧值作废（防覆盖竞态）。
 let summaryConfigRevision = 0;
 let summaryConfigDraft = null;
+let summaryFeedback = null;
 // 内置供应商在表单里待选的模型。重新渲染（下载/删除/选择）时存活，切换供应商时重置。
 let selectedBuiltinModel = '';
 let selectedAiAssistBuiltinModel = '';
@@ -571,7 +658,9 @@ function aiAssistEnabled() {
 const settingsModal = document.createElement('div');
 settingsModal.className = 'modal-backdrop';
 settingsModal.hidden = true;
-settingsModal.innerHTML = `<section class="modal-panel" role="dialog" aria-modal="true"><header class="modal-head"><div class="modal-title"><h2></h2><p></p></div><button class="modal-close" type="button" aria-label="关闭">${interfaceIcon('close')}</button></header><div class="modal-body"></div></section>`;
+const settingsModalMarkup = () =>
+  `<section class="modal-panel" role="dialog" aria-modal="true"><header class="modal-head"><div class="modal-title"><h2></h2><p></p></div><button class="modal-close" type="button" aria-label="关闭">${interfaceIcon('close')}</button></header><div class="modal-body"></div></section>`;
+settingsModal.innerHTML = settingsModalMarkup();
 document.body.append(settingsModal);
 const settingsFolders = document.createElement('div');
 settingsFolders.className = 'settings-folder-paths';
@@ -593,7 +682,25 @@ function configureSettingsPage(kind) {
       'whats-new',
     ].includes(kind);
   settingsModal.classList.toggle('settings-page', page);
+  settingsModal.classList.toggle('confirmation-modal', kind === 'confirmation');
+  settingsModal.classList.toggle('summary-model-modal', kind === 'summary-model');
+  settingsModal.classList.toggle(
+    'batch-modal',
+    kind === 'batch-export' || kind === 'batch-results',
+  );
+  if (kind !== 'confirmation')
+    settingsModal.classList.remove('permanent-confirmation', 'storage-confirmation');
+  settingsModal.classList.toggle('storage-settings', kind === 'storage');
+  settingsModal.classList.toggle('about-settings', kind === 'whats-new');
+  settingsModal.classList.toggle('upgrade-log', kind === 'upgrade-log');
+  settingsModal.querySelector('.upgrade-log-actions')?.remove();
+  if (kind !== 'whats-new' && kind !== 'upgrade-log') updateLogReturn = undefined;
+  settingsModal.classList.toggle('export-modal', kind === 'export' || kind === 'share');
   const panel = settingsModal.querySelector('.modal-panel');
+  if (kind === 'upgrade-log') {
+    settingsModal.querySelector('.modal-title h2').id = 'upgrade-log-title';
+    panel.setAttribute('aria-labelledby', 'upgrade-log-title');
+  } else panel.removeAttribute('aria-labelledby');
   panel.setAttribute('role', page ? 'region' : 'dialog');
   panel.setAttribute('aria-modal', String(!page));
   settingsModal.querySelector('.settings-navigation')?.remove();
@@ -603,6 +710,12 @@ function configureSettingsPage(kind) {
   back.classList.toggle('settings-back', page);
 }
 let activeModal;
+let whatsNewReady = false;
+let whatsNewShown = false;
+let whatsNewRetryTimer;
+let updateLogReturn;
+// 维护事件提供真实字节数；未知时不展示示例容量或假配额。
+let storageUsage;
 let modelsReturnTo = null;
 // 从功能设置跳到模型库时，还未安装的内置 AI 模型 id；其中任意一个装好后跳回一次。
 let modelsReturnToPending = null;
@@ -686,21 +799,22 @@ const meetingSearchClear = document.querySelector('#meeting-search-clear');
 const searchResultsPanel = document.querySelector('#search-results');
 let searchDebounceTimer = 0;
 let searchRequestId = 0;
-const selectedMeetingKeys = new Set();
 const batchToolbar = document.createElement('section');
 batchToolbar.className = 'batch-toolbar';
 batchToolbar.hidden = true;
 batchToolbar.setAttribute('aria-live', 'polite');
 batchToolbar.innerHTML =
-  '<strong data-batch-count></strong><div class="batch-actions"><button type="button" data-batch-restore></button><button type="button" data-batch-export></button><button class="batch-delete" type="button" data-batch-delete></button><button type="button" data-batch-clear></button></div>';
+  '<label class="batch-select-all"><input id="batch-select-all" type="checkbox" /><span data-batch-all-label></span></label><strong data-batch-count></strong><div class="batch-actions"><button type="button" data-batch-restore></button><button type="button" data-batch-export></button><button class="batch-delete" type="button" data-batch-delete></button><button type="button" data-batch-clear></button></div>';
 libraryToolbar.after(batchToolbar);
 /** 同步选中行样式和上下文批量工具栏。@param {boolean} updateToolbar 是否重绘批量操作。@returns {void} */
 function syncMeetingSelection(updateToolbar = true) {
   const rows = [...meetingList.querySelectorAll('.meeting-row')];
-  const available = new Set(rows.map((row) => row.dataset.selectionKey));
+  const visibleRows = rows.filter((row) => !row.hidden);
+  const available = new Set(visibleRows.map((row) => row.dataset.selectionKey));
   [...selectedMeetingKeys]
     .filter((key) => !available.has(key))
     .forEach((key) => selectedMeetingKeys.delete(key));
+  if (selectedMeetingKeys.size) meetingSelectionMode = true;
   rows.forEach((row) => {
     const selected = selectedMeetingKeys.has(row.dataset.selectionKey);
     row.classList.toggle('is-selected', selected);
@@ -708,43 +822,47 @@ function syncMeetingSelection(updateToolbar = true) {
     const checkbox = row.querySelector('[data-select-meeting]');
     if (checkbox) {
       checkbox.checked = selected;
-      checkbox.hidden = activeLibraryNav !== 'recently-deleted' && selectedMeetingKeys.size === 0;
+      checkbox.hidden = !meetingSelectionMode;
     }
   });
   if (!updateToolbar) return;
-  batchToolbar.hidden = selectedMeetingKeys.size === 0;
-  batchToolbar.querySelector('[data-batch-count]').textContent = BreviaI18n.selectionOverview(
-    locale,
-    selectedMeetingKeys.size,
+  batchToolbar.hidden = !meetingSelectionMode;
+  const toggle = document.querySelector('#meeting-selection-toggle');
+  toggle.innerHTML = `${interfaceIcon(meetingSelectionMode ? 'close' : 'checkbox')}${escapeHtml(t(meetingSelectionMode ? '退出选择' : '选择会议'))}`;
+  toggle.setAttribute('aria-pressed', String(meetingSelectionMode));
+  meetingList.classList.toggle('is-selecting', meetingSelectionMode);
+  batchToolbar.querySelector('[data-batch-count]').textContent =
+    `${t('已选择')} ${selectedMeetingKeys.size} / ${visibleRows.length}`;
+  const all = batchToolbar.querySelector('#batch-select-all');
+  all.checked = visibleRows.length > 0 && selectedMeetingKeys.size === visibleRows.length;
+  all.indeterminate = selectedMeetingKeys.size > 0 && !all.checked;
+  all.setAttribute('aria-checked', all.indeterminate ? 'mixed' : String(all.checked));
+  all.setAttribute('aria-label', t(all.checked ? '取消全选' : '全选'));
+  batchToolbar.querySelector('[data-batch-all-label]').textContent = t(
+    all.checked ? '取消全选' : '全选',
   );
   const deleted = activeLibraryNav === 'recently-deleted';
   const exportButton = batchToolbar.querySelector('[data-batch-export]');
   const restoreButton = batchToolbar.querySelector('[data-batch-restore]');
   exportButton.hidden = deleted;
   restoreButton.hidden = !deleted;
-  restoreButton.textContent = t('恢复');
-  exportButton.textContent = t('导出');
-  batchToolbar.querySelector('[data-batch-delete]').textContent = deleted
-    ? BreviaI18n.trashCopy(locale).purge
-    : t('删除');
-  batchToolbar.querySelector('[data-batch-clear]').textContent = t('取消');
-  const selectAllButton = document.querySelector('#meeting-select-all');
-  if (selectAllButton) {
-    // 「全选」只在进入批量管理模式（已有选中）后出现，默认不占视觉。
-    selectAllButton.hidden = selectedMeetingKeys.size === 0;
-    if (selectedMeetingKeys.size > 0) {
-      const visibleRows = rows.filter((row) => !row.hidden);
-      const allSelected =
-        visibleRows.length > 0 &&
-        visibleRows.every((row) => selectedMeetingKeys.has(row.dataset.selectionKey));
-      selectAllButton.textContent = allSelected ? t('取消全选') : t('全选');
-    }
-  }
+  restoreButton.innerHTML = `${interfaceIcon('restore')}${escapeHtml(t('恢复'))}`;
+  exportButton.innerHTML = `${interfaceIcon('upload')}${escapeHtml(t('导出'))}`;
+  [restoreButton, exportButton, batchToolbar.querySelector('[data-batch-delete]')].forEach(
+    (button) => {
+      button.disabled = selectedMeetingKeys.size === 0;
+    },
+  );
+  batchToolbar.querySelector('[data-batch-delete]').innerHTML =
+    `${interfaceIcon('trash')}${escapeHtml(deleted ? BreviaI18n.trashCopy(locale).purge : t('删除'))}`;
+  batchToolbar.querySelector('[data-batch-clear]').innerHTML =
+    `${interfaceIcon('close')}${escapeHtml(t('取消'))}`;
 }
 const selectedMeetings = () =>
   uiData.meetings.filter((meeting, index) => selectedMeetingKeys.has(meeting.id || String(index)));
 function clearMeetingSelection() {
   selectedMeetingKeys.clear();
+  meetingSelectionMode = false;
   syncMeetingSelection();
 }
 /** 将活动工作区过滤应用于会议库列表（搜索已改为独立浮窗，不再过滤列表）。@returns {void} */
@@ -752,7 +870,8 @@ function filterMeetings() {
   meetingList.querySelectorAll('.meeting-row').forEach((row) => {
     const meeting = uiData.meetings[Number(row.dataset.meetingIndex)];
     const workspaceMatch =
-      activeWorkspaceId === '' ? !meeting.workspaceId : meeting.workspaceId === activeWorkspaceId;
+      activeLibraryNav === 'recently-deleted' ||
+      (activeWorkspaceId === '' ? !meeting.workspaceId : meeting.workspaceId === activeWorkspaceId);
     row.hidden = !workspaceMatch;
   });
   meetingList.querySelectorAll('header.library-group').forEach((heading) => {
@@ -766,7 +885,7 @@ function filterMeetings() {
   if (![...meetingList.querySelectorAll('.meeting-row')].some((row) => !row.hidden)) {
     meetingList.insertAdjacentHTML(
       'beforeend',
-      `<section class="library-empty">${interfaceIcon('document')}<h2>${t(activeLibraryNav === 'recently-deleted' ? '没有已删除的会议' : '这里还没有会议')}</h2><p>${t(activeLibraryNav === 'recently-deleted' ? '删除的会议会显示在这里。' : '录制或导入后，在这里整理。')}</p>${activeLibraryNav === 'recently-deleted' ? '' : `<div><button class="primary-action" data-view="prepare" data-prepare-mode="record">${interfaceIcon('plus')}${t('开始会议')}</button><button class="secondary" data-view="prepare" data-prepare-mode="import">${interfaceIcon('upload')}${t('导入录音')}</button></div>`}</section>`,
+      `<section class="library-empty">${interfaceIcon('document')}<h2>${t(activeLibraryNav === 'recently-deleted' ? '没有已删除的会议' : '这里还没有会议')}</h2><p>${t(activeLibraryNav === 'recently-deleted' ? '删除的会议会显示在这里。' : '录制或导入后，在这里整理。')}</p>${activeLibraryNav === 'recently-deleted' ? '' : `<div><button class="primary-action" data-view="prepare" data-prepare-mode="record">${interfaceIcon('plus')}${t('开始会议')}</button><button class="secondary" data-view="prepare" data-prepare-mode="import">${interfaceIcon('upload')}${t('导入音频')}</button></div>`}</section>`,
     );
   }
 }
@@ -803,6 +922,17 @@ function meetingSecondaryInfo(meeting) {
 }
 /** 仅重新渲染会议列表，保留设置模态框事件绑定。@returns {void} */
 function renderMeetingList() {
+  const renameForm = meetingList.querySelector('[data-rename-meeting]');
+  const renameFocus = renameForm?.contains(document.activeElement) ? document.activeElement : null;
+  if (meetingRenameDraft) {
+    editingMeetingIndex = uiData.meetings.findIndex(
+      (meeting, index) => (meeting.id || String(index)) === meetingRenameDraft.key,
+    );
+    if (editingMeetingIndex < 0) {
+      meetingRenameDraft = null;
+      editingMeetingIndex = null;
+    }
+  }
   let previous = '';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -818,9 +948,9 @@ function renderMeetingList() {
           ? t('最近删除')
           : days === null
             ? t('会议库')
-            : days < 0
+            : days <= 0
               ? t('今天')
-              : days === 0
+              : days === 1
                 ? t('昨天')
                 : days < 7
                   ? t('本周')
@@ -839,6 +969,13 @@ function renderMeetingList() {
       );
     })
     .join('');
+  if (renameForm && meetingRenameDraft) {
+    const replacement = meetingList.querySelector('[data-rename-meeting]');
+    if (replacement) {
+      renameForm.dataset.meetingIndex = editingMeetingIndex;
+      replacement.replaceWith(renameForm);
+    }
+  }
   filterMeetings();
   syncMeetingSelection();
   cacheMeetingList();
@@ -936,6 +1073,7 @@ function renderPrepareSelects() {
     ? `${escapeHtml(t('导入录音'))}${interfaceIcon('arrow-right')}`
     : `${interfaceIcon('record')}${escapeHtml(t('开始录制'))}`;
   importRecording.querySelector('.import-recording-label').textContent = t('导入本地音频');
+  importRecording.title = t('导入本地音频');
   if (activeView === 'prepare')
     crumb.textContent = importing ? t('导入录音') : catalog[locale].views.prepare;
   requestAnimationFrame(fitPrepareLayout);
@@ -974,7 +1112,7 @@ function captureModeSelect(value) {
     ['both', t('麦克风 + 系统音频'), t('适合线上会议场景')],
   ];
   const selected = options.find(([mode]) => mode === value) || options[0];
-  return `<div class="flow-select capture-mode-select capture-source-list"><button class="flow-select-toggle" data-flow-select-toggle type="button" aria-expanded="false" hidden>${escapeHtml(selected[1])}<span class="select-chevron">${interfaceIcon('chevron-down')}</span></button><input type="hidden" name="capture-mode" value="${escapeHtml(selected[0])}" /><div class="flow-select-options" role="radiogroup" aria-label="${escapeHtml(t('录制来源'))}">${options.map(([mode, label, scene]) => `<button type="button" role="radio" aria-checked="${mode === value}" data-flow-select-choice="capture-mode" data-value="${mode}" data-label="${escapeHtml(label)}">${interfaceIcon(mode === 'mic' ? 'microphone' : mode === 'system' ? 'appearance' : mode === 'both' ? 'waveform' : 'advanced')}<span><b>${escapeHtml(label)}</b><small>${escapeHtml(scene)}</small></span><i></i></button>`).join('')}</div><button type="button" class="capture-phone" data-capture-phone>${interfaceIcon('phone')}<span>${escapeHtml(t('设备连接'))}</span></button></div>`;
+  return `<div class="flow-select capture-mode-select capture-source-list"><button class="flow-select-toggle" data-flow-select-toggle type="button" aria-expanded="false" hidden>${escapeHtml(selected[1])}<span class="select-chevron">${interfaceIcon('chevron-down')}</span></button><input type="hidden" name="capture-mode" value="${escapeHtml(selected[0])}" /><div class="flow-select-options" role="radiogroup" aria-label="${escapeHtml(t('录制来源'))}">${options.map(([mode, label, scene]) => `<button type="button" role="radio" aria-checked="${mode === value}" data-flow-select-choice="capture-mode" data-value="${mode}" data-label="${escapeHtml(label)}">${interfaceIcon(mode === 'mic' ? 'microphone' : mode === 'system' ? 'appearance' : mode === 'both' ? 'waveform' : 'refresh')}<span><b>${escapeHtml(label)}</b><small>${escapeHtml(scene)}</small></span><i></i></button>`).join('')}</div><button type="button" class="capture-phone" data-capture-phone>${interfaceIcon('phone')}<span>${escapeHtml(t('设备连接'))}</span></button></div>`;
 }
 function renderCaptureMode(value = savedCaptureMode()) {
   const mount = prepareForm.querySelector('#capture-mode-mount');
@@ -1101,14 +1239,14 @@ function applyLanguageModelDefaults(language) {
 }
 if (breviaClient) {
   breviaClient.onCaptureError = (error) => {
-    showToast(t(error.message));
+    showToast(t(error.message), undefined, 'error');
     document.querySelector('#end-meeting').click();
   };
   breviaClient.onLevel = (track, level) => {
     if (track !== 'mic') return;
     document
       .querySelectorAll('#mic-level, [data-onboarding-mic-level], [data-live-mic-level]')
-      .forEach((meter) => meter.style.setProperty('--level', Math.max(0.04, level)));
+      .forEach((meter) => meter.style.setProperty('--level', Math.max(0, Math.min(1, level))));
   };
   // 恢复用户上次选择的麦克风设备(若有)。
   if (savedMicDeviceId()) breviaClient.setMicDevice(savedMicDeviceId());
@@ -1269,9 +1407,11 @@ function showRefinementProgress(
   }
   target.textContent = refinementMeetingTitle || '';
   refinementCard.querySelector('.task-card-heading').title = refinementMeetingTitle || copy.title;
-  refinementPercent.textContent = total
-    ? `${copy.waiting} · ${Math.round(ratio * 100)}%`
-    : copy.waiting;
+  refinementPercent.innerHTML = renderTaskProgressLabel(
+    refinementMeetingTitle || copy.waiting,
+    total ? Math.round(ratio * 100) : undefined,
+  );
+  refinementPercent.title = copy.waiting;
   refinementBar.style.transform = `scaleX(${ratio})`;
   Object.assign(refinementCard.dataset, {
     completed: ratio * 100,
@@ -1325,8 +1465,10 @@ function showTranslationProgress(completed, total, targetLanguage) {
   } else if (card.classList.contains('task-card-leave')) enterTaskCard(card);
   const ratio = total ? completed / total : 0;
   card.querySelector('p').textContent = t('正在翻译字幕');
-  card.querySelector('strong').textContent =
-    `${BreviaI18n.languageName(locale, targetLanguage)} · ${Math.round(ratio * 100)}%`;
+  card.querySelector('strong').innerHTML = renderTaskProgressLabel(
+    BreviaI18n.languageName(locale, targetLanguage),
+    Math.round(ratio * 100),
+  );
   card.querySelector('i').style.transform = `scaleX(${ratio})`;
   Object.assign(card.dataset, { completed, total });
   syncTaskCardStack(card);
@@ -1365,8 +1507,10 @@ function showSummaryProgress(completed = 0, total = 100, stage = 'summary.prepar
   } else if (card.classList.contains('task-card-leave')) enterTaskCard(card);
   const ratio = total ? Math.min(1, completed / total) : 0;
   card.querySelector('p').textContent = (summaryTaskCopy[locale] || summaryTaskCopy.en)[0];
-  card.querySelector('strong').textContent =
-    `${summaryTaskLabel(stage)}${total ? ` · ${Math.round(ratio * 100)}%` : ''}`;
+  card.querySelector('strong').innerHTML = renderTaskProgressLabel(
+    summaryTaskLabel(stage),
+    total ? Math.round(ratio * 100) : undefined,
+  );
   card.querySelector('i').style.transform = `scaleX(${ratio})`;
   Object.assign(card.dataset, { completed, total, stage });
   syncTaskCardStack(card);
@@ -1391,17 +1535,25 @@ function refreshLocalizedTaskCards() {
       ? `${title} - ${refinementMeetingTitle}`
       : title;
     const stage = t(refinementCard.dataset.stage || '准备中');
-    refinementPercent.textContent =
+    refinementPercent.innerHTML = renderTaskProgressLabel(
+      refinementMeetingTitle || stage,
       refinementCard.dataset.total === '0'
-        ? stage
-        : `${stage} · ${Math.round((Number(refinementCard.dataset.completed || 0) / Number(refinementCard.dataset.total || 1)) * 100)}%`;
+        ? undefined
+        : Math.round(
+            (Number(refinementCard.dataset.completed || 0) /
+              Number(refinementCard.dataset.total || 1)) *
+              100,
+          ),
+    );
   }
   const summary = document.querySelector('#summary-progress');
   if (summary) {
     const total = Number(summary.dataset.total || 0);
     summary.querySelector('p').textContent = (summaryTaskCopy[locale] || summaryTaskCopy.en)[0];
-    summary.querySelector('strong').textContent =
-      `${summaryTaskLabel(summary.dataset.stage)}${total ? ` · ${Math.round((Number(summary.dataset.completed || 0) / total) * 100)}%` : ''}`;
+    summary.querySelector('strong').innerHTML = renderTaskProgressLabel(
+      summaryTaskLabel(summary.dataset.stage),
+      total ? Math.round((Number(summary.dataset.completed || 0) / total) * 100) : undefined,
+    );
   }
 }
 async function generateMeetingSummary(meetingId = breviaClient?.state.selectedMeetingId) {
@@ -1414,10 +1566,12 @@ async function generateMeetingSummary(meetingId = breviaClient?.state.selectedMe
     return;
   }
   const config = summaryRequestConfig();
-  if (!config || !meetingId) {
+  if (!meetingId) return;
+  if (!config || (config.provider === 'built-in' && !modelPaths.has(config.model))) {
     showSummaryConfigCard();
     return;
   }
+  summaryFeedback = null;
   showSummaryProgress(0, 100, 'summary.prepare', meetingId);
   try {
     const summary = await window.brevia.summary.generate({
@@ -1445,11 +1599,23 @@ async function generateMeetingSummary(meetingId = breviaClient?.state.selectedMe
     if (meetingId === breviaClient.state.selectedMeetingId) applyBackendDetail(meeting);
     dismissTaskCard(document.querySelector('#summary-config-required'));
     showSummaryComplete();
-    showToast(t('会议纪要已生成'));
+    showToast(t('会议纪要已生成'), undefined, 'success');
   } catch (error) {
     hideSummaryProgress();
     if (isSummaryAuthenticationError(error)) showSummaryConfigCard(error);
-    else showToast(error.message);
+    else {
+      summaryFeedback = {
+        meetingId,
+        title: t(
+          uiData.detail.summary.markdown ? '纪要生成失败，现有纪要仍保留。' : '纪要生成失败',
+        ),
+        detail: error.detail || error.message,
+        configure: false,
+      };
+      syncSummaryFeedback();
+      if (activeView !== 'detail' || currentMeetingDetail?.id !== meetingId)
+        showToast(error.message, undefined, 'error');
+    }
   }
 }
 const requiredModelIds = new Set();
@@ -1468,7 +1634,7 @@ const modelDownloadPayload = (modelId) => ({
 });
 const chinaModelSourceToggle = () =>
   locale === 'zh'
-    ? `<p class="model-source-switch"><label><input type="checkbox" data-china-model-source${useChinaModelSource() ? ' checked' : ''} /><span>${escapeHtml(window.BreviaLocaleData.chinaModelSourceLabel)}</span></label></p>`
+    ? `<p class="model-source-switch"><label><input type="checkbox" data-china-model-source${useChinaModelSource() ? ' checked' : ''} /><span>国内下载源</span></label></p>`
     : '';
 const onboardingCopy = window.BreviaLocaleData.appCopy.onboardingCopy;
 const onboardingLanguageCopy = window.BreviaLocaleData.appCopy.onboardingLanguageCopy;
@@ -1503,7 +1669,7 @@ async function resumeReadyModelTasks() {
         refinementCard.dataset.meetingId === pending.payload.meeting_id
       )
         hideRefinementProgress();
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     } finally {
       resumingModelTasks.delete(key);
     }
@@ -1537,9 +1703,13 @@ function scheduleModelLibraryRender() {
     if (activeModal === 'models') renderModelLibrary();
   });
 }
+let dismissedModelDownloadIds = [];
 function renderModelDownloadQueue() {
   let card = document.querySelector('#model-download-queue');
   const entries = [...modelDownloads.entries()];
+  // 关闭只隐藏当前下载；纯进度更新不能重新弹出，新任务仍会展示。
+  if (entries.length && entries.every(([id]) => dismissedModelDownloadIds.includes(id))) return;
+  dismissedModelDownloadIds = [];
   if (!entries.length) {
     dismissTaskCard(card);
     return;
@@ -1559,6 +1729,7 @@ function renderModelDownloadQueue() {
     0,
   );
   const ratio = total ? received / total : 0;
+  Object.assign(card.dataset, { completed: received, total });
   const heading = entries.some(([id]) => requiredModelIds.has(id))
     ? t('需要下载以下模型')
     : t('模型下载队列');
@@ -1592,10 +1763,11 @@ function renderModelDownloadQueue() {
             : progress.cancelling
               ? ''
               : `<button class="task-card-close" type="button" data-pause-required="${id}" aria-label="${progress.paused ? t('继续') : t('暂停')}">${interfaceIcon(progress.paused ? 'play' : 'pause')}</button><button class="task-card-close" type="button" data-cancel-required="${id}" aria-label="${t('取消')}">${interfaceIcon('close')}</button>`;
-        return `<li><span><b>${escapeHtml(modelDisplayName(id))}</b>${status}</span><span class="model-actions">${action}</span><div class="processing-bar" aria-hidden="true"><i style="transform:scaleX(${itemRatio})"></i></div></li>`;
+        return `<li><span><b title="${escapeHtml(modelDisplayName(id))}">${escapeHtml(modelDisplayName(id))}</b>${status}</span><span class="model-actions">${action}</span><div class="processing-bar" aria-hidden="true"><i style="transform:scaleX(${itemRatio})"></i></div></li>`;
       })
       .join('')}</ul>`;
     card.querySelector('ul').scrollTop = scrollTop;
+    syncTaskCardStack();
     return;
   }
   // 纯进度刷新：原地更新进度条与百分比，保留按钮节点，点击才能命中。
@@ -1614,6 +1786,7 @@ function renderModelDownloadQueue() {
         small.textContent = progress.total ? `${Math.round(itemRatio * 100)}%` : t('准备中');
     }
   });
+  syncTaskCardStack();
 }
 function renderRequiredModelsCard() {
   [...requiredModelIds]
@@ -1622,6 +1795,7 @@ function renderRequiredModelsCard() {
   renderModelDownloadQueue();
 }
 async function downloadRequiredModel(modelId) {
+  dismissedModelDownloadIds = [];
   if (modelPaths.has(modelId)) {
     requiredModelIds.delete(modelId);
     renderRequiredModelsCard();
@@ -1667,7 +1841,10 @@ function showOfflineTranscriptionReady() {
 }
 taskCards.addEventListener('click', (event) => {
   const backCard = event.target.closest('.is-task-card-back');
-  if (backCard) {
+  if (
+    backCard &&
+    !event.target.closest('.task-card-actions, .model-actions, .mini-playback-controls')
+  ) {
     activateTaskCard(backCard);
     return;
   }
@@ -1680,7 +1857,7 @@ taskCards.addEventListener('click', (event) => {
     const paused = card.dataset.paused === 'true';
     taskPause.disabled = true;
     void window.brevia.task[paused ? 'resume' : 'pause']({ task, meeting_id: meetingId })
-      .catch((error) => showToast(error.message))
+      .catch((error) => showToast(error.message, undefined, 'error'))
       .finally(() => {
         taskPause.disabled = false;
       });
@@ -1701,7 +1878,7 @@ taskCards.addEventListener('click', (event) => {
       if (task && meetingId)
         void window.brevia.task
           .cancel({ task, meeting_id: meetingId })
-          .catch((error) => showToast(error.message));
+          .catch((error) => showToast(error.message, undefined, 'error'));
     } else {
       if (card?.id === 'summary-progress') clearTimeout(summaryDismissTimer);
       if (card?.id === 'summary-config-required') clearTimeout(summaryConfigDismissTimer);
@@ -1714,6 +1891,7 @@ taskCards.addEventListener('click', (event) => {
             requiredModelIds.delete(modelId);
           }
         }
+        dismissedModelDownloadIds = [...modelDownloads.keys()];
         if (activeModal === 'models') renderModal('models');
       }
       dismissTaskCard(card);
@@ -1733,7 +1911,7 @@ taskCards.addEventListener('click', (event) => {
     else
       void window.brevia?.models
         .pause({ model_id: modelId })
-        .catch((error) => showToast(error.message));
+        .catch((error) => showToast(error.message, undefined, 'error'));
     return;
   }
   const cancel = event.target.closest('[data-cancel-required]');
@@ -1745,14 +1923,14 @@ taskCards.addEventListener('click', (event) => {
       if (modelDownloads.has(modelId))
         modelDownloads.set(modelId, { ...modelDownloads.get(modelId), cancelling: false });
       renderRequiredModelsCard();
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     });
     return;
   }
 });
 taskCards.addEventListener('keydown', (event) => {
   const card = event.target.closest('.is-task-card-back');
-  if (card && ['Enter', ' '].includes(event.key)) {
+  if (card && event.target === card && ['Enter', ' '].includes(event.key)) {
     event.preventDefault();
     activateTaskCard(card);
   }
@@ -1819,10 +1997,14 @@ audioDropzone.addEventListener('drop', (event) => {
 /** 下拉使用视口坐标，避开表单滚动区裁切并在空间不足时向上展开。 */
 function fitFlowSelectOptions(options, toggle) {
   if (options.hidden) return;
+  const value = toggle.closest('.flow-select')?.querySelector('input[type="hidden"]')?.value;
+  options.querySelectorAll('[data-value]').forEach((choice) => {
+    choice.toggleAttribute('aria-current', choice.dataset.value === value);
+  });
   const anchor = toggle.getBoundingClientRect();
   const available = Math.max(anchor.top - 12, innerHeight - anchor.bottom - 12);
   options.classList.add('is-floating');
-  options.style.width = `${Math.min(anchor.width, innerWidth - 24)}px`;
+  options.style.width = `${Math.min(Math.max(anchor.width, 160), innerWidth - 24)}px`;
   options.style.maxHeight = `${Math.min(256, Math.max(80, available))}px`;
   options.style.left = `${Math.max(12, Math.min(anchor.left, innerWidth - options.offsetWidth - 12))}px`;
   options.style.top = `${anchor.bottom + options.offsetHeight + 12 <= innerHeight ? anchor.bottom + 4 : Math.max(12, anchor.top - options.offsetHeight - 4)}px`;
@@ -1950,7 +2132,7 @@ function builtinModelPicker(currentModelId, installed, hint, allowDownload = fal
   const labels = modelLabels[locale] || modelLabels.en;
   const downloadAction =
     allowDownload && !modelPaths.has(selected.id)
-      ? `<button class="modal-action" type="button" data-download-model="${escapeHtml(selected.id)}"${inFlight ? ' disabled' : ''}>${escapeHtml(inFlight ? labels.downloading : labels.download)} · ${formatBytes(selected.size_bytes || 0)}</button>` +
+      ? `<button class="modal-action" type="button" data-download-model="${escapeHtml(selected.id)}"${inFlight ? ' disabled' : ''}>${interfaceIcon('download')}${escapeHtml(inFlight ? labels.downloading : labels.download)} · ${formatBytes(selected.size_bytes || 0)}</button>` +
         (progress?.error
           ? `<p class="summary-model-hint">${escapeHtml(progress.error)}</p>`
           : inFlight && progress.total
@@ -1961,7 +2143,9 @@ function builtinModelPicker(currentModelId, installed, hint, allowDownload = fal
     builtinModelIntro[selected.id]?.[locale] || builtinModelIntro[selected.id]?.en || '';
   return (
     `<div class="model-picker"><label>${escapeHtml(t('本地模型'))}${flowSelect('model', selected.id, options)}</label>` +
-    (intro ? `<p class="model-picker-intro">${escapeHtml(intro)}</p>` : '') +
+    (intro
+      ? `<p class="model-picker-intro" title="${escapeHtml(intro)}">${escapeHtml(intro)}</p>`
+      : '') +
     `<div class="model-picker-foot">${renderModelLibraryRatings(selected)}` +
     (allowDownload
       ? downloadAction +
@@ -2054,7 +2238,8 @@ function renderModelConfigFields(config, selectedModel, { required = true, hint 
 function renderModelConfigForm(config, formClass, selectedModel) {
   const copy = summaryModelCopy[locale] || summaryModelCopy.en;
   const fields = renderModelConfigFields(config, selectedModel);
-  return `<form class="${formClass}">${fields.markup}<div class="modal-form-actions"><button class="secondary" type="button" data-cancel-model-config>${escapeHtml(t('取消'))}</button><button class="modal-action" type="submit"${fields.saveDisabled ? ' disabled' : ''}>${copy.save}</button></div></form>`;
+  const state = JSON.stringify(config) === JSON.stringify(summaryConfig) ? 'saved' : 'dirty';
+  return `<form class="${formClass}">${fields.markup}<div class="modal-form-actions">${renderSaveState(state)}<button class="secondary" type="button" data-cancel-model-config>${escapeHtml(t('取消'))}</button><button class="modal-action" type="submit"${fields.saveDisabled ? ' disabled' : ''}>${copy.save}</button></div></form>`;
 }
 function renderSummaryModelForm() {
   return renderModelConfigForm(
@@ -2108,7 +2293,7 @@ function renderAiAssistModal() {
     required: config.enabled,
   });
   settingsModal.querySelector('.modal-body').innerHTML =
-    `${renderAiSettingsTabs('ai-assist')}<form class="ai-assist-config-form"><label class="summary-enabled-control"><span>${t('智能笔记')}</span><input type="checkbox" name="enabled" data-ai-settings-enabled${config.enabled ? ' checked' : ''} /></label>${renderAiServiceChoice(config)}${fields.markup}<fieldset class="ai-assist-proactivity"><legend>${t('主动性')}</legend><div class="ai-assist-levels">${levels}</div></fieldset>${warning}<div class="modal-form-actions"><button class="secondary" data-cancel-model-config type="button">${t('取消')}</button><button class="modal-action" type="submit"${fields.saveDisabled && config.enabled ? ' disabled' : ''}>${t('保存配置')}</button></div></form>`;
+    `${renderAiSettingsTabs('ai-assist')}<form class="ai-assist-config-form"><div class="ai-service-row">${renderAiServiceChoice(config)}<label class="summary-enabled-control"><span>${t('智能笔记')}</span><input type="checkbox" name="enabled" data-ai-settings-enabled${config.enabled ? ' checked' : ''} /></label></div>${fields.markup}<fieldset class="ai-assist-proactivity"><legend>${t('主动性')}</legend><div class="ai-assist-levels">${levels}</div></fieldset>${warning}<div class="modal-form-actions">${renderSaveState(JSON.stringify(config) === JSON.stringify(aiAssistConfig) ? 'saved' : 'dirty')}<button class="secondary" data-cancel-model-config type="button">${t('取消')}</button><button class="modal-action" type="submit"${fields.saveDisabled && config.enabled ? ' disabled' : ''}>${t('保存配置')}</button></div></form>`;
 }
 
 async function switchAiAssistTo2B() {
@@ -2157,7 +2342,7 @@ function renderSpeakerProfileModal() {
     )
     .join('');
   settingsModal.querySelector('.modal-body').innerHTML =
-    `<div class="speaker-manager"><aside class="speaker-directory"><label class="search">${interfaceIcon('search')}<input type="search" data-speaker-search aria-label="${t('搜索')}" placeholder="${t('搜索')}" value="${escapeHtml(speakerProfileSearch)}" /></label><details class="speaker-create"><summary>${interfaceIcon('plus')}${copy.add}</summary><form class="speaker-profile-form"><label>${copy.name}<input name="name" maxlength="32" required /></label><button class="modal-action" type="submit">${copy.add}</button></form></details><div class="speaker-profile-list">${list || `<p class="page-empty">${copy.intro}</p>`}</div></aside><section class="speaker-profile-detail">${profile ? `<header class="speaker-detail-header"><div>${name}<small>${profile.sample_count}/50 ${copy.samples} · ${formatMeetingTime(profile.duration_ms || 0)} / 05:00</small></div><div class="speaker-detail-actions"><button class="secondary" data-verify-speaker-profile="${escapeHtml(profile.id)}" type="button">${voiceCopy.verify}</button><button class="secondary" data-rename-speaker-profile="${escapeHtml(profile.id)}" type="button">${t('更改名称')}</button></div></header><section class="speaker-add"><h3>${copy.addSample}</h3><form class="speaker-sample-form" data-speaker-profile="${escapeHtml(profile.id)}"><div class="speaker-audio-dropzone">${interfaceIcon('upload')}<p>${t('请选择一段清晰的已有录音。')}</p><button class="modal-action" type="submit">${t('选择录音并添加')}</button></div></form></section><section><h3>${t('声纹样本')}</h3><div class="speaker-sample-list">${samples.length ? samples.map((sample) => `<article><button class="sample-play" data-play-speaker-sample="${escapeHtml(sample.id)}" type="button" aria-label="${t('播放录音')}">${interfaceIcon('play')}</button><input type="range" data-speaker-sample-seek="${escapeHtml(sample.id)}" min="0" max="${(sample.duration_ms || 0) / 1000}" step=".1" value="0" aria-label="${t('播放进度')}" /><time>${formatMeetingTime(sample.duration_ms || 0)}</time><button class="model-delete" data-delete-speaker-sample="${escapeHtml(sample.id)}" data-profile-id="${escapeHtml(profile.id)}" type="button">${copy.remove}</button></article>`).join('') : `<p class="page-empty">${copy.empty}</p>`}</div></section><button class="model-delete" data-delete-speaker-profile="${escapeHtml(profile.id)}" type="button">${copy.remove}</button>` : `<div class="page-empty">${interfaceIcon('person')}<h2>${t('声纹管理')}</h2><p>${copy.intro}</p></div>`}</section></div>`;
+    `<div class="speaker-manager"><aside class="speaker-directory"><label class="search">${interfaceIcon('search')}<input type="search" data-speaker-search aria-label="${t('搜索')}" placeholder="${t('搜索')}" value="${escapeHtml(speakerProfileSearch)}" /></label><details class="speaker-create"><summary>${interfaceIcon('plus')}${copy.add}</summary><form class="speaker-profile-form"><label>${copy.name}<input name="name" maxlength="32" required /></label><button class="modal-action" type="submit">${copy.add}</button></form></details><div class="speaker-profile-list">${list || `<p class="page-empty">${copy.intro}</p>`}</div></aside><section class="speaker-profile-detail">${profile ? `<header class="speaker-detail-header"><div>${name}<small>${profile.sample_count}/50 ${copy.samples} · ${formatMeetingTime(profile.duration_ms || 0)} / 05:00</small></div><div class="speaker-detail-actions"><button class="secondary" data-verify-speaker-profile="${escapeHtml(profile.id)}" type="button">${voiceCopy.verify}</button><button class="secondary" data-rename-speaker-profile="${escapeHtml(profile.id)}" type="button">${t('更改名称')}</button></div></header><section class="speaker-add"><h3>${copy.addSample}</h3><form class="speaker-sample-form" data-speaker-profile="${escapeHtml(profile.id)}"><div class="speaker-audio-dropzone">${interfaceIcon('upload')}<p>${t('请选择一段清晰的已有录音。')}</p></div><button class="modal-action" type="submit">${t('选择录音并添加')}</button></form></section><section><h3>${t('声纹样本')}</h3><div class="speaker-sample-list">${samples.length ? samples.map((sample) => `<article><button class="sample-play" data-play-speaker-sample="${escapeHtml(sample.id)}" type="button" aria-label="${t('播放录音')}">${interfaceIcon('play')}</button><input type="range" data-speaker-sample-seek="${escapeHtml(sample.id)}" min="0" max="${(sample.duration_ms || 0) / 1000}" step=".1" value="0" aria-label="${t('播放进度')}" /><time>${formatMeetingTime(sample.duration_ms || 0)}</time><button class="model-delete" data-delete-speaker-sample="${escapeHtml(sample.id)}" data-profile-id="${escapeHtml(profile.id)}" type="button">${copy.remove}</button></article>`).join('') : `<p class="page-empty">${copy.empty}</p>`}</div></section><button class="model-delete" data-delete-speaker-profile="${escapeHtml(profile.id)}" type="button">${copy.remove}</button>` : `<div class="page-empty">${interfaceIcon('person')}<h2>${t('声纹管理')}</h2><p>${copy.intro}</p></div>`}</section></div>`;
 }
 speakerSampleAudio.addEventListener('timeupdate', () => {
   const id = speakerSampleAudio._button?.dataset.playSpeakerSample;
@@ -2197,7 +2382,7 @@ const exportTrack = { audio: 'mix' };
 const exportContentLabel = {
   notes: () => t('会议纪要'),
   mynotes: () => t('我的笔记'),
-  transcript: () => t('字幕'),
+  transcript: () => t('逐字稿'),
   audio: () => t('会议录音'),
 };
 function exportContentMeta() {
@@ -2267,12 +2452,12 @@ async function runExportBundle(mode, anchor) {
   });
   return { ...(result || {}), count: result ? items.length : null };
 }
-// 格式显示名：Markdown 与各容器格式为通用名，纯文本按语言显示（txt 使用 copy.txt）。
+// 格式显示名采用实际文件类型的通用名，与 D12 保持一致。
 const exportFormatDisplay = {
   md: 'Markdown',
   pdf: 'PDF',
   docx: 'DOCX',
-  txt: null,
+  txt: 'TXT',
   srt: 'SRT',
   json: 'JSON',
   wav: 'WAV',
@@ -2324,10 +2509,13 @@ function exportShareText() {
 function renderExportModal() {
   const copy = exportHubCopy[locale] || exportHubCopy.en;
   settingsModal.querySelector('.modal-title h2').textContent = copy.title;
-  settingsModal.querySelector('.modal-title p').textContent = currentMeetingDetail?.title || '';
+  settingsModal.querySelector('.modal-title p').textContent = t('选择要导出的内容及格式。');
   exportSelection = {};
   exportContentMeta().forEach(({ content }) => {
-    exportSelection[content] = exportDefaultFormat[content];
+    exportSelection[content] =
+      activeView === 'detail' && detailActiveTab === 'summary' && content !== 'notes'
+        ? null
+        : exportDefaultFormat[content];
   });
   settingsModal.querySelector('.modal-body').innerHTML = exportHubHtml();
   updateExportBuilderState();
@@ -2335,7 +2523,10 @@ function renderExportModal() {
 // 统一「导出与分享」面板。
 function exportHubHtml() {
   const copy = exportHubCopy[locale] || exportHubCopy.en;
-  const meta = exportContentMeta();
+  const order = ['mynotes', 'notes', 'transcript', 'audio'];
+  const meta = exportContentMeta().sort(
+    (a, b) => order.indexOf(a.content) - order.indexOf(b.content),
+  );
   meta.forEach(({ content }) => {
     if (!(content in exportSelection)) exportSelection[content] = exportDefaultFormat[content];
   });
@@ -2354,7 +2545,7 @@ function exportHubHtml() {
         .join('');
       return `<label class="export-content-row${exportSelection[content] ? ' is-checked' : ''}">
       <input type="checkbox" data-export-item="${content}"${exportSelection[content] ? ' checked' : ''}>
-      ${interfaceIcon(content === 'audio' ? 'waveform' : content === 'transcript' ? 'waveform' : 'document')}<span class="export-content-name"><b>${escapeHtml(label)}</b><small>${escapeHtml(desc)}</small></span>
+      ${interfaceIcon(content === 'audio' ? 'music' : content === 'transcript' ? 'waveform' : 'document')}<span class="export-content-name"><b>${escapeHtml(label)}</b><small>${escapeHtml(desc)}</small></span>
       ${
         content === 'audio'
           ? '<span class="export-format-fixed">WAV</span>'
@@ -2385,20 +2576,18 @@ function exportHubHtml() {
     .join('');
   return `<div class="export-builder">
     <section class="export-builder-section">
-      <h3>${copy.what}</h3>
+      <h3 class="sr-only">${copy.what}</h3>
       <div class="export-content-list">${rows || `<p class="export-empty">${copy.empty}</p>`}</div>
-      <p class="export-selection-summary" data-export-summary>${copy.emptySummary}</p>
     </section>
     <section class="export-builder-section">
-      <h3>${copy.files}</h3>
+      <h3 class="sr-only">${copy.files}</h3>
+      <p class="export-selection-summary" data-export-summary>${copy.emptySummary}</p>
       <div class="export-actions">
-        ${window.brevia?.platform === 'darwin' ? `<button type="button" class="secondary" data-share-target="system" data-share-kind="file">${interfaceIcon('upload')}${escapeHtml(copy.platform.system[0])}</button>` : ''}<button type="button" class="secondary" data-share-target="copy" data-share-kind="text">${interfaceIcon('document')}${escapeHtml(copy.platform.copy[0])}</button><button type="button" class="modal-action" data-export-save>${copy.save}</button>
+        ${window.brevia?.platform === 'darwin' ? `<button type="button" class="secondary" data-share-target="system" data-share-kind="file">${interfaceIcon('upload')}${escapeHtml(copy.platform.system[0])}</button>` : ''}<button type="button" class="secondary" data-share-target="copy" data-share-kind="text">${interfaceIcon('copy')}${escapeHtml(copy.platform.copy[0])}</button><button type="button" class="modal-action" data-export-save>${copy.save}</button>
       </div>
     </section>
     <section class="export-builder-section">
-      <h3>${copy.shareTo}</h3>
-      <p class="share-hint">${copy.shareHint}</p>
-      <details class="export-more-share"><summary>${interfaceIcon('more')}${copy.shareTo}</summary><div class="share-platforms">${platforms}</div></details>
+      <details class="export-more-share"><summary>${copy.shareTo}</summary><p class="share-hint">${copy.shareHint}</p><div class="share-platforms">${platforms}</div></details>
     </section>
   </div>`;
 }
@@ -2435,6 +2624,7 @@ function refreshModelConfigModels() {
 /** 渲染一个设置模态框。@param {'models'|'storage'|'summary-model'} kind 请求的模态框。@returns {void} */
 let mobileConnectionContent;
 function renderModal(kind) {
+  settingsModal.querySelector('[data-mobile-install-toggle]')?.remove();
   settingsModal.classList.remove('confirmation-modal');
   settingsFolders.hidden = true;
   document.body.append(settingsFolders);
@@ -2443,9 +2633,30 @@ function renderModal(kind) {
   if (kind === 'device-connection') {
     mobileConnectionContent ||= document.getElementById('mobile-dialog');
     settingsModal.querySelector('.modal-title h2').textContent = t('设备连接');
-    settingsModal.querySelector('.modal-title p').textContent = '';
+    settingsModal.querySelector('.modal-title p').textContent = t(
+      '手机录音，电脑转写。也可以离线录音，稍后确认上传。',
+    );
     settingsModal.querySelector('.modal-body').replaceChildren(mobileConnectionContent);
     mobileConnectionContent.hidden = false;
+    const install = mobileConnectionContent.querySelector('.mobile-install');
+    install.id = 'mobile-install-panel';
+    install.hidden = true;
+    install.open = false;
+    mobileConnectionContent.prepend(install);
+    const installToggle = document.createElement('button');
+    installToggle.className = 'secondary mobile-install-toggle';
+    installToggle.type = 'button';
+    installToggle.dataset.mobileInstallToggle = '';
+    installToggle.textContent = t('安装Brevia手机端');
+    installToggle.setAttribute('aria-controls', install.id);
+    installToggle.setAttribute('aria-expanded', 'false');
+    installToggle.addEventListener('click', () => {
+      install.hidden = !install.hidden;
+      install.open = !install.hidden;
+      installToggle.setAttribute('aria-expanded', String(!install.hidden));
+      if (!install.hidden) settingsModal.querySelector('.modal-body').scrollTop = 0;
+    });
+    settingsModal.querySelector('.modal-close').before(installToggle);
     return;
   }
   if (kind === 'advanced-settings') {
@@ -2473,7 +2684,7 @@ function renderModal(kind) {
     renderExportModal();
     return;
   }
-  if (kind === 'whats-new') {
+  if (kind === 'whats-new' || kind === 'upgrade-log') {
     renderWhatsNewModal();
     return;
   }
@@ -2485,8 +2696,14 @@ function renderModal(kind) {
       '查看和管理保存在此设备上的会议录音、会议纪要与模型。',
     );
     renderSettingsFolderRows();
+    const total = storageUsage ? storageUsage.meetings + storageUsage.models : 0;
+    const recordingShare = total ? (storageUsage.meetings / total) * 100 : 0;
+    const sizes = storageUsage
+      ? [storageUsage.meetings, storageUsage.models].map(formatBytes)
+      : ['—', '—'];
+    const breakdown = copy.items.map(([name], index) => `${name} · ${sizes[index]}`).join('　');
     settingsModal.querySelector('.modal-body').innerHTML =
-      `<section class="storage-overview"><h3>${t('存储使用情况')}</h3><p>${copy.items.map(([name, size]) => `${escapeHtml(name)} · ${escapeHtml(size)}`).join('　')}</p></section><h3>${t('数据管理')}</h3><div class="storage-list">${copy.items.map(([name], index) => `<section>${interfaceIcon('trash')}<span><b>${escapeHtml(name)}</b><small>${escapeHtml(t(index ? '清空已下载的模型文件。' : '删除此设备上的会议录音、转写文本与笔记。'))}</small></span><button class="secondary modal-danger" data-clear-storage="${['meetings', 'models'][index]}" type="button">${t(index ? '清空模型' : '清空会议数据')}</button></section>`).join('')}</div><div class="storage-cleanup"><button class="model-delete" data-cleanup-storage type="button">${cleanup.button}</button></div><details class="storage-privacy"><summary>${interfaceIcon('info')}${t('隐私说明')}${interfaceIcon('chevron-down')}</summary><p>${t('本地模型在此设备上运行。')}</p><p>${t('在线 AI 会将相关文字发送至所选服务商。')}</p></details>`;
+      `<section class="storage-overview"><div class="storage-usage-heading"><h3>${t('存储使用情况')}</h3><span>${storageUsage ? formatBytes(total) : '—'}</span></div><div class="storage-usage-bar" role="img" aria-label="${escapeHtml(breakdown)}" title="${escapeHtml(breakdown)}"><i style="width:${recordingShare}%"></i><i style="width:${total ? 100 - recordingShare : 0}%"></i></div></section><div class="storage-data-heading"><h3>${t('数据管理')}</h3><button class="secondary" data-cleanup-storage type="button">${cleanup.button}</button></div><div class="storage-list">${copy.items.map(([name], index) => `<section>${interfaceIcon('trash')}<span><b>${escapeHtml(t(index ? '清空模型' : '清空会议数据'))}</b><small>${escapeHtml(t(index ? '清空已下载的模型文件。' : '删除此设备上的会议录音、转写文本与笔记。'))}</small></span><button class="secondary modal-danger" data-clear-storage="${['meetings', 'models'][index]}" type="button">${t(index ? '清空模型' : '清空会议数据')}</button></section>`).join('')}</div><h3 class="storage-privacy-heading">${t('隐私说明')}</h3><details class="storage-privacy"><summary>${interfaceIcon('document')}<span><b>${t('隐私说明')}</b><small>${t('本地模型在此设备上运行。')}</small></span>${interfaceIcon('chevron-down')}</summary><p>${t('本地模型在此设备上运行。')}</p><p>${t('在线 AI 会将相关文字发送至所选服务商。')}</p></details>`;
     settingsModal.querySelector('.storage-overview').after(settingsFolders);
     settingsFolders.hidden = false;
     return;
@@ -2587,17 +2804,10 @@ function renderModelLibrary() {
           const progressHtml = progress?.error
             ? `<span class="model-download-progress">${escapeHtml(progress.error)}</span>`
             : inFlight
-              ? `<span class="model-download-progress">${formatBytes(progress.received)} / ${formatBytes(progress.total)} · ${Math.round(ratio * 100)}%<i aria-hidden="true" style="transform:scaleX(${ratio})"></i></span>`
+              ? `<span class="model-download-progress">${formatBytes(progress.received)} / ${formatBytes(progress.total)} · ${Math.round(ratio * 100)}%<span class="processing-bar" role="progressbar" aria-label="${escapeHtml(t('下载'))}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio * 100)}"><i style="transform:scaleX(${ratio})"></i></span></span>`
               : '';
           const words4 = modelWords[model.id] || {};
           const role = roleWords[model.asr_role];
-          const badges = [
-            readOnly ? `<span class="model-library-installed">${t('随应用安装')}</span>` : '',
-            isInstalled && !readOnly
-              ? `<span class="model-library-installed">${labels.installed}</span>`
-              : '',
-            role ? `<span>${escapeHtml(role)}</span>` : '',
-          ].join('');
           // 评级刻度统一走 renderModelLibraryRatings：它读 modelLibraryMetaCopy，与 AI 模型
           // 选择器同源；这里再内联一份会读到 asrCopy.tiers，同一模型在两个界面显示不同档位词。
           const ratings = renderModelLibraryRatings(model);
@@ -2606,7 +2816,7 @@ function renderModelLibrary() {
           // 语言范围已经写在定位短句里（例如 Parakeet 的 25 种欧洲语言就隐含了不含中文）。
           const description = words4.tagline || modelLibraryDescription(model, '');
           const actions = readOnly
-            ? `<span class="model-actions"><span class="model-library-readonly">${t('必需')}</span></span>`
+            ? `<span class="model-actions"><span class="model-library-readonly">${t('随应用安装')}</span><small>${t('必需')}</small></span>`
             : `<span class="model-actions">` +
               (isInstalled
                 ? `<button class="secondary" data-open-model-folder="${escapeHtml(model.id)}" type="button">${t('从文件夹打开')}</button>`
@@ -2618,14 +2828,11 @@ function renderModelLibrary() {
               ` type="button"${inFlight ? ' disabled' : ''}>` +
               `${isInstalled ? labels.remove : progress?.error ? t('重试') : inFlight ? labels.downloading : labels.download}</button>${inFlight ? `<button class="secondary" data-pause-required="${escapeHtml(model.id)}" type="button">${t(progress.paused ? '继续' : '暂停')}</button>` : ''}</span>`;
           return (
-            `<div class="model-library-item">${interfaceIcon(key === 'summary' ? 'ai' : key === 'refined' ? 'waveform' : 'model')}<span>` +
-            `<div class="model-library-name"><b class="model-library-headline">${escapeHtml(model.name)}</b>${badges ? `<div class="model-library-tags">${badges}</div>` : ''}</div>` +
+            `<div class="model-library-item">${interfaceIcon(key === 'summary' ? 'document' : key === 'translation' ? 'translate' : 'waveform')}<span class="model-library-content">` +
+            `<div class="model-library-name"><b class="model-library-headline">${escapeHtml(model.name)}</b></div>` +
             progressHtml +
             ratings +
-            (description
-              ? `<p title="${escapeHtml(description)}">${escapeHtml(description)}</p>`
-              : '') +
-            `<small class="model-library-size">${escapeHtml(modelSizeSummary(model))}</small>` +
+            `<p class="model-library-details" title="${escapeHtml(description)}">${escapeHtml(modelSizeSummary(model))}${role || description ? ` · ${escapeHtml(role || description)}` : ''}</p>` +
             `</span>${actions}</div>`
           );
         })
@@ -2634,29 +2841,55 @@ function renderModelLibrary() {
   }).join('');
 
   settingsModal.querySelector('.modal-body').innerHTML =
-    `<div class="settings-tabs"><button type="button" data-model-library-tab="installed" aria-selected="${modelLibraryTab === 'installed'}">${t('已安装')}</button><button type="button" data-model-library-tab="available" aria-selected="${modelLibraryTab === 'available'}">${t('可下载')}</button></div>${chinaModelSourceToggle()}<div class="modal-list model-library-list">${rows || `<p class="page-empty">${t('暂无内容')}</p>`}</div>`;
+    `<div class="model-library-toolbar"><div class="settings-tabs"><button type="button" data-model-library-tab="installed" aria-selected="${modelLibraryTab === 'installed'}">${t('已安装')}</button><button type="button" data-model-library-tab="available" aria-selected="${modelLibraryTab === 'available'}">${t('可下载')}</button></div>${chinaModelSourceToggle()}</div><div class="modal-list model-library-list">${rows || `<p class="page-empty">${t('暂无内容')}</p>`}</div>`;
 }
 
 /** 渲染“更新日志”弹窗：标题 + 按版本倒序的内容列表。@returns {void} */
 function renderWhatsNewModal() {
   const copy = whatsNewCopy[locale] || whatsNewCopy.en;
+  if (activeModal === 'upgrade-log') {
+    settingsModal.querySelector('.modal-title h2').textContent = copy.title;
+    settingsModal.querySelector('.modal-title p').textContent = '';
+    settingsModal.querySelector('.modal-body').innerHTML = renderWhatsNewList(installedAppVersion);
+    settingsModal
+      .querySelector('.modal-panel')
+      .insertAdjacentHTML(
+        'beforeend',
+        `<footer class="upgrade-log-actions"><button type="button" data-update-log-about>${escapeHtml(copy.view)}${interfaceIcon('arrow-right')}</button><button class="modal-action" type="button" data-update-log-dismiss>${escapeHtml(t('开始使用'))}</button></footer>`,
+      );
+    return;
+  }
   settingsModal.querySelector('.modal-title h2').textContent = t('关于与更新');
-  settingsModal.querySelector('.modal-title p').textContent = copy.intro;
+  settingsModal.querySelector('.modal-title p').textContent = t(
+    '了解 Brevia 的版本信息、更新内容及相关资源。',
+  );
   settingsModal.querySelector('.modal-body').innerHTML =
-    `<section class="about-version">${interfaceIcon('info')}<div><h3>Brevia</h3><p>${escapeHtml(currentVersionLabel())} ${escapeHtml(installedAppVersion || '')}</p></div><button class="secondary" data-check-app-update type="button">${t('检查更新')}</button></section><h3>${t('更新日志')}</h3>${renderWhatsNewList()}`;
+    `<section class="about-version"><span class="about-brand-mark" aria-hidden="true">B</span><div><h3>Brevia</h3><p>v${escapeHtml(installedAppVersion || '—')}</p></div><button class="secondary" data-check-app-update type="button">${t('检查更新')}</button></section><a class="about-repository" href="https://github.com/zerolovesea/Brevia" target="_blank" rel="noopener noreferrer">${interfaceIcon('github')}<span><b>zerolovesea / Brevia</b><small>github.com/zerolovesea/Brevia</small></span>${interfaceIcon('chevron-right')}</a><h3>${t('更新日志')}</h3>${renderWhatsNewList()}`;
 }
 /** 当前版本展开、历史版本折叠；分类条目附提交引用与首次贡献者。 */
-function renderWhatsNewList() {
+function renderWhatsNewList(installedVersion) {
   const copy = whatsNewCopy[locale] || whatsNewCopy.en;
-  if (!whatsNewLog || !whatsNewLog.length)
+  const releases = installedVersion
+    ? [
+        whatsNewLog?.find((entry) => entry.version === installedVersion),
+        ...(whatsNewLog || []).filter(
+          (entry) => compareVersions(entry.version, installedVersion) < 0,
+        ),
+      ].filter(Boolean)
+    : whatsNewLog;
+  if (
+    !releases?.length ||
+    (installedVersion && !releases.some((entry) => entry.version === installedVersion))
+  )
     return `<p class="whatsnew-empty">${escapeHtml(copy.empty)}</p>`;
   const localized = (entry) => entry[locale] || entry.en || entry.zh || {};
   const repository = 'https://github.com/zerolovesea/Brevia';
   const link = (url, label) =>
     `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
-  return `<div class="whatsnew-list">${whatsNewLog
+  return `<div class="whatsnew-list">${releases
     .map((entry) => {
-      const { version, date, current } = entry;
+      const { version, date } = entry;
+      const current = installedVersion ? version === installedVersion : entry.current;
       const content = localized(entry);
       const sections = [
         ['what', copy.what],
@@ -2688,13 +2921,14 @@ function renderWhatsNewList() {
       const heading = `<div class="whatsnew-heading"><h3>v${escapeHtml(version)}${current ? `<em>${escapeHtml(copy.current)}</em>` : ''}</h3>${date ? `<time datetime="${escapeHtml(date)}">${escapeHtml(date)}</time>` : ''}</div>`;
       const body = `${content.summary ? `<p class="whatsnew-summary">${escapeHtml(content.summary)}</p>` : ''}${sections}${contributors}${footer}`;
       return current
-        ? `<article class="whatsnew-entry is-current"><header>${heading}</header>${body}</article>`
+        ? `<details class="whatsnew-entry is-current" open><summary>${heading}</summary>${body}</details>`
         : `<details class="whatsnew-entry"><summary>${heading}</summary>${body}</details>`;
     })
     .join('')}</div>`;
 }
 /** 显示设置模态框并播放进入动画；可选聚焦内部元素。@param {string} [focusSelector] 打开后聚焦的模态框内元素。@returns {void} */
 function showSettingsModal(focusSelector) {
+  clearTimeout(modalDismissTimer);
   if (settingsModal.hidden) modalReturnFocus = document.activeElement;
   settingsModal.querySelector('.modal-title p').hidden = false;
   settingsModal
@@ -2713,22 +2947,52 @@ function showSettingsModal(focusSelector) {
   if (onboardingPage) onboardingPage.inert = protectedFocus;
   requestAnimationFrame(() => settingsModal.classList.add('modal-enter'));
   document.body.classList.add('modal-open');
+  const actions = settingsModal.querySelector('form .modal-form-actions');
+  if (
+    actions &&
+    !actions.querySelector('.save-state') &&
+    ['summary-model', 'ai-assist', 'advanced-settings'].includes(activeModal)
+  )
+    actions.insertAdjacentHTML('afterbegin', renderSaveState('saved'));
   if (focusSelector) settingsModal.querySelector(focusSelector)?.focus();
 }
 /** Opens and focuses a settings modal. @param {'models'|'storage'|'summary-model'} kind Requested modal. @returns {void} */
 let modalDismissTimer;
 let modalReturnFocus;
 let confirmationAction;
-function openConfirmation(title, detail, action) {
+let storageConfirmationPage;
+function openConfirmation(title, detail, action, anchor) {
+  clearTimeout(modalDismissTimer);
+  closeMeetingMenus();
+  if (activeModal === 'storage' && settingsModal.classList.contains('settings-page')) {
+    // 移动真实页面节点保留目录、滚动位置与操作；确认时只让背景不可交互。
+    const page = document.createElement('div');
+    page.className = settingsModal.className;
+    page.inert = true;
+    storageConfirmationPage = { page, returnFocus: anchor || document.activeElement };
+    page.append(...settingsModal.childNodes);
+    settingsModal.before(page);
+    settingsModal.innerHTML = settingsModalMarkup();
+  }
   configureSettingsPage('confirmation');
   settingsModal.classList.add('confirmation-modal');
+  settingsModal.classList.toggle(
+    'permanent-confirmation',
+    title === BreviaI18n.trashCopy(locale).purge,
+  );
+  settingsModal.classList.toggle('storage-confirmation', Boolean(storageConfirmationPage));
   confirmationAction = action;
   activeModal = 'confirmation';
   settingsModal.querySelector('.modal-title h2').textContent = title;
   settingsModal.querySelector('.modal-title p').textContent = '';
   settingsModal.querySelector('.modal-body').innerHTML =
-    `<div class="confirmation-actions">${interfaceIcon('warning')}<h2>${escapeHtml(title)}</h2><p>${escapeHtml(detail)}</p><button class="secondary" data-cancel-confirmation type="button">${t('取消')}</button><button class="modal-action modal-danger" data-confirm-action type="button">${t('确认')}</button></div>`;
+    `<div class="confirmation-actions">${interfaceIcon([t('删除工作区'), t('更换精修模型')].includes(title) ? 'warning' : 'trash')}<h2>${escapeHtml(title)}</h2><p>${escapeHtml(detail)}</p><button class="secondary" data-cancel-confirmation type="button">${t('取消')}</button><button class="modal-action modal-danger" data-confirm-action type="button">${escapeHtml(title === t('删除工作区') ? t('确认') : title)}</button></div>`;
   showSettingsModal('[data-cancel-confirmation]');
+  if (storageConfirmationPage && anchor)
+    positionFloating(settingsModal.querySelector('.modal-panel'), anchor, [
+      'bottom-end',
+      'top-end',
+    ]);
 }
 async function openModal(kind) {
   window.clearInterval(permissionPollTimer);
@@ -2743,7 +3007,7 @@ async function openModal(kind) {
       advancedSettings = settings || { settings: {}, defaults: {} };
       permissionStatus = status;
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
       return;
     }
   }
@@ -2757,12 +3021,19 @@ async function openModal(kind) {
         await window.brevia.speakerProfile.samples({ profile_id: profile.id }),
       );
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
   }
   activeModal = kind;
   renderModal(kind);
-  showSettingsModal('.modal-close');
+  const focusTarget =
+    kind === 'upgrade-log' || settingsModal.classList.contains('settings-page')
+      ? '.modal-title h2'
+      : '.modal-close';
+  if (focusTarget === '.modal-title h2')
+    settingsModal.querySelector(focusTarget).setAttribute('tabindex', '-1');
+  showSettingsModal(focusTarget);
+  settingsModal.querySelector('.modal-body').scrollTop = 0;
   if (kind === 'advanced-settings') startPermissionPoll();
 }
 /** 在高级设置模态框打开时轮询系统权限状态，并仅在更改时重新渲染该部分。@returns {void} */
@@ -2784,7 +3055,22 @@ function startPermissionPoll() {
 /** 关闭活动的设置模态框并恢复页面滚动。@returns {void} */
 function closeModal() {
   if (settingsModal.hidden) return;
-  if (activeModal === 'whats-new') markWhatsNewSeen();
+  if (storageConfirmationPage) {
+    clearTimeout(modalDismissTimer);
+    const { page, returnFocus } = storageConfirmationPage;
+    storageConfirmationPage = undefined;
+    confirmationAction = undefined;
+    settingsModal.replaceChildren(...page.childNodes);
+    settingsModal.className = page.className;
+    page.remove();
+    activeModal = 'storage';
+    document.querySelector('.app-shell').inert = false;
+    if (returnFocus?.isConnected) returnFocus.focus();
+    return;
+  }
+  if (activeModal === 'whats-new' || activeModal === 'upgrade-log') markWhatsNewSeen();
+  const returnTo = activeModal === 'whats-new' ? updateLogReturn : undefined;
+  updateLogReturn = undefined;
   window.clearInterval(permissionPollTimer);
   summaryConfigDraft = null;
   aiAssistConfigDraft = null;
@@ -2803,7 +3089,11 @@ function closeModal() {
     settingsModal.hidden = true;
     document.querySelector('.app-shell').inert = false;
     if (onboardingPage) onboardingPage.inert = false;
-    if (modalReturnFocus?.isConnected) modalReturnFocus.focus();
+    if (returnTo) {
+      void showView(returnTo.view).then(() => {
+        if (returnTo.focus?.isConnected) returnTo.focus.focus();
+      });
+    } else if (modalReturnFocus?.isConnected) modalReturnFocus.focus();
     settingsModal.classList.remove('modal-leave');
     if (onboardingPage?.dataset.aiSettings !== 'true') document.body.classList.remove('modal-open');
   }, 220);
@@ -2812,9 +3102,11 @@ function closeModal() {
 let onboardingPage;
 let onboardingPreviewLocale;
 let onboardingSelectedLocale;
-let onboardingTourIndex = 0;
-/** 渲染「AI 笔记」演示：复刻应用内实时会议界面——右侧实时字幕 + 左侧 AI 建议（随主动性切换）。@returns {void} */
+let onboardingAiDemoTimer;
+let onboardingSummaryDemoTimer;
+/** 演示只更新隔离样例，模式切换/关闭立即取消旧阶段。 */
 function renderOnboardingAiDemo() {
+  clearTimeout(onboardingAiDemoTimer);
   const demo = onboardingPage?.querySelector('[data-onboarding-ai-demo]');
   if (!demo) return;
   const mode = onboardingPage.querySelector('[name="onboarding-ai-enabled"]').checked
@@ -2824,17 +3116,68 @@ function renderOnboardingAiDemo() {
     .querySelectorAll('.onboarding-ai-segments button')
     .forEach((button) => (button.disabled = mode === 'off'));
   const copy = aiOnboardingCopy[locale] || aiOnboardingCopy.en;
-  const demoCopy = aiOnboardingDemoCopy[locale] || aiOnboardingDemoCopy.en;
+  const sample = aiOnboardingDemoCopy[locale] || aiOnboardingDemoCopy.en;
   demo.dataset.mode = mode;
-  const suggestion = mode === 'off' ? copy.offEmpty : demoCopy.scenes[mode][0][1];
-  demo.innerHTML = `<div class="onboarding-preview-paper" role="img" aria-label="${escapeHtml(t('预览'))}"><h3>${escapeHtml(copy.liveNotesTitle)}</h3><p>${escapeHtml(suggestion)}</p>${mode === 'off' ? '' : `<div class="onboarding-preview-actions" aria-hidden="true"><span>${escapeHtml(t('采纳'))}</span><span>${escapeHtml(t('忽略'))}</span></div>`}</div>`;
+  demo.innerHTML = `<div class="onboarding-preview-paper"><h3>${escapeHtml(copy.liveNotesTitle)} <small>${escapeHtml(t('演示'))}</small></h3><p data-demo-notes>${escapeHtml(mode === 'off' ? copy.offEmpty : '')}</p><div data-demo-suggestion></div></div>`;
+  if (mode === 'off') return;
+  const suggestion = demo.querySelector('[data-demo-suggestion]');
+  const notes = demo.querySelector('[data-demo-notes]');
+  const scene = sample.scenes[mode][0];
+  const append = () => {
+    notes.textContent = scene[2];
+    suggestion.replaceChildren();
+    demo.dataset.stage = 'written';
+  };
+  const propose = () => {
+    demo.dataset.stage = 'suggestion';
+    suggestion.innerHTML = `<p>${escapeHtml(scene[1])}</p>`;
+    if (mode === 'auto') {
+      demo.dataset.stage = 'queued';
+      suggestion.insertAdjacentHTML(
+        'beforeend',
+        `<small>${escapeHtml(t('建议已暂存，停笔后加入'))}</small>`,
+      );
+      onboardingAiDemoTimer = setTimeout(append, 1200);
+    } else {
+      suggestion.insertAdjacentHTML(
+        'beforeend',
+        `<div class="onboarding-preview-actions"><button type="button" data-demo-add>${escapeHtml(t('加入笔记'))}</button><button type="button" data-demo-ignore>${escapeHtml(t('忽略'))}</button></div>`,
+      );
+      suggestion.querySelector('[data-demo-add]').onclick = append;
+      suggestion.querySelector('[data-demo-ignore]').onclick = () => {
+        suggestion.replaceChildren();
+        demo.dataset.stage = 'ignored';
+      };
+    }
+  };
+  const analyze = () => {
+    demo.dataset.stage = 'analyzing';
+    suggestion.textContent = t('正在分析…');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) propose();
+    else onboardingAiDemoTimer = setTimeout(propose, 1200);
+  };
+  if (mode === 'quiet') {
+    demo.dataset.stage = 'idle';
+    suggestion.innerHTML = `<button class="secondary" type="button">${interfaceIcon('ai')}${escapeHtml(t('请求 AI 建议'))}</button>`;
+    suggestion.querySelector('button').onclick = analyze;
+  } else analyze();
 }
-/** 演示使用只读文档预览，避免将缩小的工作台当作真实操作控件。 */
+/** 纪要演示先展示任务阶段，完成后才展示文档与保存状态。 */
 function renderOnboardingSummaryDemo() {
+  clearTimeout(onboardingSummaryDemoTimer);
   const frame = onboardingPage?.querySelector('[data-onboarding-summary-demo]');
   if (!frame) return;
-  const demo = aiOnboardingSummaryDemoCopy[locale] || aiOnboardingSummaryDemoCopy.en;
-  frame.innerHTML = `<div class="onboarding-preview-paper app-demo-summary-body" role="img" aria-label="${escapeHtml(t('预览'))}"><h3>${escapeHtml(t('会议纪要'))}</h3><b>${escapeHtml(t('决定'))}</b><p>${escapeHtml(demo.decision)}</p><b>${escapeHtml(t('待办'))}</b><ul>${demo.actions.map((action) => `<li>${escapeHtml(action)}</li>`).join('')}</ul></div>`;
+  const enabled = onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked;
+  const sample = aiOnboardingSummaryDemoCopy[locale] || aiOnboardingSummaryDemoCopy.en;
+  frame.dataset.stage = enabled ? 'processing' : 'off';
+  frame.innerHTML = `<div class="onboarding-preview-paper app-demo-summary-body"><h3>${escapeHtml(t('会议纪要'))} <small>${escapeHtml(t('演示'))}</small></h3><p>${escapeHtml(t(enabled ? '正在生成会议纪要' : '未开启'))}</p>${enabled ? `<aside class="onboarding-demo-task">${interfaceIcon('document')}<span>${escapeHtml(t('正在生成会议纪要'))}</span><div class="processing-bar"><i style="transform:scaleX(.6)"></i></div></aside>` : ''}</div>`;
+  if (!enabled) return;
+  const complete = () => {
+    frame.dataset.stage = 'saved';
+    frame.innerHTML = `<div class="onboarding-preview-paper app-demo-summary-body"><h3>${escapeHtml(t('会议纪要'))} <small>${escapeHtml(t('演示'))}</small></h3><b>${escapeHtml(t('决定'))}</b><p>${escapeHtml(sample.decision)}</p><b>${escapeHtml(t('待办'))}</b><ul>${sample.actions.map((action) => `<li>${escapeHtml(action)}</li>`).join('')}</ul>${renderSaveState('saved')}</div>`;
+  };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) complete();
+  else onboardingSummaryDemoTimer = setTimeout(complete, 1800);
 }
 
 function openOnboardingLanguage(
@@ -2864,7 +3207,15 @@ function openOnboardingLanguage(
   onboardingPage.innerHTML = `<header class="onboarding-window-bar"><strong translate="no">Brevia</strong></header>${renderOnboardingRail('language')}<form class="onboarding-page-content onboarding-language-page" data-onboarding-language><div class="onboarding-page-copy"><h1></h1><p></p></div><div class="language-picker" role="radiogroup" aria-label="${escapeHtml(t('切换语言'))}">${wheelItems}</div><div class="onboarding-actions"><button class="modal-action" type="submit"></button></div></form>`;
   document.body.append(onboardingPage);
   updateOnboardingLanguageCopy(defaultLocale);
-  requestAnimationFrame(() => onboardingPage.classList.add('onboarding-page-enter'));
+  const enteringPage = onboardingPage;
+  requestAnimationFrame(() => {
+    // 快速返回时旧帧回调不能访问已关闭或已替换的引导页。
+    if (
+      onboardingPage === enteringPage &&
+      !enteringPage.classList.contains('onboarding-page-leave')
+    )
+      enteringPage.classList.add('onboarding-page-enter');
+  });
   onboardingPage.addEventListener('change', (event) => {
     if (event.target.matches('[name="locale"]')) updateOnboardingLanguageCopy(event.target.value);
   });
@@ -2883,11 +3234,10 @@ function openOnboardingLanguage(
 
 function renderSettingsFolderRows() {
   const copy = onboardingStorageCopy[locale] || onboardingStorageCopy.en;
-  const storage = (modalCopy[locale] || modalCopy.en).storage;
   settingsFolders.innerHTML = ['recordings', 'models']
     .map(
       (key, index) =>
-        `<section class="settings-folder-row">${interfaceIcon(key === 'models' ? 'model' : 'document')}<span><b>${escapeHtml(key === 'models' ? copy.models : copy.recordings)}</b><small>${escapeHtml(t(key === 'models' ? '保存已下载的本地模型文件。' : '保存此设备上的会议录音。'))}</small></span><div class="storage-path-size"><b class="storage-size">${escapeHtml(storage.items[index][1])}</b><small data-settings-path="${key}"></small></div><div class="storage-folder-actions"><button class="secondary" data-change-folder="${key}" type="button">${copy.choose}</button><button class="secondary" data-open-storage="${key === 'models' ? 'models' : 'meetings'}" type="button">${t('从文件夹打开')}</button></div></section>`,
+        `<section class="settings-folder-row">${interfaceIcon(key === 'models' ? 'model' : 'document')}<span><b>${escapeHtml(key === 'models' ? copy.models : copy.recordings)}</b><small>${escapeHtml(t(key === 'models' ? '保存已下载的本地模型文件。' : '保存此设备上的会议录音。'))}</small></span><div class="storage-path-size"><b class="storage-size">${escapeHtml(storageUsage ? formatBytes([storageUsage.meetings, storageUsage.models][index]) : '—')}</b><small data-settings-path="${key}"></small></div><div class="storage-folder-actions"><button class="secondary" data-change-folder="${key}" type="button">${copy.choose}</button><button class="secondary" data-open-storage="${key === 'models' ? 'models' : 'meetings'}" type="button">${t('从文件夹打开')}</button></div></section>`,
     )
     .join('');
   void refreshSettingsFolderRows();
@@ -2939,102 +3289,10 @@ async function refreshSettingsFolderRows() {
       button.disabled = !locations[`${key}Managed`];
     }
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   }
 }
 renderSettingsFolderRows();
-
-// 首次引导：功能演示（tour）。在设置完成后，以 1:1 复刻的应用界面逐一展示言录的核心能力。
-const tourMeetingFallback = window.BreviaLocaleData.appCopy.tourMeetingFallback;
-const tourAiSuggestionFallback = window.BreviaLocaleData.appCopy.tourAiSuggestionFallback;
-function openOnboardingTour() {
-  const copy = tourCopy[locale] || tourCopy.en;
-  onboardingTourIndex = 0;
-  const icons = ['document', 'microphone', 'waveform', 'ai', 'document'];
-  const steps = copy.steps
-    .map(
-      (step, index) =>
-        `<button type="button" class="onboarding-tour-step" data-onboarding-tour-step="${index}" title="${escapeHtml(step.points.join('；'))}">${interfaceIcon(icons[index])}<span>${escapeHtml(step.label)}<small>${escapeHtml(step.points[0])}</small></span></button>`,
-    )
-    .join('');
-  showOnboardingPage(
-    'tour',
-    `<section class="onboarding-tour-page"><aside class="onboarding-tour-navigation"><strong class="onboarding-wordmark">Brevia</strong><nav>${steps}</nav></aside><div class="onboarding-tour-main"><header class="onboarding-tour-head"><h1></h1><p></p></header><div class="onboarding-tour-stage" data-onboarding-tour-stage></div><footer class="onboarding-tour-actions"><button class="onboarding-tour-skip" data-onboarding-tour-skip type="button">${escapeHtml(copy.skip)}</button><span class="onboarding-tour-position"></span><button class="secondary" type="button" data-onboarding-tour-prev hidden>${escapeHtml(copy.back)}</button><button class="modal-action" type="button" data-onboarding-tour-next>${escapeHtml(copy.next)}</button></footer></div></section>`,
-  );
-  const page = onboardingPage;
-  updateOnboardingTour(page, 0);
-  page.addEventListener('click', (event) => {
-    const step = event.target.closest('[data-onboarding-tour-step]');
-    if (step) updateOnboardingTour(page, Number(step.dataset.onboardingTourStep));
-    else if (event.target.closest('[data-onboarding-tour-skip]'))
-      dismissOnboardingPage(finishOnboarding);
-    else if (event.target.closest('[data-onboarding-tour-prev]'))
-      updateOnboardingTour(page, onboardingTourIndex - 1);
-    else if (event.target.closest('[data-onboarding-tour-next]')) {
-      if (onboardingTourIndex < copy.steps.length - 1)
-        updateOnboardingTour(page, onboardingTourIndex + 1);
-      else dismissOnboardingPage(finishOnboarding);
-    }
-  });
-}
-function updateOnboardingTour(page, index) {
-  const copy = tourCopy[locale] || tourCopy.en;
-  if (index < 0 || index >= copy.steps.length) return;
-  onboardingTourIndex = index;
-  const step = copy.steps[index];
-  page.querySelectorAll('[data-onboarding-tour-step]').forEach((button, i) => {
-    button.classList.toggle('is-active', i === index);
-    button.setAttribute('aria-current', String(i === index));
-  });
-  page.querySelector('.onboarding-tour-head h1').textContent = step.heading;
-  page.querySelector('.onboarding-tour-head p').textContent = step.body;
-  page.querySelector('[data-onboarding-tour-stage]').innerHTML =
-    `<div class="tour-preview" role="img" aria-label="${escapeHtml(step.heading)}"><div inert>${tourView(index, step.demo)}</div></div>`;
-  page.querySelector('[data-onboarding-tour-prev]').hidden = index === 0;
-  page.querySelector('[data-onboarding-tour-next]').textContent =
-    index === copy.steps.length - 1 ? copy.start : copy.next;
-  page.querySelector('.onboarding-tour-position').innerHTML =
-    `<span class="tour-position-label">${index + 1} / ${copy.steps.length}</span>${copy.steps.map((_, i) => `<i${i === index ? ' class="is-active"' : ''}></i>`).join('')}`;
-}
-function tourView(index, demo) {
-  const meetingName =
-    demo.meeting ||
-    (tourCopy[locale] || tourCopy.en).steps[0].demo.meetings[0][0].split(' · ')[0] ||
-    tourMeetingFallback[locale] ||
-    'Meeting';
-  const liveDemo = (tourCopy[locale] || tourCopy.en).steps[2].demo;
-  const head = (time) =>
-    `<header class="tour-demo-head"><strong>${escapeHtml(meetingName)}</strong><span class="recording"><i></i>${escapeHtml(t('正在录制'))}</span><time>${time}</time></header>`;
-  const transcript = (segments) =>
-    segments
-      .map(
-        (entry, i) =>
-          `<div class="segment"><time>${new Date((12 * 60 + 1 + i * 27) * 1000).toISOString().slice(11, 19)}</time><p>${escapeHtml(entry[1])}</p></div>`,
-      )
-      .join('');
-  const notes = (lines) =>
-    `<ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`;
-  switch (index) {
-    case 0:
-      return `<section class="tour-library"><div class="tour-search">${interfaceIcon('search')}<span>${escapeHtml(t('搜索会议、字幕或说话人…'))}</span></div><h3>${escapeHtml(t('最近会议'))}</h3>${demo.meetings.map(([title, meta, tags]) => `<article class="tour-meeting-row">${interfaceIcon('document')}<div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(meta)}</p><div class="tour-tags">${(tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div></div><span class="tour-result-tag">${escapeHtml(t('已精修'))}</span>${interfaceIcon('more')}</article>`).join('')}</section>`;
-    case 1:
-      return `<section class="tour-prepare"><div><h2>${escapeHtml(t('开始一场会议'))}</h2><label>${escapeHtml(t('会议名称'))}<span>${escapeHtml(demo.name)}</span></label><div class="tour-field-row"><label>${escapeHtml(t('会议语言'))}<span>${escapeHtml(demo.language)}${interfaceIcon('chevron-down')}</span></label><label>${escapeHtml(t('预期说话人数'))}<span>${escapeHtml(t('自动检测'))}${interfaceIcon('chevron-down')}</span></label></div><label>${escapeHtml(t('译文目标'))}<span>${escapeHtml(t('不需要翻译'))}${interfaceIcon('chevron-down')}</span></label><div class="tour-primary-action">${escapeHtml(t('开始录制'))}${interfaceIcon('arrow-right')}</div></div><aside><h3>${escapeHtml(t('录制来源'))}</h3><label>${escapeHtml(t('采集模式'))}<span>${escapeHtml(t('麦克风 + 系统音频'))}${interfaceIcon('chevron-down')}</span></label><label>${escapeHtml(t('麦克风设备'))}<span>${escapeHtml(t('系统默认'))}${interfaceIcon('chevron-down')}</span></label><p>${interfaceIcon('microphone')}${escapeHtml(t('输入良好'))}</p><p>${interfaceIcon('appearance')}${escapeHtml(t('系统音频'))} · ${escapeHtml(t('已连接'))}</p></aside></section>`;
-    case 2:
-    case 3: {
-      const segments = index === 2 ? demo.segments : liveDemo.segments;
-      const lines =
-        index === 2 ? demo.notes || segments.map((entry) => entry[1]) : demo.actions || [];
-      const suggestion =
-        index === 3
-          ? `<aside class="tour-suggestion"><h3>${interfaceIcon('ai')}${escapeHtml(t('智能笔记'))}</h3><p>${escapeHtml(demo.decision)}</p><div><span>${escapeHtml(t('采纳'))}</span><span>${escapeHtml(t('忽略'))}</span></div></aside>`
-          : '';
-      return `<section class="tour-live">${head(index === 2 ? '00:12:36' : '00:14:08')}<div class="tour-demo-columns"><section><h2>${escapeHtml(t('我的笔记'))}</h2>${suggestion}${notes(lines)}</section><section><h2>${escapeHtml(t('实时转写'))}</h2>${transcript(segments)}</section></div></section>`;
-    }
-    case 4:
-      return `<section class="tour-detail"><header class="tour-demo-head"><strong>${escapeHtml(meetingName)}</strong><span class="tour-result-tag">${escapeHtml(t('已精修'))}</span><span class="tour-export">${escapeHtml(t('导出与分享'))}</span></header><nav class="tour-detail-tabs"><span>${escapeHtml(t('笔记'))}</span><span aria-current="page">${escapeHtml(t('逐字稿'))}</span><span>${escapeHtml(t('纪要'))}</span></nav><div class="tour-demo-columns"><section><div class="tour-transcript-versions"><span>${escapeHtml(t('原始'))}</span><b>${escapeHtml(t('精修'))}</b>${interfaceIcon('search')}</div><p>${escapeHtml(demo.refined)}</p></section><section><h2>${escapeHtml(t('会议纪要'))}</h2><h3>${escapeHtml(t('决定'))}</h3><p>${escapeHtml(demo.summary)}</p><h3>${escapeHtml(t('待办'))}</h3>${notes((tourCopy[locale] || tourCopy.en).steps[3].demo.actions || [])}</section></div><footer class="tour-player">${interfaceIcon('skip-back')}${interfaceIcon('play')}${interfaceIcon('skip-forward')}<span>00:00 / 17:00</span><i></i><span>1×</span></footer></section>`;
-  }
-  return '';
-}
 
 function updateOnboardingLanguageCopy(nextLocale) {
   if (!onboardingPage || onboardingPreviewLocale === nextLocale) return;
@@ -3066,12 +3324,22 @@ function updateOnboardingLanguageCopy(nextLocale) {
 function showOnboardingPage(kind, content) {
   onboardingPage = document.createElement('main');
   onboardingPage.className = `onboarding-page onboarding-active onboarding-${kind}-overlay`;
-  onboardingPage.innerHTML = `<header class="onboarding-window-bar"><strong translate="no">Brevia</strong></header>${kind === 'tour' ? '' : renderOnboardingRail(kind)}<div class="onboarding-page-content onboarding-${kind}-content">${content}</div>`;
+  onboardingPage.innerHTML = `<header class="onboarding-window-bar"><strong translate="no">Brevia</strong></header>${renderOnboardingRail(kind)}<div class="onboarding-page-content onboarding-${kind}-content">${content}</div>`;
   document.body.append(onboardingPage);
-  requestAnimationFrame(() => onboardingPage.classList.add('onboarding-page-enter'));
+  const enteringPage = onboardingPage;
+  requestAnimationFrame(() => {
+    // 快速返回时旧帧回调不能访问已关闭或已替换的引导页。
+    if (
+      onboardingPage === enteringPage &&
+      !enteringPage.classList.contains('onboarding-page-leave')
+    )
+      enteringPage.classList.add('onboarding-page-enter');
+  });
 }
 
 function dismissOnboardingPage(next) {
+  clearTimeout(onboardingAiDemoTimer);
+  clearTimeout(onboardingSummaryDemoTimer);
   const page = onboardingPage;
   if (!page || page.classList.contains('onboarding-page-leave')) return;
   void breviaClient?.stopPreview();
@@ -3094,12 +3362,6 @@ function dismissOnboardingPage(next) {
 // 识别模型文案（8 语种）由 asr-copy.js 提供；这里只做取值与回退。
 const asrText = (group, fallback = 'en') =>
   (asrCopy[group] || {})[locale] || (asrCopy[group] || {})[fallback] || {};
-/** 渲染一个 1..3 档的刻度（实心点表示档位）。@returns {string} */
-function asrMeter(label, level, words) {
-  const safe = Math.max(1, Math.min(3, Number(level) || 1));
-  const dots = [1, 2, 3].map((step) => `<i${step <= safe ? ' class="on"' : ''}></i>`).join('');
-  return `<span class="asr-meter"><small>${escapeHtml(label)}</small><span class="asr-scale" aria-hidden="true">${dots}</span><b>${escapeHtml(words[safe - 1] || '')}</b></span>`;
-}
 /** 首启第 ③ 步的可选识别模型：清单里仍未退役的整句识别模型。@returns {object[]} */
 function onboardingAsrModels() {
   return refinedModels().filter((model) => !model.bundled);
@@ -3115,7 +3377,7 @@ async function openOnboardingSetup() {
   try {
     if (initializationPromise) await initializationPromise;
   } catch (error) {
-    showToast(`${t('配置或后端启动失败')}: ${userFacingError(error.message)}`);
+    showToast(`${t('配置或后端启动失败')}: ${userFacingError(error.message)}`, undefined, 'error');
     openOnboardingPermissions();
     return;
   }
@@ -3125,12 +3387,10 @@ async function openOnboardingSetup() {
   try {
     locations = await window.brevia.storage.locations();
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
     return;
   }
-  const roleWords = asrText('asrRole');
   const modelWords = asrText('model');
-  const tierWords = asrText('tiers');
   const recommendedWords = asrCopy.recommended || {};
   const recommendedId = onboardingRecommendedModelId();
   const models = onboardingAsrModels();
@@ -3140,13 +3400,9 @@ async function openOnboardingSetup() {
       const installed = modelPaths.has(model.id);
       const words = modelWords[model.id] || {};
       const isRecommended = model.id === recommendedId;
-      const role = model.role || roleWords[model.asr_role] || '';
       const badges = [
         isRecommended
           ? `<span class="asr-badge is-recommended">${escapeHtml(recommendedWords[locale] || '')}</span>`
-          : '',
-        installed
-          ? `<span class="asr-badge is-installed">${escapeHtml((modelLabels[locale] || modelLabels.en).installed)}</span>`
           : '',
       ].join('');
       // 默认只勾选按界面语言推导的推荐模型。
@@ -3159,11 +3415,7 @@ async function openOnboardingSetup() {
         `${isRecommended ? ' checked' : ''} />` +
         `<span class="asr-card-body">` +
         `<span class="asr-card-head"><b>${escapeHtml(model.name)}</b>${badges}</span>` +
-        `<small class="asr-tagline" title="${escapeHtml(words.tagline || '')}">${escapeHtml(words.tagline || '')}</small>` +
-        `<span class="asr-meters">${role ? `<span class="asr-badge">${escapeHtml(role)}</span>` : ''}` +
-        asrMeter(tierWords.speedLabel || '', model.speed, tierWords.speed || []) +
-        asrMeter(tierWords.qualityLabel || '', model.quality, tierWords.quality || []) +
-        `</span>` +
+        `<small class="asr-tagline" title="${escapeHtml(words.onboarding || words.tagline || '')}">${escapeHtml(words.onboarding || words.tagline || '')}</small>` +
         `<i class="asr-size">${installed ? (modelLabels[locale] || modelLabels.en).installed : formatBytes(model.size_bytes || 0)}</i>` +
         `</span></label>`
       );
@@ -3178,7 +3430,7 @@ async function openOnboardingSetup() {
     `<i>${escapeHtml(formatBytes(bundledSize))}</i></div>`;
 
   const storageRow = (key, label, managed) =>
-    `<div class="onboarding-folder-row"><span><b>${escapeHtml(label)}</b><small data-storage-path="${key}" title="${escapeHtml(locations[key])}">${escapeHtml(locations[key])}</small></span><button class="secondary" data-select-storage="${key}" type="button"${managed ? '' : ' disabled'}>${escapeHtml(storageCopy.choose)}</button></div>`;
+    `<div class="onboarding-folder-row"><span><span><b>${escapeHtml(label)}</b><small>${escapeHtml(t(key === 'models' ? '保存语音识别模型文件' : '保存会议的原始录音文件'))}</small></span><small class="onboarding-folder-path" data-storage-path="${key}" title="${escapeHtml(locations[key])}">${escapeHtml(locations[key])}</small></span><button class="secondary" data-select-storage="${key}" type="button"${managed ? '' : ' disabled'}>${escapeHtml(storageCopy.choose)}</button></div>`;
   const storageRows = `<details class="onboarding-section onboarding-folder-section" open><summary>${escapeHtml(storageCopy.title)}${interfaceIcon('chevron-down')}</summary>${storageRow('models', storageCopy.models, locations.modelsManaged)}${storageRow('recordings', storageCopy.recordings, locations.recordingsManaged)}</details>`;
 
   showOnboardingPage(
@@ -3186,11 +3438,12 @@ async function openOnboardingSetup() {
     `<section class="onboarding-setup-page">` +
       `<header><img class="onboarding-brand" src="./assets/brevia-logo.svg" alt="Brevia" /><h1>${escapeHtml(copy.title || '')}</h1>` +
       `<div class="onboarding-intro"><p>${escapeHtml(copy.pickHint || '')}</p></div></header>` +
+      `<div class="onboarding-setup-sections">` +
       storageRows +
       `<section class="onboarding-section onboarding-model-selection">` +
-      `<div class="onboarding-model-grid">${cards}</div></section>` +
+      `<h2>${t('选择模型')}</h2><div class="onboarding-model-grid">${cards}</div></section>` +
       `<section class="onboarding-section onboarding-bundled-section">${bundledRow}</section>` +
-      `<div class="onboarding-model-source">${chinaModelSourceToggle()}</div>` +
+      `<div class="onboarding-model-source">${chinaModelSourceToggle()}</div></div>` +
       `<div class="onboarding-actions"><div class="onboarding-model-summary"><strong>${escapeHtml(copy.estimate || '')}: <span data-onboarding-estimate></span></strong><small data-onboarding-guard hidden>${escapeHtml(copy.atLeastOne || '')}</small></div><button class="secondary onboarding-previous" data-onboarding-back-language type="button">${t('上一步')}</button><button class="secondary" data-finish-onboarding type="button">${escapeHtml(copy.later || '')}</button><button class="modal-action" data-download-onboarding-models type="button">${escapeHtml(copy.download || '')}${interfaceIcon('arrow-right')}</button></div></section>`,
   );
 
@@ -3218,7 +3471,7 @@ async function openOnboardingSetup() {
           path.title = directory;
         }
       } catch (error) {
-        showToast(error.message);
+        showToast(error.message, undefined, 'error');
       }
       return;
     }
@@ -3242,7 +3495,7 @@ async function openOnboardingSetup() {
         dismissOnboardingPage(openOnboardingAi);
       });
     } catch (error) {
-      showToast(storageErrorMessage(error));
+      showToast(storageErrorMessage(error), undefined, 'error');
       if (download) download.disabled = false;
       if (later) later.disabled = false;
     }
@@ -3277,8 +3530,6 @@ const aiOnboardingCopy = window.BreviaLocaleData.appCopy.aiOnboardingCopy;
 const aiOnboardingDemoCopy = window.BreviaLocaleData.appCopy.aiOnboardingDemoCopy;
 // AI 会议纪要演示：会后左下角出现任务卡片（进度条），随后显示整理好的纪要。
 const aiOnboardingSummaryDemoCopy = window.BreviaLocaleData.appCopy.aiOnboardingSummaryDemoCopy;
-// 首次引导功能演示（tour）文案。
-const tourCopy = window.BreviaLocaleData.appCopy.tourCopy;
 function openOnboardingAi(settingsMode = false) {
   const copy = aiOnboardingCopy[locale] || aiOnboardingCopy.en;
   // 低配设备默认「暂不开启」实时 AI 笔记（太耗资源），仅保留会后一次性的 AI 会议纪要。
@@ -3298,12 +3549,12 @@ function openOnboardingAi(settingsMode = false) {
         ? ''
         : `<header><h1>${escapeHtml(copy.title)}</h1>${copy.intro ? `<div class="onboarding-intro"><p>${escapeHtml(copy.intro)}</p></div>` : ''}</header>`
     }
-    <section class="onboarding-section onboarding-ai-feature onboarding-ai-row">
+    <div class="onboarding-ai-sections"><section class="onboarding-section onboarding-ai-feature onboarding-ai-row">
       <div class="onboarding-ai-copy">
         <div class="onboarding-ai-feature-head"><span class="onboarding-ai-icon">${summaryIcon}</span><h2>${escapeHtml(copy.meetingNotesTitle)}</h2><label class="onboarding-ai-switch"><input type="checkbox" name="onboarding-summary-enabled" aria-label="${escapeHtml(copy.meetingNotesTitle)}"${summaryConfig.enabled ? ' checked' : ''} /></label></div>
         <p class="onboarding-ai-feature-desc">${escapeHtml(copy.meetingNotesDesc)}</p>
         <div class="onboarding-ai-ways"><label><input type="radio" name="onboarding-ai-way" value="built-in"${summaryConfig.provider === 'built-in' ? ' checked' : ''} /><span><b>${escapeHtml(copy.builtin)}</b><small>${escapeHtml(copy.builtinHint)}</small></span></label><label><input type="radio" name="onboarding-ai-way" value="online"${summaryConfig.provider !== 'built-in' ? ' checked' : ''} /><span><b>${escapeHtml(copy.online)}${recommendTag(deviceIsWeak())}</b><small>${escapeHtml(copy.onlineHint)}</small></span></label></div>
-        <button class="secondary" data-configure-ai-summary type="button">${escapeHtml(t('配置服务'))}</button>
+        ${settingsMode ? `<button class="secondary" data-configure-ai-summary type="button">${escapeHtml(t('配置服务'))}</button>` : ''}
       </div><div class="onboarding-ai-frame" data-onboarding-summary-demo></div>
     </section>
     <section class="onboarding-section onboarding-ai-feature onboarding-ai-row">
@@ -3312,10 +3563,10 @@ function openOnboardingAi(settingsMode = false) {
         <p class="onboarding-ai-feature-desc">${escapeHtml(copy.liveNotesDesc)}</p>
         <div class="onboarding-ai-levels"><div class="flow-select onboarding-ai-segments" role="radiogroup" aria-label="${escapeHtml(copy.proactivityTitle)}"><input type="hidden" name="onboarding-ai-proactivity" value="${defaultProactivity === 'off' ? 'assist' : defaultProactivity}" /><div class="flow-select-options">${levels.map(([value, title]) => `<button type="button" role="radio" aria-checked="${value === (defaultProactivity === 'off' ? 'assist' : defaultProactivity)}" data-flow-select-choice="onboarding-ai-proactivity" data-value="${value}">${escapeHtml(title)}</button>`).join('')}</div></div></div>
         ${copy.proactivityHint ? `<small class="onboarding-ai-feature-hint">${escapeHtml(copy.proactivityHint)}</small>` : ''}
-        <button class="secondary" data-configure-ai-notes type="button">${escapeHtml(t('配置 AI 笔记'))}</button>
+        ${settingsMode ? `<button class="secondary" data-configure-ai-notes type="button">${escapeHtml(t('配置 AI 笔记'))}</button>` : ''}
       </div><div class="onboarding-ai-frame"><aside class="onboarding-ai-demo" data-onboarding-ai-demo></aside></div>
     </section>
-    <p class="onboarding-privacy-hint">${interfaceIcon('info')}${escapeHtml(t('在线 AI 会将相关文字发送至所选服务商。'))}</p>
+    ${settingsMode ? `<p class="onboarding-privacy-hint">${interfaceIcon('info')}${escapeHtml(t('在线 AI 会将相关文字发送至所选服务商。'))}</p>` : `<div class="onboarding-shared-service"><span>${interfaceIcon('model')}<b>${escapeHtml(t('配置服务'))}</b></span><button class="secondary" data-configure-ai-summary type="button">${escapeHtml(t('配置服务'))}</button></div>`}</div>
     <div class="onboarding-actions">${settingsMode ? '' : `<button class="secondary onboarding-previous" data-onboarding-back-language type="button">${escapeHtml(t('上一步'))}</button>`}<button class="secondary" data-onboarding-ai-skip type="button">${escapeHtml(settingsMode ? t('取消') : copy.skip)}</button><button class="modal-action" data-onboarding-ai-finish type="button">${escapeHtml(settingsMode ? t('保存配置') : t('下一步'))}${settingsMode ? '' : interfaceIcon('arrow-right')}</button></div>
   </section>`;
   if (settingsMode) {
@@ -3348,13 +3599,19 @@ function openOnboardingAi(settingsMode = false) {
   renderOnboardingSummaryDemo();
   const syncSummarySwitch = () => {
     const enabled = onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked;
+    const serviceEnabled = settingsMode
+      ? enabled
+      : enabled || onboardingPage.querySelector('[name="onboarding-ai-enabled"]').checked;
     onboardingPage.querySelectorAll('[name="onboarding-ai-way"]').forEach((option) => {
-      option.disabled = !enabled;
+      option.disabled = !serviceEnabled;
     });
-    onboardingPage.querySelector('[data-configure-ai-summary]').disabled = !enabled;
+    onboardingPage.querySelector('[data-configure-ai-summary]').disabled = settingsMode
+      ? !enabled
+      : !enabled && !onboardingPage.querySelector('[name="onboarding-ai-enabled"]').checked;
     onboardingPage
       .querySelector('[data-onboarding-summary-demo]')
       .classList.toggle('is-disabled', !enabled);
+    renderOnboardingSummaryDemo();
   };
   syncSummarySwitch();
   onboardingPage.addEventListener('change', (event) => {
@@ -3363,6 +3620,7 @@ function openOnboardingAi(settingsMode = false) {
       event.target.matches('[name="onboarding-ai-proactivity"], [name="onboarding-ai-enabled"]')
     ) {
       renderOnboardingAiDemo();
+      if (event.target.matches('[name="onboarding-ai-enabled"]')) syncSummarySwitch();
     }
   });
   onboardingPage.addEventListener('click', (event) => {
@@ -3404,7 +3662,11 @@ function openOnboardingAi(settingsMode = false) {
     }
     const aiWay = event.target.closest('.onboarding-ai-ways label');
     if (aiWay || event.target.closest('[data-configure-ai-summary]')) {
-      if (!onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked) return;
+      if (
+        settingsMode &&
+        !onboardingPage.querySelector('[name="onboarding-summary-enabled"]').checked
+      )
+        return;
       onboardingOnlineProvider =
         (
           aiWay?.querySelector('input') ||
@@ -3470,6 +3732,11 @@ async function finishAiOnboarding(forceEnabled, settingsMode = false) {
       return;
     }
   }
+  // 首启只有一个服务入口，沿用两种配置的存储结构，共用连接与密钥引用。
+  if (!settingsMode) {
+    aiAssistConfig.provider = summaryConfig.provider;
+    aiAssistConfig.providers = structuredClone(summaryConfig.providers);
+  }
   summaryConfig.enabled = summaryEnabled;
   summaryConfigRevision += 1;
   aiAssistConfig.enabled = enabled;
@@ -3480,7 +3747,7 @@ async function finishAiOnboarding(forceEnabled, settingsMode = false) {
   try {
     await Promise.all([persistSummaryConfig(), persistAiAssistConfig()]);
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
     return;
   }
   if (settingsMode) {
@@ -3493,7 +3760,7 @@ async function finishAiOnboarding(forceEnabled, settingsMode = false) {
       else stopAiNoteForMeeting(meetingId);
     }
     dismissOnboardingPage();
-    showToast(t('已保存'));
+    showToast(t('已保存'), undefined, 'success');
   } else dismissOnboardingPage(openOnboardingMobile);
 }
 
@@ -3507,19 +3774,11 @@ function openOnboardingMobile() {
     heading.querySelector('[data-interface-icon]').innerHTML = interfaceIcon('phone');
     const qr = platform.querySelector('.mobile-install-qr');
     const body = platform.querySelector(':scope > div');
-    body.querySelector('p').textContent = t(
-      android
-        ? '下载 APK，安装后可在手机设置中检查更新。'
-        : '仅受邀账号可用，请打开邀请邮件中的链接安装 Brevia。',
-    );
+    body.querySelector('p').remove();
     platform.prepend(heading, qr);
     body.insertAdjacentHTML(
       'afterbegin',
-      `<b class="onboarding-install-scan">${escapeHtml(t(android ? '扫码下载 Android APK' : '扫码安装 TestFlight'))}</b>`,
-    );
-    body.insertAdjacentHTML(
-      'beforeend',
-      `<small>${escapeHtml(t(android ? 'ModelScope 下载源' : 'iPhone 尚未在 App Store 正式上架。'))}</small>`,
+      `<b class="onboarding-install-scan">${escapeHtml(t(android ? '扫码下载 Android APK' : '扫码安装 Brevia'))}</b>`,
     );
   });
   // 原模板 iPhone 在前；引导按设计把 Android 放在左侧。
@@ -3531,7 +3790,7 @@ function openOnboardingMobile() {
       <section class="onboarding-section onboarding-mobile-downloads">${platforms.outerHTML}</section>
       <div class="onboarding-phone-mechanism"><span>${interfaceIcon('phone')}<span><b>${t('手机采集与保存')}</b><small>${t('在手机上录制会议或对话，录音保存在手机中。')}</small></span></span><i aria-hidden="true">${interfaceIcon('arrow-right')}</i><span>${interfaceIcon('laptop')}<span><b>${t('电脑转写与 AI 整理')}</b><small>${t('连接电脑后转写并整理会议内容。')}</small></span></span></div>
       <div class="onboarding-phone-pair"><b>${t('已安装手机端？')}</b><small>${t('在手机上打开 Brevia，连接新设备，开始使用。')}</small><button class="modal-action" data-onboarding-mobile-pair type="button">${t('连接新设备')}</button></div>
-      <div class="onboarding-actions"><button class="secondary onboarding-previous" data-onboarding-mobile-back type="button">${t('上一步')}</button><button class="secondary" data-onboarding-mobile-skip type="button">${t('稍后')}</button><button class="modal-action" data-onboarding-mobile-next type="button">${t('进入功能演示')}</button></div>
+      <div class="onboarding-actions"><button class="secondary onboarding-previous" data-onboarding-mobile-back type="button">${t('上一步')}</button><button class="secondary" data-onboarding-mobile-skip type="button">${t('稍后')}</button><button class="modal-action" data-onboarding-mobile-next type="button">${t('开始使用')}</button></div>
     </section><section class="onboarding-pair-intro"><h1>${t('让每一次对话，都有记录。')}</h1><p>${t('录制会议，转写内容，生成要点，帮助你专注于真正重要的事。')}</p><div>${['microphone', 'document', 'list'].map((icon, index) => `<span>${interfaceIcon(icon)}<span><b>${t(['录制会议', '生成笔记', '随时回顾'][index])}</b><small>${t(['高质量录音', '提炼要点', '搜索、整理与分享'][index])}</small></span></span>`).join('')}</div></section>`,
   );
   onboardingPage.addEventListener('click', (event) => {
@@ -3542,11 +3801,11 @@ function openOnboardingMobile() {
     else if (event.target.closest('[data-onboarding-mobile-back]'))
       dismissOnboardingPage(openOnboardingAi);
     else if (event.target.closest('[data-onboarding-mobile-skip], [data-onboarding-mobile-next]'))
-      dismissOnboardingPage(openOnboardingTour);
+      dismissOnboardingPage(finishOnboarding);
   });
 }
 
-function openOnboardingPermissions() {
+function openOnboardingPermissions(fixtureStatus) {
   const copy = onboardingCopy[locale] || onboardingCopy.en;
   const steps = [
     ['microphone', t('麦克风'), t('用于录制会议音频。')],
@@ -3568,7 +3827,8 @@ function openOnboardingPermissions() {
   let microphonePreviewed = false;
   let renderedStatus;
   const render = async () => {
-    const status = await window.brevia.permissions.status();
+    // 隔离截图可传固定权限状态；正常入口始终读取操作系统。
+    const status = fixtureStatus || (await window.brevia.permissions.status());
     if (onboardingPage !== page) return;
     const signature = JSON.stringify([status, [...grantedPermissions]]);
     if (signature === renderedStatus) return;
@@ -3590,7 +3850,7 @@ function openOnboardingPermissions() {
         const hint = unsupported
           ? t('当前系统不支持直接录制系统音频，请仅使用麦克风')
           : value === 'denied' && !granted
-            ? t('请在系统设置中允许')
+            ? t(permission === 'microphone' ? '请在系统设置中开启此权限' : '请在系统设置中允许')
             : detail;
         const meter =
           permission === 'microphone' && granted
@@ -3603,7 +3863,7 @@ function openOnboardingPermissions() {
       microphonePreviewed = true;
       void breviaClient?.previewMic().catch((error) => {
         microphonePreviewed = false;
-        showToast(error.message);
+        showToast(error.message, undefined, 'error');
       });
     }
     if (!permissionGranted('microphone') && microphonePreviewed) {
@@ -3615,7 +3875,7 @@ function openOnboardingPermissions() {
   const grantedPermissions = new Set();
   const refresh = () =>
     render().catch((error) => {
-      if (onboardingPage === page) showToast(error.message);
+      if (onboardingPage === page) showToast(error.message, undefined, 'error');
     });
   void refresh();
   const permissionPoll = window.setInterval(() => {
@@ -3658,14 +3918,20 @@ function openOnboardingPermissions() {
         grantedPermissions.add('microphone');
       }
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     await render();
   });
 }
 
 document.addEventListener('click', async (event) => {
-  if (!event.target.closest('#settings-view .settings-grid, .settings-folder-paths')) return;
+  if (!event.target.closest('#settings-view, .settings-folder-paths')) return;
+  const destination = event.target.closest('[data-settings-page]');
+  if (destination) {
+    if (destination.dataset.settingsPage !== 'general')
+      await openModal(destination.dataset.settingsPage);
+    return;
+  }
   const toggle = event.target.closest('[data-flow-select-toggle]');
   if (toggle) {
     const choices = toggle.parentElement.querySelector('.flow-select-options');
@@ -3713,10 +3979,14 @@ document.addEventListener('click', async (event) => {
         }
         await refreshSettingsFolderRows();
         if (result.changed)
-          showToast((onboardingStorageCopy[locale] || onboardingStorageCopy.en).moved);
+          showToast(
+            (onboardingStorageCopy[locale] || onboardingStorageCopy.en).moved,
+            undefined,
+            'success',
+          );
       });
     } catch (error) {
-      showToast(storageErrorMessage(error));
+      showToast(storageErrorMessage(error), undefined, 'error');
     } finally {
       folder.disabled = false;
     }
@@ -3766,12 +4036,25 @@ async function reconfigureLive(changes) {
     return true;
   } catch (error) {
     liveConfig = previous;
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
     return false;
   }
 }
 renderModelControls();
 settingsModal.addEventListener('click', async (event) => {
+  if (event.target.closest('[data-update-log-dismiss]')) {
+    closeModal();
+    return;
+  }
+  if (event.target.closest('[data-update-log-about]')) {
+    const origin = { view: activeView, focus: modalReturnFocus };
+    closeModal();
+    await new Promise((resolve) => setTimeout(resolve, 240));
+    await showView('settings');
+    await openModal('whats-new');
+    updateLogReturn = origin;
+    return;
+  }
   if (event.target.closest('[data-cancel-model-config]')) {
     closeModal();
     return;
@@ -3806,7 +4089,7 @@ settingsModal.addEventListener('click', async (event) => {
       if (modelDownloads.get(id)?.paused) await downloadRequiredModel(id);
       else await window.brevia.models.pause({ model_id: id });
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -3829,6 +4112,7 @@ settingsModal.addEventListener('click', async (event) => {
     renderModal(activeModal);
     return;
   }
+  if (event.target === settingsModal && activeModal === 'upgrade-log') return;
   if (event.target === settingsModal || event.target.closest('.modal-close')) {
     closeModal();
     return;
@@ -3862,7 +4146,7 @@ settingsModal.addEventListener('click', async (event) => {
         ? window.brevia.permissions.openScreenSettings()
         : window.brevia.permissions.openMicrophoneSettings());
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -3874,7 +4158,7 @@ settingsModal.addEventListener('click', async (event) => {
         throw new Error(t('请在系统设置中允许'));
       stopMediaStream(await navigator.mediaDevices.getUserMedia({ audio: true }));
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     permissionStatus = await window.brevia?.permissions.status().catch(() => permissionStatus);
     const section = settingsModal.querySelector('[data-permission-settings]');
@@ -3899,22 +4183,27 @@ settingsModal.addEventListener('click', async (event) => {
     try {
       await window.brevia?.storage.open({ partition: openStorage.dataset.openStorage });
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
   const clearStorage = event.target.closest('[data-clear-storage]');
   if (clearStorage) {
     const partition = clearStorage.dataset.clearStorage;
-    openConfirmation(t('清空数据'), t('此操作不可恢复。'), async () => {
-      try {
-        await window.brevia?.storage.clear({ partition });
-        renderModal('storage');
-        showToast(t('已清空'));
-      } catch (error) {
-        showToast(error.message);
-      }
-    });
+    openConfirmation(
+      t(partition === 'models' ? '清空模型' : '清空会议数据'),
+      t('此操作不可恢复。'),
+      async () => {
+        try {
+          await window.brevia?.storage.clear({ partition });
+          renderModal('storage');
+          showToast(t('已清空'), undefined, 'success');
+        } catch (error) {
+          showToast(error.message, undefined, 'error');
+        }
+      },
+      clearStorage,
+    );
     return;
   }
   if (event.target.closest('[data-cleanup-storage]')) {
@@ -3922,9 +4211,9 @@ settingsModal.addEventListener('click', async (event) => {
       const result = await window.brevia?.storage.cleanup();
       renderModal('storage');
       const copy = storageCleanupCopy[locale] || storageCleanupCopy.en;
-      showToast(copy.done.replace('{size}', formatBytes(result.freed_bytes)));
+      showToast(copy.done.replace('{size}', formatBytes(result.freed_bytes)), undefined, 'success');
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -3945,11 +4234,13 @@ settingsModal.addEventListener('click', async (event) => {
           result.count > 1
             ? copy.savedBundle
             : t('已导出「{title}」').replace('{title}', currentMeetingDetail?.title || ''),
+          undefined,
+          'success',
         );
       } else exportSave.disabled = false;
     } catch (error) {
       exportSave.disabled = false;
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -3972,7 +4263,7 @@ settingsModal.addEventListener('click', async (event) => {
         if (target === 'copy') {
           await window.brevia?.share.copyText({ text });
           closeModal();
-          showToast(t('已复制到剪贴板'));
+          showToast(t('已复制到剪贴板'), undefined, 'success');
         } else if (target === 'email') {
           const subject = currentMeetingDetail?.title || '';
           await window.brevia?.share.openExternal({ url: buildMailto(subject, text) });
@@ -3989,7 +4280,7 @@ settingsModal.addEventListener('click', async (event) => {
       }
     } catch (error) {
       shareTarget.disabled = false;
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -4070,7 +4361,7 @@ settingsModal.addEventListener('click', async (event) => {
           await window.brevia.speakerProfile.samples({ profile_id: profileId }),
         );
       } catch (error) {
-        showToast(error.message);
+        showToast(error.message, undefined, 'error');
       }
     }
     renderModal('speaker-profiles');
@@ -4098,7 +4389,7 @@ settingsModal.addEventListener('click', async (event) => {
       await speakerSampleAudio.play();
       playSpeakerSample.innerHTML = interfaceIcon('pause');
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -4118,7 +4409,7 @@ settingsModal.addEventListener('click', async (event) => {
         await window.brevia.speakerProfile.samples({ profile_id: profileId }),
       );
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     renderModal('speaker-profiles');
     return;
@@ -4131,7 +4422,7 @@ settingsModal.addEventListener('click', async (event) => {
       });
       speakerProfiles = await window.brevia.speakerProfile.list();
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     renderModal('speaker-profiles');
     return;
@@ -4147,7 +4438,7 @@ settingsModal.addEventListener('click', async (event) => {
           `${result.name}: ${(result.score * 100).toFixed(1)}%${result.verified ? ' ✓' : ''}`,
         );
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -4158,6 +4449,7 @@ settingsModal.addEventListener('click', async (event) => {
     const modelId = download.dataset.downloadModel;
     const model = modelCatalog.find((item) => item.id === modelId);
     if (!model || download.disabled || modelPaths.has(modelId)) return;
+    dismissedModelDownloadIds = [];
     modelDownloads.set(modelId, { received: 0, total: 0 });
     const downloadModal = activeModal;
     renderModal(downloadModal);
@@ -4167,7 +4459,7 @@ settingsModal.addEventListener('click', async (event) => {
       else modelDownloads.delete(modelId);
     } catch (error) {
       modelDownloads.set(modelId, { error: error.message });
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     if (activeModal === downloadModal) renderModal(downloadModal);
     return;
@@ -4179,7 +4471,7 @@ settingsModal.addEventListener('click', async (event) => {
       if (window.brevia) await window.brevia.models.delete({ model_id: modelId });
       modelPaths.delete(modelId);
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     renderModal('models');
     return;
@@ -4195,7 +4487,7 @@ settingsModal.addEventListener('click', async (event) => {
     try {
       await window.brevia?.showItem(`${directory}/.brevia.json`);
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -4257,7 +4549,7 @@ settingsModal.addEventListener('change', async (event) => {
     } catch (error) {
       summaryConfig.enabled = previous;
       event.target.checked = previous;
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     } finally {
       event.target.disabled = false;
     }
@@ -4294,12 +4586,16 @@ settingsModal.addEventListener('dblclick', (event) => {
   renderModal('speaker-profiles');
   settingsModal.querySelector('.speaker-profile-rename-form input')?.select();
 });
-async function saveModelConfig(form, config, keyPrefix) {
+async function saveModelConfig(
+  form,
+  config,
+  keyPrefix,
+  values = Object.fromEntries(new FormData(form)),
+) {
   const isAiNoteForm = form.matches('.ai-assist-config-form');
   const modelMissingMessage = isAiNoteForm
     ? t('请先选择或填写 AI 笔记模型。')
     : t('请先选择或填写纪要模型。');
-  const values = Object.fromEntries(new FormData(form));
   const provider = summaryProviders.includes(values.provider) ? values.provider : config.provider;
   const preset = summaryProviderPresets[provider];
   const previous = providerEntry(config, provider);
@@ -4330,9 +4626,20 @@ async function saveModelConfig(form, config, keyPrefix) {
   config.providers = { ...config.providers, [provider]: entry };
   return true;
 }
+for (const type of ['input', 'change']) {
+  settingsModal.addEventListener(type, (event) => {
+    const status = event.target.closest('form')?.querySelector('.save-state');
+    if (status) status.outerHTML = renderSaveState('dirty');
+  });
+}
 settingsModal.addEventListener('submit', async (event) => {
   if (event.target.matches('.advanced-settings-form')) {
     event.preventDefault();
+    const status = event.target.querySelector('.save-state');
+    const save = event.target.querySelector('[type="submit"]');
+    if (save.disabled) return;
+    save.disabled = true;
+    if (status) status.outerHTML = renderSaveState('saving');
     try {
       const settings = structuredClone(advancedSettings.settings);
       new FormData(event.target).forEach((value, path) => {
@@ -4345,9 +4652,13 @@ settingsModal.addEventListener('submit', async (event) => {
       await window.brevia?.advancedSettings.save({ settings });
       advancedSettings.settings = settings;
       closeModal();
-      showToast(t('已保存'));
+      showToast(t('已保存'), undefined, 'success');
     } catch (error) {
-      showToast(error.message);
+      const status = event.target.querySelector('.save-state');
+      if (status) status.outerHTML = renderSaveState('failed');
+      showToast(error.message, undefined, 'error');
+    } finally {
+      save.disabled = false;
     }
     return;
   }
@@ -4359,71 +4670,116 @@ settingsModal.addEventListener('submit', async (event) => {
       await window.brevia?.speakerProfile.rename({ profile_id: profileId, name });
       speakerProfiles = await window.brevia.speakerProfile.list();
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     editingSpeakerProfileId = null;
     renderModal('speaker-profiles');
     return;
   }
-  if (event.target.matches('.ai-assist-config-form')) {
+  if (event.target.matches('.ai-assist-config-form, .summary-model-form')) {
     event.preventDefault();
-    const values = Object.fromEntries(new FormData(event.target));
-    const enabled = values.enabled === 'on';
-    const configured = Boolean(values.model?.trim());
-    if (
-      (enabled || configured) &&
-      !(await saveModelConfig(event.target, aiAssistConfigDraft, 'ai-assist'))
-    )
-      return;
-    if (configured) {
-      aiAssistConfig.provider = aiAssistConfigDraft.provider;
-      aiAssistConfig.providers = aiAssistConfigDraft.providers;
-    }
-    aiAssistConfig.enabled = enabled;
-    aiAssistTemporarilyDisabled = false;
-    if (['quiet', 'assist', 'auto'].includes(values.proactivity))
-      aiAssistConfig.proactivity = values.proactivity;
-    aiAssistConfigRevision += 1;
-    selectedAiAssistBuiltinModel = '';
-    aiAssistConfigDraft = structuredClone(aiAssistConfig);
-    await persistAiAssistConfig();
-    closeModal();
-    if (onboardingPage?.querySelector('[name="onboarding-ai-enabled"]')) {
-      onboardingPage.querySelector('[name="onboarding-ai-enabled"]').checked =
-        aiAssistConfig.enabled;
-      onboardingPage.querySelector('[name="onboarding-ai-proactivity"]').value =
-        aiAssistConfig.proactivity;
-      const select = onboardingPage.querySelector('.onboarding-ai-levels .flow-select');
-      select.querySelectorAll('[role="radio"]').forEach((option) => {
-        option.setAttribute(
-          'aria-checked',
-          String(option.dataset.value === aiAssistConfig.proactivity),
-        );
+    const form = event.target;
+    const previousSummary = structuredClone(summaryConfig);
+    const previousAiAssist = structuredClone(aiAssistConfig);
+    if (form.dataset.savePending === 'true') return;
+    form.dataset.savePending = 'true';
+    const formValues = Object.fromEntries(new FormData(form));
+    const controls = [...form.querySelectorAll('button, input, select, textarea')];
+    const previousDisabled = controls.map((button) => button.disabled);
+    controls.forEach((button) => {
+      button.disabled = true;
+    });
+    const status = form.querySelector('.save-state');
+    if (status) status.outerHTML = renderSaveState('saving');
+    try {
+      if (event.target.matches('.ai-assist-config-form')) {
+        event.preventDefault();
+        const values = formValues;
+        const enabled = values.enabled === 'on';
+        const configured = Boolean(values.model?.trim());
+        if (
+          (enabled || configured) &&
+          !(await saveModelConfig(event.target, aiAssistConfigDraft, 'ai-assist', formValues))
+        )
+          return;
+        if (configured) {
+          aiAssistConfig.provider = aiAssistConfigDraft.provider;
+          aiAssistConfig.providers = aiAssistConfigDraft.providers;
+        }
+        aiAssistConfig.enabled = enabled;
+        aiAssistTemporarilyDisabled = false;
+        if (['quiet', 'assist', 'auto'].includes(values.proactivity))
+          aiAssistConfig.proactivity = values.proactivity;
+        aiAssistConfigRevision += 1;
+        selectedAiAssistBuiltinModel = '';
+        aiAssistConfigDraft = structuredClone(aiAssistConfig);
+        await persistAiAssistConfig();
+        closeModal();
+        if (onboardingPage?.querySelector('[name="onboarding-ai-enabled"]')) {
+          onboardingPage.querySelector('[name="onboarding-ai-enabled"]').checked =
+            aiAssistConfig.enabled;
+          onboardingPage.querySelector('[name="onboarding-ai-proactivity"]').value =
+            aiAssistConfig.proactivity;
+          const select = onboardingPage.querySelector('.onboarding-ai-levels .flow-select');
+          select.querySelectorAll('[role="radio"]').forEach((option) => {
+            option.setAttribute(
+              'aria-checked',
+              String(option.dataset.value === aiAssistConfig.proactivity),
+            );
+          });
+          renderOnboardingAiDemo();
+        }
+        renderAiAssistToggle();
+        const meetingId = breviaClient?.state.meeting?.id;
+        if (meetingActive && meetingId) {
+          if (aiAssistEnabled()) void startAiNoteForMeeting(meetingId);
+          else stopAiNoteForMeeting(meetingId);
+        }
+        renderAiAssistEmptyState();
+        showToast(t('AI 笔记已保存'), undefined, 'success');
+        return;
+      }
+      if (event.target.matches('.summary-model-form')) {
+        event.preventDefault();
+        if (!(await saveModelConfig(event.target, summaryConfigDraft, 'summary', formValues)))
+          return;
+        summaryConfig.provider = summaryConfigDraft.provider;
+        summaryConfig.providers = summaryConfigDraft.providers;
+        summaryConfigRevision += 1;
+        selectedBuiltinModel = '';
+        summaryConfigDraft = structuredClone(summaryConfig);
+        await persistSummaryConfig();
+        if (onboardingPage?.dataset.aiSettings === 'false') {
+          aiAssistConfig.provider = summaryConfig.provider;
+          aiAssistConfig.providers = structuredClone(summaryConfig.providers);
+          aiAssistConfigRevision += 1;
+          selectedAiAssistBuiltinModel = '';
+          await persistAiAssistConfig();
+        }
+        dismissTaskCard(document.querySelector('#summary-config-required'));
+        const ready = summaryRequestConfig();
+        if (ready && (ready.provider !== 'built-in' || modelPaths.has(ready.model))) {
+          summaryFeedback = null;
+          syncSummaryFeedback();
+        }
+        closeModal();
+        showToast(t('纪要模型已保存'), undefined, 'success');
+        return;
+      }
+    } catch (error) {
+      summaryConfig = previousSummary;
+      aiAssistConfig = previousAiAssist;
+      const status = form.querySelector('.save-state');
+      if (status) status.outerHTML = renderSaveState('failed');
+      showToast(error.message, undefined, 'error');
+    } finally {
+      form.dataset.savePending = 'false';
+      controls.forEach((button, index) => {
+        button.disabled = previousDisabled[index];
       });
-      renderOnboardingAiDemo();
+      const status = form.querySelector('[data-save-state="saving"]');
+      if (status) status.outerHTML = renderSaveState('dirty');
     }
-    renderAiAssistToggle();
-    const meetingId = breviaClient?.state.meeting?.id;
-    if (meetingActive && meetingId) {
-      if (aiAssistEnabled()) void startAiNoteForMeeting(meetingId);
-      else stopAiNoteForMeeting(meetingId);
-    }
-    renderAiAssistEmptyState();
-    showToast(t('AI 笔记已保存'));
-    return;
-  }
-  if (event.target.matches('.summary-model-form')) {
-    event.preventDefault();
-    if (!(await saveModelConfig(event.target, summaryConfigDraft, 'summary'))) return;
-    summaryConfig.provider = summaryConfigDraft.provider;
-    summaryConfig.providers = summaryConfigDraft.providers;
-    summaryConfigRevision += 1;
-    selectedBuiltinModel = '';
-    summaryConfigDraft = structuredClone(summaryConfig);
-    await persistSummaryConfig();
-    dismissTaskCard(document.querySelector('#summary-config-required'));
-    closeModal();
-    showToast(t('纪要模型已保存'));
     return;
   }
   if (event.target.matches('.speaker-sample-form')) {
@@ -4444,7 +4800,7 @@ settingsModal.addEventListener('submit', async (event) => {
         expandedSpeakerProfileId = profileId;
       }
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     renderModal('speaker-profiles');
     return;
@@ -4458,42 +4814,26 @@ settingsModal.addEventListener('submit', async (event) => {
       });
       if (profile) speakerProfiles = await window.brevia.speakerProfile.list();
     } catch (error) {
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     renderModal('speaker-profiles');
     return;
   }
 });
 /* Locale copy lives in i18n.js; this alias keeps the renderer focused on state changes. */
-const slogans = BreviaI18n.slogans;
 const homeSlogan = document.querySelector('#home-slogan');
 const homeEyebrow = document.querySelector('#home-eyebrow');
-let sloganIndex = Math.floor(Math.random() * slogans.zh.length);
 function activeWorkspaceDescription() {
   return activeWorkspaceId
     ? workspaces.find((workspace) => workspace.id === activeWorkspaceId)?.description?.trim() || ''
     : '';
 }
-/** 更新旋转的库标语。@param {boolean} animate 是否播放过渡动画。@returns {void} */
-function renderSlogan(animate = false) {
-  const workspaceDescription = activeWorkspaceDescription();
-  const update = () => {
-    homeSlogan.textContent =
-      activeLibraryNav === 'recently-deleted'
-        ? BreviaI18n.trashCopy(locale).slogan
-        : workspaceDescription || (slogans[locale] || slogans.en)[sloganIndex];
-    if (animate) {
-      homeSlogan.classList.remove('slogan-out');
-      homeSlogan.classList.add('slogan-in');
-      window.setTimeout(() => homeSlogan.classList.remove('slogan-in'), 440);
-    }
-  };
-  if (!animate || workspaceDescription || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    update();
-    return;
-  }
-  homeSlogan.classList.add('slogan-out');
-  window.setTimeout(update, 280);
+/** 最新图册使用固定副标题，工作区描述和最近删除提示仍来自真实状态。 */
+function renderSlogan() {
+  homeSlogan.textContent =
+    activeLibraryNav === 'recently-deleted'
+      ? BreviaI18n.trashCopy(locale).slogan
+      : activeWorkspaceDescription() || t('所有对话，清晰归档。');
 }
 
 /** 应用并持久化选定的颜色主题。@param {'light'|'dark'} nextTheme 要应用的主题。@returns {void} */
@@ -4508,7 +4848,7 @@ function applyTheme(nextTheme) {
       : theme;
   document.documentElement.dataset.theme = effective;
   document.documentElement.style.colorScheme = effective;
-  themeToggle.innerHTML = interfaceIcon('appearance');
+  themeToggle.innerHTML = interfaceIcon(effective === 'dark' ? 'moon' : 'sun');
   themeToggle.title = (themeLabels[locale] || themeLabels.en)[
     effective === 'dark' ? 'light' : 'dark'
   ];
@@ -4575,14 +4915,10 @@ function applyLanguage(nextLocale, animate = false) {
   localStorage.setItem('brevia-language', locale);
   document.documentElement.lang = locale === 'zh' ? 'zh-CN' : locale;
   document.title = t('Brevia');
-  languageToggle.title = t('切换语言');
-  languageToggle.setAttribute('aria-label', t('切换语言'));
+  document.querySelector('#live-info-toggle span:last-child').textContent = t('会议信息');
+  document.querySelector('#live-info-panel').hidden = true;
+  document.querySelector('#live-info-toggle').setAttribute('aria-expanded', 'false');
   applyTheme(theme);
-  languageOptions
-    .querySelectorAll('[data-language]')
-    .forEach((option) =>
-      option.setAttribute('aria-current', String(option.dataset.language === locale)),
-    );
   const rerendered = [
     '.settings-grid',
     '.meeting-list',
@@ -4625,6 +4961,7 @@ function applyLanguage(nextLocale, animate = false) {
     renderPrepareSelects();
     renderPrepareAudioSources();
     renderPauseButton();
+    updatePlayerDisplayControls();
     renderLiveInputStatus();
     document.querySelector('#end-meeting').innerHTML =
       `${interfaceIcon('stop')}<span>${escapeHtml(t('结束会议'))}</span>`;
@@ -4642,7 +4979,7 @@ function applyLanguage(nextLocale, animate = false) {
         activeView === 'prepare' && prepareView.dataset.mode === 'import'
           ? t('导入录音')
           : catalog[locale].views[activeView];
-    renderSlogan(false);
+    renderSlogan();
     renderUpdateButton();
     renderUpdateNotice();
     renderSpeakerProfileCard();
@@ -4671,13 +5008,11 @@ function applyLanguage(nextLocale, animate = false) {
     updateText();
     return;
   }
-  switchingLanguage = true;
   nodes.forEach((element) => element.classList.add('locale-out'));
   window.setTimeout(() => {
     try {
       updateText();
     } finally {
-      switchingLanguage = false;
       nodes.forEach((element) => {
         element.classList.remove('locale-out');
         element.classList.add('locale-in');
@@ -4691,6 +5026,49 @@ function applyLanguage(nextLocale, animate = false) {
 let summaryConfigDismissTimer;
 function showSummaryConfigCard(error) {
   clearTimeout(summaryConfigDismissTimer);
+  const message = String(error?.detail || error?.message || '');
+  const rejected = /LLM request failed \(403\)|error code: 1010/i.test(message);
+  const authentication = Boolean(error && isSummaryAuthenticationError(error));
+  const builtin = summaryConfig.provider === 'built-in';
+  const retained = Boolean(uiData.detail.summary.markdown);
+  const copy = {
+    title: t(
+      !summaryConfig.enabled
+        ? '会议纪要功能未开启'
+        : authentication
+          ? rejected
+            ? '纪要服务拒绝了请求'
+            : '纪要服务认证失败'
+          : builtin
+            ? '内置纪要模型未配置'
+            : '纪要模型需要配置',
+    ),
+    detail: t(
+      !summaryConfig.enabled
+        ? '请先开启会议纪要功能，再重新生成。'
+        : authentication
+          ? '请检查 API 地址、密钥和服务商访问策略。'
+          : builtin
+            ? retained
+              ? '请先选择并下载一个内置纪要模型，再重新生成。现有纪要仍保留。'
+              : '请先选择并下载一个内置纪要模型，再生成会议纪要。'
+            : summaryProviderPresets[summaryConfig.provider]?.needsKey
+              ? '请补全纪要服务的模型、API 地址和密钥，再重新生成。'
+              : '请补全纪要服务的模型和连接配置，再重新生成。',
+    ),
+    action: t('配置纪要模型'),
+  };
+  if (activeView === 'detail' && currentMeetingDetail) {
+    dismissTaskCard(document.querySelector('#summary-config-required'));
+    summaryFeedback = {
+      meetingId: currentMeetingDetail.id,
+      ...copy,
+      detail: authentication ? `${copy.detail} ${message}` : copy.detail,
+      configure: true,
+    };
+    syncSummaryFeedback();
+    return;
+  }
   let card = document.querySelector('#summary-config-required');
   if (!card) {
     card = document.createElement('aside');
@@ -4700,34 +5078,30 @@ function showSummaryConfigCard(error) {
     taskCards.append(card);
     enterTaskCard(card);
   } else if (card.classList.contains('task-card-leave')) enterTaskCard(card);
-  const rejected = /LLM request failed \(403\)|error code: 1010/i.test(
-    String(error?.detail || error?.message || error),
-  );
-  // 内置模型走本地 GGUF，与 API Key 无关；缺配置时给出针对性的指引，
-  // 避免把「未选择本地模型」误报成「API Key 未配置」。
-  const builtin = summaryConfig.provider === 'built-in';
-  const copy = builtin
-    ? {
-        title: t('内置纪要模型未配置'),
-        detail: t('请前往「设置」>「AI 会议总结」，选择并下载内置纪要模型。'),
-        action: t('前往 AI 会议总结'),
-      }
-    : {
-        title: t(rejected ? '纪要服务拒绝了请求' : '纪要模型需要配置'),
-        detail: t(
-          rejected
-            ? '请检查 API 地址、密钥和服务商访问策略。'
-            : 'API Key 未配置、已失效或不匹配当前服务。',
-        ),
-        action: t('配置纪要模型'),
-      };
   card.innerHTML = `<header class="task-card-heading"><span class="task-kind-icon">${interfaceIcon('settings')}</span><p>${copy.title}</p>${taskCardControls()}</header><strong>${copy.detail}</strong><button class="secondary" type="button">${copy.action}</button>`;
   card.querySelector('.secondary').onclick = () => {
     clearTimeout(summaryConfigDismissTimer);
     dismissTaskCard(card);
-    void showView('settings').then(() => openModal('summary-model'));
+    openModal('summary-model');
   };
   summaryConfigDismissTimer = setTimeout(() => dismissTaskCard(card), 30000);
+}
+/** 就地反馈只更新状态框，避免重新创建编辑器或清空已有纪要。 */
+function syncSummaryFeedback() {
+  const root = document.querySelector('[data-summary-feedback]');
+  if (!root) return;
+  const feedback = summaryFeedback?.meetingId === currentMeetingDetail?.id ? summaryFeedback : null;
+  root.hidden = !feedback;
+  if (!feedback) {
+    root.replaceChildren();
+    return;
+  }
+  root.setAttribute('role', 'status');
+  root.innerHTML = `${interfaceIcon('info')}<div><strong>${escapeHtml(feedback.title)}</strong><p>${escapeHtml(feedback.detail || '')}</p></div>${feedback.configure ? `<button class="secondary" data-settings-modal="summary-model" type="button">${t('配置纪要模型')}</button>` : ''}<button class="summary-feedback-close" type="button" aria-label="${escapeHtml(t('关闭'))}">${interfaceIcon('close')}</button>`;
+  root.querySelector('.summary-feedback-close').onclick = () => {
+    summaryFeedback = null;
+    syncSummaryFeedback();
+  };
 }
 function isSummaryAuthenticationError(error) {
   return /LLM request failed \((401|403)\)|error code: 1010|API key|Authorization header|invalid_api_key|authentication/i.test(
@@ -4773,10 +5147,18 @@ function userFacingError(content) {
   return content;
 }
 /** 显示临时消息，并在提供时显示一个显式的安全下一步操作。*/
-const showToast = (content, action) => {
+const showToast = (content, action, tone = 'info') => {
   const message = document.createElement('span');
   message.textContent = userFacingError(content);
-  toast.replaceChildren(message);
+  const mark = document.createElement('i');
+  mark.className = 'toast-status-mark';
+  mark.setAttribute('aria-hidden', 'true');
+  mark.innerHTML = interfaceIcon(
+    tone === 'success' ? 'check' : tone === 'error' ? 'warning' : 'info',
+  );
+  toast.dataset.tone = tone;
+  toast.setAttribute('role', tone === 'error' ? 'alert' : 'status');
+  toast.replaceChildren(mark, message);
   if (action) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -4795,13 +5177,13 @@ const showToast = (content, action) => {
 window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault();
   const message = userFacingError(event.reason?.message || 'error.operation_failed');
-  showToast(`${t('操作失败')}: ${message}`);
+  showToast(`${t('操作失败')}: ${message}`, undefined, 'error');
 });
 window.addEventListener('error', (event) => {
   const message = event.error instanceof Error ? event.error.message : event.message;
   if (message) {
     console.error(event.error || message);
-    showToast(t('error.operation_failed'));
+    showToast(t('error.operation_failed'), undefined, 'error');
   }
 });
 /** 标记活动的会议库源并更新窗口面包屑。@param {'all-meetings'|'recently-deleted'} id 导航项 ID。@returns {void} */
@@ -4820,7 +5202,7 @@ function selectLibraryNav(id) {
   homeEyebrow.className = 'eyebrow';
   document.querySelector('#trash-back').hidden = !deleted;
   meetingSearch.placeholder = deleted ? t('搜索已删除的会议') : t('搜索会议、字幕或说话人…');
-  renderSlogan(false);
+  renderSlogan();
   updateHomeViewTitle();
 }
 /** 按请求顺序执行页面过渡，当前过渡结束后再读取真正可见的页面。 */
@@ -4868,10 +5250,24 @@ async function transitionPage(current, next, swap = () => {}) {
 }
 /** 在顶级应用视图之间切换。@param {'home'|'prepare'|'live'|'detail'|'settings'} name 目标视图。*/
 const showView = async (name) => {
+  // 页面式设置退出时立即退场，避免继续会议后仍覆盖录制区。
+  if (
+    name !== 'settings' &&
+    !settingsModal.hidden &&
+    settingsModal.classList.contains('settings-page')
+  ) {
+    closeModal();
+    clearTimeout(modalDismissTimer);
+    settingsModal.hidden = true;
+    settingsModal.classList.remove('modal-leave');
+    document.body.classList.remove('modal-open');
+  }
   if (name === activeView && !pageTransition) return;
   const current = document.querySelector(`#${activeView}-view`);
   const next = document.querySelector(`#${name}-view`);
   await transitionPage(current, next);
+  if (name !== 'live' && meetingActive && !miniMeeting.hidden)
+    taskCards.scrollTop = taskCards.scrollHeight;
   if (name === 'prepare') {
     requestAnimationFrame(fitPrepareLayout);
     renderCaptureMode();
@@ -4927,7 +5323,9 @@ async function showLibraryNav(id) {
   await transitionPage(current, home, async () => {
     selectLibraryNav(id);
     if (window.brevia)
-      await refreshBackendMeetings(includeDeleted).catch((error) => showToast(error.message));
+      await refreshBackendMeetings(includeDeleted).catch((error) =>
+        showToast(error.message, undefined, 'error'),
+      );
   });
 }
 collectTranslations();
@@ -4978,20 +5376,38 @@ function compareVersions(a, b) {
 }
 /** 仅在升级后自动弹出一次“更新日志”；首次安装只记录版本、不弹窗。@returns {void} */
 function maybeShowWhatsNew() {
-  if (!installedAppVersion || installedAppVersion === '—') return;
+  clearTimeout(whatsNewRetryTimer);
+  if (!installedAppVersion || installedAppVersion === '—' || whatsNewShown) return;
   try {
     const seen = localStorage.getItem('brevia-whatsnew-seen');
     if (!seen) {
       localStorage.setItem('brevia-whatsnew-seen', installedAppVersion);
       return;
     }
-    if (compareVersions(seen, installedAppVersion) < 0) openModal('whats-new');
+    if (compareVersions(seen, installedAppVersion) >= 0) return;
   } catch {
-    /* Ignore storage errors and never block startup. */
+    whatsNewShown = true;
+    return;
   }
+  // 等待引导、恢复/录音、现有浮窗和页面过渡完成，避免覆盖用户正在处理的内容。
+  if (
+    !whatsNewReady ||
+    onboardingPage ||
+    activeModal ||
+    meetingActive ||
+    pageTransition ||
+    document.querySelector('dialog[open], .workspace-dialog, #startup-splash')
+  ) {
+    whatsNewRetryTimer = setTimeout(maybeShowWhatsNew, 500);
+    return;
+  }
+  whatsNewShown = true;
+  void openModal('upgrade-log');
 }
 /** 记录当前版本已查看，避免下次启动重复弹窗。@returns {void} */
 function markWhatsNewSeen() {
+  whatsNewShown = true;
+  clearTimeout(whatsNewRetryTimer);
   if (!installedAppVersion || installedAppVersion === '—') return;
   try {
     localStorage.setItem('brevia-whatsnew-seen', installedAppVersion);
@@ -5010,7 +5426,7 @@ async function checkForUpdates({ silent = false } = {}) {
     if (!silent && result?.status === 'current')
       showToast((updateLabels[locale] || updateLabels.en).current);
   } catch (error) {
-    if (!silent) showToast(error.message);
+    if (!silent) showToast(error.message, undefined, 'error');
   } finally {
     updateBusy = false;
     renderUpdateButton();
@@ -5026,42 +5442,15 @@ async function runUpdateAction() {
   try {
     await window.brevia.update.install();
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
     updateBusy = false;
     updateDownloadProgress = null;
     renderUpdateButton();
     renderUpdateNotice();
   }
 }
-window.setInterval(() => {
-  if (activeLibraryNav === 'recently-deleted' || activeWorkspaceDescription()) return;
-  sloganIndex = (sloganIndex + 1) % (slogans[locale] || slogans.en).length;
-  renderSlogan(true);
-}, 30000);
 updateButton.addEventListener('click', () => void runUpdateAction());
 updateNoticeButton.addEventListener('click', () => void runUpdateAction());
-/** 关闭语言菜单并更新其展开状态。@returns {void} */
-function closeLanguageMenu() {
-  languageOptions.hidden = true;
-  languageToggle.setAttribute('aria-expanded', 'false');
-}
-languageToggle.addEventListener('click', () => {
-  const opening = languageOptions.hidden;
-  languageOptions.hidden = !opening;
-  languageToggle.setAttribute('aria-expanded', String(opening));
-});
-languageOptions.addEventListener('click', (event) => {
-  const option = event.target.closest('[data-language]');
-  if (!option || switchingLanguage || option.dataset.language === locale) {
-    closeLanguageMenu();
-    return;
-  }
-  closeLanguageMenu();
-  applyLanguage(option.dataset.language, true);
-});
-document.addEventListener('click', (event) => {
-  if (!event.target.closest('.language-menu')) closeLanguageMenu();
-});
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     const list = document.querySelector('.flow-select-options.is-floating:not([hidden])');
@@ -5075,10 +5464,6 @@ document.addEventListener('keydown', (event) => {
     }
     if (activeModal) closeModal();
     else if (onboardingPage?.dataset.aiSettings === 'true') dismissOnboardingPage();
-    else {
-      closeLanguageMenu();
-      languageToggle.focus();
-    }
   }
 });
 // Command+/ 或 Ctrl+/：切换富文本 / Markdown 编辑模式。
@@ -5108,7 +5493,9 @@ document.addEventListener('click', (event) => {
 });
 homeEyebrow.addEventListener('click', async () => {
   if (activeLibraryNav !== 'recently-deleted') return;
-  await showLibraryNav('all-meetings').catch((error) => showToast(error.message));
+  await showLibraryNav('all-meetings').catch((error) =>
+    showToast(error.message, undefined, 'error'),
+  );
 });
 function setLiveTranslationEnabled(enabled) {
   translationAllowed = enabled;
@@ -5316,7 +5703,7 @@ document.querySelector('#meeting-form').addEventListener('submit', async (event)
     const inlineError = document.querySelector('[data-prepare-error]');
     inlineError.textContent = error.detail || error.message;
     inlineError.hidden = false;
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   } finally {
     submit.disabled = false;
     submit.classList.remove('is-pending');
@@ -5447,7 +5834,7 @@ document.querySelector('#pause').addEventListener('click', async (event) => {
     renderPauseButton();
     if (paused) clearInterval(timer);
     else startTimer();
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   } finally {
     button.disabled = false;
   }
@@ -5458,7 +5845,7 @@ document.querySelector('#mark-important').addEventListener('click', () => {
   liveNotesEditor.appendMarkdown(
     `${t('重点')} · ${formatMeetingTime(seconds * 1000)}${segment ? ` — ${segment.text}` : ''}`,
   );
-  showToast(t('已加入笔记'));
+  showToast(t('已加入笔记'), undefined, 'success');
 });
 document.querySelector('#end-meeting').addEventListener('click', async (event) => {
   const button = event.currentTarget;
@@ -5497,11 +5884,11 @@ document.querySelector('#end-meeting').addEventListener('click', async (event) =
       applyBackendDetail(meeting);
     }
     showView('detail');
-    showToast(message('recordingSaved'));
+    showToast(message('recordingSaved'), undefined, 'success');
     if (window.brevia) await refreshBackendMeetings();
     if (meeting && summaryRequestConfig()) void generateMeetingSummary(meeting.id);
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
     // 采集已经收尾；保留会议 ID 供重试结束，不能装作仍在录音。
     document.querySelector('#pause').dataset.paused = 'true';
     renderPauseButton();
@@ -5677,7 +6064,7 @@ document.addEventListener('click', (event) => {
     const info = liveSegmentData.get(latestLiveSegmentId);
     if (info) {
       liveNotesEditor.appendMarkdown(info.text);
-      showToast(t('已加入笔记'));
+      showToast(t('已加入笔记'), undefined, 'success');
     } else showToast(t('暂无字幕可插入'));
   }
 });
@@ -5877,7 +6264,7 @@ function acceptAiSuggestion(text) {
   if (!suggestion || !text) return;
   appendAiSuggestion(suggestion);
   hideAiSuggestion();
-  showToast(t('已加入笔记'));
+  showToast(t('已加入笔记'), undefined, 'success');
 }
 /** 把 topic 建议转换为笔记正式标题。@returns {void} */
 function convertTopicToHeading() {
@@ -5939,8 +6326,20 @@ function scheduleNotesSave(timer, getNotes, getMeetingId) {
   if (!meetingId || !window.brevia?.meeting?.update) return;
   clearTimeout(timer.current);
   const notes = getNotes();
+  const status = document.getElementById('save-state');
+  if (status) status.innerHTML = renderSaveState('dirty');
   timer.current = setTimeout(() => {
-    void persistNotes(meetingId, notes).catch((error) => showToast(error.message));
+    if (status) status.innerHTML = renderSaveState('saving');
+    void persistNotes(meetingId, notes)
+      .then(() => {
+        if (getMeetingId() === meetingId && getNotes() === notes && status)
+          status.innerHTML = renderSaveState('saved');
+      })
+      .catch((error) => {
+        if (getMeetingId() === meetingId && getNotes() === notes && status)
+          status.innerHTML = renderSaveState('failed');
+        showToast(error.message, undefined, 'error');
+      });
   }, 800);
 }
 const liveNotesSaveTimer = { current: undefined };
@@ -5985,6 +6384,20 @@ document.querySelector('.live-model-menu').addEventListener('click', async (even
   if (!ok) return;
   renderLiveModelControl();
 });
+document.querySelector('.live-header-actions').append(document.querySelector('.live-more'));
+document.querySelector('#live-info-toggle').addEventListener('click', (event) => {
+  const panel = document.querySelector('#live-info-panel');
+  panel.hidden = !panel.hidden;
+  event.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
+  if (panel.hidden) return;
+  const meeting = breviaClient?.state.meeting;
+  const language =
+    BreviaI18n.languageOptions(locale, t, true).find(
+      ([value]) => value === (liveConfig.language || 'auto'),
+    )?.[1] || liveConfig.language;
+  panel.innerHTML = `<strong>${escapeHtml(document.querySelector('#live-name').textContent)}</strong><dl><dt>${escapeHtml(t('工作区'))}</dt><dd>${escapeHtml(getWorkspaceName(meeting?.workspace_id || ''))}</dd><dt>${escapeHtml(t('会议语言'))}</dt><dd>${escapeHtml(language)}</dd></dl>`;
+});
+
 document.querySelector('#live-more-toggle').addEventListener('click', (event) => {
   const panel = document.querySelector('#live-more-panel');
   panel.hidden = !panel.hidden;
@@ -5994,6 +6407,8 @@ document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
   document.querySelector('#live-more-panel').hidden = true;
   document.querySelector('#live-more-toggle').setAttribute('aria-expanded', 'false');
+  document.querySelector('#live-info-panel').hidden = true;
+  document.querySelector('#live-info-toggle').setAttribute('aria-expanded', 'false');
   for (const [options, toggle] of [
     ['#translation-options', '#translation-toggle'],
     ['#live-model-options', '#live-model-toggle'],
@@ -6003,6 +6418,10 @@ document.addEventListener('keydown', (event) => {
   }
 });
 document.addEventListener('click', (event) => {
+  if (!event.target.closest('.live-info')) {
+    document.querySelector('#live-info-panel').hidden = true;
+    document.querySelector('#live-info-toggle').setAttribute('aria-expanded', 'false');
+  }
   if (!event.target.closest('.live-more')) {
     document.querySelector('#live-more-panel').hidden = true;
     document.querySelector('#live-more-toggle').setAttribute('aria-expanded', 'false');
@@ -6047,7 +6466,7 @@ document.querySelector('#floating-caption-toggle').addEventListener('click', asy
       }
     } catch (error) {
       if (floatingCaptionMode !== 'live') return;
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
       floatingCaptionMode = null;
       renderFloatingCaptionToggle();
       renderPlaybackFloatingCaptionToggle();
@@ -6094,7 +6513,7 @@ searchResultsPanel.addEventListener('click', async (event) => {
     applyBackendDetail(meeting);
     await showView('detail');
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   }
 });
 /** 对搜索结果文本进行安全高亮。@param {string} text 原文。@param {string} query 关键词。@returns {string} 带 <mark> 高亮的 HTML。 */
@@ -6138,7 +6557,7 @@ async function updateSearchPopup() {
     meetings = window.brevia ? await window.brevia.meeting.search({ query }) : [];
   } catch (error) {
     closeSearchPopup();
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
     return;
   }
   if (requestId !== searchRequestId) return;
@@ -6174,18 +6593,31 @@ const meetingSelectionSurface = document.querySelector('#home-view');
 let dragSelection;
 let suppressMeetingClick = false;
 const toggleMeetingSelection = (row) => {
+  meetingSelectionMode = true;
   const key = row.dataset.selectionKey;
   if (selectedMeetingKeys.has(key)) selectedMeetingKeys.delete(key);
   else selectedMeetingKeys.add(key);
   syncMeetingSelection();
 };
-document.querySelector('#meeting-select-all')?.addEventListener('click', () => {
+const selectVisibleMeetings = () => {
   const rows = [...meetingList.querySelectorAll('.meeting-row:not([hidden])')];
   const allSelected =
     rows.length > 0 && rows.every((row) => selectedMeetingKeys.has(row.dataset.selectionKey));
-  if (allSelected) clearMeetingSelection();
-  else {
+  meetingSelectionMode = true;
+  if (allSelected) {
+    selectedMeetingKeys.clear();
+    syncMeetingSelection();
+  } else {
     rows.forEach((row) => selectedMeetingKeys.add(row.dataset.selectionKey));
+    syncMeetingSelection();
+  }
+};
+batchToolbar.querySelector('#batch-select-all').addEventListener('change', selectVisibleMeetings);
+document.querySelector('#meeting-selection-toggle').addEventListener('click', () => {
+  if (meetingSelectionMode) clearMeetingSelection();
+  else {
+    meetingSelectionMode = true;
+    closeMeetingMenus();
     syncMeetingSelection();
   }
 });
@@ -6282,8 +6714,12 @@ meetingList.addEventListener('keydown', (event) => {
   }
 });
 const batchExportFormats = ['md', 'txt', 'json', 'srt', 'docx', 'pdf', 'wav'];
+let batchExportSnapshot = [];
+let batchOperationBusy = false;
 function openBatchExport() {
+  batchExportSnapshot = selectedMeetings().map((meeting) => ({ ...meeting }));
   activeModal = 'batch-export';
+  configureSettingsPage(activeModal);
   settingsModal.querySelector('.modal-title h2').textContent = t('选择导出格式');
   settingsModal.querySelector('.modal-title p').textContent = BreviaI18n.selectionOverview(
     locale,
@@ -6293,9 +6729,44 @@ function openBatchExport() {
     `<div class="export-options">${batchExportFormats.map((format) => `<button type="button" data-batch-export-format="${format}"><span><b>${format.toUpperCase()}</b></span><strong>.${format}</strong></button>`).join('')}</div>`;
   showSettingsModal();
 }
-async function exportSelectedMeetings(format) {
-  const meetings = selectedMeetings();
-  if (!meetings.length || !format) return;
+function showBatchResults(meetings, results, action, retry) {
+  activeModal = 'batch-results';
+  configureSettingsPage(activeModal);
+  settingsModal.querySelector('.modal-title h2').textContent = t(
+    action === 'export' ? '导出结果' : '处理结果',
+  );
+  settingsModal.querySelector('.modal-title p').textContent = '';
+  const failures = meetings.filter(
+    (meeting) => results.find((result) => result.meeting_id === meeting.id)?.error,
+  );
+  const success = results.filter((result) => result.path || result.completed).length;
+  settingsModal.querySelector('.modal-body').innerHTML = `<div class="batch-results">${meetings
+    .map((meeting) => {
+      const result = results.find((result) => result.meeting_id === meeting.id);
+      return `<article>${interfaceIcon('document')}<strong>${escapeHtml(meeting.title)}</strong><div class="${result?.error ? 'batch-result-error' : ''}">${interfaceIcon(result?.error ? 'warning' : result?.path || result?.completed ? 'check' : 'info')}<span>${escapeHtml(t(result?.error ? '操作失败' : result?.path || result?.completed ? (action === 'export' ? '已导出' : '已完成') : '结果待确认'))}</span>${result?.error ? `<small>${escapeHtml(userFacingError(result.error))}</small>` : ''}</div></article>`;
+    })
+    .join(
+      '',
+    )}<footer><span>${escapeHtml(t('已完成'))} ${success} / ${meetings.length}</span>${failures.length && retry ? `<button class="secondary" data-retry-batch>${escapeHtml(t('重试失败项'))}</button>` : ''}<button class="secondary" data-close-modal>${escapeHtml(t('关闭'))}</button></footer></div>`;
+  const retryButton = settingsModal.querySelector('[data-retry-batch]');
+  retryButton?.addEventListener('click', async () => {
+    if (retryButton.disabled) return;
+    retryButton.disabled = true;
+    try {
+      await retry(failures);
+    } finally {
+      retryButton.disabled = false;
+    }
+  });
+  showSettingsModal();
+}
+async function exportSelectedMeetings(
+  format,
+  meetings = batchExportSnapshot,
+  previousResults = [],
+) {
+  if (!meetings.length || !format || batchOperationBusy) return;
+  batchOperationBusy = true;
   try {
     const result = window.brevia
       ? await window.brevia.meeting.exportMany({
@@ -6303,10 +6774,25 @@ async function exportSelectedMeetings(format) {
           format,
           filename_prefix: `[${format === 'wav' ? t('会议录音') : t('字幕')}]`,
         })
-      : { paths: meetings.map(({ title }) => `${title}.${format}`) };
-    if (result) showToast(`${t('导出')}: ${BreviaI18n.selectionOverview(locale, meetings.length)}`);
+      : null;
+    if (!result) return;
+    const received =
+      result.results ||
+      (result.paths?.length === meetings.length
+        ? meetings.map((meeting, index) => ({ meeting_id: meeting.id, path: result.paths[index] }))
+        : []);
+    const ids = new Set(meetings.map((meeting) => meeting.id));
+    const combined = [...previousResults.filter((item) => !ids.has(item.meeting_id)), ...received];
+    const allMeetings = batchExportSnapshot;
+    showBatchResults(allMeetings, combined, 'export', (failures) =>
+      exportSelectedMeetings(format, failures, combined),
+    );
   } catch (error) {
-    showToast(error.message);
+    showBatchResults(batchExportSnapshot, previousResults, 'export', null);
+    settingsModal.querySelector('.modal-title p').textContent =
+      `${t('结果待确认')} · ${userFacingError(error.message)}`;
+  } finally {
+    batchOperationBusy = false;
   }
 }
 batchToolbar.addEventListener('click', async (event) => {
@@ -6314,14 +6800,14 @@ batchToolbar.addEventListener('click', async (event) => {
     clearMeetingSelection();
     return;
   }
-  const meetings = selectedMeetings();
+  const meetings = selectedMeetings().map((meeting) => ({ ...meeting }));
+  if (!meetings.length) return;
   if (event.target.closest('[data-batch-restore]')) {
     try {
-      await mutateMeetings('restore', meetings);
-      showToast(t('恢复'));
+      if (await runBatchMutation('restore', meetings)) showToast(t('恢复'), undefined, 'success');
     } catch (error) {
       await refreshBackendMeetings(true);
-      showToast(error.message);
+      showToast(error.message, undefined, 'error');
     }
     return;
   }
@@ -6334,13 +6820,13 @@ batchToolbar.addEventListener('click', async (event) => {
   if (event.target.closest('[data-batch-delete]')) {
     openConfirmation(
       deleteLabel,
-      `${BreviaI18n.selectionOverview(locale, meetings.length)}\n${deleteLabel}?`,
+      `${BreviaI18n.selectionOverview(locale, meetings.length)}\n${meetings.map((meeting) => '「' + meeting.title + '」').join('\n')}\n${t(permanently ? '此操作不可恢复。' : '会议将移至最近删除，可在那里恢复。')}`,
       async () => {
         try {
-          await mutateMeetings(permanently ? 'purge' : 'delete', meetings);
+          await runBatchMutation(permanently ? 'purge' : 'delete', meetings);
         } catch (error) {
           await refreshBackendMeetings();
-          showToast(error.message);
+          showToast(error.message, undefined, 'error');
         }
       },
     );
@@ -6355,16 +6841,29 @@ const positionMeetingMenu = (menu, toggle, opensLeft = false) => {
   menu.style.top = `${opensUp ? anchor.top - height : anchor.bottom}px`;
   menu.style.left = `${Math.max(8, Math.min(left, window.innerWidth - menu.offsetWidth - 8))}px`;
 };
-const positionOpenMeetingMenus = () =>
-  document.querySelectorAll('.meeting-menu:not([hidden])').forEach((menu) => {
-    const toggle = menu.closest('.meeting-actions')?.querySelector('[data-meeting-menu]');
-    if (toggle) positionMeetingMenu(menu, toggle);
-  });
+const positionOpenMeetingMenus = () => {
+  document
+    .querySelectorAll(
+      '.meeting-menu:not([hidden]), .refine-menu:not([hidden]), .detail-translation-menu:not([hidden])',
+    )
+    .forEach((menu) => {
+      const toggle =
+        menu.closest('.meeting-actions')?.querySelector('[data-meeting-menu]') ||
+        menu.previousElementSibling;
+      if (!toggle) return;
+      if (menu.classList.contains('meeting-menu')) positionMeetingMenu(menu, toggle);
+      else positionFloating(menu, toggle, ['bottom-end', 'top-end']);
+    });
+  document
+    .querySelectorAll('.meeting-workspace-menu')
+    .forEach((menu) => positionWorkspaceAssignMenu(menu));
+};
 const openMeetingMenu = (menu, toggle, opensLeft = false) => {
   menu.hidden = false;
   positionMeetingMenu(menu, toggle, opensLeft);
 };
 const closeMeetingMenus = () => {
+  document.querySelectorAll('.meeting-workspace-menu').forEach((menu) => menu.remove());
   document.querySelectorAll('.meeting-menu').forEach((menu) => {
     menu.hidden = true;
   });
@@ -6376,21 +6875,69 @@ meetingList.addEventListener('scroll', positionOpenMeetingMenus);
 window.addEventListener('resize', positionOpenMeetingMenus);
 /** 为行操作和批量操作运行一次会议变更。*/
 async function mutateMeetings(action, meetings) {
-  const ids = new Set(meetings.map(({ id }) => id).filter(Boolean));
-  const completed = new Set();
-  try {
-    for (const meeting_id of ids) {
-      if (window.brevia) await window.brevia.meeting[action]({ meeting_id });
-      completed.add(meeting_id);
+  const completed = new Set(),
+    results = [];
+  for (const meeting of meetings) {
+    if (!meeting.id || results.some((result) => result.meeting_id === meeting.id)) continue;
+    try {
+      if (window.brevia) await window.brevia.meeting[action]({ meeting_id: meeting.id });
+      completed.add(meeting.id);
+      results.push({ meeting_id: meeting.id, completed: true });
+    } catch (error) {
+      results.push({ meeting_id: meeting.id, error: String(error.message || error) });
     }
+  }
+  if (['delete', 'restore', 'purge'].includes(action))
+    uiData.meetings = uiData.meetings.filter((meeting) => !completed.has(meeting.id));
+  clearMeetingSelection();
+  const failed = results.filter((result) => result.error);
+  if (failed.length) {
+    meetingSelectionMode = true;
+    failed.forEach((result) => selectedMeetingKeys.add(result.meeting_id));
+  }
+  renderMeetingList();
+  if (failed.length) {
+    const error = new Error(failed.map((result) => result.error).join('; '));
+    error.results = results;
+    throw error;
+  }
+  return results;
+}
+async function runBatchMutation(action, meetings, previousResults = [], allMeetings = meetings) {
+  if (batchOperationBusy) return false;
+  batchOperationBusy = true;
+  batchToolbar.querySelectorAll('button').forEach((button) => {
+    button.disabled = true;
+  });
+  try {
+    const results = await mutateMeetings(action, meetings);
+    if (previousResults.length) {
+      const combined = [
+        ...previousResults.filter(
+          (result) => !meetings.some((meeting) => meeting.id === result.meeting_id),
+        ),
+        ...results,
+      ];
+      showBatchResults(allMeetings, combined, action, null);
+    }
+    return true;
+  } catch (error) {
+    const combined = [
+      ...previousResults.filter(
+        (result) => !meetings.some((meeting) => meeting.id === result.meeting_id),
+      ),
+      ...(error.results || []),
+    ];
+    showBatchResults(allMeetings, combined, action, (failures) =>
+      runBatchMutation(action, failures, combined, allMeetings),
+    );
+    return false;
   } finally {
-    // 与主进程的串行删除保护一致；失败时也同步已完成项，只扫描一次列表。
-    if (['delete', 'restore', 'purge'].includes(action))
-      uiData.meetings = uiData.meetings.filter((meeting) => !completed.has(meeting.id));
-    clearMeetingSelection();
-    renderMeetingList();
+    batchOperationBusy = false;
+    syncMeetingSelection();
   }
 }
+
 async function openMeetingRow(row) {
   if (!window.brevia) {
     showView('detail');
@@ -6411,7 +6958,7 @@ async function openMeetingRow(row) {
     showView('detail');
   } catch (error) {
     row.style.opacity = '';
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   }
 }
 meetingList.addEventListener('click', async (event) => {
@@ -6422,6 +6969,11 @@ meetingList.addEventListener('click', async (event) => {
   }
   if (event.target.closest('[data-rename-meeting]')) {
     event.stopPropagation();
+    if (event.target.closest('[data-cancel-meeting-rename]') && !meetingRenameDraft?.saving) {
+      meetingRenameDraft = null;
+      editingMeetingIndex = null;
+      renderMeetingList();
+    }
     return;
   }
   const selectionRow = event.target.closest('.meeting-row');
@@ -6437,11 +6989,15 @@ meetingList.addEventListener('click', async (event) => {
   }
   const actions = event.target.closest('.meeting-actions');
   if (!actions) {
+    if (selectionRow && meetingSelectionMode) {
+      toggleMeetingSelection(selectionRow);
+      return;
+    }
     if (selectionRow && activeLibraryNav !== 'recently-deleted') {
       try {
         await openMeetingRow(selectionRow);
       } catch (error) {
-        showToast(error.message);
+        showToast(error.message, undefined, 'error');
       }
     }
     return;
@@ -6462,7 +7018,7 @@ meetingList.addEventListener('click', async (event) => {
     const meeting = uiData.meetings[index];
     if (action.dataset.meetingAction === 'workspace') {
       const rect = action.getBoundingClientRect();
-      closeMeetingMenus();
+      document.querySelectorAll('.meeting-workspace-menu').forEach((menu) => menu.remove());
       if (typeof showWorkspaceAssignMenu === 'function') {
         showWorkspaceAssignMenu(index, rect);
       }
@@ -6470,6 +7026,12 @@ meetingList.addEventListener('click', async (event) => {
     }
     if (action.dataset.meetingAction === 'rename') {
       editingMeetingIndex = index;
+      meetingRenameDraft = {
+        key: meeting.id || String(index),
+        title: meeting.title,
+        saving: false,
+        error: '',
+      };
       closeMeetingMenus();
       renderMeetingList();
       requestAnimationFrame(() => {
@@ -6492,7 +7054,7 @@ meetingList.addEventListener('click', async (event) => {
         }
         await window.brevia.showItem(audio);
       } catch (error) {
-        showToast(error.message);
+        showToast(error.message, undefined, 'error');
       }
       closeMeetingMenus();
       return;
@@ -6508,19 +7070,30 @@ meetingList.addEventListener('click', async (event) => {
             filename_prefix: `[${t('字幕')}]`,
           })
           .then(
-            (value) => value && showToast(t('已导出「{title}」').replace('{title}', meeting.title)),
+            (value) =>
+              value &&
+              showToast(
+                t('已导出「{title}」').replace('{title}', meeting.title),
+                undefined,
+                'success',
+              ),
           )
-          .catch((error) => showToast(error.message));
-      else showToast(t('已导出「{title}」').replace('{title}', meeting.title));
+          .catch((error) => showToast(error.message, undefined, 'error'));
+      else
+        showToast(t('已导出「{title}」').replace('{title}', meeting.title), undefined, 'success');
       return;
     }
     if (action.dataset.meetingAction === 'delete') {
       openConfirmation(t('删除'), `「${meeting.title}」`, async () => {
         try {
           await mutateMeetings('delete', [meeting]);
-          showToast(t(meeting.isExample ? '示例会议及录音已删除' : '会议已移至最近删除'));
+          showToast(
+            t(meeting.isExample ? '示例会议及录音已删除' : '会议已移至最近删除'),
+            undefined,
+            'success',
+          );
         } catch (error) {
-          showToast(error.message);
+          showToast(error.message, undefined, 'error');
         }
       });
       return;
@@ -6528,9 +7101,9 @@ meetingList.addEventListener('click', async (event) => {
     if (action.dataset.meetingAction === 'restore') {
       try {
         await mutateMeetings('restore', [meeting]);
-        showToast(t('恢复'));
+        showToast(t('恢复'), undefined, 'success');
       } catch (error) {
-        showToast(error.message);
+        showToast(error.message, undefined, 'error');
       }
       return;
     }
@@ -6538,41 +7111,78 @@ meetingList.addEventListener('click', async (event) => {
       openConfirmation(BreviaI18n.trashCopy(locale).purge, `「${meeting.title}」`, async () => {
         try {
           await mutateMeetings('purge', [meeting]);
-          showToast(BreviaI18n.trashCopy(locale).purge);
+          showToast(BreviaI18n.trashCopy(locale).purge, undefined, 'success');
         } catch (error) {
-          showToast(error.message);
+          showToast(error.message, undefined, 'error');
         }
       });
       return;
     }
   }
 });
-meetingList.addEventListener('submit', (event) => {
-  if (event.target.matches('[data-rename-meeting]')) {
-    event.preventDefault();
-    const title = new FormData(event.target).get('title').trim();
-    const meeting = uiData.meetings[Number(event.target.dataset.meetingIndex)];
-    editingMeetingIndex = null;
-    if (title) {
-      meeting.title = title;
-      if (window.brevia && meeting.id)
-        window.brevia.meeting
-          .update({ meeting_id: meeting.id, updates: { title } })
-          .catch((error) => showToast(error.message));
+meetingList.addEventListener('input', (event) => {
+  if (!event.target.matches('[data-rename-meeting] input') || !meetingRenameDraft) return;
+  event.target.setCustomValidity('');
+  meetingRenameDraft.title = event.target.value;
+  meetingRenameDraft.error = '';
+  event.target.closest('form').querySelector('.meeting-rename-state').textContent =
+    t('已修改 · 尚未保存');
+});
+meetingList.addEventListener('submit', async (event) => {
+  if (!event.target.matches('[data-rename-meeting]')) return;
+  event.preventDefault();
+  const form = event.target,
+    draft = meetingRenameDraft;
+  if (!draft || draft.saving) return;
+  const title = form.querySelector('input').value.trim();
+  if (!title) {
+    form.querySelector('input').setCustomValidity(t('会议名称不能为空'));
+    form.querySelector('input').reportValidity();
+    return;
+  }
+  const meeting = uiData.meetings.find((item, index) => (item.id || String(index)) === draft.key);
+  if (!meeting) return;
+  draft.title = title;
+  draft.saving = true;
+  form.querySelectorAll('input,button').forEach((control) => {
+    control.disabled = true;
+  });
+  form.querySelector('.meeting-rename-state').textContent = t('正在保存…');
+  try {
+    if (title !== meeting.title)
+      await window.brevia?.meeting.update({ meeting_id: meeting.id, updates: { title } });
+    meeting.title = title;
+    if (meetingRenameDraft === draft) {
+      meetingRenameDraft = null;
+      editingMeetingIndex = null;
     }
     renderMeetingList();
-    return;
+  } catch (error) {
+    draft.saving = false;
+    draft.error = error.message;
+    form.querySelectorAll('input,button').forEach((control) => {
+      control.disabled = false;
+    });
+    form.querySelector('.meeting-rename-state').textContent =
+      `${t('重命名失败，修改仍保留')} · ${userFacingError(error.message)}`;
   }
 });
 meetingList.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && event.target.matches('[data-rename-meeting] input')) {
+  if (
+    event.key === 'Escape' &&
+    event.target.closest('[data-rename-meeting]') &&
+    !meetingRenameDraft?.saving
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    const key = meetingRenameDraft.key;
+    meetingRenameDraft = null;
     editingMeetingIndex = null;
     renderMeetingList();
+    meetingList.querySelector(`[data-selection-key="${CSS.escape(key)}"]`)?.focus();
   }
 });
 document.addEventListener('click', (event) => {
-  const renameForm = meetingList.querySelector('[data-rename-meeting]');
-  if (renameForm && !event.target.closest('.meeting-row')) renameForm.requestSubmit();
   if (!event.target.closest('.flow-select'))
     document.querySelectorAll('.flow-select-options:not([hidden])').forEach((options) => {
       const toggle = options.closest('.flow-select')?.querySelector('.flow-select-toggle');
@@ -6580,18 +7190,27 @@ document.addEventListener('click', (event) => {
       options.hidden = true;
       toggle.setAttribute('aria-expanded', 'false');
     });
-  if (!event.target.closest('.meeting-actions')) closeMeetingMenus();
+  if (!event.target.closest('.meeting-actions, .meeting-workspace-menu')) {
+    closeMeetingMenus();
+    document.querySelectorAll('.meeting-workspace-menu').forEach((menu) => menu.remove());
+  }
 
   // 工作区相关事件
+  if (event.target.closest('#workspace-selector')) {
+    toggleWorkspacePicker();
+    return;
+  }
   const workspaceItem = event.target.closest('.workspace-item');
   if (workspaceItem && typeof switchWorkspace === 'function') {
     const workspaceId = workspaceItem.dataset.workspaceId || '';
+    closeWorkspacePicker(true);
     void switchWorkspace(workspaceId);
     return;
   }
 
   const newWorkspaceBtn = event.target.closest('[data-new-workspace]');
   if (newWorkspaceBtn && typeof showNewWorkspaceDialog === 'function') {
+    closeWorkspacePicker(true);
     showNewWorkspaceDialog();
     return;
   }
@@ -6659,28 +7278,15 @@ function renderMiniPlayback() {
   if (wasHidden) taskCards.append(miniPlayback);
   miniPlayback.querySelector('#mini-playback-title').textContent =
     currentMeetingDetail?.title || t('播放录音');
-  const segment = uiData.detail.transcript.find(
-    (item) =>
-      playerAudio.currentTime >= item.startSeconds && playerAudio.currentTime < item.endSeconds,
-  );
-  const ratio = segment
-    ? Math.max(
-        0,
-        Math.min(
-          1,
-          (playerAudio.currentTime - segment.startSeconds) /
-            Math.max(0.1, segment.endSeconds - segment.startSeconds),
-        ),
-      )
-    : 0;
-  miniPlayback.querySelector('#mini-playback-caption').textContent = segment
-    ? segment.text.slice(0, Math.max(1, Math.ceil(segment.text.length * ratio)))
-    : '';
   miniPlayback.querySelector('#mini-playback-state').textContent = playerAudio.paused
     ? t('暂停')
     : t('正在播放');
   miniPlaybackSeek.setAttribute('aria-valuemax', String(playerAudio.duration || 0));
   miniPlaybackSeek.setAttribute('aria-valuenow', String(playerAudio.currentTime));
+  miniPlaybackSeek.style.setProperty(
+    '--played',
+    `${playerAudio.duration ? (playerAudio.currentTime / playerAudio.duration) * 100 : 0}%`,
+  );
   miniPlaybackSeek.querySelector('i').style.transform =
     `scaleX(${playerAudio.duration ? playerAudio.currentTime / playerAudio.duration : 0})`;
   miniPlaybackToggle.innerHTML = interfaceIcon(playerAudio.paused ? 'play' : 'pause');
@@ -6775,7 +7381,7 @@ document.querySelector('#playback-floating-caption-toggle')?.addEventListener('c
     syncPlaybackFloatingCaption();
   } catch (error) {
     if (floatingCaptionMode !== 'playback') return;
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
     floatingCaptionMode = null;
     renderFloatingCaptionToggle();
     renderPlaybackFloatingCaptionToggle();
@@ -6831,6 +7437,34 @@ miniPlaybackClose.addEventListener('click', () => {
 miniPlayback.addEventListener('dblclick', (event) => {
   if (!event.target.closest('button')) void showView('detail');
 });
+const playerMute = document.querySelector('#player-mute');
+const playerFullscreen = document.querySelector('#player-fullscreen');
+function updatePlayerDisplayControls() {
+  const playerMute = document.querySelector('#player-mute');
+  const playerFullscreen = document.querySelector('#player-fullscreen');
+  playerMute.innerHTML = interfaceIcon(playerAudio.muted ? 'muted' : 'volume');
+  playerMute.setAttribute('aria-label', t(playerAudio.muted ? '取消静音' : '静音'));
+  playerMute.setAttribute('aria-pressed', String(playerAudio.muted));
+  playerFullscreen.setAttribute('aria-label', t(document.fullscreenElement ? '退出全屏' : '全屏'));
+  playerFullscreen.setAttribute('aria-pressed', String(Boolean(document.fullscreenElement)));
+  document.querySelectorAll('.player .skip').forEach((button, index) => {
+    button.setAttribute('aria-label', t(index ? '前进 15 秒' : '后退 15 秒'));
+  });
+}
+playerMute.addEventListener('click', () => {
+  playerAudio.muted = !playerAudio.muted;
+});
+playerAudio.addEventListener('volumechange', updatePlayerDisplayControls);
+playerFullscreen.addEventListener('click', async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.querySelector('#detail-view').requestFullscreen();
+  } catch (error) {
+    showToast(error.message, undefined, 'error');
+  }
+});
+document.addEventListener('fullscreenchange', updatePlayerDisplayControls);
+updatePlayerDisplayControls();
 document.querySelectorAll('.player .skip').forEach((button, index) =>
   button.addEventListener('click', () => {
     playerAudio.currentTime = Math.max(
@@ -6879,7 +7513,7 @@ async function saveInlineSegmentSpeaker(form) {
     if (meeting) applyBackendDetail(meeting);
   } catch (error) {
     delete form.dataset.saving;
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   }
 }
 const finalTranscript = document.querySelector('.final-transcript');
@@ -6914,6 +7548,9 @@ function positionFloating(
   const width = floating.offsetWidth;
   const height = floating.offsetHeight;
   const positions = {
+    'bottom-end': { left: anchor.right - width, top: anchor.bottom + 4 },
+    'top-end': { left: anchor.right - width, top: anchor.top - height - 4 },
+    'right-center': { left: anchor.right, top: (anchor.top + anchor.bottom - height) / 2 },
     'right-start': { left: anchor.right, top: anchor.top },
     'left-start': { left: anchor.left - width, top: anchor.top },
     'right-end': { left: anchor.right, top: anchor.bottom - height },
@@ -6950,8 +7587,8 @@ function openSegmentContextMenu(meetingId, segmentId, x, y, segmentInfo) {
         `<button type="button" data-add-segment-profile-sample="${profile.id}">${escapeHtml(speakerProfileName(profile))}</button>`,
     )
     .join('');
-  const createProfile = `<div class="segment-context-submenu"><button type="button" data-open-segment-profile-create><span class="segment-context-label">${t('新增声纹')}</span><span class="segment-context-arrow" aria-hidden="true">›</span></button><form class="segment-context-options segment-context-name-form" data-create-segment-profile><label>${t('声纹名称')}<input name="name" maxlength="32" required autocomplete="off" /></label><button type="submit">${t('确定')}</button></form></div>`;
-  segmentContextMenu.innerHTML = `<div class="segment-context-submenu"><button type="button" data-add-segment-note><span class="segment-context-label">${t('加入笔记')}</span></button></div><div class="segment-context-submenu"><button type="button" data-open-segment-profile-menu><span class="segment-context-label">${t('添加录音到声纹库')}</span><span class="segment-context-arrow" aria-hidden="true">›</span></button><div class="segment-context-options">${profiles || `<span>${t('暂无已注册声纹')}</span>`}${createProfile}</div></div>`;
+  const createProfile = `<div class="segment-context-submenu"><button type="button" data-open-segment-profile-create><span class="segment-context-label">${t('新增声纹')}</span><span class="segment-context-arrow" aria-hidden="true">${interfaceIcon('chevron-right')}</span></button><form class="segment-context-options segment-context-name-form" data-create-segment-profile><label>${t('声纹名称')}<input name="name" maxlength="32" required autocomplete="off" /></label><button type="submit">${t('确定')}</button></form></div>`;
+  segmentContextMenu.innerHTML = `<div class="segment-context-submenu"><button type="button" data-add-segment-note><span class="segment-context-label">${t('加入笔记')}</span></button></div><div class="segment-context-submenu"><button type="button" data-open-segment-profile-menu><span class="segment-context-label">${t('添加录音到声纹库')}</span><span class="segment-context-arrow" aria-hidden="true">${interfaceIcon('chevron-right')}</span></button><div class="segment-context-options">${profiles || `<span>${t('暂无已注册声纹')}</span>`}${createProfile}</div></div>`;
   segmentContextMenu.style.visibility = 'hidden';
   segmentContextMenu.hidden = false;
   positionFloating(segmentContextMenu, { left: x, right: x, top: y, bottom: y });
@@ -6993,7 +7630,7 @@ segmentContextMenu.addEventListener('click', async (event) => {
     closeSegmentContextMenu();
     if (info) {
       appendTextToActiveNotes(info.text, meetingId);
-      showToast(t('已加入笔记'));
+      showToast(t('已加入笔记'), undefined, 'success');
     } else showToast(t('无法获取字幕内容'));
     return;
   }
@@ -7024,9 +7661,9 @@ segmentContextMenu.addEventListener('click', async (event) => {
     });
     speakerProfiles = await window.brevia.speakerProfile.list();
     if (meeting) applyBackendDetail(meeting);
-    showToast(t('已添加录音到声纹库'));
+    showToast(t('已添加录音到声纹库'), undefined, 'success');
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   }
 });
 segmentContextMenu.addEventListener('submit', async (event) => {
@@ -7047,9 +7684,9 @@ segmentContextMenu.addEventListener('submit', async (event) => {
     });
     speakerProfiles = await window.brevia.speakerProfile.list();
     if (meeting) applyBackendDetail(meeting);
-    showToast(t('已创建声纹并添加录音'));
+    showToast(t('已创建声纹并添加录音'), undefined, 'success');
   } catch (error) {
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   }
 });
 segmentContextMenu.addEventListener('pointerover', (event) => {
@@ -7117,7 +7754,7 @@ const startRefinement = (numSpeakers, modelId) => {
       renderMeetingDetail();
     }
     if (refinementCard.dataset.meetingId === meetingId) hideRefinementProgress();
-    showToast(error.message);
+    showToast(error.message, undefined, 'error');
   });
 };
 /** 用户在这次精修里显式选过的模型；没选过返回 undefined，让后端自己选。@returns {string|undefined} */
@@ -7213,29 +7850,20 @@ async function translateLatestTranscript(targetLanguage) {
       }
     });
     const failure = results.find((result) => result.status === 'rejected');
-    if (failure) showToast(`${t('翻译失败')}: ${failure.reason.message}`);
+    if (failure) showToast(`${t('翻译失败')}: ${failure.reason.message}`, undefined, 'error');
     const refreshed = await window.brevia.meeting.get({ meeting_id: meeting.id });
     if (refreshed?.id === currentMeetingDetail?.id) applyBackendDetail(refreshed);
   } catch (error) {
     uiData.detail.translationPending = false;
     renderMeetingDetail();
-    showToast(`${t('翻译失败')}: ${error.message}`);
+    showToast(`${t('翻译失败')}: ${error.message}`, undefined, 'error');
   }
 }
 /** 保存字幕编辑态下的逐句修正：只提交真正改动的段落，写入后端用户版本。@returns {Promise<void>} */
 async function saveDetailTranscriptEdits() {
   const meeting = currentMeetingDetail;
-  if (!meeting || !uiData.detail.transcriptEditing) return;
-  if (!window.brevia?.segment?.saveText) {
-    // 桥接缺失（旧 preload）时不能静默失败：用户会以为改动已保存。
-    uiData.detail.transcriptEditing = false;
-    renderMeetingDetail();
-    showToast(t('保存失败'));
-    return;
-  }
-  const draft = uiData.detail.transcriptDraft || {};
-  // 与展示口径保持一致（精修模型退役时展示的是实时版本，见 applyBackendDetail）：
-  // 用同一份段落集合取原文，否则草稿 id 全部对不上，修改会被整体静默跳过。
+  const d = uiData.detail;
+  if (!meeting || !d.transcriptEditing || d.transcriptSaveState === 'saving') return;
   const original = new Map(
     (latestTranscriptSegments(meeting).segments || []).map((segment) => [
       segment.id,
@@ -7243,44 +7871,94 @@ async function saveDetailTranscriptEdits() {
     ]),
   );
   const edits = [];
-  for (const [segmentId, value] of Object.entries(draft)) {
-    if (!original.has(segmentId)) continue;
+  d.transcriptErrors = {};
+  for (const [segmentId, value] of Object.entries(d.transcriptDraft || {})) {
     const text = String(value).trim();
-    // 字幕需要保留文本：空段落会让播放定位与导出出现空行，因此整段清空时不提交。
-    if (!text) {
-      showToast(t('字幕内容不能为空'));
+    if (!text || text.length > 4000) {
+      d.transcriptErrors[segmentId] = t(!text ? '字幕内容不能为空' : '保存失败');
+      renderMeetingDetail();
+      document.querySelector(`[data-segment-text="${CSS.escape(segmentId)}"]`)?.focus();
+      return;
+    }
+    if (!original.has(segmentId)) {
+      d.transcriptSaveState = 'failed';
+      renderMeetingDetail();
+      showToast(t('保存失败，修改仍保留'), undefined, 'error');
       return;
     }
     if (text !== original.get(segmentId)) edits.push({ segment_id: segmentId, text });
   }
-  uiData.detail.transcriptEditing = false;
-  uiData.detail.transcriptDraft = {};
-  detailActiveTab = 'transcript';
   if (!edits.length) {
+    d.transcriptEditing = false;
+    d.transcriptDraft = {};
+    d.transcriptSaveState = 'saved';
     renderMeetingDetail();
     return;
   }
+  d.transcriptSaveState = 'saving';
+  renderMeetingDetail();
   try {
+    if (!window.brevia?.segment?.saveText) throw new Error(t('保存失败'));
     const updated = await window.brevia.segment.saveText({
       meeting_id: meeting.id,
       segments: edits,
     });
-    if (updated?.id === currentMeetingDetail?.id) applyBackendDetail(updated);
-    showToast(t('字幕已保存'));
-  } catch (error) {
-    // 保存失败时退回编辑态并保留草稿，用户已输入的内容不会丢。
-    uiData.detail.transcriptEditing = true;
-    uiData.detail.transcriptDraft = draft;
+    if (!updated || updated.id !== meeting.id) throw new Error(t('保存失败'));
+    if (currentMeetingDetail?.id !== meeting.id) return;
+    d.transcriptEditing = false;
+    d.transcriptDraft = {};
+    d.transcriptSaveState = 'saved';
     detailActiveTab = 'transcript';
+    applyBackendDetail(updated);
+    showToast(t('字幕已保存'), undefined, 'success');
+  } catch (error) {
+    if (currentMeetingDetail?.id !== meeting.id) return;
+    d.transcriptSaveState = 'failed';
     renderMeetingDetail();
-    showToast(`${t('保存失败')}: ${error.message}`);
+    showToast(`${t('保存失败')}: ${error.message}`, undefined, 'error');
   }
 }
 finalTranscript.addEventListener('input', (event) => {
   const field = event.target.closest('[data-segment-text]');
-  if (!field) return;
-  uiData.detail.transcriptDraft ||= {};
-  uiData.detail.transcriptDraft[field.dataset.segmentText] = field.value;
+  if (!field || uiData.detail.transcriptSaveState === 'saving') return;
+  const d = uiData.detail;
+  d.transcriptDraft ||= {};
+  d.transcriptDraft[field.dataset.segmentText] = field.value;
+  d.transcriptErrors = {};
+  const original = new Map(
+    (latestTranscriptSegments(currentMeetingDetail).segments || []).map((segment) => [
+      segment.id,
+      String(segment.text).trim(),
+    ]),
+  );
+  d.transcriptSaveState = Object.entries(d.transcriptDraft).some(
+    ([id, text]) => String(text).trim() !== original.get(id),
+  )
+    ? 'dirty'
+    : 'unchanged';
+  finalTranscript.querySelector('.tabbar').outerHTML = renderDetailTabbar();
+  field
+    .closest('.segment-copy')
+    .classList.toggle(
+      'is-modified',
+      String(field.value).trim() !== original.get(field.dataset.segmentText),
+    );
+  const copy = field.closest('.segment-copy');
+  const translationLabel = copy.querySelector('.translation > span');
+  if (translationLabel)
+    translationLabel.textContent = t(
+      copy.classList.contains('is-modified') ? '译文（未更新）' : '翻译',
+    );
+  let marker = copy.querySelector('.segment-modified-state');
+  if (copy.classList.contains('is-modified') && !marker) {
+    marker = document.createElement('small');
+    marker.className = 'segment-modified-state';
+    marker.textContent = t('已修改');
+    copy.prepend(marker);
+  } else if (!copy.classList.contains('is-modified')) marker?.remove();
+  field.removeAttribute('aria-invalid');
+  finalTranscript.querySelectorAll('.segment-edit-error').forEach((element) => element.remove());
+  resizeTranscriptField(field);
 });
 finalTranscript.addEventListener('click', async (event) => {
   // 点击字幕段的时间戳/说话人区域 → 定位播放该段。
@@ -7307,6 +7985,7 @@ finalTranscript.addEventListener('click', async (event) => {
   if (notesCancel) {
     uiData.detail.notes = detailNotesBeforeEdit;
     uiData.detail.notesEditing = false;
+    uiData.detail.notesSaveState = 'saved';
     // 取消后必然回到「我的笔记」只读态，编辑按钮始终可见；
     // 防止任何并发刷新把激活 tab 带到别处后编辑入口消失。
     detailActiveTab = 'notes';
@@ -7317,25 +7996,51 @@ finalTranscript.addEventListener('click', async (event) => {
   if (notesSave) {
     const meetingId = currentMeetingDetail?.id;
     const notes = detailNotesEditor ? detailNotesEditor.getMarkdown() : uiData.detail.notes;
+    if (uiData.detail.notesSaveState === 'saving') return;
+    uiData.detail.notesSaveState = 'saving';
+    document.querySelector('[data-notes-save-status]').innerHTML = renderSaveState('saving');
+    const cancel = document.querySelector('[data-notes-cancel]');
     notesSave.disabled = true;
+    cancel.disabled = true;
     try {
       await persistNotes(meetingId, notes);
       if (currentMeetingDetail?.id !== meetingId) return;
-      if (uiData.detail.notesEditing && detailNotesEditor?.getMarkdown() !== notes) return;
+      if (uiData.detail.notesEditing && detailNotesEditor?.getMarkdown() !== notes) {
+        uiData.detail.notesSaveState = 'dirty';
+        document.querySelector('[data-notes-save-status]').innerHTML = renderSaveState('dirty');
+        return;
+      }
       uiData.detail.notes = notes;
       uiData.detail.notesEditing = false;
+      uiData.detail.notesSaveState = 'saved';
       detailActiveTab = 'notes';
       renderMeetingDetail();
     } catch (error) {
-      showToast(error.message);
+      if (currentMeetingDetail?.id === meetingId && uiData.detail.notesEditing) {
+        uiData.detail.notesSaveState = 'failed';
+        document.querySelector('[data-notes-save-status]').innerHTML = renderSaveState('failed');
+        notesSave.textContent = t('重试');
+        notesSave.setAttribute('aria-label', t('重试'));
+        notesSave.title = t('重试');
+      }
+      showToast(error.message, undefined, 'error');
     } finally {
       notesSave.disabled = false;
+      cancel.disabled = false;
     }
     return;
   }
   const editTranscript = event.target.closest('[data-edit-transcript]');
   if (editTranscript) {
+    const d = uiData.detail;
+    d.transcriptEditEntries = (
+      d.hasRefined && d.transcriptVersion !== 'original'
+        ? d.refinedTranscript
+        : d.originalTranscript || d.transcript
+    ).map((entry) => ({ ...entry }));
     uiData.detail.transcriptEditing = true;
+    uiData.detail.transcriptSaveState = 'unchanged';
+    uiData.detail.transcriptErrors = {};
     uiData.detail.transcriptDraft = {};
     detailActiveTab = 'transcript';
     renderMeetingDetail();
@@ -7344,6 +8049,8 @@ finalTranscript.addEventListener('click', async (event) => {
   }
   const transcriptCancel = event.target.closest('[data-transcript-cancel]');
   if (transcriptCancel) {
+    if (uiData.detail.transcriptSaveState === 'saving') return;
+    uiData.detail.transcriptSaveState = 'saved';
     uiData.detail.transcriptEditing = false;
     uiData.detail.transcriptDraft = {};
     // 与笔记编辑一致：结束编辑必然回到被编辑的面板，避免动作作用在看不见的视图上。
@@ -7366,6 +8073,7 @@ finalTranscript.addEventListener('click', async (event) => {
       });
     options.hidden = !opening;
     detailTranslationToggle.setAttribute('aria-expanded', String(opening));
+    if (opening) positionFloating(options, detailTranslationToggle, ['bottom-end', 'top-end']);
     return;
   }
   const detailTranslation = event.target.closest('[data-detail-translation]');
@@ -7452,6 +8160,7 @@ finalTranscript.addEventListener('click', async (event) => {
       const input = menu.querySelector('[data-refine-num-speakers]');
       const numSpeakers = currentMeetingDetail?.num_speakers;
       if (input) input.value = Number.isInteger(numSpeakers) && numSpeakers > 0 ? numSpeakers : '';
+      positionFloating(menu, more, ['bottom-end', 'top-end']);
     }
     return;
   }
@@ -7472,6 +8181,8 @@ finalTranscript.addEventListener('click', async (event) => {
   const tab = event.target.closest('[data-detail-tab]');
   if (!tab) return;
   const target = tab.dataset.detailTab;
+  const previousTab = detailActiveTab;
+  if (target === previousTab) return;
   detailActiveTab = target;
   setDetailLayoutMode(target === 'summary' ? 'summary' : 'transcript');
   // tabbar 的编辑动作跟随激活 tab（笔记 → 编辑笔记，字幕 → 逐句编辑字幕），
@@ -7483,8 +8194,27 @@ finalTranscript.addEventListener('click', async (event) => {
     tabbar.replaceWith(holder.firstElementChild);
   }
   finalTranscript.querySelectorAll('[data-detail-panel]').forEach((panel) => {
-    panel.hidden = panel.dataset.detailPanel !== (target === 'summary' ? 'notes' : target);
+    panel.hidden = panel.dataset.detailPanel !== target;
   });
+  syncDetailTranscriptToolbar();
+  syncDetailSummaryPanel();
+  filterDetailTranscript();
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const panel = finalTranscript.querySelector(`[data-detail-panel="${target}"]`);
+    panel?.getAnimations().forEach((animation) => animation.cancel());
+    const direction =
+      ['notes', 'transcript', 'summary'].indexOf(target) >
+      ['notes', 'transcript', 'summary'].indexOf(previousTab)
+        ? 1
+        : -1;
+    panel?.animate(
+      [
+        { opacity: 0.55, transform: `translateX(${direction * 8}px)` },
+        { opacity: 1, transform: 'translateX(0)' },
+      ],
+      { duration: 180, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+    );
+  }
 });
 function filterDetailTranscript() {
   const query = String(uiData.detail.transcriptSearch || '')
@@ -7495,21 +8225,61 @@ function filterDetailTranscript() {
   let matched = 0;
   const rows = [...(body?.querySelectorAll('.segment') || [])];
   rows.forEach((row) => {
-    row.hidden = Boolean(query && !row.textContent.toLocaleLowerCase().includes(query));
-    if (!row.hidden) matched++;
+    row.hidden = false;
+    const match = row.textContent.toLocaleLowerCase().includes(query);
+    row.classList.toggle('is-search-match', Boolean(query && match));
+    if (match) matched++;
   });
   const fulltext = body?.querySelector('.refined-fulltext');
   if (fulltext) {
-    fulltext.hidden = Boolean(query && !fulltext.textContent.toLocaleLowerCase().includes(query));
-    matched = fulltext.hidden ? 0 : 1;
+    fulltext.hidden = false;
+    matched = fulltext.textContent.toLocaleLowerCase().includes(query) ? 1 : 0;
   }
   const result = transcript.querySelector('[data-transcript-results]');
   if (result) result.textContent = query ? `${matched}` : '';
+  const panel = document.querySelector('.detail-search-results');
+  if (!panel) return;
+  panel.hidden = !query || detailActiveTab !== 'transcript';
+  document.querySelector('#detail-view .notes').hidden =
+    !panel.hidden || detailActiveTab === 'summary';
+  document.querySelectorAll('#detail-view [data-transcript-search]').forEach((input) => {
+    if (input.value !== uiData.detail.transcriptSearch)
+      input.value = uiData.detail.transcriptSearch || '';
+  });
+  panel.querySelector('[data-transcript-result-count]').textContent =
+    `${t('搜索结果')} · ${matched}`;
+  const list = panel.querySelector('[data-transcript-result-list]');
+  list.replaceChildren();
+  const matches = fulltext
+    ? matched
+      ? [fulltext]
+      : []
+    : rows.filter((row) => row.classList.contains('is-search-match'));
+  matches.forEach((row) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'transcript-search-result';
+    const time = document.createElement('time');
+    time.textContent = row.querySelector('time')?.textContent || '';
+    const copy = document.createElement('span');
+    copy.textContent = row.querySelector('.segment-copy')?.textContent || row.textContent;
+    button.append(time, copy);
+    button.onclick = () => {
+      row.scrollIntoView({ block: 'center' });
+      (row.querySelector('.segment-meta') || row).click();
+    };
+    list.append(button);
+  });
 }
-finalTranscript.addEventListener('input', (event) => {
+document.querySelector('#detail-view').addEventListener('input', (event) => {
   if (!event.target.matches('[data-transcript-search]')) return;
   uiData.detail.transcriptSearch = event.target.value;
   filterDetailTranscript();
+});
+document.querySelector('[data-close-transcript-search]').addEventListener('click', () => {
+  uiData.detail.transcriptSearch = '';
+  filterDetailTranscript();
+  finalTranscript.querySelector('[data-transcript-search]')?.focus();
 });
 finalTranscript.addEventListener('click', (event) => {
   const version = event.target.closest('[data-transcript-version]');
@@ -7536,6 +8306,9 @@ document.addEventListener('click', (event) => {
 function updateDetailNotesDraft() {
   if (!detailNotesEditor) return;
   uiData.detail.notes = detailNotesEditor.getMarkdown(); // 即时同步，避免重建面板时丢失未保存内容
+  if (uiData.detail.notesSaveState === 'saving') return;
+  uiData.detail.notesSaveState = 'dirty';
+  document.querySelector('[data-notes-save-status]').innerHTML = renderSaveState('dirty');
 }
 finalTranscript.addEventListener('dblclick', (event) => {
   const speaker = event.target.closest('[data-segment-speaker]');
@@ -7615,14 +8388,18 @@ if (window.brevia) {
   });
   if (window.BreviaOnboarding.isFirstLaunch()) openOnboardingLanguage();
   void loadSummaryConfig().catch((error) =>
-    showToast(`${t('纪要配置加载失败')}: ${error.message}`),
+    showToast(`${t('纪要配置加载失败')}: ${error.message}`, undefined, 'error'),
   );
   void loadAiAssistConfig().catch((error) =>
-    showToast(`${t('AI 笔记配置加载失败')}: ${error.message}`),
+    showToast(`${t('AI 笔记配置加载失败')}: ${error.message}`, undefined, 'error'),
   );
-  initializationPromise = breviaClient.initialize().then(applyInitializationResult);
+  initializationPromise = breviaClient.initialize().then((result) => {
+    applyInitializationResult(result);
+    whatsNewReady = true;
+    maybeShowWhatsNew();
+  });
   void initializationPromise.catch((error) =>
-    showToast(`${t('配置或后端启动失败')}: ${userFacingError(error.message)}`),
+    showToast(`${t('配置或后端启动失败')}: ${userFacingError(error.message)}`, undefined, 'error'),
   );
 
   const transcript = document.querySelector('#transcript-scroll');
@@ -7800,6 +8577,7 @@ if (window.brevia) {
     ({ meetings, speaker_profiles: profiles, storage, recoverable }) => {
       uiData.meetings = meetings.map(backendMeeting);
       speakerProfiles = profiles;
+      storageUsage = storage;
       const storageSizes = [storage.meetings, storage.models].map(formatBytes);
       Object.values(modalCopy).forEach((copy) =>
         copy.storage.items.forEach((item, index) => {
@@ -7892,7 +8670,7 @@ if (window.brevia) {
     try {
       await generateSegmentTranslation(payload, liveConfig.target_language);
     } catch (error) {
-      showToast(`${t('翻译失败')}: ${error.message}`);
+      showToast(`${t('翻译失败')}: ${error.message}`, undefined, 'error');
     }
   });
   window.brevia.on('translation.ready', (payload) => {
@@ -7950,7 +8728,7 @@ if (window.brevia) {
       (segment) => generateSegmentTranslation(segment, meeting.target_language),
     );
     const failure = results.find((result) => result.status === 'rejected');
-    if (failure) showToast(`${t('翻译失败')}: ${failure.reason.message}`);
+    if (failure) showToast(`${t('翻译失败')}: ${failure.reason.message}`, undefined, 'error');
     if (meeting.id === breviaClient.state.selectedMeetingId)
       applyBackendDetail(await window.brevia.meeting.get({ meeting_id: meeting.id }));
   });
@@ -8022,7 +8800,7 @@ if (window.brevia) {
     showToast(warning);
   });
   window.brevia.on('worker.error', ({ code, message: error }) =>
-    showToast(code ? `${t(code)} (${error})` : userFacingError(error)),
+    showToast(code ? `${t(code)} (${error})` : userFacingError(error), undefined, 'error'),
   );
   window.brevia.on('update.download-progress', (progress) => {
     updateDownloadProgress = progress;
@@ -8073,50 +8851,45 @@ if (window.brevia) {
   });
 
   document.querySelector('#recently-deleted').addEventListener('click', async () => {
-    await showLibraryNav('recently-deleted').catch((error) => showToast(error.message));
+    await showLibraryNav('recently-deleted').catch((error) =>
+      showToast(error.message, undefined, 'error'),
+    );
   });
-  document.querySelector('#all-meetings').addEventListener('click', async (event) => {
-    const button = event.currentTarget;
-    if (activeView === 'home' && activeLibraryNav === 'all-meetings') {
-      const workspaceNav = document.querySelector('.workspace-subnav');
-      if (workspaceNav) {
-        const collapsed = workspaceNav.classList.toggle('is-collapsed');
-        workspaceNav.setAttribute('aria-hidden', String(collapsed));
-        button.setAttribute('aria-expanded', String(!collapsed));
-      }
-      return;
-    }
-    await showLibraryNav('all-meetings').catch((error) => showToast(error.message));
-    const workspaceNav = document.querySelector('.workspace-subnav');
-    if (workspaceNav) {
-      workspaceNav.classList.remove('is-collapsed');
-      workspaceNav.setAttribute('aria-hidden', 'false');
-      button.setAttribute('aria-expanded', 'true');
-    }
+  document.querySelector('#all-meetings').addEventListener('click', async () => {
+    await showLibraryNav('all-meetings').catch((error) =>
+      showToast(error.message, undefined, 'error'),
+    );
   });
 
   document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-summary-export]')) {
+      document.querySelector('[data-export-detail]').click();
+      return;
+    }
     if (event.target.closest('[data-copy-summary]')) {
       const markdown = currentMeetingDetail?.summary?.data?.markdown;
       if (markdown)
         void window.brevia?.share
           .copyText({ text: markdown })
-          .then(() => showToast(t('已复制到剪贴板')))
-          .catch((error) => showToast(error.message));
+          .then(() => showToast(t('已复制到剪贴板'), undefined, 'success'))
+          .catch((error) => showToast(error.message, undefined, 'error'));
       return;
     }
     if (event.target.closest('[data-open-summary-edit]')) {
       uiData.detail.summaryEditing = true;
+      uiData.detail.summarySaveState = 'saved';
       renderMeetingDetail();
       return;
     }
     if (event.target.closest('[data-cancel-inline-summary-edit]')) {
       uiData.detail.summaryDraft = undefined;
       uiData.detail.summaryEditing = false;
+      uiData.detail.summarySaveState = 'saved';
       renderMeetingDetail();
       return;
     }
     if (event.target.closest('[data-save-inline-summary]')) {
+      if (uiData.detail.summarySaveState === 'saving') return;
       const markdown = (inlineSummaryEditor?.getMarkdown() || '').trim();
       const meetingId = currentMeetingDetail?.id;
       if (!meetingId || !window.brevia?.summary?.save) return;
@@ -8124,6 +8897,11 @@ if (window.brevia) {
         showToast(t('纪要不能为空'));
         return;
       }
+      uiData.detail.summarySaveState = 'saving';
+      document.querySelector('.summary-preview .save-state').outerHTML = renderSaveState('saving');
+      document
+        .querySelectorAll('.summary-preview .summary-tools button')
+        .forEach((button) => (button.disabled = true));
       void window.brevia.summary
         .save({ meeting_id: meetingId, markdown })
         .then(() => {
@@ -8135,6 +8913,8 @@ if (window.brevia) {
             blocked: meetingActive,
             generating: false,
           };
+          uiData.detail.summarySaveState =
+            (inlineSummaryEditor?.getMarkdown() || '').trim() === markdown ? 'saved' : 'dirty';
           if (
             !uiData.detail.summaryEditing ||
             (inlineSummaryEditor?.getMarkdown() || '').trim() === markdown
@@ -8143,9 +8923,19 @@ if (window.brevia) {
             uiData.detail.summaryEditing = false;
           }
           renderMeetingDetail();
-          showToast(t('已保存'));
+          showToast(t('已保存'), undefined, 'success');
         })
-        .catch((error) => showToast(error.message));
+        .catch((error) => {
+          if (currentMeetingDetail?.id === meetingId && uiData.detail.summaryEditing) {
+            uiData.detail.summarySaveState = 'failed';
+            document.querySelector('.summary-preview .save-state').outerHTML =
+              renderSaveState('failed');
+            document
+              .querySelectorAll('.summary-preview .summary-tools button')
+              .forEach((button) => (button.disabled = false));
+          }
+          showToast(error.message, undefined, 'error');
+        });
       return;
     }
     if (event.target.closest('[data-generate-summary]')) void generateMeetingSummary();
@@ -8174,3 +8964,27 @@ registerAppActions('app.js', {
   updatePlayerControl,
   renderPlayerTime,
 });
+
+settingsModal.addEventListener('keydown', (event) => {
+  if (activeModal !== 'upgrade-log' || event.key !== 'Tab') return;
+  const controls = [
+    ...settingsModal.querySelectorAll('button:not(:disabled), a[href], summary'),
+  ].filter(
+    (element) =>
+      element.getClientRects().length &&
+      !element.closest('details:not([open]) section, details:not([open]) footer'),
+  );
+  const index = controls.indexOf(document.activeElement);
+  if (
+    index < 0 ||
+    (!event.shiftKey && index === controls.length - 1) ||
+    (event.shiftKey && index === 0)
+  ) {
+    event.preventDefault();
+    controls[event.shiftKey ? controls.length - 1 : 0]?.focus();
+  }
+});
+if (!window.brevia) {
+  whatsNewReady = true;
+  maybeShowWhatsNew();
+}

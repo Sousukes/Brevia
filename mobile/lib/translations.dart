@@ -1,6 +1,54 @@
 // Shared mobile UI, recording notifications and error messages. Keep placeholders consistent.
 const translations = {
   "en": {
+    "手动连接": "Manual connection",
+    "电脑的局域网地址变化后，可在此更新并重新连接。":
+        "Update the local network address here to reconnect after it changes.",
+    "新的局域网地址": "New local network address",
+    "更新地址不会更改已保存的会议。": "Updating the address does not change saved meetings.",
+    "保存并连接": "Save and connect",
+    "无法连接电脑时，请检查以下项目。": "If the computer cannot connect, check the following.",
+    "手机与电脑在同一局域网": "Phone and computer on the same network",
+    "电脑已开启局域网权限": "Local network access allowed on the computer",
+    "在电脑系统设置中允许 Brevia 访问局域网。":
+        "Allow Brevia to access the local network in the computer system settings.",
+    "电脑 Brevia 已开启": "Brevia open on the computer",
+    "在电脑「设备连接」中开启手机连接服务。":
+        "Enable phone connections in Device Connection on the computer.",
+    "防火墙允许连接": "Firewall allows the connection",
+    "请允许 Brevia 在本地网络中通信。": "Allow Brevia to communicate on the local network.",
+    "访客 Wi-Fi 可能隔离设备，可尝试电脑热点。":
+        "Guest Wi-Fi may isolate devices. Try a computer hotspot.",
+    "已恢复连接": "Connection restored",
+    "录音继续，正在补传": "Recording continues. Uploading saved audio.",
+    "补传进度": "Upload progress",
+    "已保存的录音": "Saved audio",
+    "返回录音": "Return to recording",
+    "需要麦克风权限": "Microphone permission needed",
+    "配对已失效": "Pairing is unavailable",
+    "配对已过期或尝试过多，请在电脑重新开启配对":
+        "Pairing expired or too many attempts. Start pairing again on the computer.",
+    "存储空间不足": "Not enough storage",
+    "请释放存储空间后重试，已保存的录音会继续保留。":
+        "Free up storage and try again. Saved audio is retained.",
+    "前往设置": "Open settings",
+    "重新扫码": "Scan again",
+    "输入新配对码": "Enter a new code",
+    "管理存储": "Manage storage",
+    "导出已有录音": "Export saved audio",
+    "已保存部分可导出；尚未写入的音频不会包含在导出文件中。":
+        "Saved audio can be exported. Audio not yet written to storage is excluded.",
+    "电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。":
+        "When online AI is enabled on the computer, relevant text is sent to the selected provider according to its settings.",
+    "选择实时转写时，音频传到已配对电脑；离线录音只在你确认上传后同步。":
+        "Live transcription sends audio to the paired computer. Offline recordings sync only after you confirm an upload.",
+    "功能与隐私": "Features and privacy",
+    "在线 AI": "Online AI",
+    "无需电脑，先录音": "Record without a computer",
+    "未连接电脑": "Computer not connected",
+    "结束录音？": "End recording?",
+    "录音先保存在本机，待上传内容会继续保留。":
+        "Audio is saved on this phone first. Pending uploads are retained.",
     "下一步": "Next",
     "用于会后整理，实时转写不标注说话人。":
         "Used after the meeting. Live transcripts do not label speakers.",
@@ -58,6 +106,8 @@ const translations = {
         "Computer asleep or disconnected. Waiting for it to wake or reconnect.",
     "上传到电脑": "Upload to computer",
     "仅保存在手机": "Saved only on phone",
+    "录音保存在本机": "Audio saved on this phone",
+    "点击下方按钮开始录音": "Tap the button below to start recording",
     "参会人数": "Participants",
     "可留空；已知人数用于电脑端说话人区分。":
         "Optional. A known count helps distinguish speakers on the computer.",
@@ -324,6 +374,56 @@ const translations = {
         "Recording can continue while locked. Calls, force-stop or system limits can interrupt it; check the status when you return.\n\nAndroid uses a microphone foreground service. Allow recording notifications. If battery restrictions stop the app, adjust system settings. Return to the app to resume after pausing.",
   },
   "es": {
+    "手动连接": "Conexión manual",
+    "电脑的局域网地址变化后，可在此更新并重新连接。":
+        "Actualiza aquí la dirección de red local para volver a conectar.",
+    "新的局域网地址": "Nueva dirección local",
+    "更新地址不会更改已保存的会议。":
+        "Actualizar la dirección no modifica las reuniones guardadas.",
+    "保存并连接": "Guardar y conectar",
+    "无法连接电脑时，请检查以下项目。":
+        "Si no puedes conectar el ordenador, comprueba lo siguiente.",
+    "手机与电脑在同一局域网": "Móvil y ordenador en la misma red",
+    "电脑已开启局域网权限": "Acceso a la red local permitido",
+    "在电脑系统设置中允许 Brevia 访问局域网。":
+        "Permite a Brevia acceder a la red local en los ajustes del ordenador.",
+    "电脑 Brevia 已开启": "Brevia abierto en el ordenador",
+    "在电脑「设备连接」中开启手机连接服务。":
+        "Activa la conexión del móvil en Conexión de dispositivos en el ordenador.",
+    "防火墙允许连接": "El cortafuegos permite la conexión",
+    "请允许 Brevia 在本地网络中通信。": "Permite a Brevia comunicarse en la red local.",
+    "访客 Wi-Fi 可能隔离设备，可尝试电脑热点。":
+        "La red de invitados puede aislar los dispositivos. Prueba un punto de acceso del ordenador.",
+    "已恢复连接": "Conexión restablecida",
+    "录音继续，正在补传": "La grabación continúa. Subiendo el audio guardado.",
+    "补传进度": "Progreso de subida",
+    "已保存的录音": "Audio guardado",
+    "返回录音": "Volver a la grabación",
+    "需要麦克风权限": "Se necesita permiso del micrófono",
+    "配对已失效": "Vinculación no disponible",
+    "配对已过期或尝试过多，请在电脑重新开启配对":
+        "La vinculación caducó o hubo demasiados intentos. Reiníciala en el ordenador.",
+    "存储空间不足": "Espacio insuficiente",
+    "请释放存储空间后重试，已保存的录音会继续保留。":
+        "Libera espacio y vuelve a intentarlo. El audio guardado se conserva.",
+    "前往设置": "Abrir ajustes",
+    "重新扫码": "Volver a escanear",
+    "输入新配对码": "Introducir otro código",
+    "管理存储": "Gestionar almacenamiento",
+    "导出已有录音": "Exportar audio guardado",
+    "已保存部分可导出；尚未写入的音频不会包含在导出文件中。":
+        "Puedes exportar el audio guardado. El audio aún no escrito no se incluye.",
+    "电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。":
+        "Cuando la IA en línea está activada en el ordenador, el texto se envía al proveedor elegido según sus ajustes.",
+    "选择实时转写时，音频传到已配对电脑；离线录音只在你确认上传后同步。":
+        "La transcripción en directo envía audio al ordenador vinculado. Las grabaciones sin conexión solo se sincronizan tras confirmar la subida.",
+    "功能与隐私": "Funciones y privacidad",
+    "在线 AI": "IA en línea",
+    "无需电脑，先录音": "Grabar sin ordenador",
+    "未连接电脑": "Ordenador no conectado",
+    "结束录音？": "¿Finalizar grabación?",
+    "录音先保存在本机，待上传内容会继续保留。":
+        "El audio se guarda primero en el teléfono. Las cargas pendientes se conservan.",
     "下一步": "Siguiente",
     "用于会后整理，实时转写不标注说话人。":
         "Se usa después de la reunión. La transcripción en directo no etiqueta hablantes.",
@@ -383,6 +483,8 @@ const translations = {
         "Ordenador en reposo o desconectado. Esperando a que se active o vuelva a conectarse.",
     "上传到电脑": "Subir al ordenador",
     "仅保存在手机": "Solo en el teléfono",
+    "录音保存在本机": "Audio guardado en este teléfono",
+    "点击下方按钮开始录音": "Pulsa el botón de abajo para grabar",
     "参会人数": "Participantes",
     "可留空；已知人数用于电脑端说话人区分。":
         "Opcional. El número ayuda a distinguir hablantes en el ordenador.",
@@ -649,6 +751,48 @@ const translations = {
         "La grabación puede continuar con la pantalla bloqueada. Las llamadas, el cierre forzado o los límites del sistema pueden interrumpirla; comprueba el estado al volver.\n\nAndroid usa un servicio de micrófono en primer plano. Permite las notificaciones. Si el ahorro de batería cierra la app, ajusta el sistema. Vuelve a la app para continuar tras pausar.",
   },
   "ja": {
+    "手动连接": "手動接続",
+    "电脑的局域网地址变化后，可在此更新并重新连接。": "ローカルネットワークのアドレスが変わったら、ここで更新して再接続できます。",
+    "新的局域网地址": "新しいローカルネットワークのアドレス",
+    "更新地址不会更改已保存的会议。": "アドレスの更新で保存済みの会議は変更されません。",
+    "保存并连接": "保存して接続",
+    "无法连接电脑时，请检查以下项目。": "パソコンに接続できない場合は、以下を確認してください。",
+    "手机与电脑在同一局域网": "スマートフォンとパソコンが同じネットワークに接続",
+    "电脑已开启局域网权限": "パソコンのローカルネットワークへのアクセスを許可",
+    "在电脑系统设置中允许 Brevia 访问局域网。":
+        "パソコンのシステム設定で Brevia のローカルネットワークへのアクセスを許可してください。",
+    "电脑 Brevia 已开启": "パソコンで Brevia を起動",
+    "在电脑「设备连接」中开启手机连接服务。": "パソコンの「デバイス接続」でスマートフォン接続サービスを有効にしてください。",
+    "防火墙允许连接": "ファイアウォールで接続を許可",
+    "请允许 Brevia 在本地网络中通信。": "Brevia のローカルネットワーク通信を許可してください。",
+    "访客 Wi-Fi 可能隔离设备，可尝试电脑热点。":
+        "ゲスト Wi-Fi では機器が分離される場合があります。パソコンのホットスポットをお試しください。",
+    "已恢复连接": "接続が復旧しました",
+    "录音继续，正在补传": "録音を継続し、保存済みの音声を送信しています。",
+    "补传进度": "送信の進捗",
+    "已保存的录音": "保存済みの録音",
+    "返回录音": "録音に戻る",
+    "需要麦克风权限": "マイクの許可が必要です",
+    "配对已失效": "ペアリングが無効です",
+    "配对已过期或尝试过多，请在电脑重新开启配对": "期限が切れたか、試行回数が多すぎます。パソコンでペアリングを再開してください。",
+    "存储空间不足": "ストレージの空き容量が不足しています",
+    "请释放存储空间后重试，已保存的录音会继续保留。": "空き容量を確保して再試行してください。保存済みの録音は保持されます。",
+    "前往设置": "設定を開く",
+    "重新扫码": "再スキャン",
+    "输入新配对码": "新しいコードを入力",
+    "管理存储": "ストレージを管理",
+    "导出已有录音": "保存済みの録音をエクスポート",
+    "已保存部分可导出；尚未写入的音频不会包含在导出文件中。": "保存済みの音声をエクスポートできます。未保存の音声は含まれません。",
+    "电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。":
+        "パソコンでオンライン AI を有効にすると、関連テキストが設定に従って選択したサービスに送信されます。",
+    "选择实时转写时，音频传到已配对电脑；离线录音只在你确认上传后同步。":
+        "リアルタイム文字起こしでは音声をペアリング済みのパソコンに送信します。オフライン録音はアップロード確認後にのみ同期されます。",
+    "功能与隐私": "機能とプライバシー",
+    "在线 AI": "オンライン AI",
+    "无需电脑，先录音": "パソコンなしで録音",
+    "未连接电脑": "パソコン未接続",
+    "结束录音？": "録音を終了しますか？",
+    "录音先保存在本机，待上传内容会继续保留。": "録音はまずこの端末に保存され、未送信の内容も保持されます。",
     "下一步": "次へ",
     "用于会后整理，实时转写不标注说话人。": "会議後の整理に使用します。リアルタイム文字起こしに話者名は表示しません。",
 
@@ -699,6 +843,8 @@ const translations = {
     "电脑已休眠或断开，等待开盖或恢复连接": "パソコンがスリープ中か接続が切れています。復帰または再接続を待っています。",
     "上传到电脑": "パソコンに送信",
     "仅保存在手机": "スマートフォン内のみ",
+    "录音保存在本机": "音声はこの端末に保存",
+    "点击下方按钮开始录音": "下のボタンで録音を開始",
     "参会人数": "参加人数",
     "可留空；已知人数用于电脑端说话人区分。": "任意。人数が分かるとパソコンでの話者識別に役立ちます。",
     "尚未上传": "未送信",
@@ -942,6 +1088,47 @@ const translations = {
         "ロック中も録音できます。着信、強制終了、システム制限で中断される場合があるため、戻ったら状態を確認してください。\n\nAndroid はマイクのフォアグラウンドサービスを使用します。録音通知を許可してください。省電力設定でアプリが停止する場合はシステム設定を調整してください。一時停止後はアプリに戻って再開してください。",
   },
   "ko": {
+    "手动连接": "수동 연결",
+    "电脑的局域网地址变化后，可在此更新并重新连接。": "로컬 네트워크 주소가 변경되면 여기서 업데이트하고 다시 연결하세요.",
+    "新的局域网地址": "새 로컬 네트워크 주소",
+    "更新地址不会更改已保存的会议。": "주소를 업데이트해도 저장된 회의는 변경되지 않습니다.",
+    "保存并连接": "저장하고 연결",
+    "无法连接电脑时，请检查以下项目。": "컴퓨터에 연결할 수 없으면 다음을 확인하세요.",
+    "手机与电脑在同一局域网": "휴대폰과 컴퓨터가 같은 네트워크에 연결됨",
+    "电脑已开启局域网权限": "컴퓨터의 로컬 네트워크 접근 허용",
+    "在电脑系统设置中允许 Brevia 访问局域网。": "컴퓨터 시스템 설정에서 Brevia의 로컬 네트워크 접근을 허용하세요.",
+    "电脑 Brevia 已开启": "컴퓨터에서 Brevia 실행됨",
+    "在电脑「设备连接」中开启手机连接服务。": "컴퓨터의 기기 연결에서 휴대폰 연결 서비스를 켜세요.",
+    "防火墙允许连接": "방화벽에서 연결 허용",
+    "请允许 Brevia 在本地网络中通信。": "Brevia의 로컬 네트워크 통신을 허용하세요.",
+    "访客 Wi-Fi 可能隔离设备，可尝试电脑热点。": "게스트 Wi-Fi는 기기를 격리할 수 있습니다. 컴퓨터 핫스팟을 사용해 보세요.",
+    "已恢复连接": "연결 복구됨",
+    "录音继续，正在补传": "녹음이 계속됩니다. 저장된 음성을 업로드하고 있습니다.",
+    "补传进度": "업로드 진행률",
+    "已保存的录音": "저장된 녹음",
+    "返回录音": "녹음으로 돌아가기",
+    "需要麦克风权限": "마이크 권한 필요",
+    "配对已失效": "페어링을 계속할 수 없습니다",
+    "配对已过期或尝试过多，请在电脑重新开启配对": "페어링이 만료되었거나 시도가 너무 많습니다. 컴퓨터에서 페어링을 다시 시작하세요.",
+    "存储空间不足": "저장 공간 부족",
+    "请释放存储空间后重试，已保存的录音会继续保留。": "저장 공간을 확보한 후 다시 시도하세요. 저장된 녹음은 유지됩니다.",
+    "前往设置": "설정 열기",
+    "重新扫码": "다시 스캔",
+    "输入新配对码": "새 페어링 코드 입력",
+    "管理存储": "저장 공간 관리",
+    "导出已有录音": "저장된 녹음 내보내기",
+    "已保存部分可导出；尚未写入的音频不会包含在导出文件中。":
+        "저장된 음성을 내보낼 수 있습니다. 아직 기록되지 않은 음성은 포함되지 않습니다.",
+    "电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。":
+        "컴퓨터에서 온라인 AI를 켜면 관련 텍스트가 설정에 따라 선택한 서비스로 전송됩니다.",
+    "选择实时转写时，音频传到已配对电脑；离线录音只在你确认上传后同步。":
+        "실시간 전사는 페어링된 컴퓨터로 음성을 전송합니다. 오프라인 녹음은 업로드를 확인한 후에만 동기화됩니다.",
+    "功能与隐私": "기능과 개인정보",
+    "在线 AI": "온라인 AI",
+    "无需电脑，先录音": "컴퓨터 없이 녹음",
+    "未连接电脑": "컴퓨터 연결 안 됨",
+    "结束录音？": "녹음을 종료할까요?",
+    "录音先保存在本机，待上传内容会继续保留。": "녹음은 먼저 이 기기에 저장되며 업로드 대기 중인 내용도 보관됩니다.",
     "下一步": "다음",
     "用于会后整理，实时转写不标注说话人。": "회의 후 정리에 사용됩니다. 실시간 전사에는 화자를 표시하지 않습니다.",
 
@@ -991,6 +1178,8 @@ const translations = {
     "电脑已休眠或断开，等待开盖或恢复连接": "컴퓨터가 절전 상태이거나 연결이 끊겼습니다. 깨어나거나 다시 연결되기를 기다리는 중입니다.",
     "上传到电脑": "컴퓨터로 업로드",
     "仅保存在手机": "휴대폰에만 저장",
+    "录音保存在本机": "이 휴대폰에 녹음 저장",
+    "点击下方按钮开始录音": "아래 버튼을 눌러 녹음 시작",
     "参会人数": "참가자 수",
     "可留空；已知人数用于电脑端说话人区分。": "선택 사항입니다. 인원 수는 컴퓨터에서 화자를 구분하는 데 사용됩니다.",
     "尚未上传": "업로드 안 됨",
@@ -1235,6 +1424,56 @@ const translations = {
         "잠금 후에도 녹음할 수 있습니다. 통화, 강제 종료, 시스템 제한으로 중단될 수 있으니 돌아온 후 상태를 확인하세요.\n\nAndroid는 마이크 포그라운드 서비스를 사용합니다. 녹음 알림을 허용하세요. 절전 정책이 앱을 종료하면 시스템 설정을 조정하세요. 일시정지 후에는 앱에서 재개하세요.",
   },
   "fr": {
+    "手动连接": "Connexion manuelle",
+    "电脑的局域网地址变化后，可在此更新并重新连接。":
+        "Modifiez ici l’adresse locale pour vous reconnecter après un changement.",
+    "新的局域网地址": "Nouvelle adresse locale",
+    "更新地址不会更改已保存的会议。":
+        "La modification de l’adresse ne change pas les réunions enregistrées.",
+    "保存并连接": "Enregistrer et connecter",
+    "无法连接电脑时，请检查以下项目。": "Si la connexion échoue, vérifiez les points suivants.",
+    "手机与电脑在同一局域网": "Téléphone et ordinateur sur le même réseau",
+    "电脑已开启局域网权限": "Accès au réseau local autorisé",
+    "在电脑系统设置中允许 Brevia 访问局域网。":
+        "Autorisez Brevia à accéder au réseau local dans les réglages système.",
+    "电脑 Brevia 已开启": "Brevia ouvert sur l’ordinateur",
+    "在电脑「设备连接」中开启手机连接服务。":
+        "Activez la connexion au téléphone dans Connexion des appareils sur l’ordinateur.",
+    "防火墙允许连接": "Connexion autorisée par le pare-feu",
+    "请允许 Brevia 在本地网络中通信。":
+        "Autorisez Brevia à communiquer sur le réseau local.",
+    "访客 Wi-Fi 可能隔离设备，可尝试电脑热点。":
+        "Le Wi-Fi invité peut isoler les appareils. Essayez un point d’accès sur l’ordinateur.",
+    "已恢复连接": "Connexion rétablie",
+    "录音继续，正在补传": "L’enregistrement continue. Envoi de l’audio enregistré.",
+    "补传进度": "Progression de l’envoi",
+    "已保存的录音": "Audio enregistré",
+    "返回录音": "Revenir à l’enregistrement",
+    "需要麦克风权限": "Autorisation du microphone requise",
+    "配对已失效": "Association indisponible",
+    "配对已过期或尝试过多，请在电脑重新开启配对":
+        "L’association a expiré ou les tentatives sont trop nombreuses. Relancez-la sur l’ordinateur.",
+    "存储空间不足": "Espace de stockage insuffisant",
+    "请释放存储空间后重试，已保存的录音会继续保留。":
+        "Libérez de l’espace et réessayez. L’audio enregistré est conservé.",
+    "前往设置": "Ouvrir les réglages",
+    "重新扫码": "Scanner à nouveau",
+    "输入新配对码": "Saisir un nouveau code",
+    "管理存储": "Gérer le stockage",
+    "导出已有录音": "Exporter l’audio enregistré",
+    "已保存部分可导出；尚未写入的音频不会包含在导出文件中。":
+        "L’audio enregistré peut être exporté. L’audio non écrit n’est pas inclus.",
+    "电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。":
+        "Lorsque l’IA en ligne est activée sur l’ordinateur, le texte est envoyé au fournisseur choisi selon ses réglages.",
+    "选择实时转写时，音频传到已配对电脑；离线录音只在你确认上传后同步。":
+        "La transcription en direct envoie l’audio à l’ordinateur associé. Les enregistrements hors ligne sont synchronisés après confirmation de l’envoi.",
+    "功能与隐私": "Fonctions et confidentialité",
+    "在线 AI": "IA en ligne",
+    "无需电脑，先录音": "Enregistrer sans ordinateur",
+    "未连接电脑": "Ordinateur non connecté",
+    "结束录音？": "Terminer l’enregistrement ?",
+    "录音先保存在本机，待上传内容会继续保留。":
+        "L’audio est d’abord enregistré sur ce téléphone. Les envois en attente sont conservés.",
     "下一步": "Suivant",
     "用于会后整理，实时转写不标注说话人。":
         "Utilisé après la réunion. La transcription en direct ne nomme pas les intervenants.",
@@ -1295,6 +1534,8 @@ const translations = {
         "Ordinateur en veille ou déconnecté. En attente du réveil ou de la reconnexion.",
     "上传到电脑": "Envoyer à l’ordinateur",
     "仅保存在手机": "Sur le téléphone uniquement",
+    "录音保存在本机": "Audio conservé sur ce téléphone",
+    "点击下方按钮开始录音": "Appuyez ci-dessous pour enregistrer",
     "参会人数": "Participants",
     "可留空；已知人数用于电脑端说话人区分。":
         "Facultatif. Le nombre aide à distinguer les voix sur l’ordinateur.",
@@ -1565,6 +1806,58 @@ const translations = {
         "L’enregistrement peut continuer écran verrouillé. Appels, arrêt forcé ou limites système peuvent l’interrompre ; vérifiez l’état au retour.\n\nAndroid utilise un service de microphone au premier plan. Autorisez les notifications. Si l’économie de batterie arrête l’app, ajustez les réglages système. Revenez dans l’app pour reprendre après une pause.",
   },
   "de": {
+    "手动连接": "Manuell verbinden",
+    "电脑的局域网地址变化后，可在此更新并重新连接。":
+        "Aktualisieren Sie hier die lokale Netzwerkadresse, um sich erneut zu verbinden.",
+    "新的局域网地址": "Neue lokale Netzwerkadresse",
+    "更新地址不会更改已保存的会议。":
+        "Eine Adressänderung verändert keine gespeicherten Besprechungen.",
+    "保存并连接": "Speichern und verbinden",
+    "无法连接电脑时，请检查以下项目。":
+        "Prüfen Sie folgende Punkte, wenn die Verbindung fehlschlägt.",
+    "手机与电脑在同一局域网": "Telefon und Computer im selben Netzwerk",
+    "电脑已开启局域网权限": "Lokaler Netzwerkzugriff am Computer erlaubt",
+    "在电脑系统设置中允许 Brevia 访问局域网。":
+        "Erlauben Sie Brevia in den Systemeinstellungen den Zugriff auf das lokale Netzwerk.",
+    "电脑 Brevia 已开启": "Brevia am Computer geöffnet",
+    "在电脑「设备连接」中开启手机连接服务。":
+        "Aktivieren Sie die Telefonverbindung unter Geräteverbindung am Computer.",
+    "防火墙允许连接": "Firewall erlaubt die Verbindung",
+    "请允许 Brevia 在本地网络中通信。":
+        "Erlauben Sie Brevia die Kommunikation im lokalen Netzwerk.",
+    "访客 Wi-Fi 可能隔离设备，可尝试电脑热点。":
+        "Gast-WLAN kann Geräte isolieren. Versuchen Sie einen Computer-Hotspot.",
+    "已恢复连接": "Verbindung wiederhergestellt",
+    "录音继续，正在补传":
+        "Die Aufnahme läuft weiter. Gespeichertes Audio wird übertragen.",
+    "补传进度": "Übertragungsfortschritt",
+    "已保存的录音": "Gespeichertes Audio",
+    "返回录音": "Zur Aufnahme zurückkehren",
+    "需要麦克风权限": "Mikrofonzugriff erforderlich",
+    "配对已失效": "Kopplung nicht verfügbar",
+    "配对已过期或尝试过多，请在电脑重新开启配对":
+        "Die Kopplung ist abgelaufen oder es gab zu viele Versuche. Starten Sie sie am Computer erneut.",
+    "存储空间不足": "Nicht genug Speicherplatz",
+    "请释放存储空间后重试，已保存的录音会继续保留。":
+        "Geben Sie Speicherplatz frei und versuchen Sie es erneut. Gespeichertes Audio bleibt erhalten.",
+    "前往设置": "Einstellungen öffnen",
+    "重新扫码": "Erneut scannen",
+    "输入新配对码": "Neuen Code eingeben",
+    "管理存储": "Speicher verwalten",
+    "导出已有录音": "Gespeichertes Audio exportieren",
+    "已保存部分可导出；尚未写入的音频不会包含在导出文件中。":
+        "Gespeichertes Audio kann exportiert werden. Noch nicht gespeichertes Audio ist nicht enthalten.",
+    "电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。":
+        "Wenn Online-KI auf dem Computer aktiviert ist, wird Text gemäß seinen Einstellungen an den gewählten Anbieter gesendet.",
+    "选择实时转写时，音频传到已配对电脑；离线录音只在你确认上传后同步。":
+        "Live-Transkription sendet Audio an den gekoppelten Computer. Offline-Aufnahmen werden erst nach bestätigtem Upload synchronisiert.",
+    "功能与隐私": "Funktionen und Datenschutz",
+    "在线 AI": "Online-KI",
+    "无需电脑，先录音": "Ohne Computer aufnehmen",
+    "未连接电脑": "Computer nicht verbunden",
+    "结束录音？": "Aufnahme beenden?",
+    "录音先保存在本机，待上传内容会继续保留。":
+        "Audio wird zuerst auf diesem Gerät gespeichert. Ausstehende Uploads bleiben erhalten.",
     "下一步": "Weiter",
     "用于会后整理，实时转写不标注说话人。":
         "Für die Nachbearbeitung. Live-Transkripte zeigen keine Sprechernamen.",
@@ -1624,6 +1917,8 @@ const translations = {
         "Computer im Ruhezustand oder getrennt. Warte auf Aufwachen oder erneute Verbindung.",
     "上传到电脑": "An Computer senden",
     "仅保存在手机": "Nur auf dem Smartphone",
+    "录音保存在本机": "Audio auf diesem Gerät gespeichert",
+    "点击下方按钮开始录音": "Unten tippen, um die Aufnahme zu starten",
     "参会人数": "Teilnehmerzahl",
     "可留空；已知人数用于电脑端说话人区分。":
         "Optional. Die bekannte Anzahl hilft bei der Sprechertrennung am Computer.",
@@ -1892,6 +2187,54 @@ const translations = {
         "Aufnahme ist bei gesperrtem Bildschirm möglich. Anrufe, erzwungenes Beenden oder Systemlimits können sie unterbrechen; prüfen Sie den Status nach der Rückkehr.\n\nAndroid verwendet einen Mikrofon-Vordergrunddienst. Aufnahmebenachrichtigungen erlauben. Bei Beendigung durch Energiesparregeln die Systemeinstellungen anpassen. Nach einer Pause in der App fortsetzen.",
   },
   "ru": {
+    "手动连接": "Подключение вручную",
+    "电脑的局域网地址变化后，可在此更新并重新连接。":
+        "Обновите локальный адрес здесь, чтобы подключиться снова после его изменения.",
+    "新的局域网地址": "Новый локальный адрес",
+    "更新地址不会更改已保存的会议。": "Изменение адреса не меняет сохранённые встречи.",
+    "保存并连接": "Сохранить и подключиться",
+    "无法连接电脑时，请检查以下项目。": "Если компьютер не подключается, проверьте следующее.",
+    "手机与电脑在同一局域网": "Телефон и компьютер в одной сети",
+    "电脑已开启局域网权限": "Компьютеру разрешён доступ к локальной сети",
+    "在电脑系统设置中允许 Brevia 访问局域网。":
+        "Разрешите Brevia доступ к локальной сети в системных настройках компьютера.",
+    "电脑 Brevia 已开启": "Brevia открыт на компьютере",
+    "在电脑「设备连接」中开启手机连接服务。":
+        "Включите подключение телефона в разделе подключения устройств на компьютере.",
+    "防火墙允许连接": "Брандмауэр разрешает подключение",
+    "请允许 Brevia 在本地网络中通信。": "Разрешите Brevia обмен данными в локальной сети.",
+    "访客 Wi-Fi 可能隔离设备，可尝试电脑热点。":
+        "Гостевой Wi-Fi может изолировать устройства. Попробуйте точку доступа компьютера.",
+    "已恢复连接": "Подключение восстановлено",
+    "录音继续，正在补传": "Запись продолжается. Отправляется сохранённое аудио.",
+    "补传进度": "Ход отправки",
+    "已保存的录音": "Сохранённое аудио",
+    "返回录音": "Вернуться к записи",
+    "需要麦克风权限": "Нужен доступ к микрофону",
+    "配对已失效": "Сопряжение недоступно",
+    "配对已过期或尝试过多，请在电脑重新开启配对":
+        "Срок сопряжения истёк или было слишком много попыток. Начните сопряжение заново на компьютере.",
+    "存储空间不足": "Недостаточно места",
+    "请释放存储空间后重试，已保存的录音会继续保留。":
+        "Освободите место и повторите попытку. Сохранённое аудио останется.",
+    "前往设置": "Открыть настройки",
+    "重新扫码": "Сканировать снова",
+    "输入新配对码": "Ввести новый код",
+    "管理存储": "Управление хранилищем",
+    "导出已有录音": "Экспорт сохранённого аудио",
+    "已保存部分可导出；尚未写入的音频不会包含在导出文件中。":
+        "Сохранённое аудио можно экспортировать. Ещё не записанное на диск аудио не включается.",
+    "电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。":
+        "Если на компьютере включён онлайн ИИ, текст отправляется выбранному поставщику согласно его настройкам.",
+    "选择实时转写时，音频传到已配对电脑；离线录音只在你确认上传后同步。":
+        "При расшифровке в реальном времени звук отправляется сопряжённому компьютеру. Автономные записи синхронизируются только после подтверждения загрузки.",
+    "功能与隐私": "Функции и конфиденциальность",
+    "在线 AI": "Онлайн ИИ",
+    "无需电脑，先录音": "Записать без компьютера",
+    "未连接电脑": "Компьютер не подключён",
+    "结束录音？": "Завершить запись?",
+    "录音先保存在本机，待上传内容会继续保留。":
+        "Аудио сначала сохраняется на телефоне. Ожидающие отправки данные сохраняются.",
     "下一步": "Далее",
     "用于会后整理，实时转写不标注说话人。":
         "Для обработки после встречи. В расшифровке в реальном времени нет имён говорящих.",
@@ -1950,6 +2293,8 @@ const translations = {
         "Компьютер спит или отключён. Ожидаем пробуждения или восстановления связи.",
     "上传到电脑": "Передать на компьютер",
     "仅保存在手机": "Только на телефоне",
+    "录音保存在本机": "Аудио сохранено на телефоне",
+    "点击下方按钮开始录音": "Нажмите кнопку ниже для записи",
     "参会人数": "Число участников",
     "可留空；已知人数用于电脑端说话人区分。":
         "Необязательно. Число помогает разделить голоса на компьютере.",

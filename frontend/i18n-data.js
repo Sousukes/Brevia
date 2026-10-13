@@ -93,6 +93,41 @@
         'settings': '设置',
       },
       'labels': {
+        '搜索工作区': '搜索工作区',
+        '没有搜索结果': '没有搜索结果',
+        '选择会议': '选择会议',
+        '已选择': '已选择',
+        '退出选择': '退出选择',
+        'Enter 保存 · Esc 取消': 'Enter 保存 · Esc 取消',
+        '会议名称不能为空': '会议名称不能为空',
+        '重命名失败，修改仍保留': '重命名失败，修改仍保留',
+        '导出结果': '导出结果',
+        '处理结果': '处理结果',
+        '已完成': '已完成',
+        '已导出': '已导出',
+        '结果待确认': '结果待确认',
+        '重试失败项': '重试失败项',
+        '会议将移至最近删除，可在那里恢复。': '会议将移至最近删除，可在那里恢复。',
+        '手机连接服务': '手机连接服务',
+        '请让手机与电脑处于同一局域网。': '请让手机与电脑处于同一局域网。',
+        '已开启': '已开启',
+        '在手机端搜索电脑，桌面将自动显示配对窗口。': '在手机端搜索电脑，桌面将自动显示配对窗口。',
+        '也可扫描二维码或输入配对码。': '也可扫描二维码或输入配对码。',
+        '已信任设备': '已信任设备',
+        '管理已配对的手机设备。': '管理已配对的手机设备。',
+        '暂无已信任设备': '暂无已信任设备',
+        '在手机上录制会议': '在手机上录制会议',
+        '一键录制，实时转写': '一键录制，实时转写',
+        '离线录音上传': '离线录音上传',
+        '在手机上录制的离线音频，连接后需确认上传': '在手机上录制的离线音频，连接后需确认上传',
+        '跨设备便捷': '跨设备便捷',
+        '支持 iPhone 与 Android 手机录音并传输': '支持 iPhone 与 Android 手机录音并传输',
+        '在手机端选择这台电脑，扫描二维码或输入配对码。':
+          '在手机端选择这台电脑，扫描二维码或输入配对码。',
+        '配对二维码': '配对二维码',
+        '等待手机提交配对请求…': '等待手机提交配对请求…',
+        '请保持手机与电脑在同一局域网。': '请保持手机与电脑在同一局域网。',
+        '请核对手机与电脑上的校验词。': '请核对手机与电脑上的校验词。',
         '本地模型在此设备上运行。': '本地模型在此设备上运行。',
         '隐私说明': '隐私说明',
         '保存此设备上的会议录音。': '保存此设备上的会议录音。',
@@ -119,9 +154,9 @@
         '可选，将手机与 Brevia 连接': '可选，将手机与 Brevia 连接',
         '快速了解核心功能': '快速了解核心功能',
         '扫码下载 Android APK': '扫码下载 Android APK',
-        '扫码安装 TestFlight': '扫码安装 TestFlight',
+        '扫码安装 Brevia': '扫码安装 Brevia',
         'ModelScope 下载源': 'ModelScope 下载源',
-        'iPhone 尚未在 App Store 正式上架。': 'iPhone 尚未在 App Store 正式上架。',
+        'App Store 正式版': 'App Store 正式版',
         '在手机上录制会议或对话，录音保存在手机中。': '在手机上录制会议或对话，录音保存在手机中。',
         '连接电脑后转写并整理会议内容。': '连接电脑后转写并整理会议内容。',
         '在手机上打开 Brevia，连接新设备，开始使用。':
@@ -150,6 +185,17 @@
         '请选择一段清晰的已有录音。': '请选择一段清晰的已有录音。',
         '声纹样本': '声纹样本',
         '存储使用情况': '存储使用情况',
+        '开始使用': '开始使用',
+        '任务': '任务',
+        '选择要导出的内容及格式。': '选择要导出的内容及格式。',
+        '了解 Brevia 的版本信息、更新内容及相关资源。':
+          '了解 Brevia 的版本信息、更新内容及相关资源。',
+        '静音': '静音',
+        '取消静音': '取消静音',
+        '全屏': '全屏',
+        '退出全屏': '退出全屏',
+        '后退 15 秒': '后退 15 秒',
+        '前进 15 秒': '前进 15 秒',
         '数据管理': '数据管理',
         '可下载': '可下载',
         '暂无内容': '暂无内容',
@@ -200,7 +246,7 @@
         '进入功能演示': '进入功能演示',
         '手机采集与保存': '手机采集与保存',
         '电脑转写与 AI 整理': '电脑转写与 AI 整理',
-        '安装 TestFlight': '安装 TestFlight',
+        '在 App Store 下载': '在 App Store 下载',
         '选择音频文件': '选择音频文件',
         '移除文件': '移除文件',
         '选择文件或拖到这里': '选择文件或拖到这里',
@@ -294,14 +340,14 @@
         '安装Brevia手机端': '安装Brevia手机端',
         '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。':
           '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。',
-        'iPhone · TestFlight 内测': 'iPhone · TestFlight 内测',
-        '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。':
-          '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。',
+        'iPhone · App Store': 'iPhone · App Store',
+        '扫码或点击链接，从 App Store 免费安装 Brevia。':
+          '扫码或点击链接，从 App Store 免费安装 Brevia。',
         '下载 Android APK': '下载 Android APK',
         '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。':
           '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。',
         '手机配对二维码': '手机配对二维码',
-        '扫描前往 App Store 安装 TestFlight': '扫描前往 App Store 安装 TestFlight',
+        '扫描前往 App Store 安装 Brevia': '扫描前往 App Store 安装 Brevia',
         '停止配对': '停止配对',
         '连接新设备': '连接新设备',
         '关闭连接服务': '关闭连接服务',
@@ -536,6 +582,14 @@
         '恢复默认': '恢复默认',
         '确定': '确定',
         '已保存': '已保存',
+        '已修改 · 尚未保存': '已修改 · 尚未保存',
+        '正在保存…': '正在保存…',
+        '保存失败，修改仍保留': '保存失败，修改仍保留',
+        '未开启': '未开启',
+        '正在分析…': '正在分析…',
+        '建议已暂存，停笔后加入': '建议已暂存，停笔后加入',
+        '请求 AI 建议': '请求 AI 建议',
+        '演示': '演示',
         '已注册声纹': '已注册声纹',
         '说话人名称': '说话人名称',
         '可修改模型、端点静音、说话人分离及 sherpa-onnx 运行参数。':
@@ -698,6 +752,45 @@
         'settings': 'Settings',
       },
       'labels': {
+        '搜索工作区': 'Search workspaces',
+        '没有搜索结果': 'No results',
+        '选择会议': 'Select meetings',
+        '已选择': 'Selected',
+        '退出选择': 'Exit selection',
+        'Enter 保存 · Esc 取消': 'Enter to save · Esc to cancel',
+        '会议名称不能为空': 'Meeting title cannot be empty',
+        '重命名失败，修改仍保留': 'Rename failed; your changes are preserved',
+        '导出结果': 'Export results',
+        '处理结果': 'Results',
+        '已完成': 'Completed',
+        '已导出': 'Exported',
+        '结果待确认': 'Result unconfirmed',
+        '重试失败项': 'Retry failed items',
+        '会议将移至最近删除，可在那里恢复。':
+          'Meetings will move to Recently Deleted, where they can be restored.',
+        '手机连接服务': 'Device connection service',
+        '请让手机与电脑处于同一局域网。': 'Keep your phone and computer on the same local network.',
+        '已开启': 'Enabled',
+        '在手机端搜索电脑，桌面将自动显示配对窗口。':
+          'Search for your computer on your phone; the pairing window will open here.',
+        '也可扫描二维码或输入配对码。': 'You can also scan a QR code or enter a pairing code.',
+        '已信任设备': 'Trusted devices',
+        '管理已配对的手机设备。': 'Manage paired phones.',
+        '暂无已信任设备': 'No trusted devices yet',
+        '在手机上录制会议': 'Record meetings on your phone',
+        '一键录制，实时转写': 'Record and transcribe live',
+        '离线录音上传': 'Upload offline recordings',
+        '在手机上录制的离线音频，连接后需确认上传':
+          'Confirm uploads of offline recordings after connecting',
+        '跨设备便捷': 'Across your devices',
+        '支持 iPhone 与 Android 手机录音并传输': 'Record and transfer from iPhone and Android',
+        '在手机端选择这台电脑，扫描二维码或输入配对码。':
+          'Choose this computer on your phone, scan the QR code or enter the pairing code.',
+        '配对二维码': 'Pairing QR code',
+        '等待手机提交配对请求…': 'Waiting for a pairing request…',
+        '请保持手机与电脑在同一局域网。': 'Keep the phone and computer on the same local network.',
+        '请核对手机与电脑上的校验词。':
+          'Compare the verification codes on your phone and computer.',
         '本地模型在此设备上运行。': 'Local models run on this device.',
         '隐私说明': 'Privacy',
         '保存此设备上的会议录音。': 'Save meeting recordings on this device.',
@@ -724,9 +817,9 @@
         '可选，将手机与 Brevia 连接': 'Optional: connect your phone to Brevia',
         '快速了解核心功能': 'Explore the main features',
         '扫码下载 Android APK': 'Scan to download the Android APK',
-        '扫码安装 TestFlight': 'Scan to install TestFlight',
+        '扫码安装 Brevia': 'Scan to install Brevia',
         'ModelScope 下载源': 'Download via ModelScope',
-        'iPhone 尚未在 App Store 正式上架。': 'The iPhone app is not yet on the App Store.',
+        'App Store 正式版': 'App Store release',
         '在手机上录制会议或对话，录音保存在手机中。':
           'Record meetings on your phone. Audio is saved on the phone.',
         '连接电脑后转写并整理会议内容。':
@@ -756,6 +849,17 @@
         '请选择一段清晰的已有录音。': 'Choose an existing recording with clear speech.',
         '声纹样本': 'Voice samples',
         '存储使用情况': 'Storage usage',
+        '开始使用': 'Get started',
+        '任务': 'Tasks',
+        '选择要导出的内容及格式。': 'Choose the content and formats to export.',
+        '了解 Brevia 的版本信息、更新内容及相关资源。':
+          'View Brevia version information, updates, and related resources.',
+        '静音': 'Mute',
+        '取消静音': 'Unmute',
+        '全屏': 'Full screen',
+        '退出全屏': 'Exit full screen',
+        '后退 15 秒': 'Back 15 seconds',
+        '前进 15 秒': 'Forward 15 seconds',
         '数据管理': 'Data management',
         '可下载': 'Available to download',
         '暂无内容': 'No content yet',
@@ -809,7 +913,7 @@
         '进入功能演示': 'Explore features',
         '手机采集与保存': 'Phone records and saves',
         '电脑转写与 AI 整理': 'Computer transcribes and organizes with AI',
-        '安装 TestFlight': 'Install TestFlight',
+        '在 App Store 下载': 'Download on the App Store',
         '选择音频文件': 'Choose audio',
         '移除文件': 'Remove file',
         '选择文件或拖到这里': 'Choose a file or drop it here',
@@ -934,14 +1038,14 @@
         '安装Brevia手机端': 'Install the Brevia mobile app',
         '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。':
           'Turn your phone into a meeting companion. Connect to your computer to record, follow live captions and review meeting summaries on your phone, using your computer’s transcription and AI features. You can also record offline, then connect and upload for processing later.',
-        'iPhone · TestFlight 内测': 'iPhone · TestFlight beta',
-        '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。':
-          'Scan to install TestFlight, then open your email invitation to install Brevia. Invitation required; not yet released on the App Store.',
+        'iPhone · App Store': 'iPhone · App Store',
+        '扫码或点击链接，从 App Store 免费安装 Brevia。':
+          'Scan or click the link to install Brevia for free from the App Store.',
         '下载 Android APK': 'Download Android APK',
         '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。':
           'Scan or click to download the APK from ModelScope. After installation, check for updates in the mobile settings.',
         '手机配对二维码': 'Phone pairing QR code',
-        '扫描前往 App Store 安装 TestFlight': 'Scan to install TestFlight from the App Store',
+        '扫描前往 App Store 安装 Brevia': 'Scan to install Brevia from the App Store',
         '停止配对': 'Stop pairing',
         '连接新设备': 'Connect new device',
         '关闭连接服务': 'Turn off connections',
@@ -1262,6 +1366,14 @@
         '恢复默认': 'Restore defaults',
         '确定': 'Confirm',
         '已保存': 'Saved',
+        '已修改 · 尚未保存': 'Modified · Not saved',
+        '正在保存…': 'Saving…',
+        '保存失败，修改仍保留': 'Save failed; changes retained',
+        '未开启': 'Not enabled',
+        '正在分析…': 'Analyzing…',
+        '建议已暂存，停笔后加入': 'Suggestion queued until typing stops',
+        '请求 AI 建议': 'Request AI suggestion',
+        '演示': 'Demo',
         '标记说话人': 'Assign speaker',
         '选择已注册声纹或新建说话人。': 'Choose a registered voiceprint or create a speaker.',
         '已注册声纹': 'Registered voiceprint',
@@ -1478,6 +1590,47 @@
         'settings': 'Configuración',
       },
       'labels': {
+        '搜索工作区': 'Buscar espacios de trabajo',
+        '没有搜索结果': 'Sin resultados',
+        '选择会议': 'Seleccionar reuniones',
+        '已选择': 'Seleccionadas',
+        '退出选择': 'Salir de selección',
+        'Enter 保存 · Esc 取消': 'Enter para guardar · Esc para cancelar',
+        '会议名称不能为空': 'El título no puede estar vacío',
+        '重命名失败，修改仍保留': 'No se pudo renombrar; los cambios se conservan',
+        '导出结果': 'Resultados de exportación',
+        '处理结果': 'Resultados',
+        '已完成': 'Completado',
+        '已导出': 'Exportado',
+        '结果待确认': 'Resultado sin confirmar',
+        '重试失败项': 'Reintentar elementos fallidos',
+        '会议将移至最近删除，可在那里恢复。':
+          'Las reuniones pasarán a Eliminadas recientemente y podrán restaurarse.',
+        '手机连接服务': 'Servicio de conexión',
+        '请让手机与电脑处于同一局域网。':
+          'Mantén el teléfono y el ordenador en la misma red local.',
+        '已开启': 'Activado',
+        '在手机端搜索电脑，桌面将自动显示配对窗口。':
+          'Busca el ordenador desde el teléfono; aquí se abrirá el emparejamiento.',
+        '也可扫描二维码或输入配对码。': 'También puedes escanear el QR o introducir el código.',
+        '已信任设备': 'Dispositivos de confianza',
+        '管理已配对的手机设备。': 'Gestiona los teléfonos emparejados.',
+        '暂无已信任设备': 'Aún no hay dispositivos de confianza',
+        '在手机上录制会议': 'Graba reuniones en el teléfono',
+        '一键录制，实时转写': 'Graba y transcribe en directo',
+        '离线录音上传': 'Subir grabaciones sin conexión',
+        '在手机上录制的离线音频，连接后需确认上传':
+          'Confirma la subida de grabaciones sin conexión al conectarte',
+        '跨设备便捷': 'Entre dispositivos',
+        '支持 iPhone 与 Android 手机录音并传输': 'Graba y transfiere desde iPhone y Android',
+        '在手机端选择这台电脑，扫描二维码或输入配对码。':
+          'Elige este ordenador en el teléfono, escanea el QR o introduce el código.',
+        '配对二维码': 'QR de emparejamiento',
+        '等待手机提交配对请求…': 'Esperando una solicitud de emparejamiento…',
+        '请保持手机与电脑在同一局域网。':
+          'Mantén el teléfono y el ordenador en la misma red local.',
+        '请核对手机与电脑上的校验词。':
+          'Compara los códigos de verificación del teléfono y el ordenador.',
         '本地模型在此设备上运行。': 'Los modelos locales se ejecutan en este dispositivo.',
         '隐私说明': 'Privacidad',
         '保存此设备上的会议录音。': 'Guarda grabaciones en este dispositivo.',
@@ -1504,9 +1657,9 @@
         '可选，将手机与 Brevia 连接': 'Opcional: conecta tu móvil a Brevia',
         '快速了解核心功能': 'Conoce las funciones principales',
         '扫码下载 Android APK': 'Escanea para descargar el APK de Android',
-        '扫码安装 TestFlight': 'Escanea para instalar TestFlight',
+        '扫码安装 Brevia': 'Escanea para instalar Brevia',
         'ModelScope 下载源': 'Descarga desde ModelScope',
-        'iPhone 尚未在 App Store 正式上架。': 'La app para iPhone aún no está en la App Store.',
+        'App Store 正式版': 'Versión del App Store',
         '在手机上录制会议或对话，录音保存在手机中。':
           'Graba reuniones en el móvil. El audio se guarda en él.',
         '连接电脑后转写并整理会议内容。':
@@ -1536,6 +1689,17 @@
         '请选择一段清晰的已有录音。': 'Elige una grabación existente con voz clara.',
         '声纹样本': 'Muestras de voz',
         '存储使用情况': 'Uso de almacenamiento',
+        '开始使用': 'Comenzar',
+        '任务': 'Tareas',
+        '选择要导出的内容及格式。': 'Elige el contenido y los formatos para exportar.',
+        '了解 Brevia 的版本信息、更新内容及相关资源。':
+          'Consulta la versión de Brevia, las novedades y los recursos relacionados.',
+        '静音': 'Silenciar',
+        '取消静音': 'Activar sonido',
+        '全屏': 'Pantalla completa',
+        '退出全屏': 'Salir de pantalla completa',
+        '后退 15 秒': 'Retroceder 15 segundos',
+        '前进 15 秒': 'Avanzar 15 segundos',
         '数据管理': 'Gestión de datos',
         '可下载': 'Disponibles para descargar',
         '暂无内容': 'Aún no hay contenido',
@@ -1589,7 +1753,7 @@
         '进入功能演示': 'Ver funciones',
         '手机采集与保存': 'El teléfono graba y guarda',
         '电脑转写与 AI 整理': 'El ordenador transcribe y organiza con IA',
-        '安装 TestFlight': 'Instalar TestFlight',
+        '在 App Store 下载': 'Descargar en el App Store',
         '选择音频文件': 'Seleccionar audio',
         '移除文件': 'Quitar archivo',
         '选择文件或拖到这里': 'Selecciona un archivo o arrástralo aquí',
@@ -1716,14 +1880,14 @@
         '安装Brevia手机端': 'Instalar la app móvil de Brevia',
         '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。':
           'Convierte tu móvil en un asistente de reuniones. Conéctalo al ordenador para grabar, seguir subtítulos en directo y consultar resúmenes desde el móvil con las funciones de transcripción e IA del ordenador. También puedes grabar sin conexión y subir la grabación más tarde para procesarla.',
-        'iPhone · TestFlight 内测': 'iPhone · Beta de TestFlight',
-        '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。':
-          'Escanea para instalar TestFlight y abre la invitación por correo para instalar Brevia. Solo con invitación; aún no disponible en el App Store.',
+        'iPhone · App Store': 'iPhone · App Store',
+        '扫码或点击链接，从 App Store 免费安装 Brevia。':
+          'Escanea o pulsa el enlace para instalar Brevia gratis desde el App Store.',
         '下载 Android APK': 'Descargar APK para Android',
         '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。':
           'Escanea o pulsa el enlace para descargar el APK desde ModelScope. Busca actualizaciones en los ajustes de la app.',
         '手机配对二维码': 'Código QR de vinculación',
-        '扫描前往 App Store 安装 TestFlight': 'Escanea para instalar TestFlight desde el App Store',
+        '扫描前往 App Store 安装 Brevia': 'Escanea para instalar Brevia desde el App Store',
         '停止配对': 'Detener vinculación',
         '连接新设备': 'Conectar nuevo dispositivo',
         '关闭连接服务': 'Desactivar conexiones',
@@ -2045,6 +2209,14 @@
         '恢复默认': 'Restaurar valores predeterminados',
         '确定': 'Confirmar',
         '已保存': 'Guardado',
+        '已修改 · 尚未保存': 'Modificado · Sin guardar',
+        '正在保存…': 'Guardando…',
+        '保存失败，修改仍保留': 'Error al guardar; cambios conservados',
+        '未开启': 'Desactivado',
+        '正在分析…': 'Analizando…',
+        '建议已暂存，停笔后加入': 'Sugerencia en espera hasta dejar de escribir',
+        '请求 AI 建议': 'Solicitar sugerencia de IA',
+        '演示': 'Demostración',
         '标记说话人': 'Asignar hablante',
         '选择已注册声纹或新建说话人。': 'Elige una huella de voz registrada o crea un hablante.',
         '已注册声纹': 'Huella de voz registrada',
@@ -2262,6 +2434,46 @@
         'settings': '設定',
       },
       'labels': {
+        '搜索工作区': 'ワークスペースを検索',
+        '没有搜索结果': '検索結果がありません',
+        '选择会议': '会議を選択',
+        '已选择': '選択済み',
+        '退出选择': '選択を終了',
+        'Enter 保存 · Esc 取消': 'Enterで保存 · Escでキャンセル',
+        '会议名称不能为空': '会議名を入力してください',
+        '重命名失败，修改仍保留': '名前変更に失敗しました。変更は保持されています',
+        '导出结果': 'エクスポート結果',
+        '处理结果': '処理結果',
+        '已完成': '完了',
+        '已导出': 'エクスポート済み',
+        '结果待确认': '結果は未確認です',
+        '重试失败项': '失敗した項目を再試行',
+        '会议将移至最近删除，可在那里恢复。': '会議は「最近削除した項目」に移動し、復元できます。',
+        '手机连接服务': 'デバイス接続サービス',
+        '请让手机与电脑处于同一局域网。':
+          'スマートフォンとパソコンを同じローカルネットワークに接続してください。',
+        '已开启': '有効',
+        '在手机端搜索电脑，桌面将自动显示配对窗口。':
+          'スマートフォンでパソコンを検索すると、ペアリング画面が表示されます。',
+        '也可扫描二维码或输入配对码。':
+          'QRコードをスキャンするか、ペアリングコードを入力できます。',
+        '已信任设备': '信頼済みデバイス',
+        '管理已配对的手机设备。': 'ペアリング済みのスマートフォンを管理します。',
+        '暂无已信任设备': '信頼済みデバイスはありません',
+        '在手机上录制会议': 'スマートフォンで会議を録音',
+        '一键录制，实时转写': '録音してリアルタイムに文字起こし',
+        '离线录音上传': 'オフライン録音をアップロード',
+        '在手机上录制的离线音频，连接后需确认上传':
+          '接続後、オフライン録音のアップロードを確認してください',
+        '跨设备便捷': 'デバイス間で便利に',
+        '支持 iPhone 与 Android 手机录音并传输': 'iPhoneとAndroidで録音・転送',
+        '在手机端选择这台电脑，扫描二维码或输入配对码。':
+          'スマートフォンでこのパソコンを選び、QRコードをスキャンするかコードを入力してください。',
+        '配对二维码': 'ペアリングQRコード',
+        '等待手机提交配对请求…': 'ペアリング要求を待機中…',
+        '请保持手机与电脑在同一局域网。':
+          'スマートフォンとパソコンを同じネットワークに接続してください。',
+        '请核对手机与电脑上的校验词。': 'スマートフォンとパソコンの確認コードを照合してください。',
         '本地模型在此设备上运行。': 'ローカルモデルはこのデバイスで実行されます。',
         '隐私说明': 'プライバシー',
         '保存此设备上的会议录音。': 'この端末に会議の録音を保存します。',
@@ -2288,9 +2500,9 @@
         '可选，将手机与 Brevia 连接': '任意：スマートフォンを Brevia に接続',
         '快速了解核心功能': '主な機能を確認',
         '扫码下载 Android APK': 'スキャンして Android APK をダウンロード',
-        '扫码安装 TestFlight': 'スキャンして TestFlight をインストール',
+        '扫码安装 Brevia': 'スキャンして Brevia をインストール',
         'ModelScope 下载源': 'ModelScope からダウンロード',
-        'iPhone 尚未在 App Store 正式上架。': 'iPhone 版はまだ App Store で公開されていません。',
+        'App Store 正式版': 'App Store 正式版',
         '在手机上录制会议或对话，录音保存在手机中。':
           'スマートフォンで会議を録音し、端末に保存します。',
         '连接电脑后转写并整理会议内容。': 'パソコンに接続して文字起こしと整理を行います。',
@@ -2319,6 +2531,17 @@
         '请选择一段清晰的已有录音。': '音声が明瞭な既存の録音を選択してください。',
         '声纹样本': '声紋サンプル',
         '存储使用情况': 'ストレージ使用状況',
+        '开始使用': '利用を開始',
+        '任务': 'タスク',
+        '选择要导出的内容及格式。': 'エクスポートする内容と形式を選択してください。',
+        '了解 Brevia 的版本信息、更新内容及相关资源。':
+          'Brevia のバージョン、更新内容、関連情報を確認します。',
+        '静音': 'ミュート',
+        '取消静音': 'ミュート解除',
+        '全屏': '全画面',
+        '退出全屏': '全画面を終了',
+        '后退 15 秒': '15 秒戻る',
+        '前进 15 秒': '15 秒進む',
         '数据管理': 'データ管理',
         '可下载': 'ダウンロード可能',
         '暂无内容': 'まだ内容がありません',
@@ -2372,7 +2595,7 @@
         '进入功能演示': '機能を見る',
         '手机采集与保存': 'スマートフォンで録音・保存',
         '电脑转写与 AI 整理': 'コンピューターで文字起こし・AI 整理',
-        '安装 TestFlight': 'TestFlight をインストール',
+        '在 App Store 下载': 'App Store でダウンロード',
         '选择音频文件': '音声を選択',
         '移除文件': 'ファイルを削除',
         '选择文件或拖到这里': 'ファイルを選択またはここにドロップ',
@@ -2498,15 +2721,14 @@
         '安装Brevia手机端': 'Brevia モバイルアプリをインストール',
         '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。':
           'スマートフォンを持ち歩ける会議アシスタントに。パソコンにつなぐと、パソコンの文字起こし・AI 機能を使って、スマートフォンで録音、リアルタイム字幕や議事録の確認ができます。オフラインで録音し、あとでパソコンにつないでアップロードすることもできます。',
-        'iPhone · TestFlight 内测': 'iPhone · TestFlight ベータ',
-        '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。':
-          'スキャンして TestFlight をインストールし、招待メールから Brevia を入手してください。招待されたアカウントのみ利用可能です。App Store では未公開です。',
+        'iPhone · App Store': 'iPhone · App Store',
+        '扫码或点击链接，从 App Store 免费安装 Brevia。':
+          'スキャンするかリンクを開いて、App Store から Brevia を無料でインストールできます。',
         '下载 Android APK': 'Android APK をダウンロード',
         '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。':
           'スキャンまたはリンクから ModelScope の APK をダウンロード。インストール後はアプリの設定で更新を確認できます。',
         '手机配对二维码': 'スマートフォン用ペアリング QR コード',
-        '扫描前往 App Store 安装 TestFlight':
-          'スキャンして App Store から TestFlight をインストール',
+        '扫描前往 App Store 安装 Brevia': 'スキャンして App Store から Brevia をインストール',
         '停止配对': 'ペアリングを停止',
         '连接新设备': '新しいデバイスを接続',
         '关闭连接服务': '接続サービスを停止',
@@ -2826,6 +3048,14 @@
         '恢复默认': '既定値に戻す',
         '确定': '確認',
         '已保存': '保存しました',
+        '已修改 · 尚未保存': '変更済み・未保存',
+        '正在保存…': '保存中…',
+        '保存失败，修改仍保留': '保存失敗・変更は保持されています',
+        '未开启': '無効',
+        '正在分析…': '分析中…',
+        '建议已暂存，停笔后加入': '入力終了後に追加します',
+        '请求 AI 建议': 'AI 提案をリクエスト',
+        '演示': 'デモ',
         '标记说话人': '話者を割り当て',
         '选择已注册声纹或新建说话人。': '登録済みの声紋を選択するか、話者を新規作成します。',
         '已注册声纹': '登録済みの声紋',
@@ -3041,6 +3271,42 @@
         'settings': '설정',
       },
       'labels': {
+        '搜索工作区': '작업 공간 검색',
+        '没有搜索结果': '검색 결과 없음',
+        '选择会议': '회의 선택',
+        '已选择': '선택됨',
+        '退出选择': '선택 종료',
+        'Enter 保存 · Esc 取消': 'Enter 저장 · Esc 취소',
+        '会议名称不能为空': '회의 이름을 입력하세요',
+        '重命名失败，修改仍保留': '이름 변경 실패. 수정 내용은 유지됩니다',
+        '导出结果': '내보내기 결과',
+        '处理结果': '처리 결과',
+        '已完成': '완료',
+        '已导出': '내보내기 완료',
+        '结果待确认': '결과 확인 필요',
+        '重试失败项': '실패 항목 다시 시도',
+        '会议将移至最近删除，可在那里恢复。': '회의가 최근 삭제로 이동하며 복원할 수 있습니다.',
+        '手机连接服务': '기기 연결 서비스',
+        '请让手机与电脑处于同一局域网。': '휴대폰과 컴퓨터를 같은 로컬 네트워크에 연결하세요.',
+        '已开启': '켜짐',
+        '在手机端搜索电脑，桌面将自动显示配对窗口。':
+          '휴대폰에서 컴퓨터를 검색하면 여기에 연결 창이 표시됩니다.',
+        '也可扫描二维码或输入配对码。': 'QR 코드를 스캔하거나 연결 코드를 입력할 수도 있습니다.',
+        '已信任设备': '신뢰한 기기',
+        '管理已配对的手机设备。': '연결된 휴대폰을 관리합니다.',
+        '暂无已信任设备': '신뢰한 기기 없음',
+        '在手机上录制会议': '휴대폰에서 회의 녹음',
+        '一键录制，实时转写': '녹음 및 실시간 전사',
+        '离线录音上传': '오프라인 녹음 업로드',
+        '在手机上录制的离线音频，连接后需确认上传': '연결 후 오프라인 녹음 업로드를 확인하세요',
+        '跨设备便捷': '여러 기기에서 편리하게',
+        '支持 iPhone 与 Android 手机录音并传输': 'iPhone 및 Android에서 녹음 및 전송',
+        '在手机端选择这台电脑，扫描二维码或输入配对码。':
+          '휴대폰에서 이 컴퓨터를 선택하고 QR을 스캔하거나 연결 코드를 입력하세요.',
+        '配对二维码': '연결 QR 코드',
+        '等待手机提交配对请求…': '연결 요청을 기다리는 중…',
+        '请保持手机与电脑在同一局域网。': '휴대폰과 컴퓨터를 같은 로컬 네트워크에 연결하세요.',
+        '请核对手机与电脑上的校验词。': '휴대폰과 컴퓨터의 확인 코드를 비교하세요.',
         '本地模型在此设备上运行。': '로컬 모델은 이 기기에서 실행됩니다.',
         '隐私说明': '개인정보',
         '保存此设备上的会议录音。': '이 기기에 회의 녹음을 저장합니다.',
@@ -3067,9 +3333,9 @@
         '可选，将手机与 Brevia 连接': '선택 사항: 휴대폰을 Brevia에 연결',
         '快速了解核心功能': '주요 기능 살펴보기',
         '扫码下载 Android APK': '스캔하여 Android APK 다운로드',
-        '扫码安装 TestFlight': '스캔하여 TestFlight 설치',
+        '扫码安装 Brevia': '스캔하여 Brevia 설치',
         'ModelScope 下载源': 'ModelScope 다운로드',
-        'iPhone 尚未在 App Store 正式上架。': 'iPhone 앱은 아직 App Store에 출시되지 않았습니다.',
+        'App Store 正式版': 'App Store 정식 버전',
         '在手机上录制会议或对话，录音保存在手机中。':
           '휴대폰에서 회의를 녹음하고 휴대폰에 저장합니다.',
         '连接电脑后转写并整理会议内容。': '컴퓨터에 연결해 회의 내용을 전사하고 정리합니다.',
@@ -3098,6 +3364,17 @@
         '请选择一段清晰的已有录音。': '음성이 선명한 기존 녹음을 선택하세요.',
         '声纹样本': '음성 샘플',
         '存储使用情况': '저장 공간 사용량',
+        '开始使用': '시작하기',
+        '任务': '작업',
+        '选择要导出的内容及格式。': '내보낼 내용과 형식을 선택하세요.',
+        '了解 Brevia 的版本信息、更新内容及相关资源。':
+          'Brevia 버전 정보, 업데이트 및 관련 자료를 확인하세요.',
+        '静音': '음소거',
+        '取消静音': '음소거 해제',
+        '全屏': '전체 화면',
+        '退出全屏': '전체 화면 종료',
+        '后退 15 秒': '15초 뒤로',
+        '前进 15 秒': '15초 앞으로',
         '数据管理': '데이터 관리',
         '可下载': '다운로드 가능',
         '暂无内容': '아직 내용이 없습니다',
@@ -3151,7 +3428,7 @@
         '进入功能演示': '기능 살펴보기',
         '手机采集与保存': '휴대폰 녹음 및 저장',
         '电脑转写与 AI 整理': '컴퓨터 전사 및 AI 정리',
-        '安装 TestFlight': 'TestFlight 설치',
+        '在 App Store 下载': 'App Store에서 다운로드',
         '选择音频文件': '오디오 선택',
         '移除文件': '파일 제거',
         '选择文件或拖到这里': '파일 선택 또는 여기로 드롭',
@@ -3276,14 +3553,14 @@
         '安装Brevia手机端': 'Brevia 모바일 앱 설치',
         '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。':
           '휴대폰을 휴대용 회의 도우미로 활용하세요. 컴퓨터에 연결하면 컴퓨터의 전사 및 AI 기능을 이용해 휴대폰에서 녹음하고 실시간 자막과 회의 요약을 확인할 수 있습니다. 오프라인으로 먼저 녹음한 뒤 나중에 연결하여 업로드하고 정리할 수도 있습니다.',
-        'iPhone · TestFlight 内测': 'iPhone · TestFlight 베타',
-        '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。':
-          '스캔하여 TestFlight를 설치한 뒤 초대 이메일에서 Brevia를 설치하세요. 초대된 계정만 사용할 수 있으며 App Store에는 아직 출시되지 않았습니다.',
+        'iPhone · App Store': 'iPhone · App Store',
+        '扫码或点击链接，从 App Store 免费安装 Brevia。':
+          '스캔하거나 링크를 눌러 App Store에서 Brevia를 무료로 설치하세요.',
         '下载 Android APK': 'Android APK 다운로드',
         '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。':
           '스캔하거나 링크를 눌러 ModelScope에서 APK를 다운로드하세요. 설치 후 앱 설정에서 업데이트를 확인할 수 있습니다。',
         '手机配对二维码': '휴대폰 연결 QR 코드',
-        '扫描前往 App Store 安装 TestFlight': '스캔하여 App Store에서 TestFlight 설치',
+        '扫描前往 App Store 安装 Brevia': '스캔하여 App Store에서 Brevia 설치',
         '停止配对': '연결 중지',
         '连接新设备': '새 기기 연결',
         '关闭连接服务': '연결 서비스 끄기',
@@ -3600,6 +3877,14 @@
         '恢复默认': '기본값 복원',
         '确定': '확인',
         '已保存': '저장됨',
+        '已修改 · 尚未保存': '수정됨 · 저장 안 됨',
+        '正在保存…': '저장 중…',
+        '保存失败，修改仍保留': '저장 실패, 변경 사항 유지됨',
+        '未开启': '꺼짐',
+        '正在分析…': '분석 중…',
+        '建议已暂存，停笔后加入': '입력이 끝나면 제안 추가',
+        '请求 AI 建议': 'AI 제안 요청',
+        '演示': '데모',
         '标记说话人': '화자 지정',
         '选择已注册声纹或新建说话人。': '등록된 음성 지문을 선택하거나 화자를 새로 만드세요.',
         '已注册声纹': '등록된 음성 지문',
@@ -3814,6 +4099,48 @@
         'settings': 'Paramètres',
       },
       'labels': {
+        '搜索工作区': 'Rechercher des espaces',
+        '没有搜索结果': 'Aucun résultat',
+        '选择会议': 'Sélectionner des réunions',
+        '已选择': 'Sélectionnées',
+        '退出选择': 'Quitter la sélection',
+        'Enter 保存 · Esc 取消': 'Entrée pour enregistrer · Échap pour annuler',
+        '会议名称不能为空': 'Le titre ne peut pas être vide',
+        '重命名失败，修改仍保留': 'Échec du renommage ; les modifications sont conservées',
+        '导出结果': 'Résultats de l’export',
+        '处理结果': 'Résultats',
+        '已完成': 'Terminé',
+        '已导出': 'Exporté',
+        '结果待确认': 'Résultat à confirmer',
+        '重试失败项': 'Réessayer les éléments en échec',
+        '会议将移至最近删除，可在那里恢复。':
+          'Les réunions seront déplacées dans Suppressions récentes et pourront être restaurées.',
+        '手机连接服务': 'Service de connexion',
+        '请让手机与电脑处于同一局域网。':
+          'Connectez le téléphone et l’ordinateur au même réseau local.',
+        '已开启': 'Activé',
+        '在手机端搜索电脑，桌面将自动显示配对窗口。':
+          'Recherchez l’ordinateur sur le téléphone ; la fenêtre d’association s’ouvrira ici.',
+        '也可扫描二维码或输入配对码。': 'Vous pouvez aussi scanner le QR ou saisir le code.',
+        '已信任设备': 'Appareils de confiance',
+        '管理已配对的手机设备。': 'Gérez les téléphones associés.',
+        '暂无已信任设备': 'Aucun appareil de confiance',
+        '在手机上录制会议': 'Enregistrer des réunions sur le téléphone',
+        '一键录制，实时转写': 'Enregistrer et transcrire en direct',
+        '离线录音上传': 'Envoyer les enregistrements hors ligne',
+        '在手机上录制的离线音频，连接后需确认上传':
+          'Confirmez l’envoi des enregistrements hors ligne après connexion',
+        '跨设备便捷': 'Entre vos appareils',
+        '支持 iPhone 与 Android 手机录音并传输':
+          'Enregistrez et transférez depuis iPhone et Android',
+        '在手机端选择这台电脑，扫描二维码或输入配对码。':
+          'Choisissez cet ordinateur sur le téléphone, scannez le QR ou saisissez le code.',
+        '配对二维码': 'QR d’association',
+        '等待手机提交配对请求…': 'En attente d’une demande d’association…',
+        '请保持手机与电脑在同一局域网。':
+          'Gardez le téléphone et l’ordinateur sur le même réseau local.',
+        '请核对手机与电脑上的校验词。':
+          'Comparez les codes de vérification du téléphone et de l’ordinateur.',
         '本地模型在此设备上运行。': 'Les modèles locaux fonctionnent sur cet appareil.',
         '隐私说明': 'Confidentialité',
         '保存此设备上的会议录音。': 'Conservez les enregistrements sur cet appareil.',
@@ -3840,10 +4167,9 @@
         '可选，将手机与 Brevia 连接': 'Facultatif : connecter le téléphone à Brevia',
         '快速了解核心功能': 'Découvrir les fonctions principales',
         '扫码下载 Android APK': 'Scanner pour télécharger l’APK Android',
-        '扫码安装 TestFlight': 'Scanner pour installer TestFlight',
+        '扫码安装 Brevia': 'Scanner pour installer Brevia',
         'ModelScope 下载源': 'Téléchargement via ModelScope',
-        'iPhone 尚未在 App Store 正式上架。':
-          'L’app iPhone n’est pas encore publiée sur l’App Store.',
+        'App Store 正式版': 'Version App Store',
         '在手机上录制会议或对话，录音保存在手机中。':
           'Enregistrez sur votre téléphone. L’audio y est conservé.',
         '连接电脑后转写并整理会议内容。':
@@ -3873,6 +4199,17 @@
         '请选择一段清晰的已有录音。': 'Choisissez un enregistrement existant avec une voix claire.',
         '声纹样本': 'Échantillons vocaux',
         '存储使用情况': 'Utilisation du stockage',
+        '开始使用': 'Commencer',
+        '任务': 'Tâches',
+        '选择要导出的内容及格式。': 'Choisissez le contenu et les formats à exporter.',
+        '了解 Brevia 的版本信息、更新内容及相关资源。':
+          'Consultez la version de Brevia, les mises à jour et les ressources associées.',
+        '静音': 'Couper le son',
+        '取消静音': 'Rétablir le son',
+        '全屏': 'Plein écran',
+        '退出全屏': 'Quitter le plein écran',
+        '后退 15 秒': 'Reculer de 15 secondes',
+        '前进 15 秒': 'Avancer de 15 secondes',
         '数据管理': 'Gestion des données',
         '可下载': 'Disponibles au téléchargement',
         '暂无内容': 'Aucun contenu pour le moment',
@@ -3927,7 +4264,7 @@
         '进入功能演示': 'Découvrir les fonctions',
         '手机采集与保存': 'Le téléphone enregistre et conserve',
         '电脑转写与 AI 整理': 'L’ordinateur transcrit et organise avec l’IA',
-        '安装 TestFlight': 'Installer TestFlight',
+        '在 App Store 下载': 'Télécharger sur l’App Store',
         '选择音频文件': 'Choisir un audio',
         '移除文件': 'Retirer le fichier',
         '选择文件或拖到这里': 'Choisissez un fichier ou déposez-le ici',
@@ -4056,15 +4393,14 @@
         '安装Brevia手机端': 'Installer l’app mobile Brevia',
         '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。':
           'Transformez votre téléphone en assistant de réunion. Connectez-le à votre ordinateur pour enregistrer, suivre les sous-titres en direct et consulter les comptes rendus sur votre téléphone grâce aux fonctions de transcription et d’IA de l’ordinateur. Vous pouvez aussi enregistrer hors ligne, puis vous connecter pour envoyer et traiter l’enregistrement plus tard.',
-        'iPhone · TestFlight 内测': 'iPhone · Bêta TestFlight',
-        '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。':
-          'Scannez pour installer TestFlight, puis ouvrez votre invitation pour installer Brevia. Sur invitation uniquement ; pas encore publié sur l’App Store.',
+        'iPhone · App Store': 'iPhone · App Store',
+        '扫码或点击链接，从 App Store 免费安装 Brevia。':
+          'Scannez ou cliquez sur le lien pour installer Brevia gratuitement depuis l’App Store.',
         '下载 Android APK': 'Télécharger l’APK Android',
         '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。':
           'Scannez ou cliquez pour télécharger l’APK depuis ModelScope. Vérifiez ensuite les mises à jour dans les réglages de l’application.',
         '手机配对二维码': 'QR code de jumelage',
-        '扫描前往 App Store 安装 TestFlight':
-          'Scannez pour installer TestFlight depuis l’App Store',
+        '扫描前往 App Store 安装 Brevia': 'Scannez pour installer Brevia depuis l’App Store',
         '停止配对': 'Arrêter le jumelage',
         '连接新设备': 'Connecter un appareil',
         '关闭连接服务': 'Désactiver les connexions',
@@ -4387,6 +4723,14 @@
         '恢复默认': 'Rétablir les valeurs par défaut',
         '确定': 'Confirmer',
         '已保存': 'Enregistré',
+        '已修改 · 尚未保存': 'Modifié · Non enregistré',
+        '正在保存…': 'Enregistrement…',
+        '保存失败，修改仍保留': 'Échec ; modifications conservées',
+        '未开启': 'Désactivé',
+        '正在分析…': 'Analyse…',
+        '建议已暂存，停笔后加入': 'Suggestion en attente de la fin de saisie',
+        '请求 AI 建议': 'Demander une suggestion IA',
+        '演示': 'Démo',
         '标记说话人': 'Attribuer un locuteur',
         '选择已注册声纹或新建说话人。':
           'Choisissez une empreinte vocale enregistrée ou créez un locuteur.',
@@ -4607,6 +4951,47 @@
         'settings': 'Einstellungen',
       },
       'labels': {
+        '搜索工作区': 'Arbeitsbereiche suchen',
+        '没有搜索结果': 'Keine Ergebnisse',
+        '选择会议': 'Besprechungen auswählen',
+        '已选择': 'Ausgewählt',
+        '退出选择': 'Auswahl beenden',
+        'Enter 保存 · Esc 取消': 'Enter zum Speichern · Esc zum Abbrechen',
+        '会议名称不能为空': 'Der Titel darf nicht leer sein',
+        '重命名失败，修改仍保留': 'Umbenennen fehlgeschlagen; Änderungen bleiben erhalten',
+        '导出结果': 'Exportergebnisse',
+        '处理结果': 'Ergebnisse',
+        '已完成': 'Abgeschlossen',
+        '已导出': 'Exportiert',
+        '结果待确认': 'Ergebnis unbestätigt',
+        '重试失败项': 'Fehlgeschlagene erneut versuchen',
+        '会议将移至最近删除，可在那里恢复。':
+          'Besprechungen werden nach Kürzlich gelöscht verschoben und können dort wiederhergestellt werden.',
+        '手机连接服务': 'Geräteverbindungsdienst',
+        '请让手机与电脑处于同一局域网。':
+          'Verbinden Sie Telefon und Computer mit demselben lokalen Netzwerk.',
+        '已开启': 'Aktiviert',
+        '在手机端搜索电脑，桌面将自动显示配对窗口。':
+          'Suchen Sie den Computer auf dem Telefon; hier öffnet sich die Kopplung.',
+        '也可扫描二维码或输入配对码。':
+          'Sie können auch den QR-Code scannen oder den Kopplungscode eingeben.',
+        '已信任设备': 'Vertrauenswürdige Geräte',
+        '管理已配对的手机设备。': 'Gekoppelte Telefone verwalten.',
+        '暂无已信任设备': 'Noch keine vertrauenswürdigen Geräte',
+        '在手机上录制会议': 'Besprechungen auf dem Telefon aufnehmen',
+        '一键录制，实时转写': 'Aufnehmen und live transkribieren',
+        '离线录音上传': 'Offline-Aufnahmen hochladen',
+        '在手机上录制的离线音频，连接后需确认上传':
+          'Offline-Aufnahmen nach der Verbindung zum Hochladen bestätigen',
+        '跨设备便捷': 'Geräteübergreifend',
+        '支持 iPhone 与 Android 手机录音并传输': 'Mit iPhone und Android aufnehmen und übertragen',
+        '在手机端选择这台电脑，扫描二维码或输入配对码。':
+          'Wählen Sie diesen Computer auf dem Telefon, scannen Sie den QR-Code oder geben Sie den Code ein.',
+        '配对二维码': 'Kopplungs-QR-Code',
+        '等待手机提交配对请求…': 'Warten auf eine Kopplungsanfrage…',
+        '请保持手机与电脑在同一局域网。':
+          'Telefon und Computer müssen im selben lokalen Netzwerk bleiben.',
+        '请核对手机与电脑上的校验词。': 'Vergleichen Sie die Prüfcodes auf Telefon und Computer.',
         '本地模型在此设备上运行。': 'Lokale Modelle laufen auf diesem Gerät.',
         '隐私说明': 'Datenschutz',
         '保存此设备上的会议录音。': 'Meeting-Aufnahmen auf diesem Gerät speichern.',
@@ -4633,10 +5018,9 @@
         '可选，将手机与 Brevia 连接': 'Optional: Smartphone mit Brevia verbinden',
         '快速了解核心功能': 'Die wichtigsten Funktionen kennenlernen',
         '扫码下载 Android APK': 'Scannen, um die Android-APK herunterzuladen',
-        '扫码安装 TestFlight': 'Scannen, um TestFlight zu installieren',
+        '扫码安装 Brevia': 'Scannen, um Brevia zu installieren',
         'ModelScope 下载源': 'Download über ModelScope',
-        'iPhone 尚未在 App Store 正式上架。':
-          'Die iPhone-App ist noch nicht im App Store verfügbar.',
+        'App Store 正式版': 'App Store-Version',
         '在手机上录制会议或对话，录音保存在手机中。':
           'Meetings auf dem Smartphone aufnehmen und dort speichern.',
         '连接电脑后转写并整理会议内容。':
@@ -4666,6 +5050,17 @@
         '请选择一段清晰的已有录音。': 'Wählen Sie eine vorhandene Aufnahme mit klarer Sprache.',
         '声纹样本': 'Stimmproben',
         '存储使用情况': 'Speichernutzung',
+        '开始使用': 'Loslegen',
+        '任务': 'Aufgaben',
+        '选择要导出的内容及格式。': 'Inhalte und Formate für den Export auswählen.',
+        '了解 Brevia 的版本信息、更新内容及相关资源。':
+          'Brevia-Version, Updates und zugehörige Ressourcen ansehen.',
+        '静音': 'Stummschalten',
+        '取消静音': 'Ton einschalten',
+        '全屏': 'Vollbild',
+        '退出全屏': 'Vollbild verlassen',
+        '后退 15 秒': '15 Sekunden zurück',
+        '前进 15 秒': '15 Sekunden vor',
         '数据管理': 'Datenverwaltung',
         '可下载': 'Zum Download verfügbar',
         '暂无内容': 'Noch keine Inhalte',
@@ -4720,7 +5115,7 @@
         '进入功能演示': 'Funktionen ansehen',
         '手机采集与保存': 'Telefon nimmt auf und speichert',
         '电脑转写与 AI 整理': 'Computer transkribiert und ordnet mit KI',
-        '安装 TestFlight': 'TestFlight installieren',
+        '在 App Store 下载': 'Im App Store laden',
         '选择音频文件': 'Audio auswählen',
         '移除文件': 'Datei entfernen',
         '选择文件或拖到这里': 'Datei auswählen oder hier ablegen',
@@ -4849,15 +5244,14 @@
         '安装Brevia手机端': 'Brevia Mobile App installieren',
         '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。':
           'Machen Sie Ihr Handy zum mobilen Besprechungsassistenten. Verbinden Sie es mit Ihrem Computer, um auf dem Handy aufzunehmen, Live-Untertitel zu verfolgen und Zusammenfassungen anzusehen – mit den Transkriptions- und KI-Funktionen Ihres Computers. Sie können auch offline aufnehmen und die Aufnahme später zur Verarbeitung hochladen.',
-        'iPhone · TestFlight 内测': 'iPhone · TestFlight-Beta',
-        '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。':
-          'Scanne zum Installieren von TestFlight und öffne dann die Einladung per E-Mail für Brevia. Nur auf Einladung; noch nicht im App Store veröffentlicht.',
+        'iPhone · App Store': 'iPhone · App Store',
+        '扫码或点击链接，从 App Store 免费安装 Brevia。':
+          'Scanne oder öffne den Link, um Brevia kostenlos aus dem App Store zu installieren.',
         '下载 Android APK': 'Android-APK herunterladen',
         '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。':
           'Scannen oder anklicken, um die APK von ModelScope herunterzuladen. Updates lassen sich danach in den App-Einstellungen prüfen.',
         '手机配对二维码': 'QR-Code zum Koppeln',
-        '扫描前往 App Store 安装 TestFlight':
-          'Scannen, um TestFlight aus dem App Store zu installieren',
+        '扫描前往 App Store 安装 Brevia': 'Scannen, um Brevia aus dem App Store zu installieren',
         '停止配对': 'Kopplung beenden',
         '连接新设备': 'Neues Gerät verbinden',
         '关闭连接服务': 'Verbindungen deaktivieren',
@@ -5181,6 +5575,14 @@
         '恢复默认': 'Standardwerte wiederherstellen',
         '确定': 'Bestätigen',
         '已保存': 'Gespeichert',
+        '已修改 · 尚未保存': 'Geändert · Nicht gespeichert',
+        '正在保存…': 'Speichern…',
+        '保存失败，修改仍保留': 'Fehlgeschlagen; Änderungen erhalten',
+        '未开启': 'Deaktiviert',
+        '正在分析…': 'Analyse…',
+        '建议已暂存，停笔后加入': 'Vorschlag wartet auf Ende der Eingabe',
+        '请求 AI 建议': 'KI-Vorschlag anfordern',
+        '演示': 'Demo',
         '标记说话人': 'Sprecher zuordnen',
         '选择已注册声纹或新建说话人。':
           'Wählen Sie einen registrierten Stimmabdruck oder erstellen Sie einen Sprecher.',
@@ -5404,6 +5806,44 @@
         'settings': 'Настройки',
       },
       'labels': {
+        '搜索工作区': 'Поиск рабочих пространств',
+        '没有搜索结果': 'Ничего не найдено',
+        '选择会议': 'Выбрать встречи',
+        '已选择': 'Выбрано',
+        '退出选择': 'Завершить выбор',
+        'Enter 保存 · Esc 取消': 'Enter — сохранить · Esc — отменить',
+        '会议名称不能为空': 'Название встречи не может быть пустым',
+        '重命名失败，修改仍保留': 'Не удалось переименовать; изменения сохранены',
+        '导出结果': 'Результаты экспорта',
+        '处理结果': 'Результаты',
+        '已完成': 'Завершено',
+        '已导出': 'Экспортировано',
+        '结果待确认': 'Результат не подтверждён',
+        '重试失败项': 'Повторить неудачные операции',
+        '会议将移至最近删除，可在那里恢复。':
+          'Встречи будут перемещены в недавно удалённые, откуда их можно восстановить.',
+        '手机连接服务': 'Служба подключения устройств',
+        '请让手机与电脑处于同一局域网。': 'Подключите телефон и компьютер к одной локальной сети.',
+        '已开启': 'Включено',
+        '在手机端搜索电脑，桌面将自动显示配对窗口。':
+          'Найдите компьютер на телефоне; здесь откроется окно сопряжения.',
+        '也可扫描二维码或输入配对码。': 'Можно также сканировать QR-код или ввести код сопряжения.',
+        '已信任设备': 'Доверенные устройства',
+        '管理已配对的手机设备。': 'Управление сопряжёнными телефонами.',
+        '暂无已信任设备': 'Пока нет доверенных устройств',
+        '在手机上录制会议': 'Запись встреч на телефоне',
+        '一键录制，实时转写': 'Запись и расшифровка в реальном времени',
+        '离线录音上传': 'Загрузка офлайн-записей',
+        '在手机上录制的离线音频，连接后需确认上传':
+          'После подключения подтвердите загрузку офлайн-записей',
+        '跨设备便捷': 'На разных устройствах',
+        '支持 iPhone 与 Android 手机录音并传输': 'Запись и передача с iPhone и Android',
+        '在手机端选择这台电脑，扫描二维码或输入配对码。':
+          'Выберите этот компьютер на телефоне, сканируйте QR-код или введите код.',
+        '配对二维码': 'QR-код сопряжения',
+        '等待手机提交配对请求…': 'Ожидание запроса на сопряжение…',
+        '请保持手机与电脑在同一局域网。': 'Телефон и компьютер должны быть в одной локальной сети.',
+        '请核对手机与电脑上的校验词。': 'Сравните проверочные коды на телефоне и компьютере.',
         '本地模型在此设备上运行。': 'Локальные модели работают на этом устройстве.',
         '隐私说明': 'Конфиденциальность',
         '保存此设备上的会议录音。': 'Сохраняет записи встреч на этом устройстве.',
@@ -5430,10 +5870,9 @@
         '可选，将手机与 Brevia 连接': 'Необязательно: подключите телефон к Brevia',
         '快速了解核心功能': 'Познакомьтесь с основными функциями',
         '扫码下载 Android APK': 'Сканируйте для загрузки Android APK',
-        '扫码安装 TestFlight': 'Сканируйте для установки TestFlight',
+        '扫码安装 Brevia': 'Сканируйте для установки Brevia',
         'ModelScope 下载源': 'Загрузка через ModelScope',
-        'iPhone 尚未在 App Store 正式上架。':
-          'Приложение для iPhone пока не опубликовано в App Store.',
+        'App Store 正式版': 'Версия из App Store',
         '在手机上录制会议或对话，录音保存在手机中。':
           'Записывайте встречи на телефоне. Аудио сохраняется на нём.',
         '连接电脑后转写并整理会议内容。':
@@ -5463,6 +5902,17 @@
         '请选择一段清晰的已有录音。': 'Выберите существующую запись с чёткой речью.',
         '声纹样本': 'Образцы голоса',
         '存储使用情况': 'Использование хранилища',
+        '开始使用': 'Начать',
+        '任务': 'Задачи',
+        '选择要导出的内容及格式。': 'Выберите содержимое и форматы для экспорта.',
+        '了解 Brevia 的版本信息、更新内容及相关资源。':
+          'Версия Brevia, обновления и связанные ресурсы.',
+        '静音': 'Выключить звук',
+        '取消静音': 'Включить звук',
+        '全屏': 'Полный экран',
+        '退出全屏': 'Выйти из полного экрана',
+        '后退 15 秒': 'Назад на 15 секунд',
+        '前进 15 秒': 'Вперёд на 15 секунд',
         '数据管理': 'Управление данными',
         '可下载': 'Доступны для загрузки',
         '暂无内容': 'Пока нет содержимого',
@@ -5516,7 +5966,7 @@
         '进入功能演示': 'Посмотреть функции',
         '手机采集与保存': 'Телефон записывает и сохраняет',
         '电脑转写与 AI 整理': 'Компьютер расшифровывает и обрабатывает с ИИ',
-        '安装 TestFlight': 'Установить TestFlight',
+        '在 App Store 下载': 'Скачать в App Store',
         '选择音频文件': 'Выбрать аудио',
         '移除文件': 'Удалить файл',
         '选择文件或拖到这里': 'Выберите файл или перетащите его сюда',
@@ -5642,14 +6092,14 @@
         '安装Brevia手机端': 'Установить мобильное приложение Brevia',
         '把手机变成随身会议助手。连接电脑后，在手机上录音、查看实时字幕和会议纪要，享用电脑端的转写与 AI 功能。也可以先离线录音，稍后连接电脑上传整理。':
           'Превратите телефон в помощника для встреч. Подключитесь к компьютеру, чтобы записывать, следить за субтитрами в реальном времени и читать итоги встречи на телефоне с помощью транскрибации и ИИ на компьютере. Можно также записать офлайн, а позже подключиться и загрузить запись для обработки.',
-        'iPhone · TestFlight 内测': 'iPhone · Бета TestFlight',
-        '扫码安装 TestFlight，再打开邀请邮件中的链接安装 Brevia。仅受邀账号可用，尚未在 App Store 正式上架。':
-          'Отсканируйте код для установки TestFlight, затем откройте приглашение из почты для установки Brevia. Только по приглашению; в App Store пока не опубликовано.',
+        'iPhone · App Store': 'iPhone · App Store',
+        '扫码或点击链接，从 App Store 免费安装 Brevia。':
+          'Отсканируйте код или откройте ссылку, чтобы бесплатно установить Brevia из App Store.',
         '下载 Android APK': 'Скачать APK для Android',
         '扫码或点击链接，从 ModelScope 下载 APK。安装后可在手机设置中检查更新。':
           'Отсканируйте код или нажмите ссылку для загрузки APK из ModelScope. После установки проверяйте обновления в настройках приложения.',
         '手机配对二维码': 'QR-код сопряжения телефона',
-        '扫描前往 App Store 安装 TestFlight': 'Отсканируйте для установки TestFlight из App Store',
+        '扫描前往 App Store 安装 Brevia': 'Отсканируйте для установки Brevia из App Store',
         '停止配对': 'Остановить сопряжение',
         '连接新设备': 'Подключить устройство',
         '关闭连接服务': 'Отключить подключения',
@@ -5969,6 +6419,14 @@
         '恢复默认': 'Восстановить значения по умолчанию',
         '确定': 'Подтвердить',
         '已保存': 'Сохранено',
+        '已修改 · 尚未保存': 'Изменено · Не сохранено',
+        '正在保存…': 'Сохранение…',
+        '保存失败，修改仍保留': 'Сбой; изменения сохранены в черновике',
+        '未开启': 'Выключено',
+        '正在分析…': 'Анализ…',
+        '建议已暂存，停笔后加入': 'Предложение ждёт завершения ввода',
+        '请求 AI 建议': 'Запросить предложение ИИ',
+        '演示': 'Демо',
         '标记说话人': 'Назначить говорящего',
         '选择已注册声纹或新建说话人。':
           'Выберите зарегистрированный голосовой отпечаток или создайте говорящего.',
@@ -6183,6 +6641,257 @@
 
   const appCopy = {
     'stageLabels': {
+      '会议信息': {
+        'zh': '会议信息',
+        'en': 'Meeting info',
+        'es': 'Información de reunión',
+        'ja': '会議情報',
+        'ko': '회의 정보',
+        'fr': 'Informations de réunion',
+        'de': 'Meetinginformationen',
+        'ru': 'Информация о встрече',
+      },
+      '译文（未更新）': {
+        'zh': '译文（未更新）',
+        'en': 'Translation (not updated)',
+        'es': 'Traducción (sin actualizar)',
+        'ja': '翻訳（未更新）',
+        'ko': '번역 (업데이트되지 않음)',
+        'fr': 'Traduction (non mise à jour)',
+        'de': 'Übersetzung (nicht aktualisiert)',
+        'ru': 'Перевод (не обновлён)',
+      },
+      '已修改': {
+        'zh': '已修改',
+        'en': 'Modified',
+        'es': 'Modificado',
+        'ja': '変更済み',
+        'ko': '수정됨',
+        'fr': 'Modifié',
+        'de': 'Geändert',
+        'ru': 'Изменено',
+      },
+      '任务失败': {
+        'zh': '任务失败',
+        'en': 'Task failed',
+        'es': 'Tarea fallida',
+        'ja': 'タスク失敗',
+        'ko': '작업 실패',
+        'fr': 'Tâche échouée',
+        'de': 'Aufgabe fehlgeschlagen',
+        'ru': 'Ошибка задачи',
+      },
+      '未修改': {
+        'zh': '未修改',
+        'en': 'Unchanged',
+        'es': 'Sin cambios',
+        'ja': '未変更',
+        'ko': '변경 없음',
+        'fr': 'Non modifié',
+        'de': 'Unverändert',
+        'ru': 'Без изменений',
+      },
+      '处理中': {
+        'zh': '处理中',
+        'en': 'Processing',
+        'es': 'Procesando',
+        'ja': '処理中',
+        'ko': '처리 중',
+        'fr': 'Traitement',
+        'de': 'Wird verarbeitet',
+        'ru': 'Обработка',
+      },
+      '导入音频': {
+        'zh': '导入音频',
+        'en': 'Import audio',
+        'es': 'Importar audio',
+        'ja': '音声を読み込む',
+        'ko': '오디오 가져오기',
+        'fr': 'Importer un audio',
+        'de': 'Audio importieren',
+        'ru': 'Импорт аудио',
+      },
+      '请补全纪要服务的模型和连接配置，再重新生成。': {
+        'zh': '请补全纪要服务的模型和连接配置，再重新生成。',
+        'en': 'Complete the summary service model and connection settings before regenerating.',
+        'es': 'Completa el modelo y la conexión del servicio antes de regenerar.',
+        'ja': '要約サービスのモデルと接続設定を完了してから再生成してください。',
+        'ko': '요약 서비스 모델과 연결 설정을 완료한 후 다시 생성하세요.',
+        'fr': 'Renseignez le modèle et la connexion du service avant de régénérer.',
+        'de': 'Vervollständigen Sie Modell und Verbindungseinstellungen vor dem erneuten Erstellen.',
+        'ru': 'Укажите модель и параметры подключения службы итогов перед повторным созданием.',
+      },
+      '尚未生成会议纪要': {
+        'zh': '尚未生成会议纪要',
+        'en': 'No meeting summary yet',
+        'es': 'Aún no hay resumen de la reunión',
+        'ja': '会議要約はまだ生成されていません',
+        'ko': '아직 회의 요약이 없습니다',
+        'fr': 'Aucun résumé de réunion pour le moment',
+        'de': 'Noch keine Meetingzusammenfassung',
+        'ru': 'Итоги встречи ещё не созданы',
+      },
+      '生成纪要': {
+        'zh': '生成纪要',
+        'en': 'Generate summary',
+        'es': 'Generar resumen',
+        'ja': '要約を生成',
+        'ko': '요약 생성',
+        'fr': 'Générer le résumé',
+        'de': 'Zusammenfassung erstellen',
+        'ru': 'Создать итоги',
+      },
+      '纪要服务认证失败': {
+        'zh': '纪要服务认证失败',
+        'en': 'Summary service authentication failed',
+        'es': 'Falló la autenticación del servicio de resumen',
+        'ja': '要約サービスの認証に失敗しました',
+        'ko': '요약 서비스 인증 실패',
+        'fr': 'Échec de l’authentification du service de résumé',
+        'de': 'Authentifizierung des Zusammenfassungsdienstes fehlgeschlagen',
+        'ru': 'Ошибка аутентификации службы итогов',
+      },
+      '会议纪要功能未开启': {
+        'zh': '会议纪要功能未开启',
+        'en': 'Meeting summaries are disabled',
+        'es': 'Los resúmenes de reuniones están desactivados',
+        'ja': '会議要約機能は無効です',
+        'ko': '회의 요약 기능이 꺼져 있습니다',
+        'fr': 'Les résumés de réunion sont désactivés',
+        'de': 'Meetingzusammenfassungen sind deaktiviert',
+        'ru': 'Создание итогов встреч отключено',
+      },
+      '请先开启会议纪要功能，再重新生成。': {
+        'zh': '请先开启会议纪要功能，再重新生成。',
+        'en': 'Enable meeting summaries before regenerating.',
+        'es': 'Activa los resúmenes antes de volver a generarlos.',
+        'ja': '会議要約を有効にしてから再生成してください。',
+        'ko': '회의 요약 기능을 켠 후 다시 생성하세요.',
+        'fr': 'Activez les résumés de réunion avant de les régénérer.',
+        'de': 'Aktivieren Sie Meetingzusammenfassungen vor dem erneuten Erstellen.',
+        'ru': 'Включите итоги встреч перед повторным созданием.',
+      },
+      '请先选择并下载一个内置纪要模型，再重新生成。现有纪要仍保留。': {
+        'zh': '请先选择并下载一个内置纪要模型，再重新生成。现有纪要仍保留。',
+        'en': 'Choose and download a built-in summary model before regenerating. The existing summary is retained.',
+        'es': 'Elige y descarga un modelo integrado antes de regenerar. Se conserva el resumen actual.',
+        'ja': '内蔵要約モデルを選択・ダウンロードしてから再生成してください。現在の要約は保持されます。',
+        'ko': '내장 요약 모델을 선택하고 다운로드한 후 다시 생성하세요. 기존 요약은 유지됩니다.',
+        'fr': 'Choisissez et téléchargez un modèle intégré avant de régénérer. Le résumé actuel est conservé.',
+        'de': 'Wählen und laden Sie ein integriertes Modell vor dem erneuten Erstellen herunter. Die vorhandene Zusammenfassung bleibt erhalten.',
+        'ru': 'Выберите и загрузите встроенную модель перед повторным созданием. Существующие итоги сохраняются.',
+      },
+      '请先选择并下载一个内置纪要模型，再生成会议纪要。': {
+        'zh': '请先选择并下载一个内置纪要模型，再生成会议纪要。',
+        'en': 'Choose and download a built-in summary model before generating a summary.',
+        'es': 'Elige y descarga un modelo integrado antes de generar un resumen.',
+        'ja': '内蔵要約モデルを選択・ダウンロードしてから会議要約を生成してください。',
+        'ko': '내장 요약 모델을 선택하고 다운로드한 후 회의 요약을 생성하세요.',
+        'fr': 'Choisissez et téléchargez un modèle intégré avant de générer un résumé.',
+        'de': 'Wählen und laden Sie ein integriertes Modell vor dem Erstellen der Zusammenfassung herunter.',
+        'ru': 'Выберите и загрузите встроенную модель перед созданием итогов.',
+      },
+      '请补全纪要服务的模型、API 地址和密钥，再重新生成。': {
+        'zh': '请补全纪要服务的模型、API 地址和密钥，再重新生成。',
+        'en': 'Complete the summary service model, API endpoint and key before regenerating.',
+        'es': 'Completa el modelo, la dirección API y la clave del servicio antes de regenerar.',
+        'ja': '要約サービスのモデル、API アドレス、キーを設定してから再生成してください。',
+        'ko': '요약 서비스 모델, API 주소 및 키를 설정한 후 다시 생성하세요.',
+        'fr': 'Renseignez le modèle, l’adresse API et la clé du service avant de régénérer.',
+        'de': 'Vervollständigen Sie Modell, API-Adresse und Schlüssel des Dienstes vor dem erneuten Erstellen.',
+        'ru': 'Укажите модель, адрес API и ключ службы итогов перед повторным созданием.',
+      },
+      '纪要生成失败，现有纪要仍保留。': {
+        'zh': '纪要生成失败，现有纪要仍保留。',
+        'en': 'Summary generation failed. The existing summary is retained.',
+        'es': 'No se pudo generar el resumen. Se conserva el actual.',
+        'ja': '要約の生成に失敗しました。現在の要約は保持されます。',
+        'ko': '요약 생성에 실패했습니다. 기존 요약은 유지됩니다.',
+        'fr': 'Échec de la génération du résumé. Le résumé actuel est conservé.',
+        'de': 'Die Zusammenfassung konnte nicht erstellt werden. Die vorhandene bleibt erhalten.',
+        'ru': 'Не удалось создать итоги. Существующие итоги сохраняются.',
+      },
+      '纪要生成失败': {
+        'zh': '纪要生成失败',
+        'en': 'Summary generation failed',
+        'es': 'No se pudo generar el resumen',
+        'ja': '要約の生成に失敗しました',
+        'ko': '요약 생성 실패',
+        'fr': 'Échec de la génération du résumé',
+        'de': 'Zusammenfassung konnte nicht erstellt werden',
+        'ru': 'Не удалось создать итоги',
+      },
+      '选择模型': {
+        'zh': '选择模型',
+        'en': 'Choose models',
+        'es': 'Elegir modelos',
+        'ja': 'モデルを選択',
+        'ko': '모델 선택',
+        'fr': 'Choisir les modèles',
+        'de': 'Modelle auswählen',
+        'ru': 'Выбрать модели',
+      },
+      '保存语音识别模型文件': {
+        'zh': '保存语音识别模型文件',
+        'en': 'Store speech recognition models',
+        'es': 'Guardar modelos de reconocimiento de voz',
+        'ja': '音声認識モデルを保存',
+        'ko': '음성 인식 모델 저장',
+        'fr': 'Stocker les modèles de reconnaissance vocale',
+        'de': 'Spracherkennungsmodelle speichern',
+        'ru': 'Хранить модели распознавания речи',
+      },
+      '保存会议的原始录音文件': {
+        'zh': '保存会议的原始录音文件',
+        'en': 'Store original meeting recordings',
+        'es': 'Guardar grabaciones originales',
+        'ja': '会議の元の録音を保存',
+        'ko': '회의 원본 녹음 저장',
+        'fr': 'Stocker les enregistrements originaux',
+        'de': 'Originalaufnahmen von Meetings speichern',
+        'ru': 'Хранить исходные записи встреч',
+      },
+      '连接后你可以': {
+        'zh': '连接后你可以',
+        'en': 'Once connected',
+        'es': 'Una vez conectado',
+        'ja': '接続後にできること',
+        'ko': '연결 후 사용 가능한 기능',
+        'fr': 'Après la connexion',
+        'de': 'Nach dem Verbinden',
+        'ru': 'После подключения',
+      },
+      '在手机上录音，电脑实时转写。': {
+        'zh': '在手机上录音，电脑实时转写。',
+        'en': 'Record on your phone and transcribe live on your computer.',
+        'es': 'Graba en el móvil y transcribe en directo en el ordenador.',
+        'ja': 'スマートフォンで録音し、パソコンでリアルタイム文字起こし。',
+        'ko': '휴대폰에서 녹음하고 컴퓨터에서 실시간으로 전사합니다.',
+        'fr': 'Enregistrez sur votre téléphone et transcrivez en direct sur l’ordinateur.',
+        'de': 'Am Telefon aufnehmen und am Computer live transkribieren.',
+        'ru': 'Записывайте на телефоне с транскрипцией на компьютере в реальном времени.',
+      },
+      '在手机查看实时字幕和会议纪要。': {
+        'zh': '在手机查看实时字幕和会议纪要。',
+        'en': 'View live captions and meeting summaries on your phone.',
+        'es': 'Consulta subtítulos en directo y resúmenes en el móvil.',
+        'ja': 'スマートフォンでリアルタイム字幕と会議要約を表示。',
+        'ko': '휴대폰에서 실시간 자막과 회의 요약을 확인합니다.',
+        'fr': 'Consultez les sous-titres et résumés sur votre téléphone.',
+        'de': 'Live-Untertitel und Meetingzusammenfassungen am Telefon ansehen.',
+        'ru': 'Просматривайте субтитры и итоги встреч на телефоне.',
+      },
+      '离线录音，稍后连接电脑上传整理。': {
+        'zh': '离线录音，稍后连接电脑上传整理。',
+        'en': 'Record offline, then connect to upload and organize.',
+        'es': 'Graba sin conexión y conecta después para subir y organizar.',
+        'ja': 'オフラインで録音し、後で接続してアップロード・整理。',
+        'ko': '오프라인에서 녹음한 후 연결하여 업로드하고 정리합니다.',
+        'fr': 'Enregistrez hors ligne, puis connectez-vous pour importer et organiser.',
+        'de': 'Offline aufnehmen, später verbinden und zur Verarbeitung hochladen.',
+        'ru': 'Записывайте без сети, затем подключитесь для загрузки и обработки.',
+      },
+
       '下载 APK，安装后可在手机设置中检查更新。': {
         'zh': '下载 APK，安装后可在手机设置中检查更新。',
         'en': 'Download the APK. Check for updates in phone settings after installing.',
@@ -6192,16 +6901,6 @@
         'fr': 'Téléchargez l’APK. Après installation, recherchez les mises à jour dans les paramètres du téléphone.',
         'de': 'APK herunterladen. Nach der Installation in den Telefoneinstellungen nach Updates suchen.',
         'ru': 'Скачайте APK. После установки проверяйте обновления в настройках телефона.',
-      },
-      '仅受邀账号可用，请打开邀请邮件中的链接安装 Brevia。': {
-        'zh': '仅受邀账号可用，请打开邀请邮件中的链接安装 Brevia。',
-        'en': 'Invited accounts only. Install Brevia using the link in your invitation email.',
-        'es': 'Solo para cuentas invitadas. Instala Brevia desde el enlace del correo de invitación.',
-        'ja': '招待されたアカウントのみ利用できます。招待メールのリンクから Brevia をインストールしてください。',
-        'ko': '초대된 계정만 이용할 수 있습니다. 초대 이메일의 링크로 Brevia를 설치하세요.',
-        'fr': 'Réservé aux comptes invités. Installez Brevia via le lien du courriel d’invitation.',
-        'de': 'Nur für eingeladene Konten. Brevia über den Link in der Einladungs-E-Mail installieren.',
-        'ru': 'Только для приглашённых аккаунтов. Установите Brevia по ссылке из письма с приглашением.',
       },
       '设置会议信息并选择录制来源，开始记录你的会议。': {
         'zh': '设置会议信息并选择录制来源，开始记录你的会议。',
@@ -9296,793 +9995,6 @@
         ],
       },
     },
-    'tourCopy': {
-      'zh': {
-        'title': '三分钟了解言录',
-        'intro': '把每一场对话，变成可回看、可检索、可分享的记录。',
-        'start': '开始使用',
-        'next': '下一步',
-        'back': '上一步',
-        'skip': '跳过演示',
-        'steps': [
-          {
-            'label': '会议库',
-            'heading': '可检索的会议库',
-            'body': '所有会议按时间归档。你随时可以按名称、逐字稿或标签，快速找回某一场对话。',
-            'points': ['搜索会议、逐字稿与标签', '日期范围筛选', '删除后 30 天内可恢复'],
-            'callout': 'search',
-            'demo': {
-              'meetings': [
-                ['产品周会 · 2026-08-19', '04:23 · 中文 · 12 位参与者', ['发布计划', '风险']],
-                ['需求评审 · 2026-08-17', '01:48 · 中文 · 6 位参与者', ['评审']],
-              ],
-            },
-          },
-          {
-            'label': '录音准备',
-            'heading': '三秒开始一场会议',
-            'body': '只需起个名字、选好语言与音频来源，点一下就能开始。',
-            'points': [
-              '选择会议语言与翻译目标',
-              '麦克风 + 系统音频双轨录制',
-              '录制前自动加载模型，不依赖网络',
-            ],
-            'callout': 'form',
-            'demo': {
-              'name': '会议',
-              'language': '中文',
-              'device': 'CPU',
-              'mode': '标准模式',
-            },
-          },
-          {
-            'label': '实时转写',
-            'heading': '边聊，边记录',
-            'body': '字幕实时显示，笔记随手整理。',
-            'points': ['带时间戳的实时字幕', '记录会议重点与待办', '可开启悬浮字幕窗口'],
-            'callout': 'transcript',
-            'demo': {
-              'segments': [
-                ['张伟', '我们周五前要完成内部验收。'],
-                ['李娜', '好，我把风险点整理出来。'],
-                ['张伟', '那下周一同步进展。'],
-              ],
-            },
-          },
-          {
-            'label': 'AI 笔记',
-            'heading': 'AI 自动提炼结论与待办',
-            'body': '会议过程中 AI 帮你记录重点、提取决策与待办，不遗漏任何行动项。',
-            'points': [
-              '自动提炼结论、风险与待办',
-              '支持内置离线 AI 或在线服务',
-              '文本才会发送，音频永远留在本机',
-            ],
-            'callout': 'notes',
-            'demo': {
-              'decision': '周五前完成内部验收',
-              'actions': ['产品团队跟进验收', '开发下周一同步进展'],
-            },
-          },
-          {
-            'label': '会后整理',
-            'heading': '回放、精修与分享',
-            'body': '结束后可回听录音、查看精修后的逐字稿，并导出或分享纪要。',
-            'points': [
-              '回放录音并跳转到对应字幕',
-              '会后精修，提升正式记录可读性',
-              '导出与分享会议纪要',
-            ],
-            'callout': 'player',
-            'demo': {
-              'refined': '我们确定周五前完成内部验收，风险点由李娜统一整理，下周一同步进展。',
-              'summary': '周五前完成内部验收',
-            },
-          },
-        ],
-      },
-      'en': {
-        'title': 'Meet Brevia in three minutes',
-        'intro': 'Turn every conversation into a record you can revisit, search, and share.',
-        'start': 'Start using',
-        'next': 'Next',
-        'back': 'Back',
-        'skip': 'Skip tour',
-        'steps': [
-          {
-            'label': 'Library',
-            'heading': 'A searchable meeting library',
-            'body':
-              'Every meeting is archived by time. Return to any conversation by name, transcript, or tag.',
-            'points': [
-              'Search meetings, transcripts, and tags',
-              'Filter by date range',
-              'Restore within 30 days of deletion',
-            ],
-            'callout': 'search',
-            'demo': {
-              'meetings': [
-                [
-                  'Product weekly · 2026-08-19',
-                  '04:23 · Chinese · 12 participants',
-                  ['Launch', 'Risks'],
-                ],
-                [
-                  'Requirements review · 2026-08-17',
-                  '01:48 · Chinese · 6 participants',
-                  ['Review'],
-                ],
-              ],
-            },
-          },
-          {
-            'label': 'Recording setup',
-            'heading': 'Start a meeting in seconds',
-            'body': 'Give it a name, pick a language and audio source, then hit record.',
-            'points': [
-              'Choose the meeting language and translation target',
-              'Record mic and system audio together',
-              'Models load before recording, so it works offline',
-            ],
-            'callout': 'form',
-            'demo': {
-              'name': 'Meeting',
-              'language': 'Chinese',
-              'device': 'CPU',
-              'mode': 'Standard mode',
-            },
-          },
-          {
-            'label': 'Live transcript',
-            'heading': 'Talk and take notes',
-            'body': 'Live captions appear as you speak. Take notes alongside them.',
-            'points': [
-              'Live captions with timestamps',
-              'Capture key points and action items',
-              'Optional floating caption window',
-            ],
-            'callout': 'transcript',
-            'demo': {
-              'segments': [
-                ['Alex', 'We need to complete acceptance by Friday.'],
-                ['Mia', 'Got it, I’ll list the risks.'],
-                ['Alex', 'We’ll sync progress Monday.'],
-              ],
-            },
-          },
-          {
-            'label': 'AI notes',
-            'heading': 'Key points and actions, automatically',
-            'body': 'AI captures decisions and to-dos while you talk, so no action is missed.',
-            'points': [
-              'Derive conclusions, risks, and to-dos',
-              'Built-in offline or online AI',
-              'Only text is sent; audio stays on device',
-            ],
-            'callout': 'notes',
-            'demo': {
-              'decision': 'Complete acceptance by Friday',
-              'actions': [
-                'Product team to follow up on acceptance',
-                'Engineering syncs progress Monday',
-              ],
-            },
-          },
-          {
-            'label': 'After the meeting',
-            'heading': 'Play back, refine, and share',
-            'body':
-              'Afterward, replay the audio, read the refined transcript, and export or share notes.',
-            'points': [
-              'Replay audio and jump to matching captions',
-              'Post-meeting refinement for polished records',
-              'Export and share meeting notes',
-            ],
-            'callout': 'player',
-            'demo': {
-              'refined':
-                'We agreed to complete acceptance by Friday. Mia will consolidate the risks, and we will sync progress on Monday.',
-              'summary': 'Complete acceptance by Friday',
-            },
-          },
-        ],
-      },
-      'es': {
-        'title': 'Conoce Brevia en tres minutos',
-        'intro':
-          'Convierte cada conversación en un registro que puedes revisar, buscar y compartir.',
-        'start': 'Comenzar',
-        'next': 'Siguiente',
-        'back': 'Atrás',
-        'skip': 'Saltar la guía',
-        'steps': [
-          {
-            'label': 'Biblioteca',
-            'heading': 'Una biblioteca de reuniones consultable',
-            'body':
-              'Cada reunión queda archivada por fecha. Vuelve a cualquier conversación por nombre, transcripción o etiqueta.',
-            'points': [
-              'Busca reuniones, transcripciones y etiquetas',
-              'Filtra por rango de fechas',
-              'Restaura hasta 30 días después de eliminar',
-            ],
-            'callout': 'search',
-            'demo': {
-              'meetings': [
-                [
-                  'Reunión semanal de producto · 2026-08-19',
-                  '04:23 · Chino · 12 participantes',
-                  ['Lanzamiento', 'Riesgos'],
-                ],
-                [
-                  'Revisión de requisitos · 2026-08-17',
-                  '01:48 · Chino · 6 participantes',
-                  ['Revisión'],
-                ],
-              ],
-            },
-          },
-          {
-            'label': 'Preparar grabación',
-            'heading': 'Empieza una reunión en segundos',
-            'body': 'Dale un nombre, elige el idioma y la fuente de audio, y pulsa grabar.',
-            'points': [
-              'Elige idioma y traducción',
-              'Graba micrófono y audio del sistema',
-              'Los modelos cargan antes, sin depender de la red',
-            ],
-            'callout': 'form',
-            'demo': {
-              'name': 'Reunión',
-              'language': 'Chino',
-              'device': 'CPU',
-              'mode': 'Modo estándar',
-            },
-          },
-          {
-            'label': 'Transcripción en vivo',
-            'heading': 'Habla y toma notas',
-            'body': 'Los subtítulos aparecen mientras hablas. Toma notas a su lado.',
-            'points': [
-              'Subtítulos en directo con marcas de tiempo',
-              'Anota puntos clave y tareas',
-              'Ventana de subtítulos flotante opcional',
-            ],
-            'callout': 'transcript',
-            'demo': {
-              'segments': [
-                ['Álex', 'Debemos completar la aceptación el viernes.'],
-                ['Mía', 'Entendido, ordenaré los riesgos.'],
-                ['Álex', 'Sincronizamos el progreso el lunes.'],
-              ],
-            },
-          },
-          {
-            'label': 'Notas de IA',
-            'heading': 'Puntos clave y tareas, automáticamente',
-            'body':
-              'La IA captura decisiones y pendientes mientras hablas, para que nada se pierda.',
-            'points': [
-              'Deriva conclusiones, riesgos y tareas',
-              'IA integrada sin conexión o en línea',
-              'Solo se envía texto; el audio queda en el dispositivo',
-            ],
-            'callout': 'notes',
-            'demo': {
-              'decision': 'Completar la aceptación el viernes',
-              'actions': ['El equipo de producto da seguimiento', 'Ingeniería sincroniza el lunes'],
-            },
-          },
-          {
-            'label': 'Tras la reunión',
-            'heading': 'Reproduce, refina y comparte',
-            'body':
-              'Después, reproduce el audio, lee la transcripción refinada y exporta o comparte las notas.',
-            'points': [
-              'Reproduce y salta a los subtítulos',
-              'Refinamiento posterior para registros pulidos',
-              'Exporta y comparte las notas',
-            ],
-            'callout': 'player',
-            'demo': {
-              'refined':
-                'Acordamos completar la aceptación el viernes. Mía ordenará los riesgos y sincronizaremos el lunes.',
-              'summary': 'Completar la aceptación el viernes',
-            },
-          },
-        ],
-      },
-      'ja': {
-        'title': 'Brevia を 3 分で知る',
-        'intro': 'すべての会話を、見返して検索・共有できる記録に。',
-        'start': 'はじめる',
-        'next': '次へ',
-        'back': '戻る',
-        'skip': 'ガイドをスキップ',
-        'steps': [
-          {
-            'label': '会議ライブラリ',
-            'heading': '検索できる会議ライブラリ',
-            'body': 'すべての会議が日時で整理されます。名前・文字起こし・タグでいつでも検索。',
-            'points': ['会議・文字起こし・タグを検索', '期間で絞り込み', '削除後 30 日以内に復元'],
-            'callout': 'search',
-            'demo': {
-              'meetings': [
-                ['プロダクト定例会 · 2026-08-19', '04:23 · 中国語 · 12 名', ['リリース', 'リスク']],
-                ['要件レビュー · 2026-08-17', '01:48 · 中国語 · 6 名', ['レビュー']],
-              ],
-            },
-          },
-          {
-            'label': '録音の準備',
-            'heading': '数秒で会議を開始',
-            'body': '名前を付け、言語と音声ソースを選んで録音を始めるだけ。',
-            'points': [
-              '会議言語と翻訳先を選択',
-              'マイク＋システム音声で録音',
-              '開始前にモデルを読み込み、オフライン対応',
-            ],
-            'callout': 'form',
-            'demo': {
-              'name': '会議',
-              'language': '中国語',
-              'device': 'CPU',
-              'mode': '標準モード',
-            },
-          },
-          {
-            'label': 'リアルタイム文字起こし',
-            'heading': '話しながら記録',
-            'body': '字幕をリアルタイムに表示し、隣でメモを取れます。',
-            'points': [
-              'タイムスタンプ付きのライブ字幕',
-              '重要事項とタスクを記録',
-              'フローティング字幕も可能',
-            ],
-            'callout': 'transcript',
-            'demo': {
-              'segments': [
-                ['佐藤', '金曜までに内部受け入れを完了しましょう。'],
-                ['鈴木', 'わかりました。リスクを整理します。'],
-                ['佐藤', '月曜に進捗を共有しましょう。'],
-              ],
-            },
-          },
-          {
-            'label': 'AI ノート',
-            'heading': '結論と ToDo を自動で抽出',
-            'body': 'AI が話しながら決定やタスクを記録し、行動項目を逃しません。',
-            'points': [
-              '結論・リスク・ToDo を抽出',
-              '内蔵オフライン AI またはオンライン',
-              '送信されるのはテキストのみ。音声は端末内',
-            ],
-            'callout': 'notes',
-            'demo': {
-              'decision': '金曜までに内部受け入れを完了',
-              'actions': ['プロダクトチームが受け入れをフォロー', 'エンジニアリングは月曜に同期'],
-            },
-          },
-          {
-            'label': '会議後の整理',
-            'heading': '再生・精修・共有',
-            'body': '終了後は音声を再生し、精修済みの文字起こしを確認して共有できます。',
-            'points': [
-              '音声を再生し字幕へジャンプ',
-              '会議後の精修で読みやすく',
-              '議事録をエクスポート・共有',
-            ],
-            'callout': 'player',
-            'demo': {
-              'refined':
-                '金曜までに内部受け入れを完了することで合意。リスクは鈴木が整理し、月曜に進捗を共有します。',
-              'summary': '金曜までに内部受け入れを完了',
-            },
-          },
-        ],
-      },
-      'ko': {
-        'title': 'Brevia를 3분 만에 알아보기',
-        'intro': '모든 대화를 다시 보고 검색하고 공유할 수 있는 기록으로.',
-        'start': '시작하기',
-        'next': '다음',
-        'back': '뒤로',
-        'skip': '둘러보기 건너뛰기',
-        'steps': [
-          {
-            'label': '회의 라이브러리',
-            'heading': '검색 가능한 회의 라이브러리',
-            'body': '모든 회의가 날짜별로 보관됩니다. 이름·녹취·태그로 언제든 다시 찾아보세요.',
-            'points': ['회의·녹취·태그 검색', '기간으로 필터링', '삭제 후 30일 이내 복원'],
-            'callout': 'search',
-            'demo': {
-              'meetings': [
-                ['제품 주간회의 · 2026-08-19', '04:23 · 한국어 · 참가자 12명', ['출시', '리스크']],
-                ['요구사항 검토 · 2026-08-17', '01:48 · 한국어 · 참가자 6명', ['검토']],
-              ],
-            },
-          },
-          {
-            'label': '녹음 준비',
-            'heading': '몇 초 만에 회의 시작',
-            'body': '이름을 정하고 언어와 오디오 소스를 선택한 뒤 녹음을 시작하세요.',
-            'points': [
-              '회의 언어와 번역 대상 선택',
-              '마이크 + 시스템 오디오 녹음',
-              '시작 전 모델 로드, 오프라인 대응',
-            ],
-            'callout': 'form',
-            'demo': {
-              'name': '회의',
-              'language': '한국어',
-              'device': 'CPU',
-              'mode': '표준 모드',
-            },
-          },
-          {
-            'label': '실시간 전사',
-            'heading': '대화하며 기록하세요',
-            'body': '실시간 자막을 보며 옆에서 메모를 작성하세요.',
-            'points': [
-              '타임스탬프가 있는 실시간 자막',
-              '주요 내용과 할 일을 기록',
-              '플로팅 자막 창 가능',
-            ],
-            'callout': 'transcript',
-            'demo': {
-              'segments': [
-                ['김민수', '금요일까지 내부 검수를 마칩시다.'],
-                ['이지은', '네, 리스크를 정리할게요.'],
-                ['김민수', '월요일에 진행 상황을 공유하죠.'],
-              ],
-            },
-          },
-          {
-            'label': 'AI 메모',
-            'heading': '결론과 할 일을 자동으로',
-            'body': '말하는 동안 AI가 결정과 작업을 기록해 놓치는 일이 없습니다.',
-            'points': [
-              '결론·리스크·할 일 추출',
-              '내장 오프라인 또는 온라인 AI',
-              '텍스트만 전송, 오디오는 기기에 유지',
-            ],
-            'callout': 'notes',
-            'demo': {
-              'decision': '금요일까지 내부 검수 완료',
-              'actions': ['제품팀이 검수 후속 처리', '엔지니어링 월요일 동기화'],
-            },
-          },
-          {
-            'label': '회의 후 정리',
-            'heading': '재생·정제·공유',
-            'body': '종료 후 오디오를 재생하고 정제된 녹취를 확인하며 메모를 내보낼 수 있습니다.',
-            'points': [
-              '오디오 재생 및 자막 이동',
-              '회의 후 정제로 다듬기',
-              '회의록 내보내기 및 공유',
-            ],
-            'callout': 'player',
-            'demo': {
-              'refined':
-                '금요일까지 내부 검수를 완료하기로 합의했습니다. 리스크는 이지은이 정리하고 월요일에 진행 상황을 공유합니다.',
-              'summary': '금요일까지 내부 검수 완료',
-            },
-          },
-        ],
-      },
-      'fr': {
-        'title': 'Découvrez Brevia en trois minutes',
-        'intro':
-          'Transformez chaque conversation en un enregistrement à relire, chercher et partager.',
-        'start': 'Commencer',
-        'next': 'Suivant',
-        'back': 'Retour',
-        'skip': 'Passer la démo',
-        'steps': [
-          {
-            'label': 'Bibliothèque',
-            'heading': 'Une bibliothèque de réunions consultable',
-            'body':
-              'Chaque réunion est archivée par date. Retrouvez toute conversation par nom, transcription ou étiquette.',
-            'points': [
-              'Rechercher réunions, transcriptions et étiquettes',
-              'Filtrer par période',
-              'Restaurer sous 30 jours après suppression',
-            ],
-            'callout': 'search',
-            'demo': {
-              'meetings': [
-                [
-                  'Réunion produit hebdo · 2026-08-19',
-                  '04:23 · Chinois · 12 participants',
-                  ['Lancement', 'Risques'],
-                ],
-                ['Revue des exigences · 2026-08-17', '01:48 · Chinois · 6 participants', ['Revue']],
-              ],
-            },
-          },
-          {
-            'label': 'Préparer l’enregistrement',
-            'heading': 'Lancez une réunion en quelques secondes',
-            'body': 'Donnez-lui un nom, choisissez la langue et la source audio, puis enregistrez.',
-            'points': [
-              'Choisir langue et traduction',
-              'Enregistrer micro et audio système',
-              'Modèles chargés avant, fonctionne hors ligne',
-            ],
-            'callout': 'form',
-            'demo': {
-              'name': 'Réunion',
-              'language': 'Chinois',
-              'device': 'CPU',
-              'mode': 'Mode standard',
-            },
-          },
-          {
-            'label': 'Transcription en direct',
-            'heading': 'Parlez et prenez des notes',
-            'body': 'Les sous-titres apparaissent en direct. Prenez des notes à côté.',
-            'points': [
-              'Sous-titres en direct horodatés',
-              'Notez les points clés et les actions',
-              'Fenêtre de sous-titres flottante optionnelle',
-            ],
-            'callout': 'transcript',
-            'demo': {
-              'segments': [
-                ['Paul', 'Nous devons finaliser la recette vendredi.'],
-                ['Marie', 'D’accord, je liste les risques.'],
-                ['Paul', 'Nous synchroniserons lundi.'],
-              ],
-            },
-          },
-          {
-            'label': 'Notes IA',
-            'heading': 'Points clés et actions, automatiquement',
-            'body': 'L’IA capture décisions et tâches pendant que vous parlez, sans rien manquer.',
-            'points': [
-              'Déduire conclusions, risques et tâches',
-              'IA intégrée hors ligne ou en ligne',
-              'Seul le texte est envoyé ; l’audio reste local',
-            ],
-            'callout': 'notes',
-            'demo': {
-              'decision': 'Finaliser la recette vendredi',
-              'actions': [
-                'L’équipe produit suit la recette',
-                'L’équipe technique synchronise lundi',
-              ],
-            },
-          },
-          {
-            'label': 'Après la réunion',
-            'heading': 'Relire, affiner et partager',
-            'body':
-              'Après coup, écoutez l’audio, lisez la transcription affinée et exportez ou partagez les notes.',
-            'points': [
-              'Écouter et sauter aux sous-titres',
-              'Affinage après réunion',
-              'Exporter et partager les notes',
-            ],
-            'callout': 'player',
-            'demo': {
-              'refined':
-                'Nous avons convenu de finaliser la recette vendredi. Marie consolidera les risques et nous synchroniserons lundi.',
-              'summary': 'Finaliser la recette vendredi',
-            },
-          },
-        ],
-      },
-      'de': {
-        'title': 'Brevia in drei Minuten kennenlernen',
-        'intro':
-          'Machen Sie aus jedem Gespräch eine Aufzeichnung, die Sie nachschlagen, durchsuchen und teilen können.',
-        'start': 'Starten',
-        'next': 'Weiter',
-        'back': 'Zurück',
-        'skip': 'Tour überspringen',
-        'steps': [
-          {
-            'label': 'Meeting-Bibliothek',
-            'heading': 'Eine durchsuchbare Besprechungsbibliothek',
-            'body':
-              'Jede Besprechung wird nach Datum archiviert. Finden Sie jede Unterhaltung über Name, Transkript oder Tag wieder.',
-            'points': [
-              'Besprechungen, Transkripte und Tags durchsuchen',
-              'Nach Zeitraum filtern',
-              'Innerhalb von 30 Tagen nach Löschung wiederherstellen',
-            ],
-            'callout': 'search',
-            'demo': {
-              'meetings': [
-                [
-                  'Produktwochenmeeting · 2026-08-19',
-                  '04:23 · Chinesisch · 12 Teilnehmer',
-                  ['Launch', 'Risiken'],
-                ],
-                [
-                  'Anforderungsreview · 2026-08-17',
-                  '01:48 · Chinesisch · 6 Teilnehmer',
-                  ['Review'],
-                ],
-              ],
-            },
-          },
-          {
-            'label': 'Aufnahme vorbereiten',
-            'heading': 'In Sekunden eine Besprechung starten',
-            'body':
-              'Geben Sie einen Namen ein, wählen Sie Sprache und Audioquelle und drücken Sie Aufnahme.',
-            'points': [
-              'Sprache und Übersetzungsziel wählen',
-              'Mikrofon und Systemaudio aufnehmen',
-              'Modelle laden vor dem Start, offline-tauglich',
-            ],
-            'callout': 'form',
-            'demo': {
-              'name': 'Besprechung',
-              'language': 'Chinesisch',
-              'device': 'CPU',
-              'mode': 'Standardmodus',
-            },
-          },
-          {
-            'label': 'Live-Transkript',
-            'heading': 'Sprechen und Notizen machen',
-            'body': 'Untertitel erscheinen live. Schreiben Sie daneben Notizen.',
-            'points': [
-              'Live-Untertitel mit Zeitstempeln',
-              'Wichtige Punkte und Aufgaben festhalten',
-              'Optional schwebendes Untertitelfenster',
-            ],
-            'callout': 'transcript',
-            'demo': {
-              'segments': [
-                ['Alex', 'Wir müssen die Abnahme bis Freitag abschließen.'],
-                ['Mia', 'Verstanden, ich liste die Risiken.'],
-                ['Alex', 'Wir stimmen uns Montag ab.'],
-              ],
-            },
-          },
-          {
-            'label': 'KI-Notizen',
-            'heading': 'Kernpunkte und Aufgaben, automatisch',
-            'body':
-              'Die KI erfasst Entscheidungen und Aufgaben, während Sie sprechen – nichts wird übersehen.',
-            'points': [
-              'Schlussfolgerungen, Risiken und Aufgaben ableiten',
-              'Integrierte Offline- oder Online-KI',
-              'Nur Text wird gesendet; Audio bleibt lokal',
-            ],
-            'callout': 'notes',
-            'demo': {
-              'decision': 'Abnahme bis Freitag abschließen',
-              'actions': ['Produktteam begleitet die Abnahme', 'Entwicklung stimmt sich Montag ab'],
-            },
-          },
-          {
-            'label': 'Nach dem Meeting',
-            'heading': 'Abspielen, nachbearbeiten und teilen',
-            'body':
-              'Danach können Sie das Audio abspielen, das bearbeitete Transkript lesen und Notizen exportieren oder teilen.',
-            'points': [
-              'Audio abspielen und zu Untertiteln springen',
-              'Nachbearbeitung für saubere Aufzeichnungen',
-              'Notizen exportieren und teilen',
-            ],
-            'callout': 'player',
-            'demo': {
-              'refined':
-                'Wir haben vereinbart, die Abnahme bis Freitag abzuschließen. Mia konsolidiert die Risiken, und wir stimmen uns Montag ab.',
-              'summary': 'Abnahme bis Freitag abschließen',
-            },
-          },
-        ],
-      },
-      'ru': {
-        'title': 'Познакомьтесь с Brevia за три минуты',
-        'intro':
-          'Превратите любой разговор в запись, которую можно пересмотреть, найти и поделиться.',
-        'start': 'Начать',
-        'next': 'Далее',
-        'back': 'Назад',
-        'skip': 'Пропустить обзор',
-        'steps': [
-          {
-            'label': 'Библиотека',
-            'heading': 'Поисковая библиотека встреч',
-            'body':
-              'Каждая встреча архивируется по дате. Вернитесь к любому разговору по названию, расшифровке или тегу.',
-            'points': [
-              'Поиск встреч, расшифровок и тегов',
-              'Фильтр по периоду',
-              'Восстановление в течение 30 дней',
-            ],
-            'callout': 'search',
-            'demo': {
-              'meetings': [
-                [
-                  'Еженедельная встреча продукта · 2026-08-19',
-                  '04:23 · Китайский · 12 участников',
-                  ['Запуск', 'Риски'],
-                ],
-                ['Ревью требований · 2026-08-17', '01:48 · Китайский · 6 участников', ['Ревью']],
-              ],
-            },
-          },
-          {
-            'label': 'Подготовка записи',
-            'heading': 'Начните встречу за секунды',
-            'body': 'Дайте название, выберите язык и источник звука — и нажмите запись.',
-            'points': [
-              'Выбор языка и перевода',
-              'Запись микрофона и системного звука',
-              'Модели загружаются заранее, работает офлайн',
-            ],
-            'callout': 'form',
-            'demo': {
-              'name': 'Встреча',
-              'language': 'Китайский',
-              'device': 'CPU',
-              'mode': 'Стандартный режим',
-            },
-          },
-          {
-            'label': 'Расшифровка в реальном времени',
-            'heading': 'Говорите и записывайте',
-            'body': 'Субтитры появляются в реальном времени. Делайте заметки рядом.',
-            'points': [
-              'Субтитры в реальном времени',
-              'Записывайте ключевые моменты и задачи',
-              'Опциональное плавающее окно субтитров',
-            ],
-            'callout': 'transcript',
-            'demo': {
-              'segments': [
-                ['Алекс', 'Нам нужно завершить приёмку к пятнице.'],
-                ['Мия', 'Понял, я сведу риски.'],
-                ['Алекс', 'Синхронизируемся в понедельник.'],
-              ],
-            },
-          },
-          {
-            'label': 'Заметки ИИ',
-            'heading': 'Ключевые моменты и задачи автоматически',
-            'body': 'ИИ фиксирует решения и задачи, пока вы говорите, чтобы ничего не упустить.',
-            'points': [
-              'Вывод выводов, рисков и задач',
-              'Встроенный офлайн или онлайн-ИИ',
-              'Отправляется только текст; звук остаётся локально',
-            ],
-            'callout': 'notes',
-            'demo': {
-              'decision': 'Завершить приёмку к пятнице',
-              'actions': [
-                'Команда продукта сопровождает приёмку',
-                'Разработка синхронизируется в понедельник',
-              ],
-            },
-          },
-          {
-            'label': 'После встречи',
-            'heading': 'Воспроизводите, обрабатывайте и делитесь',
-            'body':
-              'После завершения прослушайте звук, прочитайте обработанную расшифровку и экспортируйте или поделитесь заметками.',
-            'points': [
-              'Прослушивание и переход к субтитрам',
-              'Обработка после встречи',
-              'Экспорт и обмен заметками',
-            ],
-            'callout': 'player',
-            'demo': {
-              'refined':
-                'Мы договорились завершить приёмку к пятнице. Мия сведёт риски, и мы синхронизируемся в понедельник.',
-              'summary': 'Завершить приёмку к пятнице',
-            },
-          },
-        ],
-      },
-    },
   };
 
   const aiNotePromptCopy = {
@@ -10713,6 +10625,58 @@
       model[locale]['parakeet-tdt-0.6b-v3-mlx'] = model[locale]['parakeet-tdt-0.6b-v3-int8'];
     }
 
+    // 首启使用画板的短简介；模型库仍保留真实语言范围与完整介绍。
+    const onboardingDescriptions = {
+      zh: [
+        '轻量高效，适合多数日常会议场景',
+        '更强的识别效果，适合复杂语言场景',
+        '开源社区模型，识别效果优秀',
+      ],
+      en: [
+        'Lightweight and efficient, with strong Chinese recognition.',
+        'General speech recognition with multilingual support.',
+        'Strong recognition for English and other European languages.',
+      ],
+      es: [
+        'Ligero y eficiente, con buen reconocimiento del chino.',
+        'Reconocimiento de voz general en varios idiomas.',
+        'Buen reconocimiento del inglés y otras lenguas europeas.',
+      ],
+      ja: [
+        '軽量で効率的。中国語の認識に優れています。',
+        '多言語に対応する汎用音声認識モデル。',
+        '英語など欧州言語の認識に優れています。',
+      ],
+      ko: [
+        '가볍고 효율적이며 중국어 인식에 강합니다.',
+        '여러 언어를 지원하는 범용 음성 인식 모델입니다.',
+        '영어 등 유럽 언어 인식에 강합니다.',
+      ],
+      fr: [
+        'Léger et efficace, avec une bonne reconnaissance du chinois.',
+        'Reconnaissance vocale générale et multilingue.',
+        'Bonne reconnaissance de l’anglais et des autres langues européennes.',
+      ],
+      de: [
+        'Leicht und effizient, mit guter chinesischer Spracherkennung.',
+        'Allgemeine Spracherkennung für mehrere Sprachen.',
+        'Gute Erkennung für Englisch und andere europäische Sprachen.',
+      ],
+      ru: [
+        'Лёгкая и эффективная модель с хорошим распознаванием китайского.',
+        'Универсальная модель распознавания речи на разных языках.',
+        'Хорошо распознаёт английский и другие европейские языки.',
+      ],
+    };
+    for (const locale of LOCALES) {
+      model[locale]['funasr-nano-int8'].onboarding = onboardingDescriptions[locale][0];
+      model[locale]['funasr-nano-mlx'].onboarding = onboardingDescriptions[locale][0];
+      model[locale]['qwen3-asr-0.6b-int8'].onboarding = onboardingDescriptions[locale][1];
+      model[locale]['qwen3-asr-0.6b-mlx'].onboarding = onboardingDescriptions[locale][1];
+      model[locale]['parakeet-tdt-0.6b-v3-int8'].onboarding = onboardingDescriptions[locale][2];
+      model[locale]['parakeet-tdt-0.6b-v3-mlx'].onboarding = onboardingDescriptions[locale][2];
+    }
+
     // 推荐角标。用户在首启第 ① 步刚选过界面语言，「按界面语言推荐」是自明的，
     // 所以只需要一个短角标，不需要再配一段解释文字。
     const recommended = {
@@ -10730,7 +10694,7 @@
     const setup = {
       zh: {
         title: '选择语音识别模型',
-        pickHint: '按需选择要下载的模型',
+        pickHint: '选择适合你需求的语音识别模型，并确认文件保存位置。',
         bundledTitle: '已随应用安装',
         bundledDetail: '语音活动检测 · 说话人分离 · 声纹识别',
         atLeastOne: '至少要选一个识别模型，否则无法生成字幕。',
@@ -10975,262 +10939,6 @@
     },
   };
   appCopy.modelLibraryBackground = modelLibraryBackground;
-
-  const tourMeetingFallback = {
-    zh: '会议',
-    en: 'Meeting',
-    es: 'Reunión',
-    ja: '会議',
-    ko: '회의',
-    fr: 'Réunion',
-    de: 'Besprechung',
-    ru: 'Встреча',
-  };
-  appCopy.tourMeetingFallback = tourMeetingFallback;
-
-  const tourAiSuggestionFallback = {
-    zh: 'AI 建议',
-    en: 'AI suggestion',
-    es: 'Sugerencia de IA',
-    ja: 'AI 提案',
-    ko: 'AI 제안',
-    fr: 'Suggestion IA',
-    de: 'KI-Vorschlag',
-    ru: 'Совет ИИ',
-  };
-  appCopy.tourAiSuggestionFallback = tourAiSuggestionFallback;
-
-  const tourHowtoLabel = {
-    zh: '如何使用',
-    en: 'How to use',
-    es: 'Cómo usarlo',
-    ja: '使い方',
-    ko: '사용 방법',
-    fr: 'Comment l’utiliser',
-    de: 'So verwenden',
-    ru: 'Как использовать',
-  };
-  appCopy.tourHowtoLabel = tourHowtoLabel;
-
-  const tourHowto = {
-    zh: {
-      0: [
-        '在搜索框输入关键词，可搜索会议标题、字幕内容或说话人。',
-        '搜索结果以浮窗展示，并高亮命中的关键词。',
-        '点击某条结果即可打开该会议。',
-      ],
-      1: [
-        '输入会议名称，并选择会议语言与译文目标。',
-        '勾选要录制的音频来源（麦克风 / 系统音频）。',
-        '点击「开始录制」，模型加载后会自动开录。',
-      ],
-      2: [
-        '录制时，右侧实时字幕会持续滚动更新。',
-        '每条字幕带时间与说话人，点击可回放定位。',
-        '点击「展开字幕」，把字幕切到主视图。',
-      ],
-      3: [
-        '点击「AI 笔记」开启实时纪要。',
-        'AI 会自动提炼结论、风险与待办到笔记区。',
-        '可将当前字幕片段一键加入笔记。',
-      ],
-      4: [
-        '会后自动生成精修逐字稿与纪要。',
-        '拖动播放条回听，字幕会随之高亮。',
-        '点击「导出」或「分享」，保存或发送纪要。',
-      ],
-    },
-    en: {
-      0: [
-        'Type keywords to search meeting titles, captions, or speakers.',
-        'Results appear in a popover with the query highlighted.',
-        'Click a result to open that meeting.',
-      ],
-      1: [
-        'Enter a meeting title, then choose the language and translation target.',
-        'Check which audio sources to record (mic / system audio).',
-        'Hit Start recording; models load before recording begins.',
-      ],
-      2: [
-        'Live captions scroll continuously on the right while recording.',
-        'Each caption carries a time and speaker; click to jump playback.',
-        'Expand captions to bring them to the main view.',
-      ],
-      3: [
-        'Enable AI notes to start real-time notes.',
-        'AI surfaces decisions, risks, and actions into your notes.',
-        'Add the current caption segment to your notes in one click.',
-      ],
-      4: [
-        'A refined transcript and notes are generated automatically.',
-        'Drag the playback bar to listen; captions highlight in sync.',
-        'Export or share the notes when you are done.',
-      ],
-    },
-    es: {
-      0: [
-        'Escribe palabras clave para buscar títulos, subtítulos o hablantes.',
-        'Los resultados aparecen en una ventana flotante con la búsqueda resaltada.',
-        'Haz clic en un resultado para abrir esa reunión.',
-      ],
-      1: [
-        'Escribe un título y elige el idioma y la traducción.',
-        'Marca qué fuentes de audio grabar (micrófono / sistema).',
-        'Pulsa Iniciar grabación; los modelos cargan antes.',
-      ],
-      2: [
-        'Los subtítulos en vivo se desplazan a la derecha al grabar.',
-        'Cada subtítulo tiene hora y hablante; pulsa para saltar.',
-        'Amplía los subtítulos para llevarlos a la vista principal.',
-      ],
-      3: [
-        'Activa la IA para notas en tiempo real.',
-        'La IA extrae conclusiones, riesgos y tareas a tus notas.',
-        'Añade el segmento actual a tus notas con un clic.',
-      ],
-      4: [
-        'Se genera automáticamente una transcripción refinada y notas.',
-        'Arrastra la barra para escuchar; los subtítulos se resaltan.',
-        'Exporta o comparte las notas al terminar.',
-      ],
-    },
-    ja: {
-      0: [
-        'キーワードで会議タイトル・字幕・話者を検索。',
-        '結果は浮遊ウィンドウで表示され、キーワードがハイライト。',
-        '結果をクリックすると会議が開きます。',
-      ],
-      1: [
-        '会議名を入力し、言語と翻訳先を選択。',
-        '録音する音声ソース（マイク/システム）を選択。',
-        '「録音を開始」でモデル読み込み後に開始。',
-      ],
-      2: [
-        '録音中、右側にライブ字幕が流れます。',
-        '各字幕に時間と話者が付き、クリックで再生位置へ。',
-        '「字幕を展開」で字幕をメイン表示に。',
-      ],
-      3: [
-        '「AIメモ」を有効にしてリアルタイムメモ。',
-        'AI が結論・リスク・ToDo をメモに抽出。',
-        '現在の字幕をワンクリックでメモに追加。',
-      ],
-      4: [
-        '終了後に精修済みの文字起こしとメモを自動生成。',
-        'バーをドラッグして再生、字幕が連動ハイライト。',
-        '「エクスポート」「共有」で保存・送信。',
-      ],
-    },
-    ko: {
-      0: [
-        '키워드로 회의 제목·자막·화자를 검색하세요.',
-        '결과는 플로팅 창에 표시되며 키워드가 강조됩니다.',
-        '결과를 클릭하면 회의가 열립니다.',
-      ],
-      1: [
-        '회의 이름을 입력하고 언어·번역 대상을 선택하세요.',
-        '녹음할 오디오 소스(마이크/시스템)를 선택하세요.',
-        '「녹음 시작」을 누르면 모델 로드 후 시작됩니다.',
-      ],
-      2: [
-        '녹음 중 오른쪽에 실시간 자막이 흐릅니다.',
-        '각 자막에 시간·화자가 표시되며 클릭으로 이동.',
-        '「자막 확대」로 자막을 메인 화면에.',
-      ],
-      3: [
-        '「AI 메모」를 켜서 실시간 메모를 시작하세요.',
-        'AI가 결론·리스크·할 일을 메모로 추출합니다.',
-        '현재 자막을 한 번에 메모에 추가하세요.',
-      ],
-      4: [
-        '종료 후 정제된 녹취와 메모를 자동 생성합니다.',
-        '바를 드래그해 재생하면 자막이 연동됩니다.',
-        '「내보내기」「공유」로 저장·전송하세요.',
-      ],
-    },
-    fr: {
-      0: [
-        'Saisissez des mots-clés pour chercher titres, sous-titres ou locuteurs.',
-        'Les résultats s’affichent dans une fenêtre flottante avec la recherche surlignée.',
-        'Cliquez sur un résultat pour ouvrir cette réunion.',
-      ],
-      1: [
-        'Saisissez un titre, puis choisissez la langue et la traduction.',
-        'Cochez les sources audio à enregistrer (micro / système).',
-        'Cliquez sur Démarrer ; les modèles se chargent avant.',
-      ],
-      2: [
-        'Les sous-titres défilent à droite pendant l’enregistrement.',
-        'Chaque sous-titre a une heure et un locuteur ; cliquez pour sauter.',
-        'Agrandissez les sous-titres pour les mettre en premier plan.',
-      ],
-      3: [
-        'Activez les notes IA pour les notes en temps réel.',
-        'L’IA extrait conclusions, risques et tâches dans vos notes.',
-        'Ajoutez le segment courant à vos notes en un clic.',
-      ],
-      4: [
-        'Une transcription affinée et des notes sont générées automatiquement.',
-        'Faites glisser la barre pour écouter ; les sous-titres se surlignent.',
-        'Exportez ou partagez les notes à la fin.',
-      ],
-    },
-    de: {
-      0: [
-        'Geben Sie Schlüsselwörter ein, um Titel, Untertitel oder Sprecher zu suchen.',
-        'Die Ergebnisse erscheinen in einem Popover mit hervorgehobener Suche.',
-        'Klicken Sie auf ein Ergebnis, um die Besprechung zu öffnen.',
-      ],
-      1: [
-        'Titel eingeben, Sprache und Übersetzungsziel wählen.',
-        'Audioquellen (Mikrofon/System) zum Aufnehmen auswählen.',
-        '„Aufnahme starten“; die Modelle laden vor dem Start.',
-      ],
-      2: [
-        'Live-Untertitel laufen rechts während der Aufnahme.',
-        'Jeder Untertitel hat Zeit und Sprecher; klicken zum Springen.',
-        'Untertitel vergrößern, um sie in die Hauptansicht zu bringen.',
-      ],
-      3: [
-        'KI-Notizen für Notizen in Echtzeit aktivieren.',
-        'KI zieht Schlussfolgerungen, Risiken und Aufgaben in Ihre Notizen.',
-        'Aktuelles Segment mit einem Klick zu Notizen hinzufügen.',
-      ],
-      4: [
-        'Ein bearbeitetes Transkript und Notizen werden automatisch erstellt.',
-        'Balken ziehen zum Anhören; Untertitel werden synchron hervorgehoben.',
-        'Notizen am Ende exportieren oder teilen.',
-      ],
-    },
-    ru: {
-      0: [
-        'Введите ключевые слова для поиска названий, субтитров или говорящих.',
-        'Результаты появляются во всплывающем окне с подсветкой запроса.',
-        'Нажмите на результат, чтобы открыть встречу.',
-      ],
-      1: [
-        'Введите название, затем выберите язык и перевод.',
-        'Отметьте источники звука для записи (микрофон/система).',
-        'Нажмите «Начать запись»; модели загрузятся заранее.',
-      ],
-      2: [
-        'Субтитры прокручиваются справа во время записи.',
-        'У каждого субтитра есть время и говорящий; клик для перехода.',
-        'Разверните субтитры, чтобы показать их на главном экране.',
-      ],
-      3: [
-        'Включите ИИ-заметки для заметок в реальном времени.',
-        'ИИ извлекает выводы, риски и задачи в ваши заметки.',
-        'Добавьте текущий фрагмент в заметки одним кликом.',
-      ],
-      4: [
-        'Обработанная расшифровка и заметки создаются автоматически.',
-        'Перетащите полосу для прослушивания; субтитры подсвечиваются.',
-        'Экспортируйте или поделитесь заметками в конце.',
-      ],
-    },
-  };
-  appCopy.tourHowto = tourHowto;
 
   const currentVersionLabels = {
     zh: '当前版本',

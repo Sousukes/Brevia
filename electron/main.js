@@ -1678,21 +1678,28 @@ function registerIpc() {
     });
     if (destination.canceled) return null;
     const paths = [];
+    const results = [];
     for (const meetingId of value.meeting_ids) {
-      const exported = await prepareExport({
-        meeting_id: meetingId,
-        content: value.format === 'wav' ? 'audio' : 'transcript',
-        format: value.format,
-        ...(value.filename_prefix ? { filename_prefix: value.filename_prefix } : {}),
-      });
-      const parsed = path.parse(exported.path);
-      let target = path.join(destination.filePaths[0], parsed.base);
-      for (let copy = 2; existsSync(target); copy += 1)
-        target = path.join(destination.filePaths[0], `${parsed.name}-${copy}${parsed.ext}`);
-      await copyFile(exported.path, target);
-      paths.push(target);
+      try {
+        const exported = await prepareExport({
+          meeting_id: meetingId,
+          content: value.format === 'wav' ? 'audio' : 'transcript',
+          format: value.format,
+          ...(value.filename_prefix ? { filename_prefix: value.filename_prefix } : {}),
+        });
+        const parsed = path.parse(exported.path);
+        let target = path.join(destination.filePaths[0], parsed.base);
+        for (let copy = 2; existsSync(target); copy += 1)
+          target = path.join(destination.filePaths[0], `${parsed.name}-${copy}${parsed.ext}`);
+        await copyFile(exported.path, target);
+        paths.push(target);
+        results.push({ meeting_id: meetingId, path: target });
+      } catch (error) {
+        results.push({ meeting_id: meetingId, error: String(error.message || error) });
+      }
     }
-    return { paths, format: value.format };
+    // 保留既有 paths/format，补充实际逐项结果，避免部分写入后误报整体成功。
+    return { paths, format: value.format, results };
   });
   handleIpc('meeting.share', async (_, payload) => {
     const exported = await worker.request('meeting.bundle', id.parse(payload));
@@ -2082,18 +2089,19 @@ async function installUpdate() {
 function createWindow() {
   const appUrl = pathToFileURL(path.join(packagedRoot, 'frontend', 'index.html')).href;
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const windowScale = Math.min((2 / 3) * 1.15, width / 1280, height / 800);
   const window = new BrowserWindow({
-    width: Math.min(1280, width),
-    height: Math.min(800, height),
+    width: Math.round(1280 * windowScale),
+    height: Math.round(800 * windowScale),
     useContentSize: true,
-    minWidth: 880,
-    minHeight: 640,
+    minWidth: Math.round(880 * windowScale),
+    minHeight: Math.round(640 * windowScale),
     show: false,
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      // 页面直接以 1280×800 CSS 像素布局，不再通过浏览器缩放压缩字体。
-      zoomFactor: 1,
+      // 窗口和内容在原2/3基础上同步放大15%，保留1280×800排版。
+      zoomFactor: windowScale,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -2129,6 +2137,8 @@ function createWindow() {
     window.webContents.send('brevia:event', { type: 'startup.ready' });
   };
   window.webContents.on('did-finish-load', () => {
+    // 旧用户目录保存的缩放会覆盖 webPreferences，加载后重新应用默认比例。
+    window.webContents.setZoomFactor(windowScale);
     pageReady = true;
     window.show();
     if (revealed) {
@@ -2404,11 +2414,15 @@ app.whenReady().then(async () => {
   } catch (error) {
     writeLog('ERROR', `mobile service: ${error.message}`);
   }
-  session.defaultSession.setPermissionCheckHandler(
-    (_, permission) => permission === 'media' || permission === 'display-capture',
-  );
-  session.defaultSession.setPermissionRequestHandler((_, permission, callback) =>
-    callback(permission === 'media' || permission === 'display-capture'),
+  const allowAppPermission = (contents, permission) =>
+    permission === 'media' ||
+    permission === 'display-capture' ||
+    (permission === 'fullscreen' &&
+      contents?.getURL().split(/[?#]/)[0] ===
+        pathToFileURL(path.join(packagedRoot, 'frontend', 'index.html')).href);
+  session.defaultSession.setPermissionCheckHandler(allowAppPermission);
+  session.defaultSession.setPermissionRequestHandler((contents, permission, callback) =>
+    callback(allowAppPermission(contents, permission)),
   );
   session.defaultSession.setDisplayMediaRequestHandler(
     createDisplayMediaHandler(desktopCapturer, writeLog),

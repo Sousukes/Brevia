@@ -78,8 +78,14 @@
   }
   function closePairDialog() {
     if (pairClosing) return pairClosing;
-    if (!pairDialog.open) return Promise.resolve();
+    if (!pairDialog.open) {
+      expires = 0;
+      pairing.hidden = true;
+      dialog.querySelector('.mobile-pair-preview').hidden = true;
+      return Promise.resolve();
+    }
     expires = 0;
+    dialog.querySelector('.mobile-pair-preview').hidden = true;
     pairDialog.classList.remove('modal-enter');
     pairDialog.classList.add('modal-leave');
     pairClosing = new Promise((resolve) => {
@@ -105,14 +111,20 @@
       document.getElementById('mobile-retry-pairing').hidden = true;
       document.getElementById('mobile-copy-pin').disabled = false;
       renderCountdown();
+      pairDialog.querySelector('#mobile-pair-waiting').hidden = false;
       pairing.hidden = false;
       pairDialog.querySelector('#mobile-qr').src = value.qr;
       pairDialog.querySelector('#mobile-pin').textContent = value.pin;
+      const preview = dialog.querySelector('.mobile-pair-preview');
+      preview.querySelector('[data-mobile-pair-qr]').src = value.qr;
+      preview.querySelector('[data-mobile-pair-pin]').textContent = value.pin;
+      preview.hidden = true;
       localize();
       showPairDialog();
     } catch (error) {
       expires = 0;
       pairing.hidden = true;
+      dialog.querySelector('.mobile-pair-preview').hidden = true;
       document.getElementById('mobile-retry-pairing').hidden = false;
       showPairDialog();
       throw error;
@@ -132,6 +144,24 @@
       : value.enabled
         ? '等待设备连接'
         : '服务已关闭';
+    const switcher = dialog.querySelector('#mobile-service-toggle');
+    switcher.checked = Boolean(value.enabled);
+    dialog.querySelector('#mobile-service-enabled').textContent = t(
+      value.enabled ? '已开启' : '服务已关闭',
+    );
+    dialog.querySelector('#mobile-connected-heading').textContent = connected.length
+      ? connected.map((device) => device.name).join('、')
+      : t('尚未连接设备');
+    dialog.querySelector('#mobile-connected-description').textContent = t(
+      connected.length
+        ? '已连接 · 信任设备'
+        : value.enabled
+          ? '在手机端搜索电脑，桌面将自动显示配对窗口。'
+          : '服务已关闭',
+    );
+    pairDialog.querySelector('#mobile-pair-waiting').hidden = Boolean(value.approval) || !expires;
+    pairDialog.querySelector('.mobile-pair-network').hidden = Boolean(value.approval);
+    pairDialog.classList.toggle('has-approval', Boolean(value.approval));
     const service = dialog.querySelector('#mobile-service-state');
     service.textContent = t(connectionStatus);
     service.dataset.connected = String(connected.length > 0);
@@ -170,16 +200,25 @@
         const allow = document.createElement('button');
         allow.className = 'modal-action';
         allow.textContent = t('允许连接');
-        const respond = (allowed) =>
-          run(async () => {
+        const respond = (allowed) => {
+          if (allow.disabled) return;
+          deny.disabled = allow.disabled = true;
+          return run(async () => {
             await api.approve({ id: request.id, allowed });
             await closePairDialog();
             message(allowed ? '已允许连接，可以在手机开始会议。' : '已拒绝本次连接。');
+            await render(await api.status());
+          }).finally(() => {
+            deny.disabled = allow.disabled = false;
           });
+        };
         deny.onclick = () => respond(false);
         allow.onclick = () => respond(true);
         const actions = document.createElement('div');
         actions.className = 'mobile-request-actions';
+        const verificationHint = document.createElement('small');
+        verificationHint.textContent = t('请核对手机与电脑上的校验词。');
+        copy.append(verificationHint);
         const confirmation = document.createElement('small');
         confirmation.textContent = t('电脑确认后才建立信任。');
         actions.append(deny, allow, confirmation);
@@ -195,7 +234,7 @@
       if (!value.devices?.length) {
         const empty = document.createElement('p');
         empty.className = 'mobile-device-empty';
-        empty.textContent = t('尚未连接设备');
+        empty.textContent = t('暂无已信任设备');
         empty.insertAdjacentHTML('afterbegin', interfaceIcon('phone'));
         devices.append(empty);
       }
@@ -272,6 +311,21 @@
     }
   }
   dialog.querySelector('#mobile-pair').onclick = () => run(pair);
+  dialog.querySelector('#mobile-service-toggle').onchange = (event) => {
+    const switcher = event.target;
+    switcher.disabled = true;
+    void run(async () => {
+      if (switcher.checked) await pair();
+      else {
+        await api.disable();
+        await closePairDialog();
+      }
+      await render(await api.status());
+    }).finally(() => {
+      switcher.disabled = false;
+      void poll();
+    });
+  };
   document.getElementById('mobile-manage').onclick = open;
   document.getElementById('mobile-nav').onclick = open;
   const stopPairing = () =>
@@ -282,6 +336,7 @@
       await render(value);
     });
   pairDialog.querySelector('#mobile-close-pairing').onclick = stopPairing;
+  dialog.querySelector('[data-mobile-cancel-preview]').onclick = stopPairing;
   pairDialog.querySelector('#mobile-dismiss-pairing').onclick = stopPairing;
   pairDialog.addEventListener('cancel', (event) => {
     event.preventDefault();
@@ -308,9 +363,13 @@
     const remaining = Math.max(0, Math.ceil((expires - Date.now()) / 1000));
     document.getElementById('mobile-address').textContent =
       `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+    dialog.querySelector('[data-mobile-pair-time]').textContent =
+      document.getElementById('mobile-address').textContent;
     if (!remaining) {
       expires = 0;
       pairing.hidden = true;
+      pairDialog.querySelector('#mobile-pair-waiting').hidden = true;
+      dialog.querySelector('.mobile-pair-preview').hidden = true;
       document.getElementById('mobile-copy-pin').disabled = true;
       document.getElementById('mobile-retry-pairing').hidden = false;
       pairDialog.querySelector('#mobile-pair-error').textContent =
@@ -322,8 +381,10 @@
       await window.brevia.share.copyText({
         text: document.getElementById('mobile-pin').textContent,
       });
-      showToast(t('已复制到剪贴板'));
+      showToast(t('已复制到剪贴板'), undefined, 'success');
     });
+  dialog.querySelector('[data-mobile-copy-preview]').onclick = () =>
+    document.getElementById('mobile-copy-pin').click();
   document.getElementById('mobile-retry-pairing').onclick = () =>
     run(async () => {
       await closePairDialog();

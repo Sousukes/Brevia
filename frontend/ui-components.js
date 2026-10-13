@@ -11,13 +11,18 @@ const checkIconSvg =
 /** 界面共用线框图标；名称固定，外部文本不参与 SVG 插值。 */
 function interfaceIcon(name) {
   const paths = {
-    chat: '<path d="M3 4h18v13H9l-6 4V4zM7 8h10M7 12h7"/>',
+    github:
+      '<g transform="scale(1.5)"><path fill="currentColor" stroke="none" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.65 7.65 0 0 1 8 4.73c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></g>',
+    chat: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H5l-3 2 1.8-5A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01" stroke-width="2"/>',
     list: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3" cy="6" r=".8" fill="currentColor"/><circle cx="3" cy="12" r=".8" fill="currentColor"/><circle cx="3" cy="18" r=".8" fill="currentColor"/>',
     copy: '<rect x="8" y="7" width="12" height="14" rx="2"/><path d="M16 7V3H4v14h4"/>',
     laptop:
       '<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M2 17h20v3H2zM8 7h8M8 11h6"/>',
-    document: '<path d="M5 3h9l5 5v13H5zM14 3v5h5M8 12h8M8 16h8"/>',
-    folder: '<path d="M3 7V5h7l2 2h9v13H3z"/>',
+    notes: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    document:
+      '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/>',
+    folder:
+      '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
     microphone:
       '<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v5M8 22h8"/>',
     apple:
@@ -28,23 +33,31 @@ function interfaceIcon(name) {
     advanced:
       '<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>',
     settings:
-      '<path d="m9 3-.6 2.4-2.1 1.2L4 6l-2 3.5 1.8 1.7v2.4L2 15.3l2 3.5 2.3-.6 2.1 1.2L9 22h4l.6-2.6 2.1-1.2 2.3.6 2-3.5-1.8-1.7v-2.4L20 9.5 18 6l-2.3.6-2.1-1.2L13 3z"/><circle cx="11" cy="12.5" r="3"/>',
+      '<path d="m9.5 3-.5 2-2 1.2-2-.6-2.5 4.3L4 11.3v2.4l-1.5 1.4L5 19.4l2-.6 2 1.2.5 2h5l.5-2 2-1.2 2 .6 2.5-4.3-1.5-1.4v-2.4l1.5-1.4L19 5.6l-2 .6L15 5l-.5-2Z"/><circle cx="12" cy="12.5" r="3"/>',
     close: '<path d="m5 5 14 14M19 5 5 19"/>',
+    check: '<path d="m5 12 4 4L19 6"/>',
+    refresh: '<path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 3M4 16l2 3a8 8 0 0 0 13-3"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/>',
+    moon: '<path d="M20 14A9 9 0 0 1 10 3a9 9 0 1 0 10 11Z"/>',
     minimize: '<path d="M5 12h14"/>',
-    restore: '<rect x="5" y="5" width="14" height="14" rx="1"/>',
+    restore: '<path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/>',
     'arrow-up': '<path d="M12 20V4m-6 6 6-6 6 6"/>',
     'arrow-down': '<path d="M12 4v16m-6-6 6 6 6-6"/>',
     model: '<path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/>',
+    cpu: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/><rect x="9" y="9" width="6" height="6" rx="1"/>',
     ai: '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>',
     globe:
       '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
-    back: '<path d="M20 12H4m6-6-6 6 6 6"/>',
+    back: '<path d="m15 18-6-6 6-6"/>',
     appearance: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v4M8 21h8"/>',
     storage:
       '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
-    play: '<path d="m8 4 12 8-12 8z"/>',
+    play: '<path d="m9 6 9 6-9 6z" fill="currentColor" stroke="none"/>',
+    volume: '<path d="M3 9h4l5-4v14l-5-4H3zM16 8a6 6 0 0 1 0 8M19 5a10 10 0 0 1 0 14"/>',
+    muted: '<path d="M3 9h4l5-4v14l-5-4H3zM17 9l5 6m0-6-5 6"/>',
+    expand: '<path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/>',
     pause: '<path d="M8 4v16M16 4v16"/>',
     stop: '<rect x="5" y="5" width="14" height="14" rx="1"/>',
     record:
@@ -58,13 +71,18 @@ function interfaceIcon(name) {
     download: '<path d="M12 3v13m-5-5 5 5 5-5M4 16v5h16v-5"/>',
     translate:
       '<path d="M2 5h12M8 2v3M4 5c0 5 4 9 9 11M12 5c0 5-4 9-9 11M13 21l4-11 5 11M15 17h5"/>',
+    music:
+      '<path d="M10 18V5l10-2v13M10 8l10-2"/><ellipse cx="6" cy="18" rx="4" ry="3"/><ellipse cx="16" cy="16" rx="4" ry="3"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     waveform: '<path d="M4 10v4M8 5v14M12 2v20M16 6v12M20 10v4"/>',
     bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+    'checkbox-checked':
+      '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 3 3 5-6"/>',
     checkbox: '<rect x="4" y="4" width="16" height="16" rx="2"/>',
     more: '<path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/>',
     warning: '<path d="m12 3 10 18H2zM12 9v5M12 17h.01"/>',
     'arrow-right': '<path d="M4 12h16m-6-6 6 6-6 6"/>',
-    edit: '<path d="m4 16 12-12 4 4L8 20H4zM14 6l4 4"/>',
+    edit: '<path d="m14.5 4.5 3-3a2.1 2.1 0 0 1 3 3L7 18l-5 1 1-5Z"/><path d="m14.5 4.5 3 3"/>',
     person: '<circle cx="12" cy="7" r="4"/><path d="M4 21v-3c0-6 16-6 16 0v3"/>',
     'chevron-down': '<path d="m6 9 6 6 6-6"/>',
     'chevron-right': '<path d="m9 6 6 6-6 6"/>',
@@ -75,22 +93,25 @@ function interfaceIcon(name) {
   };
   return `<svg class="interface-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.document}</svg>`;
 }
+/** 长任务名称可截断，真实百分比独立占位。 */
+function renderTaskProgressLabel(label, percent) {
+  return `<span class="task-progress-label" title="${escapeHtml(label)}">${escapeHtml(label)}</span>${percent === undefined ? '' : `<span class="task-progress-value"> · ${percent}%</span>`}`;
+}
 /** 引导仅表达现有步骤；内容和提交事件仍由各步骤拥有。 */
 function renderOnboardingRail(kind, displayLocale = locale) {
   const translate = (key) =>
     window.BreviaLocaleData.appCopy.stageLabels[key]?.[displayLocale] ||
     window.BreviaLocaleData.catalog[displayLocale].labels[key] ||
     key;
-  const stages = ['language', 'permissions', 'setup', 'ai', 'phone', 'tour'];
+  const stages = ['language', 'permissions', 'setup', 'ai', 'phone'];
   const active = Math.max(0, stages.indexOf(kind));
-  const labels = ['语言', '权限', '模型与存储', 'AI 功能', '手机连接', '功能演示'];
+  const labels = ['语言', '权限', '模型与存储', 'AI 功能', '手机连接'];
   const details = [
     '选择界面语言',
     '授予必要权限',
     '选择 AI 模型与本地存储',
     '配置记录与总结能力',
     '可选，将手机与 Brevia 连接',
-    '快速了解核心功能',
   ];
   return `<aside class="onboarding-rail"><strong class="onboarding-wordmark" translate="no">Brevia</strong><h2>${escapeHtml(translate('让每一次对话，都有记录。'))}</h2><p>${escapeHtml(translate('录制会议，转写内容，生成要点，帮助你专注于真正重要的事。'))}</p><div class="onboarding-mechanism">${['microphone', 'document', 'list'].map((icon, index) => `${index ? `<i aria-hidden="true">${interfaceIcon('arrow-right')}</i>` : ''}<span>${interfaceIcon(icon)}<b>${escapeHtml(translate(['录制会议', '转写文字', '生成笔记'][index]))}</b><small>${escapeHtml(translate(['高质量录音', '快速准确', '提炼要点'][index]))}</small></span>`).join('')}</div><ol>${labels.map((label, index) => `<li${index === active ? ' aria-current="step"' : ''}><span>${index + 1}</span><div>${escapeHtml(translate(label))}<small>${escapeHtml(translate(details[index]))}</small></div></li>`).join('')}</ol></aside>`;
 }
@@ -110,13 +131,11 @@ function renderSettingsNavigation(kind) {
 }
 /** 会议纪要操作共用图标。 */
 const summaryActionIcons = {
-  edit: '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3 11.8 8.3-8.3 1.7 1.7-8.3 8.3L3 13z"/><path d="m10.3 4.5 1.7 1.7"/></svg>',
-  copy: '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="7" height="8" rx="1"/><path d="M10.5 5.5V3.5a1 1 0 0 0-1-1h-5a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h1"/></svg>',
-  refresh:
-    '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 6.5A5 5 0 1 0 14 10"/><path d="M13 2.5v4h-4"/></svg>',
-  save: '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2.5h8l2 2v9H3z"/><path d="M5 2.5v4h6v-4M5.5 12h5"/></svg>',
-  cancel:
-    '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m4 4 8 8m0-8-8 8"/></svg>',
+  edit: interfaceIcon('edit'),
+  copy: interfaceIcon('copy'),
+  refresh: interfaceIcon('refresh'),
+  save: interfaceIcon('check'),
+  cancel: interfaceIcon('close'),
 };
 let pageTooltip;
 /** 将所有悬浮说明挂到 body，避免被任意视图或滚动区裁切。 */
@@ -144,12 +163,15 @@ if (typeof document !== 'undefined') {
   // 只约束最上层受保护弹窗；连续设置页仍可正常访问侧栏。
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Tab') return;
-    const panel = [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')]
-      .filter((node) => node.getClientRects().length && !node.closest('[inert]'))
-      .at(-1);
+    const panels = [...document.querySelectorAll('[role="dialog"][aria-modal="true"]')].filter(
+      (node) => node.getClientRects().length && !node.closest('[inert]'),
+    );
+    const panel = panels.find((node) => node.closest('.confirmation-modal')) || panels.at(-1);
     if (!panel) return;
     const controls = [
-      ...panel.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]'),
+      ...panel.querySelectorAll(
+        'button, input, select, textarea, summary, a[href], [tabindex="0"]',
+      ),
     ].filter((node) => !node.disabled && node.getClientRects().length);
     if (!controls.length) return;
     const index = controls.indexOf(document.activeElement);
@@ -203,8 +225,16 @@ function flowSelect(name, value, options, activeModel = false, disabled = false)
   const selected = options.find(([option]) => option === value) || options[0] || ['', ''];
   const badge = (option) =>
     option?.[2] ? `<em class="flow-select-badge">${escapeHtml(option[2])}</em>` : '';
+  const icon = {
+    'meeting-workspace': 'folder',
+    'meeting-language': 'globe',
+    'translation-target': 'translate',
+    'meeting-speakers': 'person',
+    'refined-model': 'cpu',
+    'mic-device': 'microphone',
+  }[name];
   disabled = disabled || options.length === 0;
-  return `<div class="flow-select"${activeModel ? ' data-active-summary-model' : ''}><button class="flow-select-toggle" data-flow-select-toggle type="button" aria-expanded="false"${disabled ? ' disabled' : ''}>${escapeHtml(selected[1])}<span class="select-chevron">${interfaceIcon('chevron-down')}</span></button><input type="hidden" name="${name}" value="${escapeHtml(selected[0])}" /><div class="flow-select-options" hidden>${options.map((option) => `<button type="button" data-flow-select-choice="${name}" data-value="${escapeHtml(option[0])}" data-label="${escapeHtml(option[1])}"${disabled ? ' disabled' : ''}>${escapeHtml(option[1])}${badge(option)}</button>`).join('')}</div></div>`;
+  return `<div class="flow-select"${activeModel ? ' data-active-summary-model' : ''}><button class="flow-select-toggle" data-flow-select-toggle type="button" aria-expanded="false"${disabled ? ' disabled' : ''}>${escapeHtml(selected[1])}${icon ? `<span class="select-value-icon">${interfaceIcon(icon)}</span>` : ''}<span class="select-chevron">${interfaceIcon('chevron-down')}</span></button><input type="hidden" name="${name}" value="${escapeHtml(selected[0])}" /><div class="flow-select-options" hidden>${options.map((option) => `<button type="button" data-flow-select-choice="${name}" data-value="${escapeHtml(option[0])}" data-label="${escapeHtml(option[1])}"${option[0] === selected[0] ? ' aria-current="true"' : ''}${disabled ? ' disabled' : ''}>${escapeHtml(option[1])}${badge(option)}</button>`).join('')}</div></div>`;
 }
 /** 基于本地规则检测字幕中的明显信号（数字/日期/问句），不依赖大模型。@param {string} text 字幕文本。@returns {string[]} 命中的信号键名。 */
 function detectCaptionSignals(text) {
@@ -227,6 +257,9 @@ function renderTranscriptSegment({
   showSpeaker = true,
   segmentId,
   textEditable = false,
+  textModified = false,
+  textSaving = false,
+  textError = '',
 }) {
   const timing =
     Number.isFinite(startSeconds) && Number.isFinite(endSeconds)
@@ -235,7 +268,9 @@ function renderTranscriptSegment({
   const label = showSpeaker
     ? speaker.editing
       ? `<form class="inline-segment-speaker-form" data-segment-id="${speaker.segmentId}"><input class="speaker-name-input" data-segment-speaker-input name="name" value="${escapeHtml(speaker.name)}" maxlength="32" /></form>`
-      : `<button class="segment-speaker"${speaker.segmentId ? ` data-segment-speaker="${escapeHtml(speaker.segmentId)}"` : ''}${speaker.id ? ` data-speaker="${escapeHtml(speaker.id)}"` : ''}>${escapeHtml(speaker.name)}</button>`
+      : textEditable
+        ? `<span class="segment-speaker">${escapeHtml(speaker.name)}</span>`
+        : `<button class="segment-speaker"${speaker.segmentId ? ` data-segment-speaker="${escapeHtml(speaker.segmentId)}"` : ''}${speaker.id ? ` data-speaker="${escapeHtml(speaker.id)}"` : ''}>${escapeHtml(speaker.name)}</button>`
     : '';
   const overlap =
     showSpeaker && speaker.overlapNames?.length
@@ -252,13 +287,13 @@ function renderTranscriptSegment({
         })()
       : '';
   const translationLine = translation
-    ? `<p class="translation">${escapeHtml(translation)}</p>`
+    ? `<p class="translation">${textEditable ? `<span>${escapeHtml(t(textModified ? '译文（未更新）' : '翻译'))}</span> ` : ''}${escapeHtml(translation)}</p>`
     : '';
   // 编辑框与 electron/main.js 的 segment.text schema 同界（单句 4000 字符）；
   // 保存时后端会把换行折成空格，因此这里不需要限制成单行输入。
   const copy =
     textEditable && segmentId
-      ? `<div class="segment-copy"><textarea class="segment-text-input" data-segment-text="${escapeHtml(segmentId)}" rows="2" maxlength="4000" aria-label="${escapeHtml(t('字幕文本'))}">${escapeHtml(text)}</textarea>${translationLine}</div>`
+      ? `<div class="segment-copy${textModified ? ' is-modified' : ''}">${textModified ? `<small class="segment-modified-state">${t('已修改')}</small>` : ''}<textarea class="segment-text-input"${textSaving ? ' disabled' : ''}${textError ? ' aria-invalid="true"' : ''} data-segment-text="${escapeHtml(segmentId)}" rows="1" maxlength="4000" aria-label="${escapeHtml(t('字幕文本'))}">${escapeHtml(text)}</textarea>${textError ? `<small class="segment-edit-error" role="alert">${escapeHtml(textError)}</small>` : ''}${translationLine}</div>`
       : `<div class="segment-copy"><p>${escapeHtml(text)}</p>${translationLine}</div>`;
   // 右键菜单按段落 id 定位：详情页（原始/精修稿）只带顶层 segmentId，实时条目只带 speaker.segmentId。
   const contextSegmentId = segmentId || speaker.segmentId;
@@ -271,24 +306,28 @@ function renderMeetingRow(
 ) {
   const workspaceMenu =
     !deleted && typeof showWorkspaceAssignMenu === 'function'
-      ? `<button data-meeting-action="workspace" data-meeting-index="${index}">${t('移至工作区')} <span>›</span></button>`
+      ? `<button data-meeting-action="workspace" data-meeting-index="${index}">${interfaceIcon('folder')}<span>${t('移至工作区')}</span>${interfaceIcon('chevron-right')}</button>`
       : '';
   const menu = deleted
-    ? `<button data-meeting-action="restore" data-meeting-index="${index}">${t('恢复')}</button><button class="meeting-menu-danger" data-meeting-action="purge" data-meeting-index="${index}">${BreviaI18n.trashCopy(locale).purge}</button>`
-    : `<button data-meeting-action="rename" data-meeting-index="${index}">${t('重命名')}</button>${workspaceMenu}<button data-meeting-action="open-folder" data-meeting-index="${index}">${t('从文件夹打开')}</button><button data-meeting-action="export" data-meeting-index="${index}">${t('导出')}</button>${status?.tone === 'processing' ? '' : `<button class="meeting-menu-danger" data-meeting-action="delete" data-meeting-index="${index}">${t('删除')}</button>`}`;
+    ? `<button data-meeting-action="restore" data-meeting-index="${index}">${interfaceIcon('restore')}<span>${t('恢复')}</span></button><button class="meeting-menu-danger" data-meeting-action="purge" data-meeting-index="${index}">${interfaceIcon('trash')}<span>${BreviaI18n.trashCopy(locale).purge}</span></button>`
+    : `<button data-meeting-action="rename" data-meeting-index="${index}">${interfaceIcon('edit')}<span>${t('重命名')}</span></button>${workspaceMenu}<button data-meeting-action="open-folder" data-meeting-index="${index}">${interfaceIcon('folder')}<span>${t('从文件夹打开')}</span></button><button data-meeting-action="export" data-meeting-index="${index}">${interfaceIcon('upload')}<span>${t('导出')}</span></button>${status?.tone === 'processing' ? '' : `<button class="meeting-menu-danger" data-meeting-action="delete" data-meeting-index="${index}">${interfaceIcon('trash')}<span>${t('删除')}</span></button>`}`;
+  const draft =
+    typeof meetingRenameDraft !== 'undefined' && meetingRenameDraft?.key === (id || String(index))
+      ? meetingRenameDraft
+      : null;
   const heading =
     editingMeetingIndex === index
-      ? `<form class="meeting-title-rename" data-rename-meeting data-meeting-index="${index}"><input name="title" value="${escapeHtml(title)}" maxlength="120" required aria-label="${t('重命名')}" /></form>`
+      ? `<form class="meeting-title-rename" data-rename-meeting data-meeting-index="${index}"><div class="meeting-rename-controls"><input name="title" value="${escapeHtml(draft?.title ?? title)}" maxlength="120" required aria-label="${t('重命名')}"${draft?.saving ? ' disabled' : ''} /><button type="submit" class="secondary"${draft?.saving ? ' disabled' : ''}>${interfaceIcon('checkbox-checked')}${t('保存')}</button><button type="button" class="secondary" data-cancel-meeting-rename${draft?.saving ? ' disabled' : ''}>${interfaceIcon('close')}${t('取消')}</button></div><small>${escapeHtml(t('Enter 保存 · Esc 取消'))}</small><p class="meeting-rename-meta">${escapeHtml(meta)}</p><span class="meeting-rename-state" role="status">${escapeHtml(t(draft?.saving ? '正在保存…' : draft?.error ? '重命名失败，修改仍保留' : draft?.title !== title ? '已修改 · 尚未保存' : '未修改'))}${draft?.error ? ` · ${escapeHtml(draft.error)}` : ''}</span></form>`
       : `<h2>${escapeHtml(title)}${tags.includes('手机录音') ? `<span class="meeting-source">${interfaceIcon('phone')}${escapeHtml(t('手机录音'))}</span>` : ''}</h2>`;
-  const workspaceBadge = workspace
-    ? `<div class="workspace-badge">${interfaceIcon('folder')}${escapeHtml(workspace.name)}</div>`
+  const workspaceLabel = workspace
+    ? `${escapeHtml(t('工作区'))} · ${escapeHtml(workspace.name)}`
     : '';
-  return `<article class="meeting-row" data-meeting-index="${index}" data-selection-key="${escapeHtml(id || String(index))}" tabindex="0" aria-selected="false"${id ? ` data-meeting-id="${escapeHtml(id)}"` : ''}${!deleted && id ? ' draggable="true"' : ''}><input class="meeting-row-checkbox" type="checkbox" data-select-meeting aria-label="${escapeHtml(t('选择'))} ${escapeHtml(title)}" /><span class="meeting-row-icon">${interfaceIcon('document')}</span><div class="meeting-main">${heading}<p>${escapeHtml(meta)}</p><div class="meeting-tags">${workspaceBadge}${tags
+  return `<article class="meeting-row" data-meeting-index="${index}" data-selection-key="${escapeHtml(id || String(index))}" tabindex="0" aria-selected="false"${id ? ` data-meeting-id="${escapeHtml(id)}"` : ''}${!deleted && id ? ' draggable="true"' : ''}><input class="meeting-row-checkbox" type="checkbox" data-select-meeting aria-label="${escapeHtml(t('选择'))} ${escapeHtml(title)}" /><span class="meeting-row-icon">${interfaceIcon('document')}</span><div class="meeting-main">${heading}${editingMeetingIndex === index ? '' : `<p>${escapeHtml(meta)}</p>`}<div class="meeting-tags">${tags
     .filter((tag) => tag !== '手机录音')
     .map((tag) => `<div class="tag">${escapeHtml(tag)}</div>`)
     .join(
       '',
-    )}</div></div><div class="meeting-status"><span class="status ${status.tone}${status.paused ? ' is-paused' : ''}${statusCode === 'recording' ? ' is-recording' : ''}">${escapeHtml(t(status.label))}</span><small>${escapeHtml(t(status.detail))}</small></div><div class="meeting-actions"><button class="more" data-meeting-menu="${index}" aria-label="${t('更多操作')}" aria-expanded="false">${interfaceIcon('more')}</button><div class="meeting-menu" hidden>${menu}</div></div></article>`;
+    )}</div></div><span class="meeting-workspace">${workspaceLabel}</span><div class="meeting-status"><span class="status ${status.tone}${status.paused ? ' is-paused' : ''}${statusCode === 'recording' ? ' is-recording' : ''}">${escapeHtml(t(status.label))}</span><small>${escapeHtml(t(status.detail))}</small></div><div class="meeting-actions"><button class="more" data-meeting-menu="${index}" aria-label="${t('更多操作')}" aria-expanded="false">${interfaceIcon('more')}</button><div class="meeting-menu" hidden>${menu}</div></div></article>`;
 }
 /** 渲染设置卡片及其模态框操作。@param {{title: string, description: string, action: string, modal: string}} card 卡片数据。@returns {string} 卡片标记。 */
 function renderSettingsCard({ title, description, action, modal }) {
@@ -296,6 +335,9 @@ function renderSettingsCard({ title, description, action, modal }) {
 }
 /** 渲染语言相关的设置卡片，不重置其他视图。 */
 function renderSettingsView() {
+  const settingsView = document.getElementById('settings-view');
+  settingsView.querySelector('.settings-navigation')?.remove();
+  settingsView.insertAdjacentHTML('afterbegin', renderSettingsNavigation('general'));
   const mobileCard = document.getElementById('mobile-connection');
   const speakerCard = document.getElementById('speaker-profiles-entry');
   const aboutCard = document.getElementById('app-update-entry');
@@ -944,7 +986,7 @@ function createNotesEditor(root, options = {}) {
           if (onInput) onInput();
         }
       })
-      .catch((error) => appActions.showToast(error.message));
+      .catch((error) => appActions.showToast(error.message, undefined, 'error'));
   });
   urlPop.querySelector('[data-notes-url-ok]').addEventListener('click', () => {
     const url = urlInput.value.trim();
@@ -1213,7 +1255,7 @@ function renderMarkdown(markdown) {
       while (index < lines.length && /^[-*]\s*\[[ xX]\]\s*/.test(lines[index])) {
         const task = lines[index++].match(/^[-*]\s*\[([ xX])\]\s*(.*)$/);
         items.push(
-          `<li class="task-item"><span aria-hidden="true">${task[1].toLowerCase() === 'x' ? '☑' : '☐'}</span>${inline(task[2])}</li>`,
+          `<li class="task-item"><span class="markdown-task-mark" role="checkbox" aria-checked="${task[1].toLowerCase() === 'x'}" aria-disabled="true">${task[1].toLowerCase() === 'x' ? interfaceIcon('check') : ''}</span><span class="markdown-task-text">${inline(task[2])}</span></li>`,
         );
       }
       html.push(`<ul>${items.join('')}</ul>`);
@@ -1243,21 +1285,40 @@ function cleanSummaryMarkdown(markdown) {
   const heading = text.search(/^#{1,6}\s+/m);
   return heading > 0 ? text.slice(heading) : text;
 }
+/** 保存提示只反映当前内容的写入结果，不把 AI 输出等同于人工核对。 */
+function renderSaveState(state = 'saved') {
+  const label = {
+    saved: '已保存',
+    dirty: '已修改 · 尚未保存',
+    saving: '正在保存…',
+    failed: '保存失败，修改仍保留',
+  }[state];
+  const mark = state === 'saved' ? interfaceIcon('check') : state === 'failed' ? '!' : '';
+  return `<span class="save-state" data-save-state="${state}" role="status"><i class="save-state-mark" aria-hidden="true">${mark}</i>${escapeHtml(t(label || '已保存'))}</span>`;
+}
 /** 渲染详情侧边栏中的会议纪要：标题行（会议纪要 + 生成/重新生成）+ 内容。@param {{markdown?: string}} summary 摘要数据。@returns {string} 摘要标记。 */
-function renderMeetingSummary({ markdown, blocked = false, generating = false, editing = false }) {
+function renderMeetingSummary({
+  markdown,
+  blocked = false,
+  generating = false,
+  editing = false,
+  saveState = 'saved',
+  participants = [],
+}) {
   const blockedAttrs = blocked
     ? ` disabled title="${escapeHtml(t('实时会议中，结束后再生成会议纪要。'))}"`
     : '';
-  const tools =
-    !editing && !generating && markdown
-      ? `<div class="summary-tools"><button class="secondary" data-open-summary-edit type="button">${interfaceIcon('edit')}${t('编辑')}</button><button class="secondary" data-copy-summary type="button" aria-label="${escapeHtml(t('复制会议纪要'))}">${interfaceIcon('copy')}${t('复制')}</button></div>`
+  const tools = editing
+    ? `<div class="summary-tools"><button class="tabbar-action" data-cancel-inline-summary-edit type="button" aria-label="${t('取消')}" title="${t('取消')}"${saveState === 'saving' ? ' disabled' : ''}>${summaryActionIcons.cancel}</button><button class="tabbar-action is-save" data-save-inline-summary type="button" aria-label="${t('保存')}" title="${t('保存')}"${saveState === 'saving' ? ' disabled' : ''}>${interfaceIcon('check')}</button></div>`
+    : markdown
+      ? `<div class="summary-tools"><button class="secondary" data-open-summary-edit type="button"${generating ? ' disabled' : ''}>${interfaceIcon('edit')}${t('编辑')}</button><button class="secondary" data-copy-summary type="button" aria-label="${escapeHtml(t('复制会议纪要'))}">${interfaceIcon('copy')}${t('复制')}</button><button class="secondary summary-reader-regenerate" data-regenerate-summary type="button"${blockedAttrs}${generating ? ' disabled' : ''}>${interfaceIcon('refresh')}${t(generating ? '正在生成会议纪要' : '重新生成')}</button></div>`
       : '';
   const action = editing
-    ? `<button class="secondary" data-cancel-inline-summary-edit type="button">${t('取消')}</button><button class="modal-action" data-save-inline-summary type="button">${summaryActionIcons.save}${t('保存')}</button>`
+    ? renderSaveState(saveState)
     : generating
       ? `<button class="modal-action" type="button" disabled>${interfaceIcon('ai')}${t('正在生成会议纪要')}</button>`
-      : `<button class="modal-action" ${markdown ? 'data-regenerate-summary' : 'data-generate-summary'} type="button"${blockedAttrs}>${interfaceIcon('ai')}${t(markdown ? '重新生成' : '生成')}</button>`;
-  return `<div class="summary-preview"><div class="summary-head"><p class="eyebrow">${t('会议纪要')}</p>${tools}</div>${markdown ? `<p class="summary-review-hint">${interfaceIcon('info')}${escapeHtml(t('AI 生成，请核对。'))}</p>` : ''}${editing ? `<div class="summary-inline-edit"><div data-inline-summary-editor></div></div>` : markdown ? `<div class="summary-body markdown-content">${renderMarkdown(cleanSummaryMarkdown(markdown))}</div>` : `<p class="summary-empty">${t('尚未生成')}</p>`}<div class="summary-actions">${action}${markdown && !editing && !generating ? `<span class="summary-save-state">${checkIconSvg}${t('已保存')}</span>` : ''}</div></div>`;
+      : `<button class="modal-action" ${markdown ? 'data-regenerate-summary' : 'data-generate-summary'} type="button"${blockedAttrs}>${interfaceIcon('ai')}${t(markdown ? '重新生成' : '生成纪要')}</button>`;
+  return `<div class="summary-preview"><div class="summary-head"><p class="eyebrow">${t('会议纪要')}</p>${tools}</div><div class="summary-feedback" data-summary-feedback hidden></div>${participants.length ? `<section class="summary-participants"><p>${t('参与者')} (${participants.length})</p><div>${participants.map((person) => `<span><i class="speaker-avatar" aria-hidden="true">${escapeHtml([...person.name][0] || '')}</i>${escapeHtml(person.name)}</span>`).join('')}</div></section>` : ''}${editing ? `<div class="summary-inline-edit"><div data-inline-summary-editor></div></div>` : markdown ? `<div class="summary-body markdown-content">${renderMarkdown(cleanSummaryMarkdown(markdown))}</div>` : `<p class="summary-empty">${t('尚未生成会议纪要')}</p>`}<div class="summary-actions">${action}${markdown && !editing && !generating ? renderSaveState('saved') : ''}</div></div>`;
 }
 /** 在页面外壳可用后填充所有数据驱动的静态区域。@returns {void} */
 function renderStaticViews() {
@@ -1290,9 +1351,7 @@ function refineAppliedModelSuffix(d) {
 function renderRefineStatus(d) {
   if (d.refineState === 'refining') return `<span class="refine-state">${t('正在精修')}</span>`;
   const languageSelect = `<label class="refine-menu-speakers"><span>${t('会议语言')}</span>${flowSelect('refine-language', d.language || 'auto', BreviaI18n.languageOptions(locale, t, true))}</label>`;
-  const translateIcon = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 3.5h7M6 2v1.5c0 3-1.5 5.4-4 6.7M3.7 7.8c.8 1 1.8 1.8 3 2.3M9.5 12.5l2-5 2 5M10.3 10.7h2.4"/></svg>`;
-  const refineIcon = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 7.5A5.2 5.2 0 1 1 11.4 4M13 2.8v3.1H9.9M10.8 11.7l.5 1.3.5-1.3 1.3-.5-1.3-.5-.5-1.3-.5 1.3-1.3.5z"/></svg>`;
-  const translationMenu = `<span class="detail-translation-action"><button class="detail-icon-action" data-detail-translation-toggle type="button" aria-label="${t('翻译')}" title="${t('翻译')}" aria-expanded="false"${d.translationPending ? ' disabled' : ''}>${translateIcon}</button><div class="detail-translation-menu" hidden>${BreviaI18n.languageOptions(
+  const translationMenu = `<span class="detail-translation-action"><button class="detail-icon-action" data-detail-translation-toggle type="button" aria-label="${t('翻译')}" title="${t('翻译')}" aria-expanded="false"${d.translationPending ? ' disabled' : ''}>${interfaceIcon('translate')}${t('翻译')}${interfaceIcon('chevron-down')}</button><div class="detail-translation-menu" hidden>${BreviaI18n.languageOptions(
     locale,
     t,
   )
@@ -1305,9 +1364,9 @@ function renderRefineStatus(d) {
   const refineMenu =
     typeof refinementBusyMeetingId !== 'undefined' && refinementBusyMeetingId
       ? `<span class="refine-state" role="status">${t('error.tasks.running')}</span>`
-      : `<span class="refine-wrap"><button class="detail-icon-action" data-refine-more type="button" aria-label="${t('重新精修')}" title="${t('重新精修')}" aria-expanded="false">${refineIcon}</button><div class="refine-menu" hidden>${languageSelect}${renderRefineModelRow(d.refinedModelOptions, d.refinedModelId)}<label class="refine-menu-speakers"><span>${t('会议人数')}</span><input type="number" min="1" step="1" inputmode="numeric" data-refine-num-speakers placeholder="${t('留空自动识别')}" /></label><button type="button" data-refine-action="${d.hasRefined ? 're-refine' : 'start'}">${d.hasRefined ? t('重新精修') : t('开始精修')}</button></div></span>`;
+      : `<span class="refine-wrap"><button class="detail-icon-action" data-refine-more type="button" aria-label="${t('重新精修')}" title="${t('重新精修')}" aria-expanded="false">${interfaceIcon('refresh')}${t(d.hasRefined ? '重新精修' : '开始精修')}</button><div class="refine-menu" hidden>${languageSelect}${renderRefineModelRow(d.refinedModelOptions, d.refinedModelId)}<label class="refine-menu-speakers"><span>${t('会议人数')}</span><input type="number" min="1" step="1" inputmode="numeric" data-refine-num-speakers placeholder="${t('留空自动识别')}" /></label><button type="button" data-refine-action="${d.hasRefined ? 're-refine' : 'start'}">${d.hasRefined ? t('重新精修') : t('开始精修')}</button></div></span>`;
   if (!d.hasRefined) return `${translationMenu}${refineMenu}`;
-  return `<span class="refine-state is-done">${checkIconSvg} ${t('已精修')}${refineAppliedModelSuffix(d)}</span>${translationMenu}${refineMenu}`;
+  return `<span class="refine-state is-done" role="status" title="${escapeHtml(t('已精修'))}${refineAppliedModelSuffix(d)}">${t('已精修')}${refineAppliedModelSuffix(d)}</span>${translationMenu}${refineMenu}`;
 }
 /** 渲染详情页 tabbar：两个内容 tab、随激活 tab 变化的编辑动作，以及精修状态控件。
  *
@@ -1317,10 +1376,14 @@ function renderRefineStatus(d) {
  */
 function renderDetailTabbar() {
   const d = uiData.detail;
-  const notesActions = `<button class="tabbar-action" data-notes-cancel type="button" aria-label="${t('取消')}" title="${t('取消')}"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m4 4 8 8m0-8-8 8"/></svg></button><button class="tabbar-action is-save" data-notes-save type="button" aria-label="${t('保存')}" title="${t('保存')}"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8 3 3 7-7"/></svg></button>`;
-  const transcriptActions = `<button class="tabbar-action" data-transcript-cancel type="button" aria-label="${t('取消')}" title="${t('取消')}">${summaryActionIcons.cancel}</button><button class="tabbar-action is-save" data-transcript-save type="button" aria-label="${t('保存')}" title="${t('保存')}">${summaryActionIcons.save}</button>`;
-  const editNotes = `<button class="tabbar-action" data-edit-notes type="button" aria-label="${t('编辑')}" title="${t('编辑')}"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11.5 8.6-8.6 1.9 1.9-8.6 8.6L3 13.5z"/><path d="m10.5 4 1.9 1.9"/></svg></button>`;
-  const editTranscript = `<button class="tabbar-action" data-edit-transcript type="button" aria-label="${t('编辑')}" title="${t('编辑')}">${summaryActionIcons.edit}</button>`;
+  const notesActions = `<button class="tabbar-action" data-notes-cancel type="button"${d.notesSaveState === 'saving' ? ' disabled' : ''} aria-label="${t('取消')}" title="${t('取消')}">${interfaceIcon('close')}</button><button class="tabbar-action is-save" data-notes-save type="button"${d.notesSaveState === 'saving' ? ' disabled' : ''} aria-label="${t(d.notesSaveState === 'failed' ? '重试' : '保存')}" title="${t(d.notesSaveState === 'failed' ? '重试' : '保存')}">${d.notesSaveState === 'failed' ? t('重试') : interfaceIcon('check')}</button>`;
+  const transcriptState = d.transcriptSaveState || 'unchanged';
+  const transcriptStatus = d.transcriptEditing
+    ? `<span class="save-state" data-transcript-save-status role="status">${escapeHtml(t({ unchanged: '未修改', dirty: '已修改 · 尚未保存', saving: '正在保存…', failed: '保存失败，修改仍保留', saved: '已保存' }[transcriptState] || '未修改'))}</span>`
+    : '';
+  const transcriptActions = `${transcriptStatus}<button class="tabbar-action" data-transcript-cancel type="button"${transcriptState === 'saving' ? ' disabled' : ''} aria-label="${t('取消')}" title="${t('取消')}">${interfaceIcon('close')}</button><button class="tabbar-action is-save" data-transcript-save type="button"${transcriptState === 'saving' ? ' disabled' : ''} aria-label="${t(transcriptState === 'failed' ? '重试' : '保存')}" title="${t(transcriptState === 'failed' ? '重试' : '保存')}">${transcriptState === 'failed' ? t('重试') : interfaceIcon('check')}</button>`;
+  const editNotes = `<button class="tabbar-action" data-edit-notes type="button" aria-label="${t('编辑')}" title="${t('编辑')}">${interfaceIcon('edit')}</button>`;
+  const editTranscript = `<button class="tabbar-action" data-edit-transcript type="button" aria-label="${t('编辑')}" title="${t('编辑')}">${summaryActionIcons.edit}${t('编辑')}</button>`;
   let action = '';
   if (d.notesEditing) action = notesActions;
   else if (d.transcriptEditing) action = transcriptActions;
@@ -1336,11 +1399,17 @@ function renderDetailTabbar() {
   )
     action = editTranscript;
   // 编辑期间收起精修入口：精修会按新的窗口重建段落 id，未保存的修改会失去归属。
-  return `<div class="tabbar"><div class="tabbar-tabs"><button class="tab${detailActiveTab === 'notes' ? ' active' : ''}" data-detail-tab="notes">${interfaceIcon('document')}${t('笔记')}</button><button class="tab${detailActiveTab === 'transcript' ? ' active' : ''}" data-detail-tab="transcript">${interfaceIcon('chat')}${t('逐字稿')}</button><button class="tab${detailActiveTab === 'summary' ? ' active' : ''}" data-detail-tab="summary">${interfaceIcon('document')}${t('会议纪要')}</button></div><div class="tabbar-extra">${action}${detailActiveTab === 'transcript' && !d.transcriptEditing ? renderRefineStatus(d) : ''}</div></div>`;
+  return `<div class="tabbar"><div class="tabbar-tabs"><button class="tab${detailActiveTab === 'notes' ? ' active' : ''}" data-detail-tab="notes">${interfaceIcon('notes')}${t('笔记')}</button><button class="tab${detailActiveTab === 'transcript' ? ' active' : ''}" data-detail-tab="transcript">${interfaceIcon('chat')}${t('逐字稿')}</button><button class="tab${detailActiveTab === 'summary' ? ' active' : ''}" data-detail-tab="summary">${interfaceIcon('document')}${t('会议纪要')}</button></div><div class="tabbar-extra">${detailActiveTab === 'notes' ? `<span data-notes-save-status>${renderSaveState(d.notesSaveState)}</span>` : ''}${action}${detailActiveTab === 'transcript' && !d.transcriptEditing ? renderRefineStatus(d) : ''}</div></div>`;
+}
+function resizeTranscriptField(field) {
+  field.style.height = 'auto';
+  field.style.height = Math.max(40, field.scrollHeight + 2) + 'px';
 }
 /** 刷新选定会议的逐字稿、笔记和摘要面板。@returns {void} */
 function renderMeetingDetail() {
   const d = uiData.detail;
+  const actions = document.querySelector('#detail-view .detail-actions');
+  if (actions) document.querySelector('#detail-view').append(actions);
   const notesMode = detailNotesEditor?.getMode();
   const summaryMode = inlineSummaryEditor?.getMode();
   detailNotesEditor?.destroy();
@@ -1361,16 +1430,25 @@ function renderMeetingDetail() {
     // 编辑态下用草稿覆盖后端文本，使并发刷新不会吞掉尚未保存的输入。
     const draft = d.transcriptEditing ? d.transcriptDraft || {} : {};
     transcriptBody = (
-      showingRefined
-        ? d.refinedTranscript
-        : d.transcriptVersion === 'original'
-          ? d.originalTranscript || d.transcript
-          : d.transcript
+      d.transcriptEditing && d.transcriptEditEntries
+        ? d.transcriptEditEntries
+        : showingRefined
+          ? d.refinedTranscript
+          : d.transcriptVersion === 'original'
+            ? d.originalTranscript || d.transcript
+            : d.transcript
     )
       .map((entry) => ({
         ...entry,
         text: draft[entry.segmentId] ?? entry.text,
         textEditable: Boolean(d.transcriptEditing),
+        textModified: Boolean(
+          d.transcriptEditing &&
+            draft[entry.segmentId] !== undefined &&
+            String(draft[entry.segmentId]).trim() !== String(entry.text).trim(),
+        ),
+        textSaving: d.transcriptSaveState === 'saving',
+        textError: d.transcriptErrors?.[entry.segmentId] || '',
       }))
       .map(renderTranscriptSegment)
       .join('');
@@ -1385,7 +1463,9 @@ function renderMeetingDetail() {
         }
       : null;
   document.querySelector('.final-transcript').innerHTML =
-    `${renderDetailTabbar()}<div class="detail-notes-panel" data-detail-panel="notes"${detailActiveTab === 'transcript' ? ' hidden' : ''}>${notesPanel}</div><div class="transcript-panel" data-detail-panel="transcript"${detailActiveTab !== 'transcript' ? ' hidden' : ''}><div class="detail-transcript-toolbar"><div class="transcript-versions">${d.hasRefined ? `<button type="button" data-transcript-version="refined" aria-pressed="${d.transcriptVersion !== 'original'}">${t('精修字幕')}</button>` : ''}<button type="button" data-transcript-version="original"${d.hasOriginalTranscript === false ? ' disabled' : ''} aria-pressed="${!d.hasRefined || d.transcriptVersion === 'original'}">${t('原始转写')}</button></div><label class="search">${interfaceIcon('search')}<input type="search" data-transcript-search aria-label="${t('搜索')}" placeholder="${t('搜索')}" value="${escapeHtml(d.transcriptSearch || '')}" /></label><span data-transcript-results role="status"></span></div><div class="transcript-body">${transcriptBody}</div></div>`;
+    `${renderDetailTabbar()}<div class="detail-notes-panel" data-detail-panel="notes"${detailActiveTab !== 'notes' ? ' hidden' : ''}>${notesPanel}</div><div class="detail-summary-panel" data-detail-panel="summary"${detailActiveTab !== 'summary' ? ' hidden' : ''}></div><div class="transcript-panel" data-detail-panel="transcript"${detailActiveTab !== 'transcript' ? ' hidden' : ''}><div class="detail-transcript-toolbar"><div class="transcript-versions">${d.hasRefined ? `<button type="button" data-transcript-version="refined"${d.transcriptEditing ? ' disabled' : ''} aria-pressed="${d.transcriptVersion !== 'original'}">${t('精修')}</button>` : ''}<button type="button" data-transcript-version="original"${d.hasOriginalTranscript === false || d.transcriptEditing ? ' disabled' : ''} aria-pressed="${!d.hasRefined || d.transcriptVersion === 'original'}">${t('原始')}</button></div><label class="search">${interfaceIcon('search')}<input type="search" data-transcript-search aria-label="${t('搜索')}" placeholder="${t('搜索')}" value="${escapeHtml(d.transcriptSearch || '')}" /></label><span data-transcript-results role="status"></span></div><div class="transcript-body">${transcriptBody}</div></div>`;
+  document.querySelectorAll('[data-segment-text]').forEach((field) => resizeTranscriptField(field));
+  syncDetailTranscriptToolbar();
   filterDetailTranscript();
   if (focusState) {
     const restored = [...document.querySelectorAll('[data-segment-text]')].find(
@@ -1411,7 +1491,12 @@ function renderMeetingDetail() {
   document.querySelector('.notes').innerHTML = renderMeetingSummary({
     ...d.summary,
     editing: d.summaryEditing,
+    saveState: d.summarySaveState,
+    participants: currentMeetingDetail?.speakers || [],
   });
+  syncDetailSummaryPanel();
+  filterDetailTranscript();
+  syncSummaryFeedback();
   if (d.summaryEditing) {
     const root = document.querySelector('[data-inline-summary-editor]');
     if (root) {
@@ -1420,6 +1505,9 @@ function renderMeetingDetail() {
         getMeetingId: () => currentMeetingDetail?.id,
         onInput: () => {
           d.summaryDraft = inlineSummaryEditor.getMarkdown();
+          d.summarySaveState = 'dirty';
+          const status = document.querySelector('.summary-preview .save-state');
+          if (status) status.outerHTML = renderSaveState('dirty');
         },
       });
       if (summaryMode) inlineSummaryEditor.setMode(summaryMode);
@@ -1427,4 +1515,52 @@ function renderMeetingDetail() {
       inlineSummaryEditor.focus();
     }
   }
+}
+
+/** D11 的内容导航和逐字稿操作分行，状态留在标签行，真实操作复用原节点。 */
+function syncDetailTranscriptToolbar() {
+  const root = document.querySelector('.final-transcript');
+  const toolbar = root?.querySelector('.detail-transcript-toolbar');
+  const extra = root?.querySelector('.tabbar > .tabbar-extra');
+  const actions = document.querySelector('#detail-view .detail-actions');
+  if (actions)
+    (detailActiveTab === 'transcript' && !uiData.detail.transcriptEditing && toolbar
+      ? toolbar
+      : document.querySelector('#detail-view')
+    ).append(actions);
+  toolbar?.querySelector('.tabbar-extra')?.remove();
+  if (detailActiveTab !== 'transcript' || !toolbar || !extra) return;
+  if (uiData.detail.transcriptEditing) {
+    root.querySelectorAll('[data-segment-text]').forEach(resizeTranscriptField);
+    return;
+  }
+  const status = extra.querySelector('.refine-state');
+  if (status) root.querySelector('.tabbar').append(status);
+  toolbar.append(extra);
+}
+
+/** 保留同一正文和编辑器，纪要标签展开为单栏阅读，笔记标签复用侧栏预览。 */
+function syncDetailSummaryPanel() {
+  const root = document.querySelector('#detail-view');
+  const main = root?.querySelector('[data-detail-panel="summary"]');
+  const aside = root?.querySelector('.notes');
+  const preview = root?.querySelector('.summary-preview');
+  if (!main || !aside || !preview) return;
+  const body = preview.querySelector('.summary-body');
+  if (detailActiveTab === 'summary' && body && !body.querySelector('.summary-reading-section')) {
+    let content;
+    for (const node of [...body.children]) {
+      if (node.tagName === 'H2') {
+        const section = document.createElement('section');
+        section.className = 'summary-reading-section';
+        content = document.createElement('div');
+        body.insertBefore(section, node);
+        section.append(node, content);
+      } else if (node.tagName === 'H1') content = null;
+      else if (content) content.append(node);
+    }
+  }
+  aside.hidden = detailActiveTab === 'summary';
+  if (detailActiveTab === 'summary') main.append(preview);
+  else aside.replaceChildren(preview);
 }

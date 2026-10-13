@@ -1,0 +1,409 @@
+{
+  "revision": "13",
+  "date": "2026-10-13",
+  "scope": "D55 replaces three-highlight design with original categorized Chinese changelog; D56 English variant of same component; all70 other existing PNG unchanged",
+  "canvas": [1280, 800],
+  "counts": {
+    "total": 72,
+    "desktop": 57,
+    "mobile": 15
+  },
+  "changed": [
+    {
+      "file": "D55.png",
+      "method": "built-in imagegen; sips proportional resize and white padding",
+      "generated_source": "/Users/zyaztec/.codex/generated_images/01a13248-130c-7400-8ce9-df87d084c76e/exec-e438970b-5858-4474-88f7-34d97e01014c.png",
+      "source_pixels": [1586, 992],
+      "source_sha256": "230b9bb96e118d46f8628fd536bb9e192f04c3ad6d14983ddf806a92f5e164dd",
+      "previous_sha256": "e6f43ac1203651ca72278952af3f3bf00a18f5c490f86c45608a9269da24aa89",
+      "pixels": [1280, 800],
+      "sha256": "68cf5c098d689e2300dfde41211e5a837e702a992c3f7d93b94ee2d965043eff",
+      "references": ["D55.png revision-12"],
+      "content_sources": [
+        "frontend/changelog.js v1.3.1 zh/en",
+        "frontend/i18n-data.js whatsNewCopy",
+        "frontend/app.js renderWhatsNewList"
+      ],
+      "implementation_verified": false
+    },
+    {
+      "file": "D56.png",
+      "method": "built-in imagegen; sips proportional resize and white padding",
+      "generated_source": "/Users/zyaztec/.codex/generated_images/01a13248-130c-7400-8ce9-df87d084c76e/exec-55591cc4-e33e-4b6a-86fd-b1c9d8175997.png",
+      "source_pixels": [1586, 992],
+      "source_sha256": "9579db8ada3e26cf776899f477afe721293d1ffc1eb3493b8f0d828358163ff5",
+      "previous_sha256": null,
+      "pixels": [1280, 800],
+      "sha256": "1675b03b687c0e742f4474b9d54badf28b9a879cf37f2765c2d79f1597c5898d",
+      "references": ["D55 revision-13 generated original", "D56 first draft"],
+      "content_sources": [
+        "frontend/changelog.js v1.3.1 zh/en",
+        "frontend/i18n-data.js whatsNewCopy",
+        "frontend/app.js renderWhatsNewList"
+      ],
+      "implementation_verified": false
+    }
+  ],
+  "assets": [
+    {
+      "file": "D01-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "c0c094d9bbffab441565182c86102af2f46f2b3ab8e81944a6c53701debd4391"
+    },
+    {
+      "file": "D02-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "cc3bb6335b30325fdcdc38e152887e6979772919a44676ada49b96ca38509af4"
+    },
+    {
+      "file": "D03-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "31cfcec7d04bd7a5fe8945dd611c96a4872dd0a332786be88379b1c783e2457e"
+    },
+    {
+      "file": "D04-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "672fca5ed768dd22020f8b96af2f695675f3af0326baab56447dcf9e260564ea"
+    },
+    {
+      "file": "D05-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "d2b66a811097867d4e5bdfa09523e1a9d3056f1d8cdf12f152dc1d83c16fa66e"
+    },
+    {
+      "file": "D06.png",
+      "pixels": [1280, 800],
+      "sha256": "abc68d4762d59f790f8aab72bfadfe86b62396bdef925890283c962c497b1e7d"
+    },
+    {
+      "file": "D07.png",
+      "pixels": [1280, 800],
+      "sha256": "5ce626d20f260df6996a9919b4b8b0c09847a5d61496abcbe4b5c47cafe31164"
+    },
+    {
+      "file": "D08.png",
+      "pixels": [1280, 800],
+      "sha256": "f42dc4d85860e679fa5574b04073123fbb14448d399061a31bc1e53756938a01"
+    },
+    {
+      "file": "D09-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "7a19a64cd4508e5bfd7bdeceba62261eb12611cbedfe44444c34e7683842f0f8"
+    },
+    {
+      "file": "D10.png",
+      "pixels": [1280, 800],
+      "sha256": "73dc1138af3e410832a36ff169e586fc385f7baa59d310090c0aa98d0a5c7e32"
+    },
+    {
+      "file": "D11.png",
+      "pixels": [1280, 800],
+      "sha256": "7c7bbf0a1c3bbe94eb89e87f6687497bd3c5165f75fd95eb285202b6e9527c5b"
+    },
+    {
+      "file": "D12.png",
+      "pixels": [1280, 800],
+      "sha256": "9a186e666d34332e54ac0a2638162b15dd6fbb293861174118a8e388c2b10351"
+    },
+    {
+      "file": "D13.png",
+      "pixels": [1280, 800],
+      "sha256": "ec73bccede3cdff8b937ae2e44b8b8c9a0927d87f2b0cb32762dd3fa5e370170"
+    },
+    {
+      "file": "D14-ai.png",
+      "pixels": [1280, 800],
+      "sha256": "6b4e091861d14455c8f4cc38467b53ab253d56796f6d3bc871c127ed2aeef1c5"
+    },
+    {
+      "file": "D14-installed.png",
+      "pixels": [1280, 800],
+      "sha256": "5907e9d048aff1451b4ccd6109b19688ba70d5f4fa637ec2018f86125bd7be60"
+    },
+    {
+      "file": "D14.png",
+      "pixels": [1280, 800],
+      "sha256": "26b7386306f1839d07d25616164f20fa16f40ba5a271d82f62576788febaba55"
+    },
+    {
+      "file": "D15.png",
+      "pixels": [1280, 800],
+      "sha256": "166f1687a12ca542001206dd3df7b634535651c49fef068b5852b113898621db"
+    },
+    {
+      "file": "D16.png",
+      "pixels": [1280, 800],
+      "sha256": "3c3a9e4b6dcfc101c4a7b04114555a524abb9847fa23ba4f904773df4daa5c5c"
+    },
+    {
+      "file": "D17.png",
+      "pixels": [1280, 800],
+      "sha256": "e7d282d4620eb151670826346949a87b220ae3952f3cf415c00642413b68e80a"
+    },
+    {
+      "file": "D18.png",
+      "pixels": [1280, 800],
+      "sha256": "ddc98793b15af3db8ace0c61f0b4bd32900f32ea1964c30b678632b6c9831cff"
+    },
+    {
+      "file": "D19.png",
+      "pixels": [1280, 800],
+      "sha256": "76c409c806b1a8cd69858deb62eede62504ee34d52dd915aeb3332099284d8e3"
+    },
+    {
+      "file": "D20.png",
+      "pixels": [1280, 800],
+      "sha256": "82698d8f33edfc02a31e39b0fb871aba6eebd37ee529add6ca226fed536439d1"
+    },
+    {
+      "file": "D22-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "f8289e40cf358de8dc1abe75f407ad5146eb2182fc0d5893c86788fc41bdf302"
+    },
+    {
+      "file": "D23.png",
+      "pixels": [1280, 800],
+      "sha256": "0e479fe3d5d448e2fcc4ccb498ce0477260b04e3e33df8ff0f9a452692e42a5f"
+    },
+    {
+      "file": "D24.png",
+      "pixels": [1280, 800],
+      "sha256": "fee1fe067cf59e14da795e634dbe9c38318bfc96e5e0d69f8bfeaf26a4495c92"
+    },
+    {
+      "file": "D25.png",
+      "pixels": [1280, 800],
+      "sha256": "10db7d2d51bb40c6a6bb97347703a4acf9260812bae585e27cb21baa3ea34f12"
+    },
+    {
+      "file": "D26.png",
+      "pixels": [1280, 800],
+      "sha256": "fc080285a242e779dc7930c99f49d12133eec620fb3bb7a47e8a8b1383bac2d9"
+    },
+    {
+      "file": "D27.png",
+      "pixels": [1280, 800],
+      "sha256": "bb9cee018bb06a44909e9d8fd164c3065a7412584f5b67e02bba902ba605efc5"
+    },
+    {
+      "file": "D28.png",
+      "pixels": [1280, 800],
+      "sha256": "46633d5d9c0d73fa7ae85945296d754d6f73b5e726bb33bf5c320e6d33a6997d"
+    },
+    {
+      "file": "D29.png",
+      "pixels": [1280, 800],
+      "sha256": "102326458f8f2ca8c37b1ed8e4d8f2e5c5aad807ef30270f413739a81857e933"
+    },
+    {
+      "file": "D30.png",
+      "pixels": [1280, 800],
+      "sha256": "a0a7b3823be998cd4049f7ded5926f13e4931435382361046083b840149e852d"
+    },
+    {
+      "file": "D31.png",
+      "pixels": [1280, 800],
+      "sha256": "5edbb120084afa72fc0aab6b2125056f856648b4ee00d28b28acedb96ff1e0d0"
+    },
+    {
+      "file": "D32.png",
+      "pixels": [1280, 800],
+      "sha256": "e7d3437ea145004e512044d43e13795c4634ab9d523a5e1951af414ad69f1a00"
+    },
+    {
+      "file": "D33.png",
+      "pixels": [1280, 800],
+      "sha256": "d68c49aa02007872e0eeb13fb64135ff3c3def3c90930ced8ac6224bde781375"
+    },
+    {
+      "file": "D34.png",
+      "pixels": [1280, 800],
+      "sha256": "4ed4ac9f6f0046168907528e8c6e7dd2bcfb91b11688d167c0952457ede4505e"
+    },
+    {
+      "file": "D35.png",
+      "pixels": [1280, 800],
+      "sha256": "aff9da4b345ea6b68c0d654916c523db82583a4666498975f53d8480e00772a4"
+    },
+    {
+      "file": "D36.png",
+      "pixels": [1280, 800],
+      "sha256": "eb636aa297860998aea2a6acc24a2a1ba5b55518ee86c5fb3009035f57bdd557"
+    },
+    {
+      "file": "D37.png",
+      "pixels": [1280, 800],
+      "sha256": "b350267bdcf8e444c52f2680081c71c02daed40658c964437ad87f21e27870f7"
+    },
+    {
+      "file": "D38.png",
+      "pixels": [1280, 800],
+      "sha256": "9cb75c83d7b0a86055c2b032d20d71c8505d56157844728c1b969b6a1fc4a346"
+    },
+    {
+      "file": "D39.png",
+      "pixels": [1280, 800],
+      "sha256": "e94bb481bfdf97c5151ce5921c635c1cecc2bb3ddd887d5c1b94d22929f571c1"
+    },
+    {
+      "file": "D40.png",
+      "pixels": [1280, 800],
+      "sha256": "b9ab11f3f2fa45186e38cb541a96be9b8456003a48f01123a0406f0a0daf3bae"
+    },
+    {
+      "file": "D41.png",
+      "pixels": [1280, 800],
+      "sha256": "0c20c91ad4030f1dda2d2d73b6e8d0b0731cddb710fa73d95f50f4bcb6a48bca"
+    },
+    {
+      "file": "D42.png",
+      "pixels": [1280, 800],
+      "sha256": "d26b3e6ad44c903db165f29636e35a0fe062b155a8ed0a5005e0b9f5f16586ca"
+    },
+    {
+      "file": "D43.png",
+      "pixels": [1280, 800],
+      "sha256": "97e73ad101ccb7866743ecfe005bb1c0fe80a7de2b6ccfb2cf7eb46467d30d73"
+    },
+    {
+      "file": "D44.png",
+      "pixels": [1280, 800],
+      "sha256": "7c79390a843f3063577b8d1a7c0b5e35a9259d95138d053efc7eb9ce75812d91"
+    },
+    {
+      "file": "D45.png",
+      "pixels": [1280, 800],
+      "sha256": "490905678159417d217ff8809e4a18054dceeb3910d4338c9367eb1143141164"
+    },
+    {
+      "file": "D46.png",
+      "pixels": [1280, 800],
+      "sha256": "1c84f65e9cb74d8cd2ba3e0e77e26ffc0a300b8d9bde9fa45308116a40229d5a"
+    },
+    {
+      "file": "D47.png",
+      "pixels": [1280, 800],
+      "sha256": "7c941a4c82e3931480481022e1e99e8d6d116a55c6394b33896cea9832511b2e"
+    },
+    {
+      "file": "D48.png",
+      "pixels": [1280, 800],
+      "sha256": "f84ebb870c9c9cc0579a6c3a190ca300f2eed21963521249acf66e134f90fef0"
+    },
+    {
+      "file": "D49.png",
+      "pixels": [1280, 800],
+      "sha256": "75742f0fa41512570411b24edc20faeca92961387d53595366cf82780577b6ba"
+    },
+    {
+      "file": "D50.png",
+      "pixels": [1280, 800],
+      "sha256": "23958554068af23918aa3a8304a3bc43ab535db320e4e720253f027be9b3b83e"
+    },
+    {
+      "file": "D51.png",
+      "pixels": [1280, 800],
+      "sha256": "b983b5cc0e1f7b094319e4b65fea98602b165a0e7c531ecc7fe5a863b2f38450"
+    },
+    {
+      "file": "D52.png",
+      "pixels": [1280, 800],
+      "sha256": "f23757381c82ab4b0ac5cc0e7d16e1d5c62582ffcf9f30e0c7b8697f4731fdea"
+    },
+    {
+      "file": "D53.png",
+      "pixels": [1280, 800],
+      "sha256": "dac26184471f5cfe6653088a45baa7ea5d8bda469eba6c6473c895a3e2154bc9"
+    },
+    {
+      "file": "D54.png",
+      "pixels": [1280, 800],
+      "sha256": "afec60dcc6c8e6ecf3bed5e688d39b789fa58da577270fff61710ba9a62b62c1"
+    },
+    {
+      "file": "D55.png",
+      "pixels": [1280, 800],
+      "sha256": "68cf5c098d689e2300dfde41211e5a837e702a992c3f7d93b94ee2d965043eff"
+    },
+    {
+      "file": "D56.png",
+      "pixels": [1280, 800],
+      "sha256": "1675b03b687c0e742f4474b9d54badf28b9a879cf37f2765c2d79f1597c5898d"
+    },
+    {
+      "file": "M01.png",
+      "pixels": [1280, 800],
+      "sha256": "a54602722cb554e6ba763e5ba3f0a5fcdf6e0cbfd53a76eb412a6e533135a410"
+    },
+    {
+      "file": "M02.png",
+      "pixels": [1280, 800],
+      "sha256": "762665d8992f24b0aaae9df8993e035459be344f48ebbf9e1dcced2766d9db72"
+    },
+    {
+      "file": "M03.png",
+      "pixels": [1280, 800],
+      "sha256": "8e854d8f50b270ad8dc10a4f9f3bcc058a98c496fd98d72edd28ab9620f6a0c7"
+    },
+    {
+      "file": "M04-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "f767aabcbdccd49b84c7af019634a908881a9b318737b63bec533f0b516a6fef"
+    },
+    {
+      "file": "M05-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "fd5799c70945cf24685f972e1fc7550e1ca997d502882a8f72e8c81c62933de8"
+    },
+    {
+      "file": "M06.png",
+      "pixels": [1280, 800],
+      "sha256": "61791909f9cee95a9f0e2b306c06b6775a9129248e1952aa44a4eedf7caf435b"
+    },
+    {
+      "file": "M07.png",
+      "pixels": [1280, 800],
+      "sha256": "eb67460e80251e9507a0c6f410ee45600bbc967e1d2b202d656860d6b7372421"
+    },
+    {
+      "file": "M08-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "26ba7b8e6e6c6d4cd460ba293251d61a5b893f010acabfa53b31260ba240583e"
+    },
+    {
+      "file": "M09.png",
+      "pixels": [1280, 800],
+      "sha256": "b8e8cc8b85334c9346cf1ffa9933470d2dce09109f2a6acd894e338551f07ade"
+    },
+    {
+      "file": "M10.png",
+      "pixels": [1280, 800],
+      "sha256": "214f0788e9a22ef074c386277644db41c791b490392d6e404ad3279ae19ac3b2"
+    },
+    {
+      "file": "M11-v2.png",
+      "pixels": [1280, 800],
+      "sha256": "62266d349d03690389c885f2d3c4ed048340975cbbdbc20c7e65e1c020f08680"
+    },
+    {
+      "file": "M12.png",
+      "pixels": [1280, 800],
+      "sha256": "af82fdbf827ec290f8fcacd321bf0f23d3857d5679b60db391ba33115d07fab3"
+    },
+    {
+      "file": "M13.png",
+      "pixels": [1280, 800],
+      "sha256": "6f57afc4e25ca9439c38f27504198d9a30b1fc66c931c1121a1b830ddde87b6c"
+    },
+    {
+      "file": "M14.png",
+      "pixels": [1280, 800],
+      "sha256": "2195cc0dff0e82cb5e3873e414f4c9653c20cd909a48a47eea61ee38608e669c"
+    },
+    {
+      "file": "M15.png",
+      "pixels": [1280, 800],
+      "sha256": "10b289eb52cac7c6a17875147a97e616c6bbaa4664c6b184e8d37da7a66ead56"
+    }
+  ]
+}

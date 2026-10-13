@@ -213,7 +213,7 @@ assert.match(
 );
 assert.match(
   text(components),
-  /data-transcript-cancel[^]*data-transcript-save type="button" aria-label=/,
+  /data-transcript-cancel[^]*data-transcript-save type="button"[^>]*aria-label=/,
   'subtitle edits can be cancelled or saved',
 );
 assert.match(
@@ -244,7 +244,7 @@ assert.match(
 );
 assert.match(
   text(app),
-  /uiData\.detail\.transcriptDraft\[field\.dataset\.segmentText\] = field\.value/,
+  /d\.transcriptDraft\[field\.dataset\.segmentText\] = field\.value/,
   'typed text is kept as a draft until save',
 );
 assert.match(
@@ -624,6 +624,13 @@ assert.deepEqual(
 );
 const componentContext = {};
 runInNewContext(text(components), componentContext);
+assert.match(componentContext.renderTaskProgressLabel('<long title>', 0), /&lt;long title&gt;/);
+assert.match(componentContext.renderTaskProgressLabel('Meeting', 0), /task-progress-value.*0%/);
+assert.doesNotMatch(componentContext.renderTaskProgressLabel('Waiting'), /task-progress-value/);
+const readOnlyTasks = componentContext.renderMarkdown('- [ ] Pending\n- [x] Done');
+assert.match(readOnlyTasks, /class="markdown-task-mark" role="checkbox" aria-checked="false"/);
+assert.match(readOnlyTasks, /aria-checked="true"/);
+assert.doesNotMatch(readOnlyTasks, /☐|☑/);
 assert.match(
   componentContext.renderMarkdown('- parent\n  - child'),
   /<ul><li>parent<ul><li>child<\/li><\/ul><\/li><\/ul>/,
@@ -1219,6 +1226,22 @@ assert.match(
   'the edit action turns the subtitle into an editable field',
 );
 assert.match(editingSegment, /data-start=|data-end=/, 'editing keeps playback alignment');
+const translatedEdit = componentContext.renderTranscriptSegment({
+  time: '00:00',
+  speaker: { name: 'A' },
+  text: '新字幕',
+  translation: 'Original translation',
+  segmentId: 'seg-1',
+  textEditable: true,
+  textModified: true,
+});
+assert.match(translatedEdit, /译文（未更新）/);
+assert.match(translatedEdit, /class="translation"[^>]*>.*Original translation<\/p>/);
+assert.equal(
+  (translatedEdit.match(/<textarea/g) || []).length,
+  1,
+  'translation remains read-only while its source is modified',
+);
 assert.doesNotMatch(
   componentContext.renderTranscriptSegment({
     time: '00:00',
@@ -1295,7 +1318,7 @@ detailTabbarContext.uiData.detail.refineState = 'idle';
 detailTabbarContext.uiData.detail.transcriptEditing = true;
 assert.match(
   detailTabbarContext.renderDetailTabbar(),
-  /data-transcript-save type="button" aria-label="保存"/,
+  /data-transcript-save type="button"[^>]*aria-label="保存"/,
   'editing subtitles swaps in the save action',
 );
 assert.doesNotMatch(
@@ -1320,6 +1343,7 @@ assert.doesNotMatch(
   componentContext.renderMeetingSummary({
     title: '<script>alert(1)</script>',
     sections: [{ title: 'Note', text: '<img src=x>' }],
+    participants: [{ name: '<script>alert(1)</script>' }],
   }),
   /<script>|<img/,
 );
@@ -1345,7 +1369,6 @@ assert.match(
 assert.match(text(css), /prefers-reduced-motion:\s*reduce/);
 assert.match(text(css), /\.window-bar\{[^}]*-webkit-app-region:drag/);
 assert.match(text(css), /\.window-bar\{[^}]*position:sticky/);
-assert.match(text(css), /\.task-card-stack-item\{[^}]*grid-area:1\/1/);
 assert.match(
   text(css),
   /\.refine-menu-speakers input:not\(\[type=checkbox\]\):not\(\[type=range\]\):not\(\[type=radio\]\),\.refine-menu-speakers \.flow-select-toggle\{[^}]*width:144px/,
@@ -1410,24 +1433,10 @@ assert.match(
   text(tailwind),
   /\.update-card\s+\{\s+@apply\s+col-span-12\s+flex\s+items-center\s+justify-between\s+gap-6/,
 );
-assert.match(
-  text(css),
-  /\.task-cards\{(?=[^}]*display:grid)(?=[^}]*overflow:visible)(?=[^}]*--task-card-back-count)/,
-);
-assert.match(
-  text(tailwind),
-  /\.task-card-stack-item\s+\{\s+@apply\s+relative;\s+grid-area:\s+1\s+\/\s+1/,
-);
 assert.match(text(app), /stackableTaskCardSelector\s+=\s+'[^']*\.mini-meeting[^']*\.mini-playback/);
 assert.match(
   text(app),
   /\[\.\.\.taskCards\.children\]\.filter\(\(card\) => card\.matches\(stackableTaskCardSelector\)\)/,
-);
-assert.match(text(app), /--task-card-index/);
-assert.match(text(app), /--task-card-depth/);
-assert.match(
-  text(tailwind),
-  /\.task-cards > \.task-card-stack-item \{[^}]*width: calc\(100% - var\(--task-card-depth/,
 );
 assert.match(text(tailwind), /\.task-cards > \.is-task-card-back \{[^}]*box-shadow:/);
 assert.match(text(app), /function activateTaskCard\(card\)/);
@@ -1547,7 +1556,7 @@ assert.match(text(html), /translation-menu flow-select[\s\S]*id="translation-opt
 assert.match(text(js), /data-live-translation/);
 assert.match(text(js), /reconfigureLive\(\{ target_language: targetLanguage \}\)/);
 assert.match(text(js), /showView\('detail'\)/);
-assert.match(text(html), /id="language-toggle"/);
+assert.doesNotMatch(text(html), /id="language-toggle"/);
 assert.match(text(html), /href="https:\/\/github\.com\/zerolovesea\/Brevia"/);
 assert.match(text(html), /id="all-meetings"/);
 assert.doesNotMatch(text(html), /id="category-filter"/);
@@ -1566,10 +1575,7 @@ assert.match(text(js), /interfaceIcon\(progress.paused \? 'play' : 'pause'\)/);
 assert.match(text(html), /id="home-slogan"/);
 assert.match(text(html), /id="home-eyebrow"[^>]*disabled/);
 assert.match(text(js), /function activeWorkspaceDescription\(\)/);
-assert.match(
-  text(js),
-  /activeLibraryNav === 'recently-deleted' \|\| activeWorkspaceDescription\(\)/,
-);
+assert.ok(!text(js).includes('sloganIndex'), 'the latest library subtitle stays fixed');
 assert.match(
   text(js),
   /flowSelect\('meeting-language', language, BreviaI18n\.languageOptions\(locale, t, true\)\)/,
@@ -1693,10 +1699,7 @@ assert.match(
 );
 assert.match(text(js), /__new_workspace__/);
 assert.match(text(js), /showNewWorkspaceDialog\(null, \(workspace\)/);
-assert.match(
-  text(app),
-  /const rect = action\.getBoundingClientRect\(\);\s+closeMeetingMenus\(\);\s+if \(typeof showWorkspaceAssignMenu === 'function'\) \{\s+showWorkspaceAssignMenu\(index, rect\);/,
-);
+assert.match(text(app), /showWorkspaceAssignMenu\(index, rect\)/);
 assert.match(text(js), /function renderWorkspaceNav/);
 assert.match(text(js), /async function switchWorkspace/);
 assert.match(
@@ -1719,7 +1722,7 @@ assert.match(
 );
 assert.match(text(js), /data-batch-export/);
 assert.match(text(js), /data-batch-restore/);
-assert.match(text(js), /mutateMeetings\(permanently \? 'purge' : 'delete', meetings\)/);
+assert.match(text(js), /runBatchMutation\(permanently \? 'purge' : 'delete', meetings\)/);
 assert.match(text(js), /async function mutateMeetings/);
 assert.doesNotMatch(text(js), /action === 'purge' && window\.brevia/);
 assert.match(text(js), /async function openMeetingRow/);
@@ -1822,10 +1825,7 @@ assert.doesNotMatch(text(components), /data-meeting-action="category"/);
 assert.match(text(components), /data-rename-meeting/);
 assert.match(text(components), /class="meeting-title-rename"/);
 assert.doesNotMatch(text(components), /meeting-rename-menu/);
-assert.match(
-  text(js),
-  /renameForm && !event\.target\.closest\('\.meeting-row'\)\) renameForm\.requestSubmit\(\)/,
-);
+assert.doesNotMatch(text(js), /renameForm\.requestSubmit\(\)/);
 assert.doesNotMatch(text(components), /data-delete-meeting-category/);
 assert.match(text(components), /data-selection-key/);
 assert.doesNotMatch(text(js), /data-new-meeting-category/);
@@ -1983,7 +1983,10 @@ assert.match(text(i18n), /selectionOverview/);
 assert.match(text(js), /renderDefaultMeetingTitle\(\)/);
 assert.match(text(js), /\(themeLabels\[locale\] \|\| themeLabels\.en\)/);
 for (const code of ['ja', 'ko', 'fr', 'de', 'ru'])
-  assert.match(text(html), new RegExp(`data-language="${code}"`));
+  assert.ok(
+    localeContext.window.BreviaLocaleData.catalog[code],
+    `settings locale ${code} remains available`,
+  );
 assert.doesNotMatch(text(js), /音频分析/);
 assert.match(text(js), /data-download-model/);
 // A cancelled download is terminal: the library button must not stay disabled on "下载中", and dismissing the
@@ -2009,12 +2012,12 @@ assert.match(
 );
 assert.doesNotMatch(text(js), /ten-vad|TEN-VAD/);
 assert.doesNotMatch(text(asr), /ten_vad/);
-// The download size rides in the tag row as its own tag; the compute/runtime tag was dropped.
+// 模型大小与定位共用辅助行，真实随包状态保持只读。
 assert.match(text(js), /model\.size_bytes/);
-assert.match(text(js), /model-library-size/);
+assert.match(text(js), /model-library-details/);
 assert.doesNotMatch(text(js), /function renderModelLibraryMeta/);
 assert.doesNotMatch(text(js), /model-library-meta/);
-assert.match(text(js), /model-library-installed/);
+assert.match(text(js), /model-library-readonly/);
 // 档位来自清单的 speed / quality（上面已逐个校验），不再有第二份手写评级表。
 assert.doesNotMatch(
   text(js),
@@ -2097,10 +2100,10 @@ assert.match(text(js), /model-download-progress/);
 // 「源码里存在这个函数」不说明任何行为，格式化边界才是会出错的地方。
 const utilsContext = { window: {} };
 runInNewContext(text(await readFile('app-utils.js')), utilsContext);
-assert.equal(utilsContext.formatBytes(0), '0 KB');
-assert.equal(utilsContext.formatBytes(512), '1 KB');
-assert.equal(utilsContext.formatBytes(1024 ** 2 * 1.5), '1.5 MB');
-assert.equal(utilsContext.formatBytes(1024 ** 3 * 2), '2.00 GB');
+assert.equal(utilsContext.formatBytes(0), '0 KiB');
+assert.equal(utilsContext.formatBytes(512), '1 KiB');
+assert.equal(utilsContext.formatBytes(1024 ** 2 * 1.5), '1.50 MiB');
+assert.equal(utilsContext.formatBytes(1024 ** 3 * 2), '2.00 GiB');
 assert.equal(utilsContext.formatMeetingTime(0), '00:00');
 assert.equal(utilsContext.formatMeetingTime(61_000), '01:01');
 assert.equal(utilsContext.formatMeetingTime(3_600_000), '60:00', '超过一小时按分钟累计');
@@ -2270,7 +2273,7 @@ assert.match(text(components), /data-open-summary-edit[^]*interfaceIcon\('edit'\
 assert.match(text(js), /data-regenerate-summary/);
 assert.match(
   text(app),
-  /data-open-summary-edit[^]*uiData\.detail\.summaryEditing\s+=\s+true;\s+renderMeetingDetail\(\)/,
+  /data-open-summary-edit[^]*uiData\.detail\.summaryEditing\s+=\s+true;[\s\S]*?renderMeetingDetail\(\)/,
 );
 assert.doesNotMatch(text(app), /summary-modal-document\) return;/);
 assert.match(text(app), /data-export-save/);
@@ -2303,14 +2306,6 @@ assert.match(
   /function\s+availableUpdateActionLabel\(\)\s+\{\s+return\s+updateVersion\s+\?\s+updateCopy\(\)\.update\.replace\('0\.2\.0',\s+updateVersion\)\s+:\s+updateCopy\(\)\.update;\s+\}/,
 );
 assert.match(text(js), /updateAvailable\s+\?\s+availableUpdateActionLabel\(\)\s+:\s+copy\.action/);
-assert.match(
-  text(js),
-  /#all-meetings'\)\.addEventListener\('click', async \(event\) => \{\s+const button = event\.currentTarget;/,
-);
-assert.match(
-  text(js),
-  /const collapsed = workspaceNav\.classList\.toggle\('is-collapsed'\);\s+workspaceNav\.setAttribute\('aria-hidden', String\(collapsed\)\);\s+button\.setAttribute/,
-);
 assert.match(text(js), /content: 'notes'/);
 // 统一「导出与分享」面板:内容勾选 + 每项格式 + 导出文件 + 分享到。
 assert.match(text(js), /function exportHubHtml/);
@@ -3039,10 +3034,11 @@ assert.match(text(js), /taskCards\.append\(updateNotice\)/);
 assert.match(text(js), /stackableTaskCardSelector\s+=\s+'[^']*\.software-update-notice/);
 assert.match(
   text(tailwind),
-  /\.task-cards\s+>\s+\.software-update-notice\s+\{\s+@apply\s+relative\s+bottom-auto\s+left-auto\s+z-auto\s+w-full\s+max-w-full/,
+  /\.task-cards > \.software-update-notice \{[^}]*@apply relative bottom-auto left-auto z-auto w-full max-w-full/,
 );
 assert.match(text(tailwind), /\.summary-model-modal\s+\.modal-body\s+\{\s+overflow:\s+visible/);
-assert.match(text(js), /showView\('settings'\)\.then\(\(\) => openModal\('summary-model'\)\)/);
+assert.match(text(js), /function syncSummaryFeedback/);
+assert.doesNotMatch(text(components), /summary-side-actions/);
 assert.match(text(i18nData), /前往 AI 会议总结/);
 assert.match(text(backendClient), /async prepare\(\{ mic, system \}\)/);
 assert.match(text(backendClient), /async previewMic\(\)/);
@@ -3101,7 +3097,7 @@ assert.match(
   /window\.brevia\.on\('startup\.ready', \(\) => \{\s+const reveal = \(\) => \{/,
 );
 assert.match(text(js), /splashGifDurationMs = 1500/);
-assert.match(text(js), /if \(!silent\) showToast\(error\.message\)/);
+assert.match(text(js), /if \(!silent\) showToast\(error\.message, undefined, 'error'\)/);
 assert.match(text(js), /const preferredModelsForLanguage = \(language\) =>/);
 assert.match(
   text(js),
@@ -3191,8 +3187,9 @@ assert.match(
 assert.match(text(css), /\.onboarding-page:before\{[^}]*-webkit-app-region:drag/);
 assert.match(text(css), /body:has\(\.onboarding-page\) \.app-shell\{display:none/);
 assert.doesNotMatch(text(css), /\*\{scrollbar-gutter:stable/);
-// 首启选型：必须能画速度/准确度刻度、角标、以及「至少选一个」的守卫。
-assert.match(text(js), /function asrMeter\(/);
+// 首启选型去掉评分，保留角标与真实选择守卫。
+assert.doesNotMatch(text(js), /function asrMeter\(/);
+assert.doesNotMatch(text(js), /openOnboardingTour|updateOnboardingTour|function tourView/);
 assert.match(text(js), /asr-badge/);
 assert.match(text(js), /data-onboarding-guard/);
 assert.match(text(js), /function onboardingRecommendedModelId\(/);
@@ -3260,7 +3257,7 @@ assert.match(text(js), /dismissOnboardingPage\(openOnboardingSetup\)/);
 assert.doesNotMatch(text(js), /function openOnboardingWelcome/);
 assert.match(text(js), /const page = onboardingPage/);
 assert.match(text(js), /page\.querySelector\('\[name="locale"\]:checked'\)\.value/);
-assert.match(text(js), /finally \{\s*switchingLanguage = false/);
+assert.match(text(js), /finally \{\s*nodes\.forEach/);
 for (const selector of [
   '.settings-grid',
   '.meeting-list',
@@ -3399,8 +3396,8 @@ assert.match(text(app), /async function translateLatestTranscript\(targetLanguag
 assert.match(text(components), /data-detail-translation/);
 assert.match(
   text(components),
-  /data-detail-translation-toggle[^]*<svg viewBox="0 0 16 16"/,
-  'translation uses an accessible SVG action',
+  /data-detail-translation-toggle[^]*interfaceIcon\('translate'\)/,
+  'translation uses the shared accessible icon and action',
 );
 assert.doesNotMatch(
   text(components),
@@ -3516,7 +3513,10 @@ assert.match(text(js), /function syncPlaybackTranscript/);
 assert.match(text(js), /function syncPlaybackFloatingCaption/);
 assert.match(text(js), /translation: segment\?\.translation \|\| null/);
 assert.match(text(js), /function renderPlaybackFloatingCaptionToggle\(\)/);
-assert.match(text(html), /detail-head[\s\S]*data-export-detail[\s\S]*<\/div\s*><\/header\s*>/);
+assert.match(
+  text(html),
+  /class="detail-actions"[\s\S]*data-export-detail[\s\S]*class="detail-head"/,
+);
 assert.doesNotMatch(text(html), /data-share-detail/);
 assert.match(
   text(js),
@@ -3557,7 +3557,7 @@ assert.match(text(js), /function showRefinementProgress/);
 assert.match(text(js), /function refinementTitle\(meetingId\)/);
 assert.match(text(js), /refinementTitle\(meeting_id\), meeting_id, stage/);
 assert.match(text(js), /target\.textContent = refinementMeetingTitle/);
-assert.match(text(js), /\$\{copy\.waiting\} · \$\{Math\.round\(ratio \* 100\)\}%/);
+
 assert.equal(localeContext.window.BreviaLocaleData.catalog.en.labels['转写中'], 'Transcribing');
 
 assert.match(text(js), /segment\.version\.startsWith\('postprocess'\)/);
@@ -3654,6 +3654,7 @@ const changelogContext = {
 const refinementProgressContext = {
   refinementCard: { dataset: {}, querySelector: () => ({ textContent: '' }) },
   refinementPercent: { textContent: '' },
+  renderTaskProgressLabel: componentContext.renderTaskProgressLabel,
   refinementBar: { style: {} },
   refinementMeetingTitle: '',
   refinementCardDismissed: false,
@@ -3684,6 +3685,8 @@ for (const percent of [10, 40, 20, 95, 100]) {
   );
   lastRefinementRatio = ratio;
 }
+assert.match(refinementProgressContext.refinementPercent.innerHTML, /Meeting/);
+assert.match(refinementProgressContext.refinementPercent.innerHTML, /99%/);
 refinementProgressContext.showRefinementProgress(0, 0, 'Next', 'two', '准备精修');
 assert.equal(
   refinementProgressContext.refinementBar.style.transform,
@@ -3751,6 +3754,169 @@ for (const code of ['zh', 'en']) {
   assert.ok(rendered.includes('Legacy entry'));
   assert.ok(!rendered.includes('<新增>'));
 }
+// 逐段保存只有真实成功后退出；失败、缺桥接和空内容保留同一份草稿。
+const transcriptToasts = [],
+  transcriptWrites = [];
+const transcriptMeeting = {
+  id: 'meeting',
+  segments: [
+    { id: 'one', text: 'Original' },
+    { id: 'two', text: 'Other' },
+  ],
+};
+const transcriptContext = {
+  currentMeetingDetail: transcriptMeeting,
+  uiData: {
+    detail: {
+      transcriptEditing: true,
+      transcriptDraft: { one: 'Updated' },
+      transcriptSaveState: 'dirty',
+    },
+  },
+  latestTranscriptSegments: (meeting) => ({ segments: meeting.segments }),
+  t: (value) => value,
+  CSS: { escape: (value) => value },
+  document: { querySelector: () => ({ focus() {} }) },
+  renderMeetingDetail() {},
+  applyBackendDetail(meeting) {
+    transcriptContext.currentMeetingDetail = meeting;
+  },
+  showToast: (message) => transcriptToasts.push(message),
+  window: {
+    brevia: {
+      segment: {
+        saveText: async (data) => {
+          transcriptWrites.push(data);
+          return transcriptMeeting;
+        },
+      },
+    },
+  },
+};
+runInNewContext('async ' + summaryFn('saveDetailTranscriptEdits'), transcriptContext);
+await transcriptContext.saveDetailTranscriptEdits();
+assert.equal(transcriptContext.uiData.detail.transcriptEditing, false);
+assert.equal(transcriptWrites.length, 1);
+assert.equal(
+  JSON.stringify(transcriptWrites[0].segments),
+  JSON.stringify([{ segment_id: 'one', text: 'Updated' }]),
+);
+let resolveTranscript;
+transcriptContext.uiData.detail = {
+  transcriptEditing: true,
+  transcriptDraft: { one: 'Keep me' },
+  transcriptSaveState: 'dirty',
+};
+transcriptContext.window.brevia.segment.saveText = () =>
+  new Promise((resolve) => {
+    resolveTranscript = resolve;
+  });
+const transcriptPending = transcriptContext.saveDetailTranscriptEdits();
+assert.equal(transcriptContext.uiData.detail.transcriptEditing, true);
+assert.equal(transcriptContext.uiData.detail.transcriptSaveState, 'saving');
+assert.equal(transcriptContext.uiData.detail.transcriptDraft.one, 'Keep me');
+await transcriptContext.saveDetailTranscriptEdits();
+resolveTranscript(undefined);
+await transcriptPending;
+assert.equal(transcriptContext.uiData.detail.transcriptSaveState, 'failed');
+assert.equal(transcriptContext.uiData.detail.transcriptDraft.one, 'Keep me');
+transcriptContext.window.brevia = undefined;
+await transcriptContext.saveDetailTranscriptEdits();
+assert.equal(transcriptContext.uiData.detail.transcriptEditing, true);
+assert.equal(transcriptContext.uiData.detail.transcriptDraft.one, 'Keep me');
+transcriptContext.uiData.detail.transcriptDraft.one = '   ';
+await transcriptContext.saveDetailTranscriptEdits();
+assert.equal(transcriptContext.uiData.detail.transcriptErrors.one, '字幕内容不能为空');
+transcriptContext.uiData.detail.transcriptDraft = { stale: 'Retain stale revision text' };
+await transcriptContext.saveDetailTranscriptEdits();
+assert.equal(transcriptContext.uiData.detail.transcriptSaveState, 'failed');
+assert.equal(transcriptContext.uiData.detail.transcriptDraft.stale, 'Retain stale revision text');
+transcriptContext.uiData.detail.transcriptDraft = { one: 'Original' };
+await transcriptContext.saveDetailTranscriptEdits();
+assert.equal(
+  transcriptContext.uiData.detail.transcriptEditing,
+  false,
+  'unchanged save does not require the bridge',
+);
+// 升级浮窗复用完整日志，只展开实际安装版本，缺少该版本时不可冒充最新版本。
+runInNewContext(summaryFn('compareVersions'), changelogContext);
+assert.ok(changelogContext.renderWhatsNewList('1.2.1').includes('is-current'));
+assert.ok(!changelogContext.renderWhatsNewList('1.2.1').includes('v1.2.2'));
+assert.ok(
+  changelogContext.renderWhatsNewList('9.0.0').includes(changelogContext.whatsNewCopy.en.empty),
+);
+changelogContext.locale = 'fr';
+assert.ok(changelogContext.renderWhatsNewList('1.2.2').includes('English summary'));
+const upgradeOpens = [],
+  upgradeTimers = [];
+let seenVersion = null;
+const upgradeContext = {
+  installedAppVersion: '1.3.1',
+  whatsNewRetryTimer: undefined,
+  whatsNewReady: true,
+  whatsNewShown: false,
+  onboardingPage: undefined,
+  activeModal: undefined,
+  meetingActive: false,
+  pageTransition: false,
+  localStorage: {
+    getItem: () => seenVersion,
+    setItem: (_, version) => {
+      seenVersion = version;
+    },
+  },
+  document: { querySelector: () => null },
+  clearTimeout() {},
+  setTimeout: (action) => {
+    upgradeTimers.push(action);
+    return 1;
+  },
+  openModal: (kind) => upgradeOpens.push(kind),
+};
+runInNewContext(summaryFn('compareVersions'), upgradeContext);
+runInNewContext(summaryFn('maybeShowWhatsNew'), upgradeContext);
+runInNewContext(summaryFn('markWhatsNewSeen'), upgradeContext);
+upgradeContext.maybeShowWhatsNew();
+assert.equal(seenVersion, '1.3.1');
+assert.equal(upgradeOpens.length, 0, 'first install only records the version');
+for (const version of ['1.3.1', '2.0.0']) {
+  seenVersion = version;
+  upgradeContext.maybeShowWhatsNew();
+  assert.equal(upgradeOpens.length, 0, 'same version and downgrade do not show a popup');
+}
+seenVersion = '1.2.0';
+for (const blocker of [
+  'whatsNewReady',
+  'onboardingPage',
+  'activeModal',
+  'meetingActive',
+  'pageTransition',
+]) {
+  const original = upgradeContext[blocker];
+  upgradeContext[blocker] = blocker === 'whatsNewReady' ? false : true;
+  upgradeContext.maybeShowWhatsNew();
+  assert.equal(upgradeOpens.length, 0, 'upgrade must wait for ' + blocker);
+  upgradeContext[blocker] = original;
+}
+upgradeContext.maybeShowWhatsNew();
+upgradeContext.maybeShowWhatsNew();
+for (const retry of upgradeTimers) retry();
+assert.deepEqual(
+  upgradeOpens,
+  ['upgrade-log'],
+  'one popup per session even after repeated retries',
+);
+upgradeContext.markWhatsNewSeen();
+assert.equal(seenVersion, '1.3.1');
+upgradeContext.whatsNewShown = false;
+upgradeContext.maybeShowWhatsNew();
+assert.equal(upgradeOpens.length, 1, 'read flag prevents reopening next session');
+upgradeContext.localStorage.getItem = () => {
+  throw new Error('storage unavailable');
+};
+upgradeContext.whatsNewShown = false;
+upgradeContext.maybeShowWhatsNew();
+assert.equal(upgradeContext.whatsNewShown, true, 'storage errors never loop or block startup');
 // 模型库每个模型的长描述必须覆盖全部 8 种界面语言，统一从 i18n-data.js 读取，
 // 缺语种会静默回退英文（es 曾长期只有 zh/en）。
 const modelLibraryBackground = localeContext.window.BreviaLocaleData.appCopy.modelLibraryBackground;
@@ -4138,7 +4304,7 @@ assert.match(text(components), /command === 'highlight'/);
 // UI 修订：空态放入笔记输入区；富文本/Markdown 切换为工具栏 SVG 图标 + Command+/；移除字幕搜索与头部模式页签。
 assert.match(text(html), /data-live-notes-root\s*><div\s+class="ai-assist-empty"/);
 assert.doesNotMatch(text(html), /notes-mode-tabs/);
-assert.doesNotMatch(text(html), /data-transcript-search/);
+assert.match(text(html), /class="detail-search-results"[\s\S]*data-close-transcript-search/);
 assert.match(text(components), /data-transcript-search/);
 assert.match(text(app), /function filterDetailTranscript/);
 assert.match(
@@ -4759,6 +4925,8 @@ clientStopContext.window.brevia.meeting.stop = async () => ({ id: 'retryable' })
 await stoppingClient.stop(100);
 assert.equal(stoppingClient.state.meeting, null);
 const batchContext = {
+  selectedMeetingKeys: new Set(),
+  meetingSelectionMode: false,
   window: { brevia: { meeting: {} } },
   uiData: { meetings: [] },
   clearMeetingSelection() {},
@@ -4784,7 +4952,13 @@ await assert.rejects(
   batchContext.mutateMeetings('delete', [...batchContext.uiData.meetings]),
   /disk disconnected/,
 );
-assert.equal(batchContext.uiData.meetings.map(({ id }) => id).join(','), 'failed,remaining');
+assert.equal(
+  batchContext.uiData.meetings.map(({ id }) => id).join(','),
+  'failed',
+  '继续处理后面的有效项，失败项保留供重试',
+);
+assert.equal([...batchContext.selectedMeetingKeys].join(','), 'failed');
+assert.ok(batchContext.meetingSelectionMode);
 for (const [code, data] of Object.entries(localeContext.window.BreviaLocaleData.catalog)) {
   for (const key of [
     '该设备仍有未完成的录音，请先结束并补传',
@@ -4829,6 +5003,8 @@ const dismissal = {
     remove() {},
   },
   onboardingAiDemoTimer: null,
+  onboardingSummaryDemoTimer: null,
+  clearTimeout() {},
   clearInterval() {},
   breviaClient: null,
   fitTourWindow() {},

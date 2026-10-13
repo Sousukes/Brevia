@@ -50,16 +50,14 @@ class _OnboardingGateState extends State<OnboardingGate> {
     if (complete == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    final titles = ['手机录音，电脑转写。', '手机采集音频，电脑完成转写', '按需授权'];
+    final titles = ['手机录音，电脑转写', '功能与隐私', '按需授权'];
     final descriptions = [
       '无需连接电脑。录音保存在本机，连接后由你主动上传。',
-      '转写和笔记会回到这里。',
+      '手机采集音频，电脑完成转写',
       '仅在需要时申请权限，保护你的隐私。',
     ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Brevia'),
-        centerTitle: false,
         leading: step == 0
             ? null
             : BackButton(onPressed: () => setState(() => step--)),
@@ -72,6 +70,7 @@ class _OnboardingGateState extends State<OnboardingGate> {
           padding: const EdgeInsets.all(24),
           children: [
             if (step == 0) ...[
+              const SizedBox(height: 32),
               Center(
                 child: Text(
                   "Brevia",
@@ -82,37 +81,42 @@ class _OnboardingGateState extends State<OnboardingGate> {
               ),
               const SizedBox(height: 40),
               const Center(child: PairingIllustration()),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
             ],
-            if (step == 1)
-              Icon(
-                [
-                  Icons.mic_none,
-                  Icons.devices_outlined,
-                  Icons.shield_outlined,
-                ][step],
-                size: 64,
-              ),
-            SizedBox(height: step == 2 ? 16 : 40),
+            if (step != 0) const SizedBox(height: 16),
             Text(
               tr(titles[step]),
-              style: Theme.of(context).textTheme.headlineLarge,
+              textAlign: step == 0 ? TextAlign.center : TextAlign.start,
+              style: step == 0
+                  ? Theme.of(context).textTheme.titleLarge
+                  : Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Text(
               tr(descriptions[step]),
-              style: Theme.of(context).textTheme.bodyLarge,
+              textAlign: step == 0 ? TextAlign.center : TextAlign.start,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 28),
             if (step == 1) ...[
               ListTile(
                 leading: const Icon(Icons.phone_iphone_outlined),
                 title: Text(tr('仅保存在手机')),
+                subtitle: Text(tr('无需连接电脑。录音保存在本机，连接后由你主动上传。')),
               ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.laptop_outlined),
                 title: Text(tr('连接电脑')),
+                subtitle: Text(tr('转写和笔记会回到这里。')),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.shield_outlined),
+                title: Text(tr('在线 AI')),
+                subtitle: Text(tr('电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。')),
               ),
             ],
             if (step == 2) ...[
@@ -198,9 +202,27 @@ class _OnboardingGateState extends State<OnboardingGate> {
                       : step == 2
                       ? finish
                       : () => setState(() => step++),
-                  child: Text(tr(step == 2 ? '我知道了' : '下一步')),
+                  child: Text(
+                    tr(
+                      step == 2
+                          ? '我知道了'
+                          : step == 0
+                          ? '开始使用'
+                          : '继续',
+                    ),
+                  ),
                 ),
               ),
+              if (step == 0) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonal(
+                    onPressed: saving ? null : finish,
+                    child: Text(tr('无需电脑，先录音')),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

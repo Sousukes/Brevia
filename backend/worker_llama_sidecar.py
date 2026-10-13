@@ -133,7 +133,8 @@ class _Sidecar:
                 response = json.loads(line)
                 if not isinstance(response, dict):
                     raise ValueError("Expected a response object")
-                failed = False
+                # 原生加载/推理失败可能残留内存，错误响应也必须回收进程。
+                failed = response.get("type") == "error"
                 return response
             except Exception as error:  # noqa: BLE001 - surface to caller
                 return {"type": "error", "message": f"Sidecar communication error: {error}"}
