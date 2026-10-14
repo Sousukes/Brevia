@@ -115,6 +115,8 @@ git switch -c feature/mobile-transcript-layout
 
 需要新的展示版本时修改 `mobile/pubspec.yaml`，例如 `version: 0.1.5+5`。CI 保留 `0.1.5`，自动生成并覆盖 `+` 后的构建号；同一展示版本可以有多个测试构建，无需每个 PR 都升级版本。iOS 实时活动扩展从 Flutter 配置继承相同版本，不能另设版本号。
 
+App Store 版本获批后，该版本的 TestFlight 上传通道会关闭。继续上传测试构建前，需要在 `pubspec.yaml` 中提高展示版本（例如 `1.0.0` → `1.0.1`）；只增加构建号或重跑旧提交无法解决 `90062` / `90186` 错误。
+
 ### 2. 检查并提交
 
 ```sh
