@@ -3178,6 +3178,12 @@
   .onboarding-ai-switch input:checked {
     border-color: #26221e;
     background: #26221e;
+    /* 勾选后在药丸左侧显示对勾（右侧留给圆钮）。注意 background 简写会清掉
+       background-image，所以图标必须写在简写之后。 */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 8 2.7 2.7L12.5 4.5' fill='none' stroke='white' stroke-width='1.75' stroke-linecap='square'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: 14px 14px;
+    background-position: 4px center;
   }
   .onboarding-ai-switch input:checked::after {
     transform: translateX(16px);
@@ -4821,6 +4827,20 @@ html[data-theme="dark"] input[type="checkbox"] {
 html[data-theme="dark"] input[type="checkbox"]:checked {
   background-color: #eee;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 8 2.7 2.7L12.5 4.5' fill='none' stroke='%23111' stroke-width='1.75' stroke-linecap='square'/%3E%3C/svg%3E");
+}
+/* 开关（.onboarding-ai-switch）是药丸+圆钮，不是普通勾选框。上面的暗色通用规则特异性
+   高于组件自身，会带来两个问题：
+   ① 勾选图标被 background-size:100% 100% 拉伸成整个药丸大小（溢出药丸、盖住圆钮）；
+   ② 「开」态药丸被染成浅底，白钮落在浅底上不可见。
+   这里把对勾固定成 14px 并定位到左侧（右侧留给圆钮），同时把圆钮改为深色。 */
+html[data-theme="dark"] .onboarding-ai-switch input[type="checkbox"]:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 8 2.7 2.7L12.5 4.5' fill='none' stroke='%23111' stroke-width='1.75' stroke-linecap='square'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  background-position: 4px center;
+}
+html[data-theme="dark"] .onboarding-ai-switch input[type="checkbox"]:checked::after {
+  background: #262626;
 }
 html[data-theme="dark"] .language-options button {
   color: #ddd;
