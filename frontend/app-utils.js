@@ -8,10 +8,10 @@
 
 function formatBytes(bytes = 0) {
   return bytes >= 1024 ** 3
-    ? `${(bytes / 1024 ** 3).toFixed(2)} GB`
+    ? `${(bytes / 1024 ** 3).toFixed(2)} GiB`
     : bytes >= 1024 ** 2
-      ? `${(bytes / 1024 ** 2).toFixed(1)} MB`
-      : `${Math.round(bytes / 1024)} KB`;
+      ? `${(bytes / 1024 ** 2).toFixed(2)} MiB`
+      : `${Math.round(bytes / 1024)} KiB`;
 }
 function formatMeetingTime(milliseconds = 0) {
   const seconds = Math.max(0, Math.floor(milliseconds / 1000));

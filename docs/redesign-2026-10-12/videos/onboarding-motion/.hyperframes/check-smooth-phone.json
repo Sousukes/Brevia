@@ -1,0 +1,90 @@
+{
+  "ok": true,
+  "strict": true,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "duration": 9,
+    "samples": [
+      0,
+      2.85,
+      3.15,
+      5.65,
+      5.85,
+      6.5,
+      8.8
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 0,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "specPath": "/Users/zyaztec/Projects/Brevia/docs/redesign-2026-10-12/videos/onboarding-motion/.hyperframes/verify-phone/index.motion.json",
+    "samples": 181
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      0,
+      2.85,
+      5.65,
+      5.85,
+      8.8
+    ],
+    "checked": 65,
+    "passed": 65
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  },
+  "saved": {
+    "id": "8a4f345a-87a2-4b04-9658-28a887ff4dcd",
+    "revision": "7eb61792-26bd-4a16-910f-6b5e579b9e7a",
+    "report": "/Users/zyaztec/Projects/Brevia/docs/redesign-2026-10-12/videos/onboarding-motion/.hyperframes/verify-phone/.hyperframes/artifacts/checks/8a4f345a-87a2-4b04-9658-28a887ff4dcd.json",
+    "attribution": "recorded-revision"
+  },
+  "_meta": {
+    "version": "0.8.156",
+    "latestVersion": "0.8.155",
+    "updateAvailable": false
+  }
+}

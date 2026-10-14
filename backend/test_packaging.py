@@ -166,6 +166,48 @@ class PreflightTest(PackagingAssetTest):
 
 
 class WindowsRuntimeTest(PackagingAssetTest):
+    def test_windows_runtime_requires_avx2_without_avx512(self):
+        import sys
+        from unittest.mock import Mock, patch
+
+        from .check_windows_runtime import main
+
+        catalog = {
+            'silero-vad': {
+                'runtime': 'sherpa-onnx',
+                'revision': 'test',
+                'files': ['vad.onnx'],
+            }
+        }
+        for info, compatible in (
+            (b'CPU : AVX = 1 | AVX2 = 1 | FMA = 1 |', True),
+            (b'CPU : AVX2 = 1 | AVX512 = 0 |', True),
+            (b'CPU : AVX = 1 |', False),
+            (b'CPU : AVX2 = 0 |', False),
+            (b'CPU : AVX2 = 1 | AVX512 = 1 |', False),
+            (b'CPU : AVX2 = 1 | AVX512_VBMI = 1 |', False),
+            (b'CPU : AVX2 = 1 | AVX512_VNNI = 1 |', False),
+            (b'CPU : AVX2 = 1 | AVX512_BF16 = 1 |', False),
+        ):
+            native, sherpa = Mock(), Mock()
+            native.llama_print_system_info.return_value = info
+            sherpa.VoiceActivityDetector.return_value.empty.return_value = True
+            with (
+                self.subTest(info=info),
+                patch.dict(sys.modules, {'llama_cpp': native, 'sherpa_onnx': sherpa}),
+                patch('backend.asr.load_model_catalog', return_value=catalog),
+                patch('builtins.print') as output,
+            ):
+                if compatible:
+                    main()
+                    output.assert_called_once_with(
+                        '{"asr": "sherpa-onnx", "vad": "passed", "llama": "passed"}'
+                    )
+                else:
+                    with self.assertRaisesRegex(RuntimeError, 'AVX2.*AVX512'):
+                        main()
+                    output.assert_not_called()
+
     def test_windows_requires_only_the_unified_worker(self):
         self.complete_models(self.root / 'bundled-models')
         binary = self.root / 'runtime' / 'brevia-worker' / 'brevia-worker.exe'

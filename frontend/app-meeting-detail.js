@@ -60,6 +60,8 @@ function applyBackendDetail(meeting) {
   if (!sameDetail) {
     uiData.detail.refineState = 'idle';
     uiData.detail.notesEditing = false;
+    uiData.detail.notesSaveState = 'saved';
+    uiData.detail.summarySaveState = 'saved';
     detailNotesEditor?.destroy();
     detailNotesEditor = null;
     inlineSummaryEditor?.destroy();
@@ -67,12 +69,27 @@ function applyBackendDetail(meeting) {
     uiData.detail.summaryDraft = undefined;
     uiData.detail.summaryEditing = false;
     uiData.detail.transcriptEditing = false;
+    uiData.detail.transcriptSaveState = 'saved';
+    uiData.detail.transcriptEditEntries = undefined;
+    uiData.detail.transcriptErrors = {};
     uiData.detail.transcriptDraft = {};
     detailActiveTab = 'notes';
+    uiData.detail.transcriptVersion = 'refined';
+    uiData.detail.transcriptSearch = '';
     uiData.detail.translationTarget = meeting.target_language || '';
   }
   const { revision, segments: ordered } = latestTranscriptSegments(meeting);
   const speakerNames = new Map(meeting.speakers.map((speaker) => [speaker.id, speaker.name]));
+  const original = meeting.segments?.filter((segment) => segment.version === 'live') || [];
+  uiData.detail.hasOriginalTranscript = original.length > 0 || revision === null;
+  if (!uiData.detail.hasOriginalTranscript) uiData.detail.transcriptVersion = 'refined';
+  uiData.detail.originalTranscript = (
+    original.length
+      ? original.sort((a, b) => a.start_ms - b.start_ms)
+      : revision === null
+        ? ordered
+        : []
+  ).map((segment) => renderSegmentData(segment, revision === null, speakerNames));
   uiData.detail.transcript = ordered.map((segment) =>
     renderSegmentData(segment, true, speakerNames),
   );
@@ -148,7 +165,8 @@ function applyBackendDetail(meeting) {
   }
   metaParts.push(`${Math.max(1, Math.round((meeting.duration_ms || 0) / 60000))} ${t('分钟')}`);
   metaParts.push(`${Number(meeting.speaker_count || 0)} ${t('位参与者')}`);
-  document.querySelector('#detail-meta').textContent = metaParts.join(' · ');
+  document.querySelector('#detail-meta').innerHTML =
+    `${metaParts.map((part, index) => `<span>${index === 1 ? interfaceIcon('clock') : index === 2 ? interfaceIcon('person') : ''}${escapeHtml(part)}</span>`).join('')}<span>${interfaceIcon('folder')}${escapeHtml(getWorkspaceName(meeting.workspace_id || ''))}</span>`;
   progress.max = Math.max(1, Math.ceil(meeting.duration_ms / 1000));
   if (!sameMeeting) {
     followPlaybackTranscript = true;
@@ -172,7 +190,8 @@ function applyBackendDetail(meeting) {
           playerAudio.src = url;
         })
         .catch((error) => {
-          if (currentMeetingDetail?.id === meeting.id) appActions.showToast(error.message);
+          if (currentMeetingDetail?.id === meeting.id)
+            appActions.showToast(error.message, undefined, 'error');
         });
   } else {
     progress.value = playerAudio.currentTime;

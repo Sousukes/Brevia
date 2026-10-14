@@ -304,6 +304,127 @@ const mainSource = (await readFile(new URL('./main.js', import.meta.url), 'utf8'
   /\r\n/g,
   '\n',
 );
+// 文件预选不会导入会议；重试和取消仍走原有后端调用边界。
+const importHandlers = new Map();
+const importRequests = [];
+let importDialogCount = 0;
+let importDialogResult = { canceled: false, filePaths: ['/tmp/picked.wav'] };
+let importSize = 64;
+let importIsFile = true;
+let importFails = false;
+runInNewContext(
+  mainSource.slice(
+    mainSource.indexOf('let selectedImportAudio = null;'),
+    mainSource.indexOf("handleIpc('meeting.audio'"),
+  ),
+  {
+    z,
+    path,
+    meetingStart: z.object({ title: z.string() }),
+    stat: async () => ({ size: importSize, isFile: () => importIsFile }),
+    dialog: {
+      showOpenDialog: async () => {
+        importDialogCount++;
+        return importDialogResult;
+      },
+    },
+    worker: {
+      request: async (method, value) => {
+        if (importFails) throw new Error('worker unavailable');
+        importRequests.push({ method, value });
+        return { id: 'imported' };
+      },
+    },
+    resetFloatingCaptionState: () => {},
+    handleIpc: (channel, handler) => importHandlers.set(channel, handler),
+  },
+);
+const selectImportAudio = (payload = {}) =>
+  importHandlers.get('meeting.select-audio')(null, payload);
+const importAudio = (payload) => importHandlers.get('meeting.import')(null, payload);
+const selectedAudio = await selectImportAudio();
+assert.equal(selectedAudio.path, '/tmp/picked.wav');
+assert.equal(selectedAudio.size, 64);
+assert.equal(importRequests.length, 0, '选择文件不能创建会议');
+for (const file of ['relative.wav', '/tmp/not-audio.pdf']) {
+  await assert.rejects(selectImportAudio({ path: file }), /Unsupported audio file/);
+}
+importSize = 0;
+await assert.rejects(selectImportAudio({ path: '/tmp/empty.wav' }), /Invalid audio file/);
+importSize = 64;
+importIsFile = false;
+await assert.rejects(selectImportAudio({ path: '/tmp/folder.wav' }), /Invalid audio file/);
+importIsFile = true;
+await selectImportAudio({ path: '/tmp/dropped.MP3' });
+importFails = true;
+await assert.rejects(
+  importAudio({ title: 'Meeting', path: '/tmp/dropped.MP3' }),
+  /worker unavailable/,
+);
+importFails = false;
+await importAudio({ title: 'Meeting', path: '/tmp/dropped.MP3' });
+assert.equal(importDialogCount, 1, '预选后重试不重复打开文件选择器');
+assert.equal(importRequests[0].method, 'meeting.import');
+assert.equal(importRequests[0].value.path, '/tmp/dropped.MP3');
+importDialogResult = { canceled: true, filePaths: [] };
+assert.equal(await selectImportAudio(), null);
+assert.equal(await importAudio({ title: 'Meeting', path: '/tmp/arbitrary.wav' }), null);
+assert.equal(importRequests.length, 1, '未预选路径和取消操作不能直接导入');
+// 批量导出逐项失败仍继续，成功文件与旧返回字段保持一致。
+const exportIds = [
+  '7b7d84f6-6f54-49d8-8c44-99f59cd98a01',
+  '7b7d84f6-6f54-49d8-8c44-99f59cd98a02',
+  '7b7d84f6-6f54-49d8-8c44-99f59cd98a03',
+];
+let batchExportHandler;
+let exportCanceled = false;
+const exportCopies = [];
+const exportPrepared = [];
+runInNewContext(
+  mainSource.slice(
+    mainSource.indexOf("handleIpc('meeting.export-many'"),
+    mainSource.indexOf("handleIpc('meeting.share'"),
+  ),
+  {
+    z,
+    path,
+    handleIpc: (_, handler) => {
+      batchExportHandler = handler;
+    },
+    dialog: { showOpenDialog: async () => ({ canceled: exportCanceled, filePaths: ['/exports'] }) },
+    existsSync: (file) =>
+      file === '/exports/transcript.md' ||
+      exportCopies.some(({ destination }) => destination === file),
+    prepareExport: async (payload) => {
+      exportPrepared.push(payload);
+      if (payload.meeting_id === exportIds[1]) throw new Error('recording unavailable');
+      return { path: '/source/transcript.md' };
+    },
+    copyFile: async (source, destination) => {
+      exportCopies.push({ source, destination });
+    },
+  },
+);
+const exportResult = JSON.parse(
+  JSON.stringify(await batchExportHandler(null, { meeting_ids: exportIds })),
+);
+assert.equal(exportPrepared.length, 3, '单项失败不阻止后续导出');
+assert.equal(exportResult.format, 'md');
+assert.deepEqual(exportResult.paths, ['/exports/transcript-2.md', '/exports/transcript-3.md']);
+assert.deepEqual(
+  exportResult.results.map(({ meeting_id, error }) => ({ meeting_id, error })),
+  exportIds.map((meeting_id, i) => ({
+    meeting_id,
+    error: i === 1 ? 'recording unavailable' : undefined,
+  })),
+);
+assert.equal(exportCopies.length, 2);
+exportCanceled = true;
+assert.equal(await batchExportHandler(null, { meeting_ids: exportIds }), null);
+assert.equal(exportPrepared.length, 3, '取消目录选择不进行导出');
+await assert.rejects(batchExportHandler(null, { meeting_ids: ['invalid'] }));
+await assert.rejects(batchExportHandler(null, { meeting_ids: Array(201).fill(exportIds[0]) }));
+
 const workerEventBlock = mainSource.slice(
   mainSource.indexOf('const workerEvent ='),
   mainSource.indexOf('const workerMessage ='),
@@ -1078,3 +1199,39 @@ console.log('Electron behavior tests passed');
     /requires macOS or Windows/,
   );
 }
+
+// 容量读取失败不能影响目录设置；已用空间与用户可用空间来自各自的系统计数。
+const diskHandlers = new Map();
+const diskContext = {
+  handleIpc: (channel, handler) => diskHandlers.set(channel, handler),
+  app: {
+    getPath: (name) => {
+      assert.equal(name, 'home');
+      return '/home';
+    },
+  },
+  statfs: async () => ({ blocks: 1000, bsize: 4096, bfree: 300, bavail: 270 }),
+  modelsDir: () => '/models',
+  recordingsDir: () => '/recordings',
+  process: { env: {} },
+};
+runInNewContext(
+  mainSource.slice(
+    mainSource.indexOf("handleIpc('storage.locations'"),
+    mainSource.indexOf("handleIpc('storage.choose-folder'"),
+  ),
+  diskContext,
+);
+const diskLocations = await diskHandlers.get('storage.locations')();
+assert.deepEqual(JSON.parse(JSON.stringify(diskLocations.disk)), {
+  total: 4096000,
+  used: 2867200,
+  free: 1105920,
+});
+diskContext.statfs = async () => {
+  throw new Error('unavailable');
+};
+const unavailableLocations = await diskHandlers.get('storage.locations')();
+assert.equal(unavailableLocations.disk, null);
+assert.equal(unavailableLocations.models, '/models');
+assert.equal(unavailableLocations.recordingsManaged, true);

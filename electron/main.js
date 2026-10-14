@@ -15,7 +15,16 @@ const {
   systemPreferences,
 } = require('electron');
 const { execFile, spawn } = require('node:child_process');
-const { appendFile, copyFile, mkdir, readFile, rm, writeFile } = require('node:fs/promises');
+const {
+  appendFile,
+  copyFile,
+  mkdir,
+  readFile,
+  rm,
+  stat,
+  statfs,
+  writeFile,
+} = require('node:fs/promises');
 const { existsSync } = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -62,7 +71,11 @@ function handleIpc(channel, callback) {
         !(
           page === mainPage ||
           (page === captionPage &&
-            ['floating-caption.close', 'floating-caption.move'].includes(channel))
+            [
+              'floating-caption.close',
+              'floating-caption.move',
+              'floating-caption.set-always-on-top',
+            ].includes(channel))
         )
       )
         throw new Error('Untrusted IPC sender');
@@ -1325,17 +1338,41 @@ function registerIpc() {
     resetFloatingCaptionState();
     return result;
   });
+  // 仅允许导入由文件选择器或真实拖入 File 选中的路径；选择阶段不创建会议。
+  let selectedImportAudio = null;
+  const audioImportFilters = [
+    { name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'aac', 'ogg'] },
+  ];
+  handleIpc('meeting.select-audio', async (_, payload) => {
+    const { path: dropped } = z.object({ path: z.string().max(4096).optional() }).parse(payload);
+    const result = dropped
+      ? { canceled: false, filePaths: [dropped] }
+      : await dialog.showOpenDialog({ properties: ['openFile'], filters: audioImportFilters });
+    if (result.canceled) return null;
+    const file = result.filePaths[0];
+    const extension = path.extname(file).slice(1).toLowerCase();
+    if (!path.isAbsolute(file) || !audioImportFilters[0].extensions.includes(extension))
+      throw new Error('Unsupported audio file');
+    const metadata = await stat(file);
+    if (!metadata.isFile() || metadata.size === 0) throw new Error('Invalid audio file');
+    selectedImportAudio = file;
+    return { path: file, name: path.basename(file), size: metadata.size };
+  });
   handleIpc('meeting.import', async (_, payload) => {
     const value = meetingStart.extend({ path: z.string().optional() }).parse(payload);
-    const selected = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac', 'aac', 'ogg'] }],
-    });
+    const selected =
+      selectedImportAudio && value.path === selectedImportAudio
+        ? { canceled: false, filePaths: [selectedImportAudio] }
+        : await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: audioImportFilters,
+          });
     if (selected.canceled) return null;
     const result = await worker.request('meeting.import', {
       ...value,
       path: selected.filePaths[0],
     });
+    selectedImportAudio = null;
     resetFloatingCaptionState();
     return result;
   });
@@ -1510,12 +1547,26 @@ function registerIpc() {
     const directory = partition === 'models' ? modelsDir() : recordingsDir();
     return shell.openPath(directory);
   });
-  handleIpc('storage.locations', () => ({
-    models: modelsDir(),
-    recordings: recordingsDir(),
-    modelsManaged: !process.env.BREVIA_MODELS_DIR,
-    recordingsManaged: !process.env.BREVIA_MEETINGS_DIR,
-  }));
+  handleIpc('storage.locations', async () => {
+    let disk = null;
+    try {
+      const stats = await statfs(app.getPath('home'));
+      disk = {
+        total: stats.blocks * stats.bsize,
+        used: (stats.blocks - stats.bfree) * stats.bsize,
+        free: stats.bavail * stats.bsize,
+      };
+    } catch {
+      // 系统统计不可用时，仍允许查看和更改文件夹。
+    }
+    return {
+      models: modelsDir(),
+      recordings: recordingsDir(),
+      modelsManaged: !process.env.BREVIA_MODELS_DIR,
+      recordingsManaged: !process.env.BREVIA_MEETINGS_DIR,
+      disk,
+    };
+  });
   handleIpc('storage.choose-folder', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory', 'createDirectory'],
@@ -1650,21 +1701,28 @@ function registerIpc() {
     });
     if (destination.canceled) return null;
     const paths = [];
+    const results = [];
     for (const meetingId of value.meeting_ids) {
-      const exported = await prepareExport({
-        meeting_id: meetingId,
-        content: value.format === 'wav' ? 'audio' : 'transcript',
-        format: value.format,
-        ...(value.filename_prefix ? { filename_prefix: value.filename_prefix } : {}),
-      });
-      const parsed = path.parse(exported.path);
-      let target = path.join(destination.filePaths[0], parsed.base);
-      for (let copy = 2; existsSync(target); copy += 1)
-        target = path.join(destination.filePaths[0], `${parsed.name}-${copy}${parsed.ext}`);
-      await copyFile(exported.path, target);
-      paths.push(target);
+      try {
+        const exported = await prepareExport({
+          meeting_id: meetingId,
+          content: value.format === 'wav' ? 'audio' : 'transcript',
+          format: value.format,
+          ...(value.filename_prefix ? { filename_prefix: value.filename_prefix } : {}),
+        });
+        const parsed = path.parse(exported.path);
+        let target = path.join(destination.filePaths[0], parsed.base);
+        for (let copy = 2; existsSync(target); copy += 1)
+          target = path.join(destination.filePaths[0], `${parsed.name}-${copy}${parsed.ext}`);
+        await copyFile(exported.path, target);
+        paths.push(target);
+        results.push({ meeting_id: meetingId, path: target });
+      } catch (error) {
+        results.push({ meeting_id: meetingId, error: String(error.message || error) });
+      }
     }
-    return { paths, format: value.format };
+    // 保留既有 paths/format，补充实际逐项结果，避免部分写入后误报整体成功。
+    return { paths, format: value.format, results };
   });
   handleIpc('meeting.share', async (_, payload) => {
     const exported = await worker.request('meeting.bundle', id.parse(payload));
@@ -2053,15 +2111,20 @@ async function installUpdate() {
 
 function createWindow() {
   const appUrl = pathToFileURL(path.join(packagedRoot, 'frontend', 'index.html')).href;
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const windowScale = Math.min((2 / 3) * 1.15, width / 1280, height / 800);
   const window = new BrowserWindow({
-    width: 1200,
-    height: 760,
-    minWidth: 880,
-    minHeight: 640,
+    width: Math.round(1280 * windowScale),
+    height: Math.round(800 * windowScale),
+    useContentSize: true,
+    minWidth: Math.round(880 * windowScale),
+    minHeight: Math.round(640 * windowScale),
     show: false,
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      // 窗口和内容在原2/3基础上同步放大15%，保留1280×800排版。
+      zoomFactor: windowScale,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -2097,6 +2160,8 @@ function createWindow() {
     window.webContents.send('brevia:event', { type: 'startup.ready' });
   };
   window.webContents.on('did-finish-load', () => {
+    // 旧用户目录保存的缩放会覆盖 webPreferences，加载后重新应用默认比例。
+    window.webContents.setZoomFactor(windowScale);
     pageReady = true;
     window.show();
     if (revealed) {
@@ -2372,11 +2437,15 @@ app.whenReady().then(async () => {
   } catch (error) {
     writeLog('ERROR', `mobile service: ${error.message}`);
   }
-  session.defaultSession.setPermissionCheckHandler(
-    (_, permission) => permission === 'media' || permission === 'display-capture',
-  );
-  session.defaultSession.setPermissionRequestHandler((_, permission, callback) =>
-    callback(permission === 'media' || permission === 'display-capture'),
+  const allowAppPermission = (contents, permission) =>
+    permission === 'media' ||
+    permission === 'display-capture' ||
+    (permission === 'fullscreen' &&
+      contents?.getURL().split(/[?#]/)[0] ===
+        pathToFileURL(path.join(packagedRoot, 'frontend', 'index.html')).href);
+  session.defaultSession.setPermissionCheckHandler(allowAppPermission);
+  session.defaultSession.setPermissionRequestHandler((contents, permission, callback) =>
+    callback(allowAppPermission(contents, permission)),
   );
   session.defaultSession.setDisplayMediaRequestHandler(
     createDisplayMediaHandler(desktopCapturer, writeLog),

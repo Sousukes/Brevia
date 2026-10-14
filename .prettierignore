@@ -12,3 +12,14 @@ mobile/build/
 mobile/.dart_tool/
 frontend/styles.css
 package-lock.json
+
+# 引导动效复用的第三方发行文件保留原始字节。
+frontend/assets/vendor/
+
+# 原型词条为同步脚本的生成快照。
+docs/redesign-2026-10-12/videos/onboarding-motion/assets/onboarding-copy.js
+
+# 五步共用轮播的设计预览由应用组件同步生成。
+docs/redesign-2026-10-12/videos/onboarding-motion/assets/onboarding-motion.js
+docs/redesign-2026-10-12/videos/onboarding-motion/assets/onboarding-motion.css
+docs/redesign-2026-10-12/videos/onboarding-motion/assets/onboarding-components.js

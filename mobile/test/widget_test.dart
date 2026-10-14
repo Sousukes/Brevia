@@ -15,9 +15,389 @@ import 'package:brevia_mobile/swipe_delete.dart';
 import 'package:brevia_mobile/app_model.dart';
 import 'package:brevia_mobile/storage.dart';
 import 'package:brevia_mobile/connection.dart';
+import 'package:brevia_mobile/onboarding.dart';
+import 'package:brevia_mobile/recording_controls.dart';
+import 'package:brevia_mobile/mobile_errors.dart';
 
 void main() {
   setUp(() => uiLanguage = 'zh');
+
+  test('only known local errors select recovery screens in every language', () {
+    for (final language in languageNames.keys) {
+      uiLanguage = language;
+      expect(
+        mobileErrorKind(StateError(tr('需要麦克风权限，请前往系统设置'))),
+        MobileErrorKind.microphone,
+      );
+      try {
+        DesktopConnection(
+          address: 'https://192.168.1.24',
+          fingerprint: '',
+        ).decodeResponse(403, {'error': '配对已过期或尝试过多，请在电脑重新开启配对'});
+        fail('pairing rejection must remain an error');
+      } on HttpException catch (error) {
+        expect(mobileErrorKind(error), MobileErrorKind.pairingUnavailable);
+      }
+    }
+    final full = FileSystemException(
+      'write failed',
+      '/saved/chunk',
+      OSError('No space left on device', 28),
+    );
+    expect(mobileErrorKind(full), MobileErrorKind.storageFull);
+    expect(
+      mobileErrorKind(tr('手机无法保存录音，请释放空间：{0}', [full])),
+      MobileErrorKind.storageFull,
+    );
+    expect(
+      mobileErrorKind(
+        FileSystemException(
+          'permission denied',
+          '/saved/chunk',
+          OSError('Permission denied', 13),
+        ),
+      ),
+      isNull,
+    );
+    expect(mobileErrorKind(HttpException('Remote failed, errno = 28')), isNull);
+  });
+
+  testWidgets(
+    'known microphone recovery and unknown errors preserve the caller',
+    (tester) async {
+      var openedSettings = 0;
+      const permissions = MethodChannel(
+        'flutter.baseflow.com/permissions/methods',
+      );
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        permissions,
+        (call) async {
+          if (call.method == 'openAppSettings') openedSettings++;
+          return true;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          permissions,
+          null,
+        ),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: breviaTheme(Brightness.light),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Column(
+                children: [
+                  TextButton(
+                    onPressed: () => report(context, () async {
+                      throw StateError(tr('需要麦克风权限，请前往系统设置'));
+                    }),
+                    child: Text('request'),
+                  ),
+                  TextButton(
+                    onPressed: () => report(context, () async {
+                      throw StateError('unexpected');
+                    }),
+                    child: Text('unknown'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('request'));
+      await tester.pumpAndSettle();
+      expect(find.byType(MobileRecoveryPage), findsOneWidget);
+      expect(find.text('前往设置'), findsOneWidget);
+      await tester.tap(find.text('前往设置'));
+      await tester.pump();
+      expect(openedSettings, 1);
+      await tester.tap(find.text('返回'));
+      await tester.pumpAndSettle();
+      expect(find.text('request'), findsOneWidget);
+      await tester.tap(find.text('unknown'));
+      await tester.pump();
+      expect(find.byType(MobileRecoveryPage), findsNothing);
+      expect(find.text('Bad state: unexpected'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'storage recovery keeps audio state and address cancellation keeps trust',
+    (tester) async {
+      final model = AppModel();
+      model.live = {
+        'id': 'stored',
+        'title': '保留录音',
+        'state': 'interrupted',
+        'samples': 32000,
+        'error': FileSystemException(
+          'write failed',
+          '/saved/chunk',
+          OSError('No space left on device', 28),
+        ).toString(),
+      };
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: breviaTheme(Brightness.light),
+          home: MeetingPage(model: model, id: 'stored'),
+        ),
+      );
+      await tester.pump();
+      expect(find.widgetWithText(FilledButton, '导出已有录音'), findsOneWidget);
+      await tester.tap(find.text('管理存储'));
+      await tester.pumpAndSettle();
+      expect(find.text('本地存储'), findsWidgets);
+      expect(model.live!['state'], 'interrupted');
+      expect(model.live!['samples'], 32000);
+      model.desktop = DesktopConnection(
+        address: 'https://192.168.1.24:43187',
+        fingerprint: 'trusted',
+        name: 'MacBook Pro',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          key: UniqueKey(),
+          theme: breviaTheme(Brightness.light),
+          home: Scaffold(body: ConnectionPage(model: model)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('更新电脑地址'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField),
+        'https://192.168.1.25:43187',
+      );
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+      expect(model.desktop!.address, 'https://192.168.1.24:43187');
+      expect(model.desktop!.fingerprint, 'trusted');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      model.dispose();
+    },
+  );
+
+  testWidgets(
+    'address update validates in place and help remains a separate route',
+    (tester) async {
+      final model = AppModel()
+        ..desktop = DesktopConnection(
+          address: 'https://192.168.1.24:43187',
+          fingerprint: 'trusted',
+          name: 'MacBook Pro',
+        );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: breviaTheme(Brightness.light),
+          home: Scaffold(body: ConnectionPage(model: model)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('更新电脑地址'));
+      await tester.pumpAndSettle();
+      expect(find.byType(UpdateComputerAddressPage), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
+      await tester.enterText(find.byType(TextField), 'http://8.8.8.8');
+      await tester.tap(find.text('保存并连接'));
+      await tester.pumpAndSettle();
+      expect(find.byType(UpdateComputerAddressPage), findsOneWidget);
+      expect(find.text('http://8.8.8.8'), findsOneWidget);
+      expect(model.desktop!.address, 'https://192.168.1.24:43187');
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('连接帮助'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.text('连接帮助'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('连接帮助'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ConnectionHelpPage), findsOneWidget);
+      expect(find.text('手机与电脑在同一局域网'), findsOneWidget);
+      expect(find.text('返回连接'), findsOneWidget);
+      await tester.tap(find.text('返回连接'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ConnectionPage), findsOneWidget);
+      expect(model.desktop!.fingerprint, 'trusted');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      model.dispose();
+    },
+  );
+
+  testWidgets(
+    'real reconnection shows upload recovery and returns to the transcript',
+    (tester) async {
+      final model = AppModel()..serviceRunning = true;
+      model.live = {
+        'id': 'live',
+        'title': '产品周会',
+        'state': 'recording',
+        'connected': false,
+        'localOnly': false,
+        'samples': 12096000,
+        'count': 100,
+        'uploaded': 20,
+        'snapshot': {
+          'segments': [
+            {'start_ms': 0, 'text': '保留的转写'},
+          ],
+        },
+      };
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: breviaTheme(Brightness.light),
+          home: MeetingPage(model: model, id: 'live'),
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(RecordingRecoveryPage), findsNothing);
+      model.live!['connected'] = true;
+      model.live!['uploaded'] = 62;
+      model.notifyListeners();
+      await tester.pump();
+      expect(find.byType(RecordingRecoveryPage), findsOneWidget);
+      expect(find.text('62%'), findsOneWidget);
+      expect(find.text('保留的转写'), findsNothing);
+      model.live!['uploaded'] = 100;
+      model.notifyListeners();
+      await tester.pump();
+      expect(find.text('100%'), findsOneWidget);
+      expect(find.text('音频已传输'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('返回录音'), 160);
+      await tester.ensureVisible(find.text('返回录音'));
+      await tester.tap(find.text('返回录音'));
+      await tester.pump();
+      expect(find.text('保留的转写'), findsOneWidget);
+      expect(find.byTooltip('结束'), findsOneWidget);
+      expect(model.live!['state'], 'recording');
+      model.notifyListeners();
+      await tester.pump();
+      expect(find.byType(RecordingRecoveryPage), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      model.dispose();
+    },
+  );
+
+  testWidgets('onboarding explains request timing and persists completion', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: breviaTheme(Brightness.light),
+        home: const OnboardingGate(child: Text('library-ready')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始使用'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('继续'));
+    await tester.pumpAndSettle();
+    for (final label in ['首次录音时申请。', '连接电脑时申请。', '首次扫码时申请。']) {
+      await tester.scrollUntilVisible(
+        find.text(label),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(label), findsOneWidget);
+    }
+    expect(find.text('允许'), findsNothing);
+    await tester.tap(find.text('我知道了'));
+    await tester.pumpAndSettle();
+    expect(find.text('library-ready'), findsOneWidget);
+    expect(
+      (await SharedPreferences.getInstance()).getBool('onboardingComplete'),
+      isTrue,
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      MaterialApp(home: const OnboardingGate(child: Text('returning-user'))),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('returning-user'), findsOneWidget);
+  });
+
+  testWidgets('recording commands are icon-only and blocked while pending', (
+    tester,
+  ) async {
+    var commands = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: breviaTheme(Brightness.light),
+        home: Scaffold(
+          body: RecordingControls(
+            paused: false,
+            pending: true,
+            onPause: () => commands++,
+            onMark: () => commands++,
+            onEnd: () => commands++,
+          ),
+        ),
+      ),
+    );
+    expect(find.text('暂停'), findsNothing);
+    for (final label in ['暂停', '重点', '结束']) {
+      await tester.tap(find.byTooltip(label));
+    }
+    expect(commands, 0);
+  });
+
+  testWidgets('local and interrupted recording keep recovery actions visible', (
+    tester,
+  ) async {
+    final model = AppModel()..serviceRunning = true;
+    model.live = {
+      'id': 'local',
+      'title': '本地会议',
+      'state': 'recording',
+      'localOnly': true,
+      'samples': 12096000,
+      'count': 24,
+      'uploaded': 12,
+      'snapshot': <String, dynamic>{},
+    };
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: breviaTheme(Brightness.light),
+        home: MeetingPage(model: model, id: 'local'),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('12:36'), findsOneWidget);
+    expect(find.text('转写'), findsNothing);
+    expect(find.byTooltip('重点'), findsOneWidget);
+    model.serviceRunning = false;
+    model.live!['state'] = 'paused';
+    model.notifyListeners();
+    await tester.pump();
+    expect(find.text('录音已中断'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '继续录音'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, '结束并保存'), findsOneWidget);
+    model.serviceRunning = true;
+    model.live!['localOnly'] = false;
+    model.live!['state'] = 'recording';
+    model.live!['connected'] = true;
+    model.notifyListeners();
+    await tester.pump();
+    expect(find.text('转写'), findsOneWidget);
+    expect(
+      tester
+          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+          .value,
+      .5,
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    model.dispose();
+  });
 
   testWidgets(
     'transcription activity stops for inactive states and reduced motion',
@@ -162,7 +542,7 @@ void main() {
       model.notifyListeners();
       await tester.pump();
       expect(find.text('Partial transcript'), findsOneWidget);
-      expect(find.textContaining('发言人'), findsOneWidget);
+      expect(find.textContaining('发言人'), findsNothing);
       expect(dots, findsNWidgets(3));
       await tester.tap(find.text('笔记'));
       await tester.pump(const Duration(milliseconds: 300));
@@ -396,36 +776,47 @@ void main() {
     },
   );
 
-  testWidgets('end saves directly and ignores repeated taps while saving', (
-    tester,
-  ) async {
-    final model = EndModel()
-      ..live = {
-        'id': 'live',
-        'title': 'Meeting',
-        'state': 'recording',
-        'samples': 16000,
-        'localOnly': true,
-      };
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: breviaTheme(Brightness.light),
-        home: MeetingPage(model: model, id: 'live'),
-      ),
-    );
-    await tester.pump();
-    await tester.tap(find.text('结束'));
-    await tester.pump();
-    expect(model.ends, 1);
-    expect(find.byType(BottomSheet), findsNothing);
-    await tester.tap(find.text('结束'));
-    expect(model.ends, 1);
-    model.saved.complete();
-    await tester.pumpAndSettle();
-    expect(find.byType(SavedMeetingPage), findsOneWidget);
-    expect(find.text('录音已结束'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'end confirmation preserves recording and blocks repeated saves',
+    (tester) async {
+      final model = EndModel()
+        ..serviceRunning = true
+        ..live = {
+          'id': 'live',
+          'title': 'Meeting',
+          'state': 'recording',
+          'samples': 16000,
+          'localOnly': true,
+        };
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: breviaTheme(Brightness.light),
+          home: MeetingPage(model: model, id: 'live'),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.byTooltip('结束'));
+      await tester.pumpAndSettle();
+      expect(model.ends, 0);
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await tester.tap(find.text('继续录音'));
+      await tester.pumpAndSettle();
+      expect(model.ends, 0);
+      await tester.tap(find.byTooltip('结束'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('结束并保存'));
+      await tester.pumpAndSettle();
+      expect(model.ends, 1);
+      expect(find.byType(BottomSheet), findsNothing);
+      await tester.tap(find.byTooltip('结束'));
+      expect(model.ends, 1);
+      model.saved.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(SavedMeetingPage), findsOneWidget);
+      expect(find.text('录音已结束'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   test(
     'remote stop stops capture before final upload acknowledgement',
@@ -673,13 +1064,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('会议语言'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('录音选项'),
+        find.text('工作区'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('录音选项'));
-      await tester.pumpAndSettle();
       expect(find.text('工作区'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('识别模型'),
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('识别模型'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.scrollUntilVisible(
@@ -758,7 +1152,8 @@ void main() {
       ),
     );
     await tester.pump(Duration(milliseconds: 300));
-    expect(find.text('暂停'), findsOneWidget);
+    expect(find.byTooltip('暂停'), findsOneWidget);
+    expect(find.text('暂停'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('笔记'));
     await tester.pump(Duration(milliseconds: 300));

@@ -1,0 +1,9 @@
+{
+  "duration": 9,
+  "assertions": [
+    { "kind": "appearsBy", "selector": "#line-one", "bySec": 3.4 },
+    { "kind": "appearsBy", "selector": "#points", "bySec": 6.3 },
+    { "kind": "before", "a": "#line-one", "b": "#points" },
+    { "kind": "staysInFrame", "selector": "#canvas" }
+  ]
+}
