@@ -2495,7 +2495,8 @@ class WorkerTest(unittest.TestCase):
             )
             sent = request.call_args.args[0]
             self.assertEqual(json.loads(sent.data)["response_format"], {"type": "json_object"})
-            self.assertEqual(json.loads(sent.data)["tool_choice"], "none")
+            # 不发送 tool_choice：缺少 tools 时该字段会被部分兼容网关判为 400。
+            self.assertNotIn("tool_choice", json.loads(sent.data))
             self.assertEqual(dict(sent.header_items())["Authorization"], "Bearer token")
             self.assertEqual(dict(sent.header_items())["User-agent"], "Brevia/1.0")
         with patch(
@@ -2549,6 +2550,153 @@ class WorkerTest(unittest.TestCase):
                 "custom",
             )
             self.assertNotIn("Authorization", dict(request.call_args.args[0].header_items()))
+
+    def test_llm_client_completes_bare_openai_endpoint_path(self):
+        """只填站点根地址也必须能调用：自动补 ``/v1/chat/completions``。
+
+        这正是「保存没问题、一用就报错」的根因：OpenAI 兼容格式此前原样发送 endpoint，
+        用户填 ``https://api.chatanywhere.tech`` 就会 POST 到站点根路径并拿到 404。
+        """
+
+        class Response:
+            def __init__(self, data):
+                self.data = json.dumps(data).encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self):
+                return self.data
+
+        def call(endpoint):
+            with patch(
+                "backend.llm_client._HTTP_OPENER.open",
+                return_value=Response({"choices": [{"message": {"content": "ok"}}]}),
+            ) as request:
+                self.assertEqual(complete({"endpoint": endpoint, "model": "gpt-4o"}, "hi"), "ok")
+                return request.call_args.args[0].full_url
+
+        self.assertEqual(
+            call("https://api.chatanywhere.tech"),
+            "https://api.chatanywhere.tech/v1/chat/completions",
+        )
+        self.assertEqual(
+            call("https://api.chatanywhere.tech/v1"),
+            "https://api.chatanywhere.tech/v1/chat/completions",
+        )
+        # 已带完整路径的地址保持不变（含 Azure 这类自定义部署路径）。
+        self.assertEqual(
+            call("https://gateway.test/v1/chat/completions"),
+            "https://gateway.test/v1/chat/completions",
+        )
+        self.assertEqual(
+            call("https://res.openai.azure.com/openai/deployments/d/chat/completions"),
+            "https://res.openai.azure.com/openai/deployments/d/chat/completions",
+        )
+
+    def test_llm_client_retries_with_lowercase_model_once(self):
+        """模型名大小写不兼容时用小写重试一次；模型名本已小写则不额外发请求。"""
+
+        class Response:
+            def __init__(self, data):
+                self.data = json.dumps(data).encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self):
+                return self.data
+
+        def model_missing():
+            return urllib.error.HTTPError(
+                "https://api.test/v1/chat/completions",
+                404,
+                "Not Found",
+                {},
+                io.BytesIO(
+                    b'{"error":{"message":"The model is not supported or the model does not exist"}}'
+                ),
+            )
+
+        with patch(
+            "backend.llm_client._HTTP_OPENER.open",
+            side_effect=[model_missing(), Response({"choices": [{"message": {"content": "ok"}}]})],
+        ) as request:
+            self.assertEqual(
+                complete({"endpoint": "https://api.test", "model": "GPT-4o"}, "hi"), "ok"
+            )
+            self.assertEqual(request.call_count, 2)
+            self.assertEqual(json.loads(request.call_args.args[0].data)["model"], "gpt-4o")
+
+        def raise_model_missing(*_args, **_kwargs):
+            raise model_missing()
+
+        with patch(
+            "backend.llm_client._HTTP_OPENER.open", side_effect=raise_model_missing
+        ) as request:
+            with self.assertRaisesRegex(ValueError, r"LLM request failed \(404\)"):
+                complete({"endpoint": "https://api.test", "model": "gpt-4o"}, "hi")
+            self.assertEqual(request.call_count, 1)
+
+    def test_llm_client_retries_common_model_missing_errors(self):
+        for status in (400, 404):
+            for message in ("model_not_found", "Unknown model GPT-4o", "No such model: GPT-4o"):
+                with self.subTest(status=status, message=message):
+                    error = ValueError(
+                        f"LLM request failed ({status}): {json.dumps({'error': {'message': message}})}"
+                    )
+                    with patch(
+                        "backend.llm_client._post", side_effect=[error, {"output_text": "ok"}]
+                    ) as post:
+                        self.assertEqual(
+                            complete({"endpoint": "https://api.test", "model": "GPT-4o"}, "hi"),
+                            "ok",
+                        )
+                        self.assertEqual(post.call_count, 2)
+                        self.assertEqual(post.call_args_list[0].args[1]["model"], "GPT-4o")
+                        self.assertEqual(post.call_args_list[1].args[1]["model"], "gpt-4o")
+
+    def test_llm_client_preserves_original_error_when_lowercase_retry_fails(self):
+        original = ValueError("LLM request failed (404): model does not exist")
+        for retry_error in (
+            "LLM request failed: timed out",
+            "LLM request failed (404): lowercase model also missing",
+        ):
+            with self.subTest(retry_error=retry_error):
+                with patch(
+                    "backend.llm_client._post", side_effect=[original, ValueError(retry_error)]
+                ) as post:
+                    with self.assertRaises(ValueError) as raised:
+                        complete({"endpoint": "https://api.test", "model": "GPT-4o"}, "hi")
+                    self.assertIs(raised.exception, original)
+                    self.assertEqual(post.call_count, 2)
+
+    def test_llm_client_does_not_retry_unrelated_errors_or_claude_models(self):
+        for status, message, model, api_format in (
+            (401, "Unknown model GPT-4o", "GPT-4o", "openai"),
+            (403, "Unknown model GPT-4o", "GPT-4o", "openai"),
+            (429, "Unknown model GPT-4o", "GPT-4o", "openai"),
+            (400, "Invalid response_format", "GPT-4o", "openai"),
+            (404, "Unknown model gpt-4o", "gpt-4o", "openai"),
+            (404, "Unknown model Claude", "Claude", "claude"),
+            (404, "Unknown model Claude", "Claude", "anthropic"),
+        ):
+            with self.subTest(status=status, model=model, api_format=api_format):
+                error = ValueError(f"LLM request failed ({status}): {message}")
+                with patch("backend.llm_client._post", side_effect=error) as post:
+                    with self.assertRaises(ValueError) as raised:
+                        complete(
+                            {"endpoint": "https://api.test", "model": model, "format": api_format},
+                            "hi",
+                        )
+                    self.assertIs(raised.exception, error)
+                    self.assertEqual(post.call_count, 1)
 
     def test_live_text_removes_model_markers_and_repeating_tail(self):
         self.assertEqual(

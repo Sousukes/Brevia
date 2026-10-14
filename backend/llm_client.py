@@ -5,6 +5,7 @@
 """
 
 import json
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -37,16 +38,78 @@ class _SameOriginRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 _HTTP_OPENER = urllib.request.build_opener(_SameOriginRedirectHandler())
 
+# 部分 OpenAI 兼容中转站对模型名大小写敏感（要求全小写），而官网/文档常把模型展示成
+# ``GPT-4o``。仅当首次请求已因「模型不存在」失败时才做一次小写重试，正常配置不受影响。
+_MODEL_MISSING_HINT = re.compile(
+    r"model.{0,80}?(?:not\s+(?:found|supported|exist)|does\s+not\s+exist|unsupported|unknown)"
+    r"|\bmodel_not_found\b|(?:unknown|no\s+such)\s+model\b"
+    r"|模型.{0,20}?(?:不存在|不支持)",
+    re.IGNORECASE,
+)
+
+
+def _openai_endpoint(endpoint):
+    """把 OpenAI 兼容地址补成可直接 POST 的完整路径。
+
+    用户常只填站点根地址（如 ``https://api.chatanywhere.tech``），而 OpenAI 兼容接口的
+    实际路径是 ``/v1/chat/completions``。此前只有 Claude 格式会自动补路径，OpenAI 格式
+    原样发送，于是裸域名保存时通过校验、调用时才 404——典型「保存没问题、一用就报错」。
+    这里补齐最常见的几种写法；已带完整路径的地址（含 Azure 的
+    ``/openai/deployments/...``）不受影响。
+    """
+    parts = urllib.parse.urlsplit(endpoint)
+    if parts.path.rstrip("/") in ("", "/v1", "/v1/chat"):
+        return urllib.parse.urlunsplit(
+            (parts.scheme, parts.netloc, "/v1/chat/completions", parts.query, "")
+        )
+    return endpoint
+
+
+def _lowercase_model_retry(error, body, api_format):
+    """判断是否值得把模型名转小写后重试一次；不值得则返回 ``None``。"""
+    if api_format in {"anthropic", "claude"}:
+        return None
+    model = str(body.get("model") or "")
+    lowered = model.lower()
+    if not model or lowered == model:
+        return None
+    text = str(error)
+    if not re.search(r"LLM request failed \((400|404)\)", text):
+        return None
+    if not _MODEL_MISSING_HINT.search(text):
+        return None
+    return lowered
+
+
+def _post(endpoint, body, headers, timeout_seconds):
+    """POST 一个 JSON 请求体并解析 JSON 响应；失败统一抛可读的 ``ValueError``。"""
+    try:
+        # Request 构造也放进 try：endpoint 非法（如缺 scheme）会在这里抛 ValueError，
+        # 统一包装成可读的 "LLM request failed"，而不是把裸异常抛给上层。
+        request = urllib.request.Request(
+            endpoint, json.dumps(body).encode(), headers=headers, method="POST"
+        )
+        with _HTTP_OPENER.open(request, timeout=timeout_seconds) as response:
+            return json.loads(response.read())
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", "replace")
+        raise ValueError(f"LLM request failed ({error.code}): {detail}") from error
+    except (urllib.error.URLError, OSError, ValueError) as error:
+        raise ValueError(f"LLM request failed: {error}") from error
+
 
 def complete(payload, prompt, json_mode=False):
     """调用 OpenAI/Claude 兼容端点并提取常见的文本字段。"""
     api_format = (payload.get("format") or "openai").lower()
     endpoint = payload["endpoint"].rstrip("/")
+    # 不发送 tool_choice：本模块从不发送 tools，而部分 OpenAI 兼容网关（如
+    # api.chatanywhere.tech）在缺少 tools 时会直接拒绝该字段并返回 400
+    # "tool_choice is only allowed when 'tools' are specified"。既然没有工具可用，
+    # 模型也不会发起工具调用；若真返回了 tool_calls，下方解析会显式报错。
     body = {
         "model": payload["model"],
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
-        "tool_choice": "none",
     }
     if json_mode:
         body["response_format"] = {"type": "json_object"}
@@ -66,8 +129,12 @@ def complete(payload, prompt, json_mode=False):
                     "x-api-key": payload["api_key"],
                 }
             )
-    elif payload.get("api_key"):
-        headers["Authorization"] = f"Bearer {payload['api_key']}"
+    else:
+        # OpenAI 兼容格式：把裸域名 / 半截路径补成 /v1/chat/completions，避免用户只填
+        # 站点根地址时保存通过、调用 404。
+        endpoint = _openai_endpoint(endpoint)
+        if payload.get("api_key"):
+            headers["Authorization"] = f"Bearer {payload['api_key']}"
     # timeout 允许缺省；显式传 null 或非法值时回落到设置里的默认秒数，而不是抛 TypeError。
     timeout = payload.get("timeout")
     try:
@@ -77,18 +144,18 @@ def complete(payload, prompt, json_mode=False):
     except (TypeError, ValueError):
         timeout_seconds = int(SETTINGS["llm"]["timeout_seconds"])
     try:
-        # Request 构造也放进 try：endpoint 非法（如缺 scheme）会在这里抛 ValueError，
-        # 统一包装成可读的 "LLM request failed"，而不是把裸异常抛给上层。
-        request = urllib.request.Request(
-            endpoint, json.dumps(body).encode(), headers=headers, method="POST"
-        )
-        with _HTTP_OPENER.open(request, timeout=timeout_seconds) as response:
-            data = json.loads(response.read())
-    except urllib.error.HTTPError as error:
-        detail = error.read().decode("utf-8", "replace")
-        raise ValueError(f"LLM request failed ({error.code}): {detail}") from error
-    except (urllib.error.URLError, OSError, ValueError) as error:
-        raise ValueError(f"LLM request failed: {error}") from error
+        data = _post(endpoint, body, headers, timeout_seconds)
+    except ValueError as error:
+        lowered = _lowercase_model_retry(error, body, api_format)
+        if lowered is None:
+            raise
+        # 兼容性兜底：部分中转站要求模型名全小写。只在首次已因「模型不存在」失败时重试
+        # 一次，不改动正常配置；重试仍失败则抛回原始错误，不掩盖真正的问题。
+        body = {**body, "model": lowered}
+        try:
+            data = _post(endpoint, body, headers, timeout_seconds)
+        except ValueError:
+            raise error from None
     content = data.get("message", {}).get("content")
     if content is None and data.get("choices"):
         message = data["choices"][0].get("message", {})

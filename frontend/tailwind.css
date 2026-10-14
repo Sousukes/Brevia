@@ -3162,7 +3162,7 @@
     margin: 0;
     border: 1px solid #cfc9c0;
     border-radius: 999px;
-    background: #e6e2d8;
+    background: #eaeaea;
     transition: background 0.2s ease;
   }
   .onboarding-ai-switch input::after {
@@ -3176,8 +3176,8 @@
     transition: transform 0.2s ease;
   }
   .onboarding-ai-switch input:checked {
-    border-color: #26221e;
-    background: #26221e;
+    border-color: #222222;
+    background: #222222;
   }
   .onboarding-ai-switch input:checked::after {
     transform: translateX(16px);
@@ -4821,6 +4821,13 @@ html[data-theme="dark"] input[type="checkbox"] {
 html[data-theme="dark"] input[type="checkbox"]:checked {
   background-color: #eee;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 8 2.7 2.7L12.5 4.5' fill='none' stroke='%23111' stroke-width='1.75' stroke-linecap='square'/%3E%3C/svg%3E");
+}
+/* 开关只用圆钮表达状态，避免继承普通勾选框的对勾；深色圆钮与浅色轨道保持对比。 */
+html[data-theme="dark"] .onboarding-ai-switch input[type="checkbox"]:checked {
+  background-image: none;
+}
+html[data-theme="dark"] .onboarding-ai-switch input[type="checkbox"]:checked::after {
+  background: var(--color-text-inverse);
 }
 html[data-theme="dark"] .language-options button {
   color: #ddd;
