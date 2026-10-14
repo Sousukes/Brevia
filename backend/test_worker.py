@@ -2576,9 +2576,7 @@ class WorkerTest(unittest.TestCase):
                 "backend.llm_client._HTTP_OPENER.open",
                 return_value=Response({"choices": [{"message": {"content": "ok"}}]}),
             ) as request:
-                self.assertEqual(
-                    complete({"endpoint": endpoint, "model": "gpt-4o"}, "hi"), "ok"
-                )
+                self.assertEqual(complete({"endpoint": endpoint, "model": "gpt-4o"}, "hi"), "ok")
                 return request.call_args.args[0].full_url
 
         self.assertEqual(
