@@ -1515,6 +1515,7 @@ class _MeetingPageState extends State<MeetingPage> {
 
   bool ending = false;
   bool recordingCommandPending = false;
+  Object? dismissedRecoveryError;
 
   Future<void> toggleRecording() async {
     if (recordingCommandPending || ending) return;
@@ -1809,8 +1810,11 @@ class _MeetingPageState extends State<MeetingPage> {
           Theme.of(context).brightness == Brightness.dark;
       final underlineTabs = ended || darkRecording;
       final localErrorKind = mobileErrorKind(m['error'] ?? '');
-      if (localErrorKind == MobileErrorKind.storageFull ||
-          localErrorKind == MobileErrorKind.microphone) {
+      if (m['error'] == null) dismissedRecoveryError = null;
+      if (!ended &&
+          m['error'] != dismissedRecoveryError &&
+          (localErrorKind == MobileErrorKind.storageFull ||
+              localErrorKind == MobileErrorKind.microphone)) {
         return MobileRecoveryPage(
           kind: localErrorKind!,
           savedSamples: localErrorKind == MobileErrorKind.storageFull
@@ -1830,6 +1834,7 @@ class _MeetingPageState extends State<MeetingPage> {
                   (m['samples'] as num? ?? 0) > 0
               ? () => SettingsPage(model: widget.model).storagePage(context)
               : null,
+          onReturn: () => setState(() => dismissedRecoveryError = m['error']),
         );
       }
       if (!ended && m['localOnly'] != true) {

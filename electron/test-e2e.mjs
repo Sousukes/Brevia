@@ -1055,6 +1055,45 @@ try {
     'Esc未关闭升级浮窗、保存已读或恢复交互',
   );
   await client.send('Emulation.clearDeviceMetricsOverride');
+  const settingsNavigation = await client.send('Runtime.evaluate', {
+    expression: `(async () => {
+      closeModal();await new Promise(resolve=>setTimeout(resolve,250));
+      await showView('settings');
+      const errors=[];
+      for(let attempt=0;attempt<2;attempt++) {
+        const pending=openModal('advanced-settings');
+        await openModal('models');
+        await pending;
+        if(activeModal!=='models')errors.push('late settings replaced model library');
+      }
+      closeModal();await new Promise(resolve=>setTimeout(resolve,250));
+      const dismissed=openModal('advanced-settings');
+      closeModal();await dismissed;
+      if(!settingsModal.hidden)errors.push('closed settings reopened');
+      const confirmed=openModal('advanced-settings');
+      openConfirmation(t('删除'),t('此操作不可恢复。'),()=>{});
+      await confirmed;
+      if(activeModal!=='confirmation')errors.push('late settings replaced confirmation');
+      closeModal();await new Promise(resolve=>setTimeout(resolve,250));
+      const leaving=openModal('advanced-settings');
+      await showView('home');await leaving;
+      if(!settingsModal.hidden||document.querySelector('.app-shell').inert)errors.push('late settings blocked home');
+      const previous=locale;
+      for(const code of ['zh','en','es','ja','ko','fr','de','ru']) {
+        applyLanguage(code);
+        if(document.querySelector('.settings-description').textContent.trim()!==t('管理 Brevia 的使用偏好、AI 能力与数据设置。'))errors.push('untranslated settings description: '+code);
+      }
+      applyLanguage(previous);
+      return errors;
+    })()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  check(
+    Array.isArray(settingsNavigation.result?.value) && !settingsNavigation.result.value.length,
+    '设置导航竞态或静态说明翻译：' +
+      JSON.stringify(settingsNavigation.result?.value || settingsNavigation.exceptionDetails),
+  );
   const mergedAiSettings = await client.send('Runtime.evaluate', {
     expression: `(async () => {
     const settled = async predicate => {

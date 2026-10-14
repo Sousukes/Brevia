@@ -36,12 +36,14 @@ class MobileRecoveryPage extends StatelessWidget {
   final MobileErrorKind kind;
   final VoidCallback onPrimary;
   final VoidCallback? onSecondary;
+  final VoidCallback? onReturn;
   final num savedSamples;
   const MobileRecoveryPage({
     super.key,
     required this.kind,
     required this.onPrimary,
     this.onSecondary,
+    this.onReturn,
     this.savedSamples = 0,
   });
 
@@ -72,7 +74,9 @@ class MobileRecoveryPage extends StatelessWidget {
       ),
     };
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        leading: onReturn == null ? null : BackButton(onPressed: onReturn),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -144,9 +148,22 @@ class MobileRecoveryPage extends StatelessWidget {
               FilledButton(onPressed: onPrimary, child: Text(tr(primary))),
               SizedBox(height: 12),
               OutlinedButton(
-                onPressed: onSecondary ?? () => Navigator.maybePop(context),
-                child: Text(tr(secondary)),
+                onPressed:
+                    onSecondary ??
+                    onReturn ??
+                    () => Navigator.maybePop(context),
+                child: Text(
+                  tr(
+                    onSecondary == null && onReturn != null
+                        ? '返回录音'
+                        : secondary,
+                  ),
+                ),
               ),
+              if (onReturn != null && onSecondary != null) ...[
+                SizedBox(height: 12),
+                TextButton(onPressed: onReturn, child: Text(tr('返回录音'))),
+              ],
             ],
           ),
         ),

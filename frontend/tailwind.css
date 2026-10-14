@@ -3179,12 +3179,6 @@
   html[data-theme="dark"] .summary-enabled-control {
     color: #fff;
   }
-  .model-library-tags.recommend-tags {
-    display: inline-flex;
-    margin-left: 8px;
-    vertical-align: 2px;
-  }
-
   .onboarding-ai-setup-page {
     gap: 18px;
   }

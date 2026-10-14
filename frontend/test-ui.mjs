@@ -4791,6 +4791,7 @@ const viewA = viewNode('a-view'),
 let visibleView = viewA;
 const navigationContext = {
   pageTransition: null,
+  modalRequestRevision: 0,
   activeView: 'a',
   settingsModal: { hidden: true },
   onboardingPage: undefined,
@@ -5334,11 +5335,24 @@ assert.doesNotMatch(diskUsageContext.renderSystemDiskUsage(), /progressbar/);
 const storageUsageLabels = { children: [{ textContent: '' }, { textContent: '' }] };
 const storageSizeLabels = [{ textContent: '' }, { textContent: '' }];
 const storageClearCalls = [];
+const storagePlaybackEvents = [];
 const storageClearToasts = [];
 let storageClearAction;
 let storageClearFailure = false;
 let storageFolderRefreshes = 0;
 const storageClearContext = {
+  currentMeetingDetail: { id: 'cleared' },
+  breviaClient: { state: { selectedMeetingId: 'cleared' } },
+  meetingCacheKey: 'brevia-meetings-v1',
+  localStorage: { removeItem: (key) => storagePlaybackEvents.push(`forget:${key}`) },
+  playbackStarted: true,
+  playerAudio: {
+    pause: () => storagePlaybackEvents.push('pause'),
+    removeAttribute: (name) => storagePlaybackEvents.push(`remove:${name}`),
+    load: () => storagePlaybackEvents.push('load'),
+  },
+  renderMiniPlayback: () => storagePlaybackEvents.push('mini'),
+  refreshBackendMeetings: async () => storagePlaybackEvents.push('refresh'),
   storageUsage: { meetings: 100, models: 200 },
   locale: 'zh',
   modalCopy: {
@@ -5363,6 +5377,7 @@ const storageClearContext = {
     brevia: {
       storage: {
         clear: async ({ partition }) => {
+          storagePlaybackEvents.push(`clear:${partition}`);
           storageClearCalls.push(partition);
           if (storageClearFailure) throw Error('清空失败');
           return { ...storageClearContext.storageUsage, [partition]: 0 };
@@ -5390,6 +5405,19 @@ for (const partition of ['meetings', 'models']) {
   assert.equal(storageClearContext.storageUsage[partition], 0);
 }
 assert.deepEqual(storageClearCalls, ['meetings', 'models']);
+assert.deepEqual(storagePlaybackEvents, [
+  'pause',
+  'remove:src',
+  'load',
+  'mini',
+  'clear:meetings',
+  'forget:brevia-meetings-v1',
+  'refresh',
+  'clear:models',
+]);
+assert.equal(storageClearContext.playbackStarted, false);
+assert.equal(storageClearContext.currentMeetingDetail, null);
+assert.equal(storageClearContext.breviaClient.state.selectedMeetingId, null);
 assert.equal(storageUsageLabels.children[0].textContent, 'Brevia · 0 B');
 assert.equal(storageUsageLabels.children[1].textContent, '会议 · 0 B　模型 · 0 B');
 assert.deepEqual(

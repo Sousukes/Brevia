@@ -3070,9 +3070,11 @@ function showSettingsModal(focusSelector) {
 /** Opens and focuses a settings modal. @param {'models'|'storage'|'summary-model'} kind Requested modal. @returns {void} */
 let modalDismissTimer;
 let modalReturnFocus;
+let modalRequestRevision = 0;
 let confirmationAction;
 let storageConfirmationPage;
 function openConfirmation(title, detail, action, anchor) {
+  modalRequestRevision += 1;
   clearTimeout(modalDismissTimer);
   closeMeetingMenus();
   if (activeModal === 'storage' && settingsModal.classList.contains('settings-page')) {
@@ -3111,6 +3113,8 @@ function openConfirmation(title, detail, action, anchor) {
     ]);
 }
 async function openModal(kind) {
+  const revision = ++modalRequestRevision;
+  const previousModal = activeModal;
   if (kind === 'ai-features') kind = 'summary-model';
   const same =
     activeModal === kind &&
@@ -3126,9 +3130,11 @@ async function openModal(kind) {
         window.brevia?.advancedSettings.get(),
         window.brevia?.permissions.status().catch(() => undefined),
       ]);
+      if (revision !== modalRequestRevision) return;
       advancedSettings = settings || { settings: {}, defaults: {} };
       permissionStatus = status;
     } catch (error) {
+      if (revision !== modalRequestRevision) return;
       showToast(error.message, undefined, 'error');
       return;
     }
@@ -3138,14 +3144,15 @@ async function openModal(kind) {
       speakerProfiles.find((item) => item.id === expandedSpeakerProfileId) || speakerProfiles[0];
     expandedSpeakerProfileId = profile.id;
     try {
-      speakerSamples.set(
-        profile.id,
-        await window.brevia.speakerProfile.samples({ profile_id: profile.id }),
-      );
+      const samples = await window.brevia.speakerProfile.samples({ profile_id: profile.id });
+      if (revision !== modalRequestRevision) return;
+      speakerSamples.set(profile.id, samples);
     } catch (error) {
+      if (revision !== modalRequestRevision) return;
       showToast(error.message, undefined, 'error');
     }
   }
+  if (revision !== modalRequestRevision || activeModal !== previousModal) return;
   activeModal = kind;
   renderModal(kind);
   const focusTarget =
@@ -3187,6 +3194,7 @@ function refreshPermissionSettings() {
 }
 /** 关闭活动的设置模态框并恢复页面滚动。@returns {void} */
 function closeModal() {
+  modalRequestRevision += 1;
   if (settingsModal.hidden) return;
   if (storageConfirmationPage) {
     clearTimeout(modalDismissTimer);
@@ -3318,6 +3326,7 @@ function renderOnboardingSummaryDemo() {
 function openOnboardingLanguage(
   initialLocale = onboardingSelectedLocale || window.BreviaOnboarding.systemLocale(),
 ) {
+  modalRequestRevision += 1;
   activeModal = undefined;
   onboardingPreviewLocale = undefined;
   const choices = [
@@ -4390,7 +4399,24 @@ settingsModal.addEventListener('click', async (event) => {
       t('此操作不可恢复。'),
       async () => {
         try {
+          if (partition === 'meetings') {
+            playerAudio.pause();
+            playerAudio.removeAttribute('src');
+            playerAudio.load();
+            playbackStarted = false;
+            renderMiniPlayback();
+          }
           storageUsage = await window.brevia?.storage.clear({ partition });
+          if (partition === 'meetings') {
+            currentMeetingDetail = null;
+            if (breviaClient) breviaClient.state.selectedMeetingId = null;
+            try {
+              localStorage.removeItem(meetingCacheKey);
+            } catch {
+              /* 浏览器存储不可用时，仍以后端列表为准。 */
+            }
+            await refreshBackendMeetings();
+          }
           updateStorageUsage();
           void refreshSettingsFolderRows();
           showToast(t('已清空'), undefined, 'success');
@@ -5409,6 +5435,7 @@ async function transitionPage(current, next, swap = () => {}) {
     if (previous) await previous.catch(() => {});
     // 所有导航入口共用退出逻辑，会议库切换也必须清除设置页遮罩。
     if (next.id !== 'settings-view') {
+      modalRequestRevision += 1;
       if (!settingsModal.hidden && settingsModal.classList.contains('settings-page')) {
         closeModal();
         clearTimeout(modalDismissTimer);

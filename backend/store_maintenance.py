@@ -124,16 +124,17 @@ class MaintenanceStoreMixin:
         if partition == "meetings":
             for path in (self.root / 'mobile').glob('*/session.json'):
                 self.purge_mobile_recording(path.parent.name)
+            # 文件删除失败时保留索引，让残留录音仍可查看或重试清理。
+            shutil.rmtree(self.meetings_dir)
+            self.meetings_dir.mkdir(exist_ok=True)
             with self.connect() as db:
                 db.execute("DELETE FROM meetings")
-            shutil.rmtree(self.meetings_dir, ignore_errors=True)
-            self.meetings_dir.mkdir(exist_ok=True)
         elif partition == "models":
-            shutil.rmtree(self.models_dir, ignore_errors=True)
+            shutil.rmtree(self.models_dir)
             self.models_dir.mkdir(parents=True, exist_ok=True)
         elif partition == "exports":
             for directory in self.meetings_dir.glob("*/exports"):
-                shutil.rmtree(directory, ignore_errors=True)
+                shutil.rmtree(directory)
         else:
             raise ValueError("Unknown storage partition")
         return self.usage()

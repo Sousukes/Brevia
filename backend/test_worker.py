@@ -4485,6 +4485,30 @@ class WorkerTest(unittest.TestCase):
         self.worker.store.clear_storage_partition("meetings")
         self.assertEqual(self.worker.store.list_meetings(), [])
 
+    def test_storage_clear_preserves_index_and_reports_file_deletion_failures(self):
+        store = self.worker.store
+        meeting = store.create_meeting(
+            {"title": "保留索引", "language": "zh", "refined_model_id": "qwen3-asr-0.6b-int8"}
+        )
+        audio = store.meeting_dir(meeting["id"]) / "audio" / "locked.wav"
+        audio.write_bytes(b"private audio")
+        exports = audio.parent.parent / "exports"
+        exports.mkdir(exist_ok=True)
+
+        def locked_directory(_path, ignore_errors=False):
+            if not ignore_errors:
+                raise PermissionError("locked recording")
+
+        for partition in ("meetings", "models", "exports"):
+            with (
+                self.subTest(partition=partition),
+                patch("backend.store_maintenance.shutil.rmtree", side_effect=locked_directory),
+            ):
+                with self.assertRaises(PermissionError):
+                    store.clear_storage_partition(partition)
+                self.assertEqual(store.get_meeting(meeting["id"])["title"], "保留索引")
+                self.assertTrue(audio.exists())
+
     def test_import_registers_before_creation_and_blocks_cleanup_until_finished(self):
         source = Path(self.temp.name) / "import.wav"
         source.write_bytes(b"test")

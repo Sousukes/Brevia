@@ -182,6 +182,69 @@ void main() {
   );
 
   testWidgets(
+    'recording recovery returns to resume and end without losing saved audio',
+    (tester) async {
+      for (final error in [
+        '需要麦克风权限，请前往系统设置',
+        FileSystemException(
+          'write failed',
+          '/saved/chunk',
+          OSError('No space left on device', 28),
+        ).toString(),
+      ]) {
+        final model = EndModel()
+          ..serviceRunning = true
+          ..live = {
+            'id': 'stored',
+            'title': '保留录音',
+            'state': 'interrupted',
+            'samples': 32000,
+            'localOnly': true,
+            'error': error,
+          };
+        await tester.pumpWidget(
+          MaterialApp(
+            key: UniqueKey(),
+            theme: breviaTheme(Brightness.light),
+            home: MeetingPage(model: model, id: 'stored'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(MobileRecoveryPage), findsOneWidget);
+        await tester.tap(find.text('返回录音'));
+        await tester.pumpAndSettle();
+        expect(find.byType(MobileRecoveryPage), findsNothing);
+        expect(model.live!['samples'], 32000);
+        await tester.tap(find.byTooltip('继续'));
+        await tester.pumpAndSettle();
+        expect(model.resumes, 1);
+        expect(model.live!['state'], 'recording');
+        expect(model.live!['error'], isNull);
+
+        model.live!['state'] = 'interrupted';
+        model.live!['error'] = error;
+        model.notifyListeners();
+        await tester.pumpAndSettle();
+        expect(find.byType(MobileRecoveryPage), findsOneWidget);
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('结束'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('结束并保存'));
+        await tester.pumpAndSettle();
+        expect(model.ends, 1);
+        model.saved.complete();
+        await tester.pumpAndSettle();
+        expect(find.byType(SavedMeetingPage), findsOneWidget);
+        expect(model.live!['samples'], 32000);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        model.dispose();
+      }
+    },
+  );
+
+  testWidgets(
     'address update validates in place and help remains a separate route',
     (tester) async {
       final model = AppModel()
@@ -1203,6 +1266,7 @@ class StopEngine extends RecordingEngine {
 
 class EndModel extends AppModel {
   int ends = 0;
+  int resumes = 0;
   final saved = Completer<void>();
   @override
   Future<void> command(
@@ -1211,6 +1275,12 @@ class EndModel extends AppModel {
     String note = '',
     int? sample,
   }) async {
+    if (action == 'resume') {
+      resumes++;
+      live!['state'] = 'recording';
+      live!.remove('error');
+      notifyListeners();
+    }
     if (action == 'end') {
       ends++;
       await saved.future;

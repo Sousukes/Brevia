@@ -6526,9 +6526,6 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   min-height: 40px;
   flex-shrink: 0;
 }
-.sidebar .workspace-subnav {
-  margin-top: 20px;
-}
 .sidebar .new-workspace .interface-icon {
   width: 18px;
   height: 18px;
