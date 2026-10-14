@@ -192,3 +192,7 @@ flutter test test/design_capture_test.dart --reporter expanded
 本轮未现场实测真实麦克风/系统采集、外部AI/ASR、生产模型逐个下载/推理、长会议、手机真机联动/局域网广播、相机权限/锁屏/后台中断、系统分享、真实磁盘满及打包安装/跨版本更新。自动化TLS/WebRTC和页面fixture不能代替这些结论。当前没有重大产品决策需要确认，但全册捕获的CDP等待仍须解决，不能把这一技术阻塞归因于用户配置或断言没有功能回归。
 
 此前已合并删除12份过期/重复实施文档：`atlas-alignment.md`、`detail-storage-alignment.md`、`final-atlas-followup.md`、`followup-2026-10-13.md`、`remaining-layout-style.md`、`typography-icons-density.md`、`task-navigation-alignment.md`、`implementation.md`、`restoration-checklist.md`、上层`frontend-ui-refactor-progress.md`、`design-language.md`、`design-style.md`。原始PNG、最新README、清单、规范、Token及各轮资源/提示词保留；历史提示词不覆盖最新实施契约。
+
+## 第二十轮：平滑过渡与中间文件清理
+
+五步仍共用三画面轮播。波形充分收拢后沿实际文字基线接入字幕，字幕和纪要的出口／入口错开，循环和减少动态效果保持。停用的 AI／手机动画、重复检查入口、旧词条、调试文件与可再生缓存已清理；当前唯一检查脚本为 `videos/onboarding-motion/self-check-carousel.cjs`。旧记录中的已撤回源文件路径仅表示历史指纹，当前源码、保留证据和清理明细见[第二十轮记录](revision-20-smooth-transitions.md)。

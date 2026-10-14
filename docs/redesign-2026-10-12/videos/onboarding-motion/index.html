@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280, height=800" />
+    <title>Brevia · 引导能力动效</title>
+    <script src="assets/gsap.min.js"></script>
+    <script src="assets/CustomEase.min.js"></script>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { width: 1280px; height: 800px; margin: 0; overflow: hidden; }
+      body { font-family: system-ui, sans-serif; color: #191a1c; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; }
+      .layer { position: absolute; inset: 0; }
+      .reference { width: 100%; height: 100%; display: block; }
+      #canvas { position: absolute; left: 45px; top: 204px; width: 452px; height: 278px; background: #fff; border-radius: 18px; overflow: hidden; }
+      .header { position: absolute; left: 24px; top: 21px; width: 404px; height: 25px; display: flex; align-items: center; justify-content: space-between; }
+      .header-title { position: absolute; left: 0; top: 0; margin: 0; font-size: 17px; font-weight: 600; line-height: 25px; }
+      #record-indicator { display: flex; align-items: center; gap: 10px; margin-left: auto; font-size: 14px; line-height: 25px; color: #666970; }
+      .record-dot { width: 11px; height: 11px; border-radius: 50%; background: #ff3b43; }
+      #curves { position: absolute; inset: 0; width: 452px; height: 278px; overflow: visible; }
+      .curve { fill: none; stroke: #969aa2; stroke-width: 1.8; stroke-linecap: round; }
+      .transcript-line { position: absolute; left: 28px; margin: 0; width: 390px; height: 29px; font-size: 18px; line-height: 29px; letter-spacing: .1px; }
+      #line-one { top: 90px; }
+      #line-two { top: 134px; }
+      .minute-group { position: absolute; left: 28px; width: 394px; }
+      #points { top: 75px; }
+      #actions { top: 156px; }
+      .minute-label { margin: 0 0 10px; color: #666970; font-size: 13px; font-weight: 500; line-height: 19px; }
+      .minute-item { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 18px; line-height: 27px; }
+      .bullet { width: 4px; height: 4px; border-radius: 50%; background: #191a1c; margin: 0 6px; }
+      .checkbox { width: 16px; height: 16px; border: 1.4px solid #858991; border-radius: 4px; }
+      #captions { position: absolute; left: 45px; top: 497px; width: 452px; height: 80px; background: radial-gradient(ellipse, #f5f6f8 75%, #f5f6f800 100%); }
+      .caption { position: absolute; inset: 0; text-align: center; }
+      .caption h2 { margin: 5px 0 5px; font-size: 25px; line-height: 35px; font-weight: 650; }
+      .caption p { margin: 0; color: #696d75; font-size: 17px; line-height: 25px; }
+      #pagination { position: absolute; left: 191px; top: 593px; width: 82px; height: 18px; background: #f5f6f8; display: flex; align-items: center; justify-content: center; gap: 12px; }
+      .page-dot { width: 9px; height: 9px; background: #c4c7cc; border-radius: 8px; }
+      .active-dot { position: absolute; width: 27px; height: 10px; border-radius: 8px; background: #191a1c; left: 7px; top: 4px; }
+      #active-text { left: 28px; }
+      #active-minutes { left: 49px; }
+    </style>
+  </head>
+  <body>
+    <div
+      data-hf-id="hf-4afd"
+      id="root"
+      data-composition-id="brevia-onboarding"
+      data-start="0"
+      data-duration="9"
+      data-width="1280"
+      data-height="800"
+    >
+      <section data-hf-id="hf-fgbg" id="reference-layer" class="layer">
+        <img
+          data-hf-id="hf-03fm"
+          class="reference"
+          src="assets/reference.png"
+          alt="Brevia 首次引导：横向五步导航，模型与存储设置"
+          data-layout-ignore=""
+        />
+      </section>
+      <section data-hf-id="hf-t82b" id="capability-layer" class="layer">
+        <div data-hf-id="hf-hg87" id="canvas" aria-label="录音、逐字稿与纪要能力示意">
+          <div data-hf-id="hf-4y7z" class="header">
+            <p data-hf-id="hf-bc9f" id="record-title" class="header-title">产品周会</p>
+            <div data-hf-id="hf-m58e" id="record-indicator"
+              ><span data-hf-id="hf-unbo" class="record-dot"></span
+              ><span data-hf-id="hf-5240">00:18</span></div
+            >
+          </div>
+          <svg
+            data-hf-id="hf-szh5"
+            id="curves"
+            viewBox="0 0 452 278"
+            aria-hidden="true"
+            data-layout-ignore=""
+          >
+            <path data-hf-id="hf-m5jd" id="curve-one" class="curve" />
+            <path data-hf-id="hf-0xkf" id="curve-two" class="curve" />
+          </svg>
+          <p data-hf-id="hf-toae" id="line-one" class="transcript-line">我们先回顾上周的进展。</p>
+          <p data-hf-id="hf-cxo5" id="line-two" class="transcript-line">本周重点是完成试点准备。</p>
+          <div data-hf-id="hf-c0ml" id="points" class="minute-group">
+            <h3 data-hf-id="hf-zd51" class="minute-label">讨论要点</h3>
+            <p data-hf-id="hf-zixq" class="minute-item"
+              ><span data-hf-id="hf-3b3y" class="bullet" aria-hidden="true"></span>确认试点范围</p
+            >
+          </div>
+          <div data-hf-id="hf-jg35" id="actions" class="minute-group">
+            <h3 data-hf-id="hf-mt82" class="minute-label">待办事项</h3>
+            <p data-hf-id="hf-ckxn" class="minute-item"
+              ><span data-hf-id="hf-qnxt" class="checkbox" aria-hidden="true"></span>准备试点材料</p
+            >
+          </div>
+        </div>
+        <div data-hf-id="hf-iuvo" id="captions">
+          <div data-hf-id="hf-ut8g" id="caption-record" class="caption"
+            ><h2 data-hf-id="hf-v9p4">录制会议</h2
+            ><p data-hf-id="hf-9evc">专注对话，保留原始录音。</p></div
+          >
+          <div data-hf-id="hf-yfqu" id="caption-text" class="caption"
+            ><h2 data-hf-id="hf-hluu">转写文字</h2
+            ><p data-hf-id="hf-kvt5">让对话成为可检索的文字。</p></div
+          >
+          <div data-hf-id="hf-e612" id="caption-minutes" class="caption"
+            ><h2 data-hf-id="hf-8kot">生成纪要</h2
+            ><p data-hf-id="hf-rhl2">整理要点与待办，方便回顾。</p></div
+          >
+        </div>
+        <div data-hf-id="hf-hzne" id="pagination" aria-hidden="true"
+          ><span data-hf-id="hf-cnre" class="page-dot"></span
+          ><span data-hf-id="hf-yiha" class="page-dot"></span
+          ><span data-hf-id="hf-ywsb" class="page-dot"></span
+          ><span data-hf-id="hf-5pt9" id="active-record" class="active-dot"></span
+          ><span data-hf-id="hf-6zij" id="active-text" class="active-dot"></span
+          ><span data-hf-id="hf-xvh9" id="active-minutes" class="active-dot"></span
+        ></div>
+      </section>
+    </div>
+    <script>
+      gsap.registerPlugin(CustomEase);
+      const ease = CustomEase.create("brevia-smooth", "0.22,1,0.36,1");
+      // 相同数量的曲线段确保声音曲线与文字基线可以双向 seek。
+      function curve(amplitude, baseline, phase = 0) {
+        const points = Array.from({ length: 65 }, (_, i) => {
+          const x = 24 + (404 * i) / 64;
+          const envelope = Math.sin((Math.PI * i) / 64);
+          const wave = Math.sin(i * 0.79 + phase) * 0.65 + Math.sin(i * 1.21 + phase) * 0.35;
+          return [x, baseline + wave * amplitude * envelope];
+        });
+        let path = `M ${points[0].join(" ")}`;
+        for (let i = 1; i < points.length; i++) {
+          const previous = points[i - 1];
+          const current = points[i];
+          const before = points[Math.max(0, i - 2)];
+          const after = points[Math.min(points.length - 1, i + 1)];
+          path += ` C ${previous[0] + (current[0] - before[0]) / 6} ${previous[1] + (current[1] - before[1]) / 6} ${current[0] - (after[0] - previous[0]) / 6} ${current[1] - (after[1] - previous[1]) / 6} ${current.join(" ")}`;
+        }
+        return path;
+      }
+      const wave = curve(38, 152);
+      const baselineOne = curve(0, 117);
+      const baselineTwo = curve(0, 161);
+      const tl = gsap.timeline({ paused: true, defaults: { duration: 0.6, ease } });
+      gsap.set("#curve-one", { attr: { d: wave }, opacity: 1 });
+      gsap.set("#curve-two", { attr: { d: curve(0, 152) }, opacity: 0 });
+      gsap.set(".transcript-line, .minute-group, #caption-text, #caption-minutes", { opacity: 0, y: 6 });
+      gsap.set("#record-indicator, #caption-record", { opacity: 1, y: 0 });
+      gsap.set("#active-record", { opacity: 1 });
+      gsap.set("#active-text, #active-minutes", { opacity: 0 });
+      tl.addLabel("recording", 0);
+      tl.to("#curve-one", { attr: { d: curve(32, 152, 0.55) } }, 0.55);
+      tl.to("#curve-one", { attr: { d: wave } }, 1.35);
+      tl.addLabel("transcript", 2.35);
+      tl.to("#curve-one", { attr: { d: baselineOne }, stroke: "#d8dade" }, 2.35);
+      tl.to("#curve-two", { attr: { d: baselineTwo }, opacity: 1, stroke: "#d8dade" }, 2.395);
+      tl.to("#record-indicator, #caption-record", { opacity: 0, y: -6 }, 2.35);
+      tl.to("#caption-text", { opacity: 1, y: 0 }, 2.35);
+      tl.to(".transcript-line", { opacity: 1, y: 0, stagger: 0.045 }, 2.7);
+      tl.to("#curve-one, #curve-two", { opacity: 0 }, 2.745);
+      tl.to("#active-record", { opacity: 0 }, 2.35);
+      tl.to("#active-text", { opacity: 1 }, 2.35);
+      tl.addLabel("minutes", 5.35);
+      tl.to(".transcript-line", { opacity: 0, y: -6, stagger: 0.045 }, 5.35);
+      tl.to("#caption-text", { opacity: 0, y: -6 }, 5.35);
+      tl.to("#caption-minutes", { opacity: 1, y: 0 }, 5.35);
+      tl.to(".minute-group", { opacity: 1, y: 0, stagger: 0.045 }, 5.55);
+      tl.to("#active-text", { opacity: 0 }, 5.35);
+      tl.to("#active-minutes", { opacity: 1 }, 5.35);
+      tl.addLabel("return", 8.1);
+      tl.to(".minute-group", { opacity: 0, y: 6, stagger: 0.045 }, 8.1);
+      tl.to("#caption-minutes", { opacity: 0, y: 6 }, 8.1);
+      tl.to("#record-indicator, #caption-record", { opacity: 1, y: 0 }, 8.1);
+      tl.to("#curve-one", { attr: { d: wave }, opacity: 1, stroke: "#969aa2" }, 8.1);
+      tl.to("#active-minutes", { opacity: 0 }, 8.1);
+      tl.to("#active-record", { opacity: 1 }, 8.1);
+      tl.to({}, { duration: 0.255 }, 8.745);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["brevia-onboarding"] = tl;
+      tl.seek(0);
+      // 播放控制只由独立预览页发送；组合本身保持暂停、有限时长。
+      if (window.parent !== window) {
+        const report = () => window.parent.postMessage({ source: "brevia-motion", time: tl.time(), paused: tl.paused() }, "*");
+        tl.eventCallback("onUpdate", report);
+        tl.eventCallback("onComplete", () => window.parent.postMessage({ source: "brevia-motion", ended: true }, "*"));
+        window.addEventListener("message", (event) => {
+          if (event.source !== window.parent || event.data?.source !== "brevia-player") return;
+          if (event.data.action === "play") tl.play();
+          if (event.data.action === "pause") tl.pause();
+          if (event.data.action === "seek" && Number.isFinite(event.data.time)) tl.pause().seek(Math.max(0, Math.min(9, event.data.time)));
+          report();
+        });
+        window.parent.postMessage({ source: "brevia-motion", ready: true }, "*");
+      }
+    </script>
+  </body>
+</html>

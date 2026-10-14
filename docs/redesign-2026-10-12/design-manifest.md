@@ -112,3 +112,7 @@ JSON的`feedback_capture`/`feedback_comparison`为本轮新证据；原`scene`�
 | C 无直接PNG     | playback-task / settings-language                      | 后台播放共享6px进度、无字幕；设置语言入口保留     |
 
 固定内容fixture及稳定条件由`node scripts/capture-ui-feedback.mjs`提供。10项参考/当前/叠加/Diff在唯一证据目录下`feedback/`；17个运行截图在`captures/feedback/`。实际日期/数量、焦点环、字体/OS边框与用户覆盖旧PNG的要求均保留，不用百分比宣称一致。
+
+## 第二十轮：平滑过渡与中间文件清理
+
+五步仍共用三画面轮播。波形充分收拢后沿实际文字基线接入字幕，字幕和纪要的出口／入口错开，循环和减少动态效果保持。停用的 AI／手机动画、重复检查入口、旧词条、调试文件与可再生缓存已清理；当前唯一检查脚本为 `videos/onboarding-motion/self-check-carousel.cjs`。旧记录中的已撤回源文件路径仅表示历史指纹，当前源码、保留证据和清理明细见[第二十轮记录](revision-20-smooth-transitions.md)。

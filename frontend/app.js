@@ -3104,6 +3104,7 @@ let onboardingPreviewLocale;
 let onboardingSelectedLocale;
 let onboardingAiDemoTimer;
 let onboardingSummaryDemoTimer;
+let onboardingMotion;
 /** 演示只更新隔离样例，模式切换/关闭立即取消旧阶段。 */
 function renderOnboardingAiDemo() {
   clearTimeout(onboardingAiDemoTimer);
@@ -3204,7 +3205,7 @@ function openOnboardingLanguage(
     .join('');
   onboardingPage = document.createElement('main');
   onboardingPage.className = 'onboarding-page onboarding-active onboarding-language-overlay';
-  onboardingPage.innerHTML = `<header class="onboarding-window-bar"><strong translate="no">Brevia</strong></header>${renderOnboardingRail('language')}<form class="onboarding-page-content onboarding-language-page" data-onboarding-language><div class="onboarding-page-copy"><h1></h1><p></p></div><div class="language-picker" role="radiogroup" aria-label="${escapeHtml(t('切换语言'))}">${wheelItems}</div><div class="onboarding-actions"><button class="modal-action" type="submit"></button></div></form>`;
+  onboardingPage.innerHTML = `<header class="onboarding-window-bar"><strong translate="no">Brevia</strong></header>${renderOnboardingRail('language', defaultLocale)}<form class="onboarding-page-content onboarding-language-page" data-onboarding-language><div class="onboarding-page-copy"><h1></h1><p></p></div><div class="language-picker" role="radiogroup" aria-label="${escapeHtml(t('切换语言'))}">${wheelItems}</div><div class="onboarding-actions"><button class="modal-action" type="submit"></button></div></form>`;
   document.body.append(onboardingPage);
   updateOnboardingLanguageCopy(defaultLocale);
   const enteringPage = onboardingPage;
@@ -3300,10 +3301,23 @@ function updateOnboardingLanguageCopy(nextLocale) {
   onboardingSelectedLocale = nextLocale;
   const [title, prompt, nextLabel] =
     onboardingLanguageCopy[nextLocale] || onboardingLanguageCopy.en;
-  const nodes = onboardingPage.querySelectorAll('.onboarding-page-copy');
+  const page = onboardingPage;
+  const nodes = page.querySelectorAll('.onboarding-page-copy');
   nodes.forEach((node) => node.classList.add('locale-out'));
   window.setTimeout(() => {
+    if (
+      onboardingPage !== page ||
+      onboardingPreviewLocale !== nextLocale ||
+      page.classList.contains('onboarding-page-leave')
+    )
+      return;
+    onboardingMotion?.destroy();
     onboardingPage.querySelector('.onboarding-rail').outerHTML = renderOnboardingRail(
+      'language',
+      nextLocale,
+    );
+    onboardingMotion = window.BreviaOnboardingMotion.mount(
+      page.querySelector('.onboarding-rail'),
       'language',
       nextLocale,
     );
@@ -3322,10 +3336,18 @@ function updateOnboardingLanguageCopy(nextLocale) {
 }
 
 function showOnboardingPage(kind, content) {
+  onboardingMotion?.destroy();
+  onboardingMotion = undefined;
   onboardingPage = document.createElement('main');
   onboardingPage.className = `onboarding-page onboarding-active onboarding-${kind}-overlay`;
   onboardingPage.innerHTML = `<header class="onboarding-window-bar"><strong translate="no">Brevia</strong></header>${renderOnboardingRail(kind)}<div class="onboarding-page-content onboarding-${kind}-content">${content}</div>`;
   document.body.append(onboardingPage);
+  if (['language', 'permissions', 'setup', 'ai', 'phone'].includes(kind))
+    onboardingMotion = window.BreviaOnboardingMotion.mount(
+      onboardingPage.querySelector('.onboarding-rail'),
+      kind,
+      locale,
+    );
   const enteringPage = onboardingPage;
   requestAnimationFrame(() => {
     // 快速返回时旧帧回调不能访问已关闭或已替换的引导页。
@@ -3342,6 +3364,8 @@ function dismissOnboardingPage(next) {
   clearTimeout(onboardingSummaryDemoTimer);
   const page = onboardingPage;
   if (!page || page.classList.contains('onboarding-page-leave')) return;
+  onboardingMotion?.destroy();
+  onboardingMotion = undefined;
   void breviaClient?.stopPreview();
   page.classList.remove('onboarding-page-enter');
   page.classList.add('onboarding-page-leave');

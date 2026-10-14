@@ -1,0 +1,9 @@
+# CLI 临时副本和浏览器缓存均可由检查脚本重建。
+.hyperframes/verify-*/
+.hyperframes/preview/
+.hyperframes/artifacts/
+.hyperframes/history*.json
+.hyperframes/history-id
+.hyperframes/hf-ids-stamped.json
+.hyperframes/video-state.json
+.thumbnails/

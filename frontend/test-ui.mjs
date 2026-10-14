@@ -945,6 +945,45 @@ for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
     `${code} missing onboarding permission copy`,
   );
 }
+// 新引导动效的状态和样例正文都由同一份八语种词条供给。
+const motionCopy = localeContext.window.BreviaLocaleData.onboardingMotionCopy;
+for (const code of ['zh', 'en', 'es', 'ja', 'ko', 'fr', 'de', 'ru']) {
+  assert.deepEqual(Object.keys(motionCopy[code]).sort(), Object.keys(motionCopy.en).sort());
+  for (const [key, value] of Object.entries(motionCopy[code])) {
+    assert.equal(typeof value, 'string', `${code} motion ${key}`);
+    assert.ok(value.trim(), `${code} motion ${key} cannot be empty`);
+    if (code !== 'zh' && code !== 'ja')
+      assert.doesNotMatch(value, /[\u4e00-\u9fff]/, `${code} motion ${key}`);
+  }
+}
+const previewCopyContext = { window: {} };
+runInNewContext(
+  await readFile(
+    '../docs/redesign-2026-10-12/videos/onboarding-motion/assets/onboarding-copy.js',
+    'utf8',
+  ),
+  previewCopyContext,
+);
+assert.equal(
+  JSON.stringify(previewCopyContext.window.BreviaLocaleData.onboardingMotionCopy),
+  JSON.stringify(motionCopy),
+  'run node scripts/sync-onboarding-preview.mjs after editing onboarding motion translations',
+);
+assert.equal(
+  await readFile(
+    '../docs/redesign-2026-10-12/videos/onboarding-motion/assets/brevia-mark.svg',
+    'utf8',
+  ),
+  await readFile('./assets/brevia-mark.svg', 'utf8'),
+  'preview logo must match the application',
+);
+for (const name of ['onboarding-motion.js', 'onboarding-motion.css']) {
+  assert.equal(
+    await readFile('../docs/redesign-2026-10-12/videos/onboarding-motion/assets/' + name, 'utf8'),
+    await readFile(name, 'utf8'),
+    'sync preview component ' + name,
+  );
+}
 const i18nStaticKeys = new Set(
   [text(app), text(meetings), text(meetingDetail), text(workspaces), text(components)].flatMap(
     (source) => [...source.matchAll(/\bt\('([^']+)'\)/g)].map((match) => match[1]),
@@ -4991,6 +5030,7 @@ for (const [code, data] of Object.entries(localeContext.window.BreviaLocaleData.
 }
 const onboardingClasses = new Set();
 let onboardingNext = 0,
+  onboardingDisposed = 0,
   onboardingTimer;
 const dismissal = {
   onboardingPage: {
@@ -5004,6 +5044,11 @@ const dismissal = {
   },
   onboardingAiDemoTimer: null,
   onboardingSummaryDemoTimer: null,
+  onboardingMotion: {
+    destroy() {
+      onboardingDisposed++;
+    },
+  },
   clearTimeout() {},
   clearInterval() {},
   breviaClient: null,
@@ -5020,6 +5065,7 @@ dismissal.dismissOnboardingPage(() => onboardingNext++);
 dismissal.dismissOnboardingPage(() => onboardingNext++);
 onboardingTimer();
 assert.equal(onboardingNext, 1, 'repeated clicks must not create duplicate onboarding pages');
+assert.equal(onboardingDisposed, 1, 'leaving onboarding must dispose motion exactly once');
 dismissal.dismissOnboardingPage(() => onboardingNext++);
 assert.equal(onboardingNext, 1);
 console.log('UI structure and behavior checks passed.');

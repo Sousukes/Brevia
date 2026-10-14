@@ -78,6 +78,9 @@ const moduleProbes = [
   ['model-selection.js', 'window.BreviaModelSelection'],
   ['asr-copy.js', 'window.BreviaAsrCopy'],
   ['ui-components.js', 'escapeHtml'],
+  ['assets/vendor/gsap.min.js', 'window.gsap'],
+  ['assets/vendor/CustomEase.min.js', 'window.CustomEase'],
+  ['onboarding-motion.js', 'window.BreviaOnboardingMotion'],
   ['workspaces.js', 'workspaces'],
   ['app-meetings.js', 'backendMeeting'],
   ['app-meeting-detail.js', 'renderSegmentData'],
@@ -565,6 +568,8 @@ try {
           page.querySelector('[data-flow-select-choice=onboarding-ai-proactivity][data-value='+mode+']').click();
           renderOnboardingSummaryDemo();
           await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+          // 模式切换后的有限CSS动画结束再测量，避免把按压/入场缩放当成行高变化。
+          page.getAnimations({subtree:true}).filter(a=>a.effect.getComputedTiming().iterations!==Infinity).forEach(a=>a.finish());
           const initial=footer.getBoundingClientRect();
           const rowHeights=[...page.querySelectorAll('.onboarding-ai-row')].map(row=>row.getBoundingClientRect().height);
           for(let stage=0;stage<3;stage++){
@@ -1209,6 +1214,82 @@ try {
       languagePicker.result?.value?.saved,
     '语言引导必须展示八项原生单选，并即时保存选择',
   );
+  // 真应用接线验证：八语种、自动循环、右侧隔离与关闭清理。
+  const onboardingMotionResult = await client.send('Runtime.evaluate', {
+    expression: `(async()=>{
+      const errors=[];
+      const configBefore=JSON.stringify([aiAssistConfig,summaryConfig]);
+      for(const code of ['zh','en','es','ja','ko','fr','de','ru']) {
+        applyLanguage(code);
+        for(const kind of ['language','permissions','setup','ai','phone']) {
+          if(kind==='language') { openOnboardingLanguage(code); await new Promise(r=>setTimeout(r,160)); }
+          else if(kind==='permissions') openOnboardingPermissions({microphone:'denied',screen:'denied'});
+          else if(kind==='setup') await openOnboardingSetup();
+          else if(kind==='ai') openOnboardingAi();
+          else openOnboardingMobile();
+          const handle=onboardingMotion;
+          const rail=onboardingPage.querySelector('.onboarding-rail');
+          const paper=rail.querySelector('[data-motion="paper"]');
+          const copy=window.BreviaLocaleData.onboardingMotionCopy[code];
+          const content=onboardingPage.querySelector('.onboarding-page-content');
+          const before=content.innerHTML;
+          if(!rail.querySelector('.onboarding-brand-mark') || rail.querySelectorAll('li').length!==5) errors.push(code+'/'+kind+': brand/navigation');
+          if(handle.timeline.duration()!==9) errors.push(code+'/'+kind+': duration');
+          if(!handle.timeline.getChildren().every(tween=>tween.targets().every(target=>!(target instanceof Element)||rail.contains(target)))) errors.push(code+'/'+kind+': leaked target');
+          handle.seek(0); const wave=rail.querySelector('[data-motion="curve-one"]').getAttribute('d');
+          handle.seek(2.8);
+          if(parseFloat(getComputedStyle(rail.querySelector('[data-motion="curve-one"]')).opacity)<.99||parseFloat(getComputedStyle(rail.querySelector('[data-motion="transcript-one"]')).opacity)>0) errors.push(code+'/'+kind+': waveform leaves before settling');
+          handle.seek(5.82);
+          if(parseFloat(getComputedStyle(rail.querySelector('[data-motion="transcript-two"]')).opacity)>.01||parseFloat(getComputedStyle(rail.querySelector('[data-motion="points"]')).opacity)<.1) errors.push(code+'/'+kind+': transcript/minutes overlap');
+          handle.seek(3.5);
+          if(paper.dataset.phase!=='transcript'||rail.querySelector('[data-motion="transcript-one"]').textContent!==copy.transcriptFirst) errors.push(code+'/'+kind+': transcript');
+          handle.seek(6.5);
+          if(paper.dataset.phase!=='minutes'||rail.querySelector('[data-motion="points"] p').textContent!==copy.pointItem) errors.push(code+'/'+kind+': minutes');
+          handle.seek(9);
+          if(paper.dataset.phase!=='recording'||rail.querySelector('[data-motion="curve-one"]').getAttribute('d')!==wave) errors.push(code+'/'+kind+': loop seam');
+          if(rail.querySelector('[data-motion="caption-record"] h3').textContent!==copy.recordHeading) errors.push(code+'/'+kind+': localized caption');
+          if(rail.querySelector('.bom-controls,[data-motion-control]')) errors.push(code+'/'+kind+': removed controls');
+          if(handle.timeline.timeScale()!==1.35) errors.push(code+'/'+kind+': faster playback');
+          if(content.innerHTML!==before) errors.push(code+'/'+kind+': changed right pane');
+          const demo=rail.querySelector('.bom');
+          if(demo.scrollWidth>demo.clientWidth+1) errors.push(code+'/'+kind+': horizontal overflow');
+          handle.timeline.play(handle.timeline.duration()-.04);
+          await new Promise(resolve=>setTimeout(resolve,90));
+          if(handle.timeline.paused()||handle.timeline.time()>=.4) errors.push(code+'/'+kind+': automatic loop');
+          await new Promise(resolve=>dismissOnboardingPage(resolve));
+          if(onboardingMotion || handle.timeline.isActive()) errors.push(code+'/'+kind+': cleanup');
+        }
+      }
+      openOnboardingLanguage('en');
+      updateOnboardingLanguageCopy('de'); updateOnboardingLanguageCopy('ja');
+      await new Promise(resolve=>setTimeout(resolve,160));
+      if(onboardingPage.lang!=='ja'||onboardingPage.querySelector('.bom').dataset.kind!=='language') errors.push('stale language preview');
+      const staleHandle=onboardingMotion;
+      updateOnboardingLanguageCopy('ru');
+      await new Promise(resolve=>dismissOnboardingPage(resolve));
+      if(staleHandle.timeline.isActive()||onboardingMotion) errors.push('language callback leaked after exit');
+      if(JSON.stringify([aiAssistConfig,summaryConfig])!==configBefore) errors.push('demo wrote configuration');
+      applyLanguage('zh');
+      return errors;
+    })()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  check(
+    Array.isArray(onboardingMotionResult.result?.value) &&
+      !onboardingMotionResult.result.value.length,
+    `左侧动效接线与八语种：${JSON.stringify(onboardingMotionResult)}`,
+  );
+  await client.send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+  });
+  const reducedOnboardingMotion = await client.send('Runtime.evaluate', {
+    expression: `(async()=>{openOnboardingMobile();const handle=onboardingMotion;const wave=onboardingPage.querySelector('[data-motion="curve-one"]').getAttribute('d');await new Promise(r=>setTimeout(r,120));const stable=handle.timeline.paused()&&handle.timeline.time()===0&&onboardingPage.querySelector('[data-motion="curve-one"]').getAttribute('d')===wave;await new Promise(resolve=>dismissOnboardingPage(resolve));return stable;})()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  check(reducedOnboardingMotion.result?.value === true, '引导减少动态：不自动播放且波形静止');
+  await client.send('Emulation.setEmulatedMedia', { features: [] });
   const onboardingFit = await client.send('Runtime.evaluate', {
     expression: `(async()=>{
       const errors=[];

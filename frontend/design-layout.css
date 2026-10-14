@@ -8637,3 +8637,95 @@ body:has(.meeting-workspace-menu) .meeting-menu:not([hidden]) [data-meeting-acti
 .sidebar .workspace-picker .search input:focus-visible {
   outline: 0;
 }
+
+/* 引导品牌共用实际图标；五步左侧动效共用品牌与横向导航。 */
+.onboarding-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.onboarding-brand-mark {
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+html[data-theme="dark"] .onboarding-brand-mark {
+  filter: invert(1);
+}
+.onboarding-motion-rail {
+  display: flex;
+  flex-direction: column;
+  padding: 36px 36px 24px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.onboarding-motion-rail .onboarding-wordmark {
+  font-size: 43px;
+  line-height: 57px;
+}
+.onboarding-motion-rail .onboarding-brand-mark {
+  width: 42px;
+  height: 42px;
+}
+.onboarding-motion-rail h2 {
+  font-size: 21px;
+  line-height: 1.45;
+  margin: 8px 0 24px;
+  text-wrap: balance;
+}
+.onboarding-motion-rail ol {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 20px;
+  flex: none;
+}
+.onboarding-motion-rail li {
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.onboarding-motion-rail li::after {
+  display: none;
+}
+.onboarding-motion-rail li > span {
+  width: 30px;
+  height: 30px;
+  background: var(--color-surface);
+}
+.onboarding-motion-rail li > span .interface-icon {
+  width: 16px;
+  height: 16px;
+}
+.onboarding-motion-rail li[aria-current="step"] > span {
+  background: var(--color-text);
+  color: var(--color-surface);
+  border-color: var(--color-text);
+}
+@media (max-width: 1100px), (max-height: 700px) {
+  .onboarding-motion-rail {
+    padding: 24px;
+  }
+  .onboarding-motion-rail .onboarding-wordmark {
+    font-size: 34px;
+    line-height: 44px;
+  }
+  .onboarding-motion-rail .onboarding-brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+  .onboarding-motion-rail h2 {
+    font-size: 17px;
+    margin-bottom: 18px;
+  }
+}
+
+@media (max-width: 700px) {
+  .onboarding-motion-rail {
+    display: none;
+  }
+}
