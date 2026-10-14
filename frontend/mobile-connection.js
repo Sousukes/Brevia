@@ -53,13 +53,16 @@
     messageKey = key;
     dialog.querySelector('#mobile-dialog-status').textContent = t(key);
   }
-  function open() {
+  async function open() {
     if (
       activeModal !== 'device-connection' ||
       settingsModal.hidden ||
       settingsModal.classList.contains('modal-leave')
-    )
-      void openModal('device-connection');
+    ) {
+      if (activeView === 'live' && meetingActive) minimizeMeeting();
+      await showView('settings');
+      await openModal('device-connection');
+    }
   }
   async function run(action) {
     try {
@@ -100,12 +103,14 @@
     });
     return pairClosing;
   }
-  async function pair() {
-    if (pairingBusy || pairDialog.open) return;
+  async function pair(refresh = false) {
+    if (pairingBusy || pairClosing || (pairDialog.open && !refresh)) return;
+    if (refresh && !pairDialog.open) return;
     pairingBusy = true;
     pairDialog.querySelector('#mobile-pair-error').textContent = '';
     try {
       const value = await api.pair();
+      if (refresh && (!pairDialog.open || pairClosing)) return;
       await render(value);
       expires = value.expires;
       document.getElementById('mobile-retry-pairing').hidden = true;
@@ -122,6 +127,7 @@
       localize();
       showPairDialog();
     } catch (error) {
+      if (refresh && (!pairDialog.open || pairClosing)) return;
       expires = 0;
       pairing.hidden = true;
       dialog.querySelector('.mobile-pair-preview').hidden = true;
@@ -228,6 +234,8 @@
     }
     const nextDevices = JSON.stringify(value.devices || []);
     if (deviceList !== nextDevices || localeChanged) {
+      const body = dialog.closest('.modal-body');
+      const scrollTop = body?.scrollTop || 0;
       deviceList = nextDevices;
       const devices = dialog.querySelector('#mobile-devices');
       devices.replaceChildren();
@@ -235,7 +243,7 @@
         const empty = document.createElement('p');
         empty.className = 'mobile-device-empty';
         empty.textContent = t('暂无已信任设备');
-        empty.insertAdjacentHTML('afterbegin', interfaceIcon('phone'));
+        empty.insertAdjacentHTML('afterbegin', interfaceIcon('device-phone'));
         devices.append(empty);
       }
       for (const device of value.devices || []) {
@@ -281,6 +289,7 @@
         row.append(name, facts, revoke);
         devices.append(row);
       }
+      if (body) body.scrollTop = scrollTop;
     }
     if (pending && breviaClient) {
       if (breviaClient.state.meeting?.id !== pending.id) {
@@ -365,15 +374,13 @@
       `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
     dialog.querySelector('[data-mobile-pair-time]').textContent =
       document.getElementById('mobile-address').textContent;
-    if (!remaining) {
+    if (!remaining && !pairingBusy && pairDialog.open && !pairClosing) {
       expires = 0;
-      pairing.hidden = true;
-      pairDialog.querySelector('#mobile-pair-waiting').hidden = true;
-      dialog.querySelector('.mobile-pair-preview').hidden = true;
-      document.getElementById('mobile-copy-pin').disabled = true;
-      document.getElementById('mobile-retry-pairing').hidden = false;
-      pairDialog.querySelector('#mobile-pair-error').textContent =
-        t('配对码已过期，请重新显示配对码。');
+      void run(async () => {
+        // 超时审批已无法建立信任，先结束旧请求，再刷新二维码和配对码。
+        if (approvalId) await api.approve({ id: approvalId, allowed: false });
+        await pair(true);
+      });
     }
   }
   document.getElementById('mobile-copy-pin').onclick = () =>

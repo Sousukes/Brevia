@@ -546,7 +546,6 @@ function showWorkspaceAssignMenu(meetingIndex, anchorRect) {
 
   // 定位菜单
   menu.style.position = 'fixed';
-  menu.style.maxHeight = `${window.innerHeight - 16}px`;
 
   document.querySelectorAll('.meeting-workspace-menu').forEach((node) => node.remove());
   document.body.appendChild(menu);
@@ -580,10 +579,10 @@ function positionWorkspaceAssignMenu(menu, fallbackRect) {
   const anchor = action?.getBoundingClientRect() || fallbackRect;
   const parent = action?.closest('.meeting-menu').getBoundingClientRect() || fallbackRect;
   if (!parent || !anchor) return;
-  menu.style.maxHeight = `${innerHeight - 16}px`;
+  const top = Math.max(8, parent.top);
+  menu.style.maxHeight = `${innerHeight - top - 8}px`;
   const opensLeft = parent.left >= menu.offsetWidth + 16;
   const left = opensLeft ? parent.left - menu.offsetWidth - 8 : parent.right + 8;
-  const top = Math.max(8, Math.min(parent.top, innerHeight - menu.offsetHeight - 8));
   menu.style.left = `${Math.max(8, Math.min(left, innerWidth - menu.offsetWidth - 8))}px`;
   menu.style.top = `${top}px`;
   menu.style.setProperty(

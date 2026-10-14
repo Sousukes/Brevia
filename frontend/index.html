@@ -30,10 +30,15 @@
     <main class="app-shell" aria-live="polite">
       <aside class="sidebar" aria-label="主导航">
         <button class="brand" data-view="home" aria-label="Brevia 首页"
-          ><span class="brand-mark" aria-hidden="true">B</span
+          ><span class="brand-mark" aria-hidden="true"
+            ><img src="./assets/brevia-mark.svg" alt="" /></span
           ><span class="brand-name">Brevia</span></button
         >
-        <button class="new-meeting" data-view="prepare" data-prepare-mode="record"
+        <button
+          class="new-meeting"
+          data-view="prepare"
+          data-prepare-mode="record"
+          aria-label="开始会议"
           ><span class="new-meeting-icon" data-interface-icon="plus" aria-hidden="true"></span
           ><span class="new-meeting-label">开始会议</span></button
         >
@@ -42,6 +47,7 @@
           id="import-recording"
           data-view="prepare"
           data-prepare-mode="import"
+          aria-label="导入本地音频"
           type="button"
           ><span
             class="import-recording-icon"
@@ -68,7 +74,7 @@
           ><span><b data-task-summary-label>任务</b><b data-task-summary-count></b></span
           ><span><i aria-hidden="true"></i><span data-task-summary-status></span></span
         ></button>
-        <button class="mobile-sidebar-card" id="mobile-nav" type="button"
+        <button class="mobile-sidebar-card" id="mobile-nav" type="button" aria-label="设备连接"
           ><span class="mobile-sidebar-heading"
             ><span data-interface-icon="phone" aria-hidden="true"></span><strong>设备连接</strong
             ><i id="mobile-nav-dot"></i></span
@@ -605,8 +611,9 @@
         ><section class="mobile-connect-panel"
           ><div class="mobile-connection-summary"
             ><div class="mobile-device-illustration"
-              ><span data-interface-icon="phone"></span><span>···</span
-              ><span data-interface-icon="appearance"></span></div
+              ><span data-interface-icon="device-phone"></span
+              ><span data-interface-icon="more"></span
+              ><span data-interface-icon="laptop"></span></div
             ><h3 id="mobile-connected-heading">尚未连接设备</h3
             ><p id="mobile-connected-description">在手机端搜索电脑，桌面将自动显示配对窗口。</p
             ><button class="modal-action" id="mobile-pair" type="button">连接新设备</button
@@ -637,7 +644,7 @@
             ><span data-interface-icon="microphone"></span
             ><span><b>在手机上录制会议</b><small>一键录制，实时转写</small></span></p
           ><p
-            ><span data-interface-icon="upload"></span
+            ><span data-interface-icon="cloud-upload"></span
             ><span
               ><b>离线录音上传</b><small>在手机上录制的离线音频，连接后需确认上传</small></span
             ></p
@@ -719,7 +726,10 @@
       <header class="mobile-pair-header"
         ><div
           ><h2 id="mobile-pair-title"><span data-interface-icon="phone"></span>连接新设备</h2
-          ><p id="mobile-pair-description">在手机端选择这台电脑，扫描二维码或输入配对码。</p></div
+          ><p id="mobile-pair-description"
+            >打开手机端
+            Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。</p
+          ></div
         ><button class="icon-button" id="mobile-dismiss-pairing" type="button" aria-label="关闭"
           ><span data-interface-icon="close"></span></button
       ></header>

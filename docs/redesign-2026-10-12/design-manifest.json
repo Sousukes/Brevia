@@ -9,16 +9,40 @@
     "dpr": 1,
     "category": "A",
     "scene": "desktop-language",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [],
     "coverage": "欢迎语言页与八语言布局；沿用该页独立品牌栏。",
     "unverified": ["PNG 字体家族无法确认；删除演示后引导采用五步，保留真实手机连接。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-language.png",
     "captured_scenes": ["desktop-language"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：独立品牌栏和语言网格不套224px导航"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：五步编号、选中语言、底部主动作完整"
+      },
+      {
+        "status": "被用户覆盖或取消",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "第六步演示已取消，保留设置8语言"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D02-v2.png",
@@ -30,10 +54,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-onboarding-permissions-granted",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-onboarding-permissions",
       "desktop-onboarding-permissions-denied"
@@ -46,7 +70,31 @@
       "desktop-onboarding-permissions",
       "desktop-onboarding-permissions-denied"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：权限卡两列与授权按钮对齐"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：已授权状态与灰色不可用状态分开"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "权限为隔离测试输入，原生系统面板未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D03-v2.png",
@@ -58,16 +106,40 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-onboarding-storage",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-onboarding-models"],
     "coverage": "模型与存储同一步骤的目录卡、模型选择与容量；不拆成两步。",
     "unverified": ["系统文件夹选择器和真实可写磁盘验证不由页面截图证明。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-onboarding-storage.png",
     "captured_scenes": ["desktop-onboarding-storage", "desktop-onboarding-models"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：保存位置展开不挤压模型列表"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：路径、容量、真实随包组件保持层级"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "系统文件夹选择器和可写磁盘未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D04-v2.png",
@@ -79,16 +151,40 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-onboarding-models",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-onboarding-storage"],
     "coverage": "真实平台模型及下载字节数；按用户要求移除质量/速度评分，安装状态仅显示一次；简介按原图短句本地化。",
     "unverified": ["截图为 macOS 清单；Windows/Linux 列表与真实模型下载未在硬件上实测。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-onboarding-models.png",
     "captured_scenes": ["desktop-onboarding-models", "desktop-onboarding-storage"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：模型列表与固定下一步分离"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：下载/已安装状态只出现一次，无首启评分"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "实际清单长于样例，使用滚动；真实下载未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D05-v2.png",
@@ -100,10 +196,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-library",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-workspace-create", "desktop-workspace-edit", "desktop-trash"],
     "coverage": "会议行、来源、状态及公共壳层；动态工作区与管理入口补充。",
     "unverified": ["示例会议、时间和版本布局差异保留；不复刻模拟窗口外框。"],
@@ -114,7 +210,31 @@
       "desktop-workspace-edit",
       "desktop-trash"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：224px侧栏与32px内容起点保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：会议行80px，44px选择/开始顶边对齐"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "固定工作区选择器覆盖旧常驻列表；样例日期不写入生产"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D06.png",
@@ -126,10 +246,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-workspace-popover",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-workspace-empty",
       "desktop-workspace-popover-default-window",
@@ -146,7 +266,31 @@
       "desktop-workspace-popover-default-window",
       "desktop-workspace-edit"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：工作区空态保留标题和新建入口"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：选择器固定100px区域，不拉长任务区"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "空工作区由隔离fixture构建，空用户首次启动另有限制"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D07.png",
@@ -158,16 +302,40 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-prepare",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-component-states"],
     "coverage": "主字段单列、右侧录制来源；名称、工作区、语言、译文目标、人数和平台模型保留。",
     "unverified": ["四种来源选项代码保留；真实麦克风音量、系统音频采集和授权未实测。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-prepare.png",
     "captured_scenes": ["desktop-prepare", "desktop-component-states"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：准备页分组字段和底部动作保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：44px控件、真实组合音源不拆成假选项"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "麦克风/系统音频电平与原生授权未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D08.png",
@@ -179,16 +347,40 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-import-selected",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-import"],
     "coverage": "导入页、通过真实 selectAudio IPC 选择样例音频后的文件行、清除/选择入口及全部处理选项；不替换生产文件或伪造文件大小。",
     "unverified": ["选择真实音频、系统文件选择器、磁盘或解析失败没有独立运行截图。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-import-selected.png",
     "captured_scenes": ["desktop-import-selected", "desktop-import"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：导入表单与文件信息卡保持密度"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：保留真实语言/模型/取消与导入入口"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "系统文件面板和音频解析失败未现场验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D09-v2.png",
@@ -200,10 +392,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-live",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-live-expanded",
       "desktop-live-dark",
@@ -226,7 +418,31 @@
       "desktop-live-info",
       "desktop-live-info-closed"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：实时收起72px导航、左右编辑/字幕区域保留"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：字幕/计时/电平与停止入口可达"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "未采纳AI建议独立呈现，与原图内联示例不同；不将建议写入草稿"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D10.png",
@@ -238,10 +454,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-detail",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-detail-transcript",
       "desktop-detail-summary",
@@ -259,7 +475,36 @@
     "pending_scenes": [],
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/detail-notes.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/detail-notes/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：右侧纪要320→340px，使边界接近原图x908"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：移除笔记面板重复20px顶部留白，阅读/编辑共享28/20/16px"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "示例笔记内容与日期不同；不恢复被删除核对提示"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/design-layout.css .summary-body/.transcript-body",
+        "result": "滚动正文右内距16px；显式hr不叠加h2边框，连续hr只显示首条，不修改Markdown/存储/导出。"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D11.png",
@@ -271,10 +516,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-detail-transcript-search",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-detail-transcript",
       "desktop-detail-search-reset",
@@ -300,7 +545,36 @@
     "pending_scenes": [],
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/detail-transcript.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/detail-transcript/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：压缩标题/工具栏/正文叠加留白，首段上移"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：标题下16px、工具栏上下8px、正文上8px；播放器不动"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "真实精修翻译推理未实测；版本/搜索/语言入口保留"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/design-layout.css .summary-body/.transcript-body",
+        "result": "滚动正文右内距16px；显式hr不叠加h2边框，连续hr只显示首条，不修改Markdown/存储/导出。"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D12.png",
@@ -312,10 +586,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-export-format-options",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-export",
       "desktop-export-expanded",
@@ -336,7 +610,31 @@
       "desktop-minimum-export",
       "desktop-minimum-export-expanded"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：576px导出浮窗左移16px、上移6px贴近原图"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：32px格式选项，列表滚动与固定动作，八语言无裁剪"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "保留所有真实格式与导出内容；系统保存面板未现场验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D13.png",
@@ -348,16 +646,40 @@
     "dpr": 1,
     "category": "A",
     "scene": "desktop-settings",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-settings-dark"],
     "coverage": "224px 主导航、200px 设置导航和通用字段；深色补充。",
     "unverified": ["八语言逐页、系统大字和所有窗口尺寸未逐项视觉验收。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-settings.png",
     "captured_scenes": ["desktop-settings", "desktop-settings-dark"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：224+200px双导航和一致标题起点"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：语言与外观字段，选中项/辅助文案层级"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "8语言布局回归不等于全部语言逐页视觉验收"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D14-ai.png",
@@ -369,16 +691,40 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-models-ai",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-models"],
     "coverage": "同一模型库滚动到纪要与翻译模型；字段读取完整模型清单。",
     "unverified": ["此视窗不能代表整张长列表全部同时可见；真实下载/推理未实测。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-models-ai.png",
     "captured_scenes": ["desktop-models-ai", "desktop-models"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：模型库实际分组与固定导航保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：模型名称/评级/安装动作不伪造为样例"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "真实下载/AI推理未验证，长列表不压成一屏"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D14-installed.png",
@@ -390,10 +736,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-models-installed",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-models-downloading", "desktop-models-download-error"],
     "coverage": "普通已安装模型动作和随包组件只读状态；安装路径为测试 fixture。",
     "unverified": ["真实模型文件移除、打开文件夹、更新及网络下载未实测。"],
@@ -403,7 +749,31 @@
       "desktop-models-downloading",
       "desktop-models-download-error"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：已安装与随包组件分组保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：随包只读说明不展示危险删除入口"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "实际组件名称/大小与样例不同，网络更新未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D14.png",
@@ -415,10 +785,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-models",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-models-ai",
       "desktop-models-installed",
@@ -435,7 +805,31 @@
       "desktop-models-downloading",
       "desktop-models-download-error"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：模型库分区线与列表密度保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：评级56×4、下载动作与真实进度共享6px轨道"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "真实硬件下载与各平台清单未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D15.png",
@@ -447,10 +841,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-ai-online",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-ai-notes",
       "desktop-ai-summary",
@@ -469,7 +863,31 @@
       "desktop-onboarding-ai-config",
       "desktop-onboarding-ai-local"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：AI功能与在线字段保持原设置页壳"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：开关、主动性、保存状态与隐私说明保留"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "服务商条件字段多于原图；外部AI未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D16.png",
@@ -481,10 +899,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-advanced",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-advanced-expanded"],
     "coverage": "九组真实数值/文本参数、权限和恢复默认/确定；展开分组补充。",
     "unverified": [
@@ -492,7 +910,31 @@
     ],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-advanced.png",
     "captured_scenes": ["desktop-advanced", "desktop-advanced-expanded"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：可折叠分组/独立滚动不压缩为示意图"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：数值、文本字段及恢复默认保持真实元数据"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "完整参数多于PNG，所有平台inactive_fields未逐屏验收"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D17.png",
@@ -504,16 +946,40 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-voiceprints-filled",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-voiceprints"],
     "coverage": "真实声纹列表/样本行、创建、上传、验证、更名与删除入口；非空页面仅在捕获测试中注入样本元数据。",
     "unverified": ["真实声纹录入、播放、识别与删除确认未做硬件实测。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-voiceprints-filled.png",
     "captured_scenes": ["desktop-voiceprints-filled", "desktop-voiceprints"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：声纹名单/样本分区和动作保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：已有/空态、删除保护与无样本提示保留"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "采样与验证按钮保留；真实声纹识别未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D18.png",
@@ -525,10 +991,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-phone-trusted",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-phone",
       "desktop-onboarding-pairing",
@@ -543,7 +1009,31 @@
       "desktop-onboarding-pairing",
       "desktop-onboarding-pairing-request"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：设备页固定标题与状态区保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：可信设备与当前连接状态分开"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "信任不等于在线；真实手机跨网与音频传输未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D19.png",
@@ -555,10 +1045,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-storage-confirmation",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-storage", "desktop-storage-default-window"],
     "coverage": "真实字节组成、目录路径/大小、两项数据清理、隐私说明；锚定确认保留真实存储页，取消恢复页面、滚动和焦点。",
     "unverified": [
@@ -571,7 +1061,31 @@
       "desktop-storage",
       "desktop-storage-default-window"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：存储卡/隐私区与清理确认保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：条形表示真实数据组成，保留清理选项"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "接口无总容量/配额，拒绝复制图中10GB刻度"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D20.png",
@@ -583,16 +1097,40 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-trash-confirmation",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-trash", "desktop-trash-selected"],
     "coverage": "最近删除空态、跨工作区已选会议及实际批量永久删除确认分别捕获；不点击确认执行fixture删除。",
     "unverified": ["真实永久删除与恢复后工作区归属不由视觉 fixture 证明。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-trash-confirmation.png",
     "captured_scenes": ["desktop-trash-confirmation", "desktop-trash", "desktop-trash-selected"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：最近删除沿用会议列表与批量工具栏"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：恢复、永久删除及默认取消焦点保留"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "不为截图删除用户会议；隔离数据回归与现场磁盘操作分开"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D21-v2.png",
@@ -604,7 +1142,7 @@
     "dpr": 1,
     "category": "C",
     "scene": null,
-    "status": "历史，不实施",
+    "status": "被用户覆盖或取消",
     "confidence": "高（README及源码）",
     "comparison": "1280×800原尺寸；模拟窗口外框保留在对比证据中，非产品内容",
     "reproduce": null,
@@ -613,7 +1151,14 @@
     "unverified": ["历史，不作当前验收对象。"],
     "evidence": null,
     "captured_scenes": [],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "被用户覆盖或取消",
+        "component": "frontend/onboarding.js;app.js;ui-components.js",
+        "result": "D21已删除；D35独立演示取消，不恢复第六步。"
+      }
+    ]
   },
   {
     "reference": "D22-v2.png",
@@ -625,16 +1170,40 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-live-dark",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-live", "desktop-floating-caption"],
     "coverage": "深色实时页与独立 Electron 悬浮字幕窗口分开截图。",
     "unverified": ["复合图未整体复刻；OS 窗口装饰、跨屏置顶及全屏应用上方显示未实测。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-live-dark.png",
     "captured_scenes": ["desktop-live-dark", "desktop-live", "desktop-floating-caption"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：字幕独立窗口与深色主窗分别捕获"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：控件/反相表面保持同一主题，未拼假窗口"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "复合画板仅并排；OS置顶/跨屏硬件未验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D23.png",
@@ -646,7 +1215,7 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-detail-summary",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸，无参考裁剪或拉伸；真实纪要格式与内容保留，模型配置错误就地展示。",
     "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
@@ -668,7 +1237,36 @@
     "reference_revision": "2026-10-13 revision-06",
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/detail-summary.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/detail-summary/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：单一纪要阅读区，无空右栏"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：标题行编辑/复制/重新生成，共享导出"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "任意Markdown标题未强行添加示例语义图标；核对提示已撤回"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/design-layout.css .summary-body/.transcript-body",
+        "result": "滚动正文右内距16px；显式hr不叠加h2边框，连续hr只显示首条，不修改Markdown/存储/导出。"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D24.png",
@@ -680,10 +1278,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-tasks",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-task-paused",
       "desktop-task-minimized",
@@ -702,7 +1300,31 @@
       "desktop-models-downloading",
       "desktop-models-download-error"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：任务卡去掉固定滚动槽、恢复完整宽度；类型图标在卡片居中、标题14px/600、元信息12px/400，暂停无填充、播放卡独立边框、仅录制点标红。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "固定100px工作区和44px选择器保留；D50菜单按原图重校256×336px上限、30px行；任务列表独立滚动，D25三任务与D50六任务分别复拍。顺序按真实任务状态，不为样例改业务排序。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "组件画板不是生产页面；不伪造九种任务同时运行"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D25.png",
@@ -714,10 +1336,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-sidebar-workspace-selector-tasks",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-tasks",
       "desktop-task-paused",
@@ -736,7 +1358,31 @@
     ],
     "pending_scenes": [],
     "reference_revision": "2026-10-13 revision-09",
-    "evidence_note": "该路径为当前旧布局截图，可定位新稿差异；最新修订目标未实施验收。"
+    "evidence_note": "该路径为当前旧布局截图，可定位新稿差异；最新修订目标未实施验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：任务卡去掉固定滚动槽、恢复完整宽度；类型图标在卡片居中、标题14px/600、元信息12px/400，暂停无填充、播放卡独立边框、仅录制点标红。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "固定100px工作区和44px选择器保留；D50菜单按原图重校256×336px上限、30px行；任务列表独立滚动，D25三任务与D50六任务分别复拍。顺序按真实任务状态，不为样例改业务排序。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "任务数量、百分比/示例标题来自测试输入"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D26.png",
@@ -748,16 +1394,40 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-live-expanded",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-live", "desktop-task-media"],
     "coverage": "实时收起和键盘焦点展开分别捕获，任务位置继承 D25。",
     "unverified": ["不会用展开截图声明收起态完整；鼠标越界、多个任务和全部键盘顺序未逐状态截图。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-live-expanded.png",
     "captured_scenes": ["desktop-live-expanded", "desktop-live", "desktop-task-media"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：72px收起与hover/focus展开分别复拍"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：展开后的任务操作、底部入口保持可达"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "复合稿不做整体像素评分，部分键盘顺序未逐帧截图"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D27.png",
@@ -769,10 +1439,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-onboarding-ai-local",
-    "status": "用户要求撤回顶部配置；功能卡与独立配置入口已恢复，新顶部布局暂停验收",
+    "status": "被用户覆盖或取消（顶部直接配置）；现行方案已复拍验证",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-onboarding-ai-config",
       "desktop-onboarding-ai-manual",
@@ -802,7 +1472,31 @@
     "evidence_note": "该路径为当前旧布局截图，可定位新稿差异；最新修订目标未实施验收。",
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/onboarding-ai.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/onboarding-ai/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：沿用功能卡和独立共享服务配置入口"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：主动性文字居中，动画限制在卡内"
+      },
+      {
+        "status": "被用户覆盖或取消",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "顶部直接配置方案被撤回，不按此PNG上半部分还原"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D28.png",
@@ -814,10 +1508,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-onboarding-phone",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-onboarding-pairing"],
     "coverage": "Android/iPhone 真实安装链接二维码与独立配对入口。",
     "unverified": ["Android 实际下载/安装更新、受邀 TestFlight 安装未实测。"],
@@ -826,7 +1520,31 @@
     "pending_scenes": [],
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/onboarding-phone.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/onboarding-phone/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：QR/下载链接与下一步保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：删除标注的说明/脚注，手机连接第五步"
+      },
+      {
+        "status": "被用户覆盖或取消",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "真实Android/TestFlight安装未验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D29.png",
@@ -838,10 +1556,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-onboarding-permissions",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-onboarding-permissions-granted",
       "desktop-onboarding-permissions-denied"
@@ -854,7 +1572,31 @@
       "desktop-onboarding-permissions-granted",
       "desktop-onboarding-permissions-denied"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：默认权限卡与引导品牌栏保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：未授权/打开设置动作保持真实语义"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "系统授权弹窗未现场验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D30.png",
@@ -866,10 +1608,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-onboarding-ai-config",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-ai-summary"],
     "coverage": "450px居中的在线配置，实际自定义供应商/请求地址/密钥/模型字段与既有入口；不恢复撤回的顶部配置。",
     "unverified": [
@@ -877,7 +1619,31 @@
     ],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-onboarding-ai-config.png",
     "captured_scenes": ["desktop-onboarding-ai-config", "desktop-ai-summary"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：450px共享配置容器，通用字段覆盖改为实际40px"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：16px分区，页脚清除叠加空白，实际供应商字段保留"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "原图更宽且偏下；共享配置全窗居中，真实在线字段导致高度不同"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D31.png",
@@ -889,10 +1655,10 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-onboarding-pairing-request",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-onboarding-pairing", "desktop-phone-trusted"],
     "coverage": "电脑配对请求确认与校验词；短期码、可信设备状态分开捕获。",
     "unverified": ["手机相机扫描、实际 PIN 输入到真机与批准后的现场连接未实测。"],
@@ -902,7 +1668,31 @@
       "desktop-onboarding-pairing",
       "desktop-phone-trusted"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：引导配对浮窗与独立安装页分离"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：PIN、复制、校验词与审批状态保留"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "176px真实载荷二维码大于示例，手机相机未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D32.png",
@@ -914,16 +1704,40 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-onboarding-permissions-denied",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-onboarding-permissions"],
     "coverage": "应用内拒绝与平台不可用恢复提示，不阻断不依赖权限的方式。",
     "unverified": ["麦克风与系统音频两类提示不同；原生权限拒绝/重授权未实测。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-onboarding-permissions-denied.png",
     "captured_scenes": ["desktop-onboarding-permissions-denied", "desktop-onboarding-permissions"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：拒绝与平台不可用分别显示"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：恢复动作仍可达，禁用态不伪装授权"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "macOS真实拒绝/重授权未现场验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D33.png",
@@ -935,10 +1749,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-component-states",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-workspace-create",
       "desktop-notes-saving",
@@ -959,7 +1773,31 @@
       "desktop-notification-ai-saved",
       "desktop-notification-error"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：在真实组件上下文展示菜单与字段状态"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：焦点/禁用/选中借用共享控件，保留动作"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "复合组件板不构造额外页面，每个组件所有hover未逐帧保存"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D34.png",
@@ -971,10 +1809,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-workspace-create",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-workspace-edit", "desktop-confirmation"],
     "coverage": "新建/编辑工作区与删除确认组件分别截图，确认默认聚焦取消。",
     "unverified": ["确认截图为测试组件 fixture；不会据此声明真实删除操作已经执行成功。"],
@@ -984,7 +1822,31 @@
       "desktop-workspace-edit",
       "desktop-confirmation"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：创建/编辑/删除确认沿用同一弹层"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：默认取消焦点与危险动作分级保留"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "复合图分状态捕获，不操作用户工作区"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D35.png",
@@ -996,7 +1858,7 @@
     "dpr": 1,
     "category": "D",
     "scene": null,
-    "status": "2026-10-13 用户要求删除全部功能演示页，不再实施",
+    "status": "被用户覆盖或取消",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
     "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/atlas-final-verified npm run test:e2e",
@@ -1005,7 +1867,14 @@
     "unverified": ["演示样例不执行真实录音或写入；真实会议业务须单独回归。"],
     "evidence": null,
     "captured_scenes": [],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "被用户覆盖或取消",
+        "component": "frontend/onboarding.js;app.js;ui-components.js",
+        "result": "D21已删除；D35独立演示取消，不恢复第六步。"
+      }
+    ]
   },
   {
     "reference": "D36.png",
@@ -1017,16 +1886,40 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-onboarding-ai-local-config",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-models-ai"],
     "coverage": "450px居中紧凑本地AI配置，真实模型/容量/评级；未安装时显示右侧下载按钮并禁用保存，完整简介保留悬浮提示。",
     "unverified": ["模型列表滚动不代表所有选项一屏可见；真实下载与本机推理未实测。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-onboarding-ai-local-config.png",
     "captured_scenes": ["desktop-onboarding-ai-local-config", "desktop-models-ai"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：450px本地服务浮窗去掉模型/页脚叠加留白"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：40px选择器，下载按钮/未安装禁用保存保留"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "真实模型信息造成高度差，共享居中/限高保持短窗操作可达；位置与原稿偏下不同，不计为完全对齐"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D37.png",
@@ -1038,10 +1931,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-notes-edit",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-notes-saving",
       "desktop-notes-save-failed",
@@ -1056,7 +1949,36 @@
       "desktop-notes-save-failed",
       "desktop-minimum-detail"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：复用340px右栏与详情播放条"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：编辑与阅读h1/h2/正文28/20/16px，移除重复h2规则"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "示例内容不同；复杂富文本命令与输入法未全量人工验证"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/design-layout.css .summary-body/.transcript-body",
+        "result": "滚动正文右内距16px；显式hr不叠加h2边框，连续hr只显示首条，不修改Markdown/存储/导出。"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D38.png",
@@ -1068,10 +1990,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-notes-markdown",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-notes-edit", "desktop-notes-save-failed"],
     "coverage": "同一草稿切到 Markdown，沿用既有命令可用性，不新增预览页。 顶部紧凑操作、标签/工具栏/首标题留白和纯文字编辑标签按 D37/D38 复核；第三内容标签及失败重试保留。",
     "unverified": ["复杂表格/图片转换、全部快捷键和输入法未逐项视觉实测。"],
@@ -1081,7 +2003,36 @@
       "desktop-notes-edit",
       "desktop-notes-save-failed"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：Markdown与富文本保持同一面板几何"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：等宽源码/禁用命令/单一保存取消组保留"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "源码行数随真实草稿变化，不补造示例段落"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/design-layout.css .summary-body/.transcript-body",
+        "result": "滚动正文右内距16px；显式hr不叠加h2边框，连续hr只显示首条，不修改Markdown/存储/导出。"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D39.png",
@@ -1093,10 +2044,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-notes-save-failed",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-notes-edit", "desktop-notes-saving", "desktop-detail-ready"],
     "coverage": "已修改、保存中、失败保留草稿与只读已保存区域分场景捕获。 未保存状态去旧胶囊底色，状态点与错误草稿仍保留。",
     "unverified": ["截图主要覆盖笔记；字幕、纪要、配置各自保存成功/失败未全部独立捕获。"],
@@ -1107,7 +2058,31 @@
       "desktop-notes-saving",
       "desktop-detail-ready"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：保存状态位于内容上下文，不加新页面"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：失败草稿/重试/忙碌分别捕获"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "复合板不能等同所有配置表单失败均有独立截图"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D40.png",
@@ -1119,10 +2094,10 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-onboarding-ai-auto",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-onboarding-ai-auto-written",
       "desktop-onboarding-ai-manual",
@@ -1155,7 +2130,31 @@
       "desktop-ai-demo-added",
       "desktop-ai-demo-auto"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：预览在AI功能卡内滚动，不撑高父级"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：assist/auto阶段与真实开关保留"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/onboarding.js;app.js;ui-components.js；frontend/design-layout.css",
+        "result": "动画按稳定帧捕获，不声称截图是一次真实AI推理"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D41.png",
@@ -1167,16 +2166,40 @@
     "dpr": 1,
     "category": "D",
     "scene": "desktop-about",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "1280×800 原尺寸 reference/current/overlay-50/diff；scale=1、crop=null；模拟窗口及示例内容差异保留",
-    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop npm run test:e2e",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [],
     "coverage": "固定设置壳层中的关于与更新页，真实版本及既有链接。",
     "unverified": ["真实下载、签名校验、安装器、重启更新与平台发布路径未实测。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-about.png",
     "captured_scenes": ["desktop-about"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：关于/更新复用设置页壳与分类日志"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：版本和链接沿用真实配置"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "真实签名安装包下载/重启更新未实测"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "M01.png",
@@ -1188,7 +2211,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-welcome",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1199,7 +2222,24 @@
     "captured_scenes": ["mobile-welcome", "mobile-onboarding-connection", "mobile-permissions"],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M02.png",
@@ -1211,7 +2251,7 @@
     "dpr": 1,
     "category": "D",
     "scene": "mobile-library",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1227,7 +2267,24 @@
     ],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M03.png",
@@ -1239,7 +2296,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-connection",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1261,7 +2318,24 @@
     ],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M04-v2.png",
@@ -1273,7 +2347,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-live",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1284,7 +2358,24 @@
     "captured_scenes": ["mobile-live", "mobile-live-notes", "mobile-paused", "mobile-offline"],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M05-v2.png",
@@ -1296,7 +2387,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-offline",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1318,7 +2409,24 @@
     ],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M06.png",
@@ -1330,7 +2438,7 @@
     "dpr": 1,
     "category": "D",
     "scene": "mobile-review",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1352,7 +2460,24 @@
     ],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M07.png",
@@ -1364,7 +2489,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-settings",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1375,7 +2500,24 @@
     "captured_scenes": ["mobile-settings", "mobile-device-manage", "mobile-storage"],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M08-v2.png",
@@ -1387,7 +2529,7 @@
     "dpr": 1,
     "category": "D",
     "scene": "mobile-language",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1403,7 +2545,24 @@
     ],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M09.png",
@@ -1415,7 +2574,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-microphone-denied",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1443,7 +2602,24 @@
     ],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/mobile_errors.dart;main.dart;connection.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/mobile_errors.dart;main.dart;connection.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M10.png",
@@ -1455,7 +2631,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-upload-prepare",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1468,7 +2644,24 @@
     "captured_scenes": ["mobile-upload-prepare", "mobile-review", "mobile-about"],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M11-v2.png",
@@ -1480,7 +2673,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-live-dark",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1493,7 +2686,24 @@
     "captured_scenes": ["mobile-live-dark", "mobile-live", "mobile-paused"],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M12.png",
@@ -1505,7 +2715,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "mobile-manual-entered",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1527,7 +2737,24 @@
     ],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M13.png",
@@ -1539,7 +2766,7 @@
     "dpr": 1,
     "category": "A",
     "scene": "mobile-permissions",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1550,7 +2777,24 @@
     "captured_scenes": ["mobile-permissions"],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M14.png",
@@ -1562,7 +2806,7 @@
     "dpr": 1,
     "category": "A",
     "scene": "mobile-bookmark",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1573,7 +2817,24 @@
     "captured_scenes": ["mobile-bookmark"],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "M15.png",
@@ -1585,7 +2846,7 @@
     "dpr": 1,
     "category": "D",
     "scene": "mobile-prepare-connected",
-    "status": "部分覆盖，已核对现有截图",
+    "status": "已实现但未视觉验证（本轮）；环境阻塞/硬件未验证（真机）",
     "confidence": "高：结构/字段来自 README、规范与源码；中：区域视觉核对；未确定：PNG 原字体/alpha/阴影/响应式",
     "comparison": "分区域并排核对；保留原始 PNG；不输出整图相似度或借主 scene 声明全部分镜覆盖",
     "reproduce": "cd mobile && BREVIA_MOBILE_CAPTURE_DIR=../output/playwright/layout-style-comparison/captures/mobile BREVIA_CAPTURE_FONT='/System/Library/Fonts/Supplemental/Arial Unicode.ttf' flutter test test/design_capture_test.dart --reporter expanded",
@@ -1596,7 +2857,24 @@
     "captured_scenes": ["mobile-prepare-connected", "mobile-prepare"],
     "pending_scenes": [],
     "export_scale": 2,
-    "image_pixels": [780, 1688]
+    "image_pixels": [780, 1688],
+    "visual_audit": [
+      {
+        "status": "已实现但未视觉验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "本轮仅盘点手机画板与前轮widget截图，未重跑Flutter。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "mobile/lib/design_system.dart",
+        "result": "390×844逻辑屏、780×1688导出，与1280×800复合画板只做并排，不拉伸。"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "mobile/lib/main.dart;connection.dart;onboarding.dart",
+        "result": "系统安全区/键盘/相机/授权/后台与真机连接不在widget证据内。"
+      }
+    ]
   },
   {
     "reference": "D42.png",
@@ -1608,7 +2886,7 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-detail-summary-config-required",
-    "status": "本轮已捕获并完成对照；残余与待办见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-06",
     "confidence": "配置边界来自 requestConfig、summaryRequestConfig、generateMeetingSummary、showSummaryConfigCard；就地布局为新增设计目标",
     "comparison": "1280×800 原尺寸，无参考裁剪或拉伸；真实纪要格式与内容保留，模型配置错误就地展示。",
@@ -1618,7 +2896,31 @@
     "unverified": ["真实内置模型生成、外部 AI 服务故障和硬件录音仍需真实环境验证。"],
     "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-detail-summary-config-required.png",
     "captured_scenes": ["desktop-detail-summary-config-required"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：配置缺失反馈就地显示，保留旧纪要"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：配置入口可点击，标题操作和正文不丢失"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "未用真实本地模型/外部AI服务验证故障恢复"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D43.png",
@@ -1629,21 +2931,45 @@
     "viewport": [1280, 800],
     "dpr": 1,
     "category": "B",
-    "scene": "desktop-meeting-management-menu",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "scene": "desktop-meeting-workspace-targets",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-08",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
-    "supplementary_scenes": ["desktop-meeting-workspace-targets"],
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
+    "supplementary_scenes": ["desktop-meeting-management-menu"],
     "coverage": "重命名、移至工作区、从文件夹打开、导出、删除；菜单锚点与边界避让。",
     "unverified": ["PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。"],
-    "evidence": "output/playwright/layout-style-comparison/D43",
-    "captured_scenes": ["desktop-meeting-management-menu", "desktop-meeting-workspace-targets"],
+    "evidence": "output/playwright/layout-style-comparison/captures/desktop/desktop-meeting-workspace-targets.png",
+    "captured_scenes": ["desktop-meeting-workspace-targets", "desktop-meeting-management-menu"],
     "pending_scenes": [],
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/meeting-submenu.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/meeting-submenu/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/ui-components.js;app.js;workspaces.js；frontend/design-layout.css",
+        "result": "本轮修正：长二级菜单从单独上移改为主菜单同顶"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/ui-components.js;app.js;workspaces.js；frontend/design-layout.css",
+        "result": "本轮修正：剩余窗口高度约束列表，末项键盘可达且独立滚动"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/ui-components.js;app.js;workspaces.js；frontend/design-layout.css",
+        "result": "实际工作区列表长于原图；保留横向翻转与连接角"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D44.png",
@@ -1655,20 +2981,41 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-meeting-rename-inline",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-08",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-meeting-rename-error"],
     "coverage": "原行输入、Enter/Esc、可见保存/取消、未保存与失败保留。",
-    "unverified": [
-      "PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。",
-      "尚未单独捕获：desktop-meeting-rename-error"
-    ],
+    "unverified": ["PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。"],
     "evidence": "output/playwright/layout-style-comparison/D44",
-    "captured_scenes": ["desktop-meeting-rename-inline"],
-    "pending_scenes": ["desktop-meeting-rename-error"]
+    "captured_scenes": ["desktop-meeting-rename-inline", "desktop-meeting-rename-error"],
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/ui-components.js;app.js；frontend/design-layout.css",
+        "result": "本轮修正：行内重命名不切换整页布局"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/ui-components.js;app.js；frontend/design-layout.css",
+        "result": "本轮修正：补拍真实IPC失败后的草稿/错误/可重试状态"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/ui-components.js;app.js；frontend/design-layout.css",
+        "result": "错误会议ID是隔离fixture，未修改用户标题"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D45.png",
@@ -1680,11 +3027,11 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-meeting-batch-selected",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-08",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-meeting-batch-none", "desktop-meeting-batch-all"],
     "coverage": "选择入口、退出选择、独立复选框、部分/全部选中、计数与操作工具栏。",
     "unverified": ["PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。"],
@@ -1694,7 +3041,31 @@
       "desktop-meeting-batch-none",
       "desktop-meeting-batch-all"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/ui-components.js;app.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：进入多选后会议行与顶部工具栏保持位置"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/ui-components.js;app.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：选中/半选与导出/删除入口保留"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/ui-components.js;app.js；frontend/design-layout.css",
+        "result": "保留真实批量选项，示例会议标题不替换生产数据"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D46.png",
@@ -1706,11 +3077,11 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-meeting-batch-states",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-08",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "复合组件画板：按三态工具栏、确认、结果及最近删除各场景并排核对，不计算整图像素相似度。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-meeting-batch-none",
       "desktop-meeting-batch-selected",
@@ -1731,7 +3102,31 @@
       "desktop-meeting-batch-export-partial",
       "desktop-trash-batch"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：批量确认/部分失败结果分场景捕获"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：保留成功与失败逐项结果以及重试动作"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js；frontend/design-layout.css",
+        "result": "组件板不拼成应用页面，部分失败为fixture"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D47.png",
@@ -1743,20 +3138,61 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-devices-empty",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-08",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
-    "supplementary_scenes": ["desktop-devices-service-off"],
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
+    "supplementary_scenes": [
+      "desktop-devices-service-off",
+      "desktop-device-connection-native-minimum"
+    ],
     "coverage": "服务已开启但没有已连接/已信任设备，手动配对入口与空状态。",
     "unverified": ["PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。"],
     "evidence": "output/playwright/layout-style-comparison/D47",
-    "captured_scenes": ["desktop-devices-empty", "desktop-devices-service-off"],
+    "captured_scenes": [
+      "desktop-devices-empty",
+      "desktop-devices-service-off",
+      "desktop-device-connection-native-minimum"
+    ],
     "pending_scenes": [],
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/device-connection.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/device-connection/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/mobile-connection.js;index.html；frontend/design-layout.css",
+        "result": "本轮修正：修正捕获时撤销后未等轮询造成的伪空态"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/mobile-connection.js;index.html；frontend/design-layout.css",
+        "result": "本轮修正：等待真实撤销处理完成并断言后台/DOM都为空"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/mobile-connection.js;index.html；frontend/design-layout.css",
+        "result": "标题行安装入口遵循标注；真实手机连接未验证"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/mobile-connection.js open；frontend/index.html；frontend/design-layout.css",
+        "result": "侧栏实际入口进入设备设置页；手机/笔记本/云上传图标与分区开关位置重校；保留安装和信任管理。 录制中从侧栏进入后保留活动录音卡与真实配对控件。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/design-layout.css .settings-page / .modal-body",
+        "result": "沿用200px设置导航和16px正文滚动留白；实际安装/返回入口及双卡宽度与原图不同，保留真实操作可达性。"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D48.png",
@@ -1768,11 +3204,11 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-mobile-discovery-pairing",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-08",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-mobile-pairing-expired"],
     "coverage": "mobile.discovered 自动打开同一配对会话；二维码、配对码、倒计时、等待请求。",
     "unverified": [
@@ -1781,7 +3217,31 @@
     ],
     "evidence": "output/playwright/layout-style-comparison/D48",
     "captured_scenes": ["desktop-mobile-discovery-pairing", "desktop-mobile-pairing-expired"],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/mobile-connection.js;electron/mobile-server.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：500px配对等待弹窗与真实PIN/QR保留"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/mobile-connection.js;electron/mobile-server.js；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：过期禁用复制、重试恢复入口保留"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/mobile-connection.js;electron/mobile-server.js；frontend/design-layout.css",
+        "result": "手动真实配对入口复现等待，局域网手机发现未现场验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D49.png",
@@ -1793,21 +3253,48 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-mobile-pairing-approval",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-08",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-mobile-pairing-denied", "desktop-mobile-pairing-approved"],
     "coverage": "提交请求后真实设备名、8 位十六进制校验词、拒绝/允许；取消结束会话。",
     "unverified": [
       "PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。",
-      "局域网发现与手机真机配对未实测；等待态由同一真实手动配对入口捕获，审批态由真实 HTTPS 请求触发。",
-      "尚未单独捕获：desktop-mobile-pairing-approved"
+      "局域网发现与手机真机配对未实测；等待态由同一真实手动配对入口捕获，审批态由真实 HTTPS 请求触发。"
     ],
     "evidence": "output/playwright/layout-style-comparison/D49",
-    "captured_scenes": ["desktop-mobile-pairing-approval", "desktop-mobile-pairing-denied"],
-    "pending_scenes": ["desktop-mobile-pairing-approved"]
+    "captured_scenes": [
+      "desktop-mobile-pairing-approval",
+      "desktop-mobile-pairing-denied",
+      "desktop-mobile-pairing-approved"
+    ],
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/mobile-connection.js;electron/mobile-server.js；frontend/design-layout.css",
+        "result": "本轮修正：审批弹窗保持设备名/校验词与允许拒绝"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/mobile-connection.js;electron/mobile-server.js；frontend/design-layout.css",
+        "result": "本轮修正：补拍真实HTTPS允许200与拒绝403，信任后不伪装在线"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/mobile-connection.js;electron/mobile-server.js；frontend/design-layout.css",
+        "result": "本机TLS请求代替手机端请求，真机连接/录音未验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D50.png",
@@ -1819,11 +3306,11 @@
     "dpr": 1,
     "category": "B",
     "scene": "desktop-sidebar-workspace-popover-tasks",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "reference_revision": "2026-10-13 revision-09",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-sidebar-workspace-search",
       "desktop-sidebar-many-tasks",
@@ -1831,7 +3318,7 @@
       "desktop-sidebar-workspace-small-window"
     ],
     "coverage": "工作区选择器与向右锚定列表、搜索/新建固定、任务单独滚动、底部入口固定。",
-    "unverified": ["PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。"],
+    "unverified": ["原图字族/示例内容不同；默认与最小原生窗口分别验证，不用旧小窗口图代替本轮。"],
     "evidence": "output/playwright/layout-style-comparison/D50",
     "captured_scenes": [
       "desktop-sidebar-workspace-popover-tasks",
@@ -1843,7 +3330,31 @@
     "pending_scenes": [],
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/workspace-picker.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/workspace-picker/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/workspaces.js;app.js;design-layout.css；frontend/design-layout.css",
+        "result": "本轮修正：任务卡去掉固定滚动槽、恢复完整宽度；类型图标在卡片居中、标题14px/600、元信息12px/400，暂停无填充、播放卡独立边框、仅录制点标红。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/workspaces.js;app.js;design-layout.css；frontend/design-layout.css",
+        "result": "固定100px工作区和44px选择器保留；D50菜单按原图重校256×336px上限、30px行；任务列表独立滚动，D25三任务与D50六任务分别复拍。顺序按真实任务状态，不为样例改业务排序。"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/workspaces.js;app.js;design-layout.css；frontend/design-layout.css",
+        "result": "实际工作区名与任务输入不同；菜单打开自动聚焦搜索，保留可见键盘焦点环"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D51.png",
@@ -1855,10 +3366,10 @@
     "dpr": 1,
     "category": "A",
     "scene": "desktop-live-task-summary-compact-v11",
-    "status": "最后一轮已实施、真实 Electron 捕获并对照；剩余差异见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "真实任务/编辑状态及几何已运行验证；字体名称、抗锯齿与原 SVG 未提供，保留推断边界",
     "comparison": "原尺寸1280×800 reference/current/overlay-50/diff；scale=1，crop=null。真实数据和模拟窗框差异保留。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。fixture 仅在隔离测试窗口执行。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-live-task-summary-compact-error-v11",
       "desktop-live-task-summary-expanded-v11",
@@ -1878,7 +3389,31 @@
       "desktop-live-task-summary-return-v11",
       "desktop-live-task-summary-native-minimum"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：收起侧栏底部单任务汇总入口保留"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：数量/失败态与hover/focus展开分别捕获"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "真实长会议计时未现场验证；保留独立AI建议和组合音源"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D52.png",
@@ -1890,10 +3425,10 @@
     "dpr": 1,
     "category": "A",
     "scene": "desktop-detail-transcript-edit-v11",
-    "status": "最后一轮已实施、真实 Electron 捕获并对照；剩余差异见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "真实任务/编辑状态及几何已运行验证；字体名称、抗锯齿与原 SVG 未提供，保留推断边界",
     "comparison": "原尺寸1280×800 reference/current/overlay-50/diff；scale=1，crop=null。真实数据和模拟窗框差异保留。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。fixture 仅在隔离测试窗口执行。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-detail-transcript-saving-v11",
       "desktop-detail-transcript-failed-v11",
@@ -1912,7 +3447,31 @@
       "desktop-detail-transcript-empty-v11",
       "desktop-detail-transcript-native-minimum"
     ],
-    "pending_scenes": []
+    "pending_scenes": [],
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app-meeting-detail.js;app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：逐字稿编辑单栏、标题/全局导出层级保留"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app-meeting-detail.js;app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：统一保存取消、自动增高文本域、失败保留草稿"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app-meeting-detail.js;app.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "生产长会议与全部输入法未验证；未执行外部ASR"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D53.png",
@@ -1926,10 +3485,10 @@
     "viewport": [1280, 800],
     "dpr": 1,
     "category": "A",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-library-select-entry-empty-v11"],
     "unverified": ["PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。"],
     "evidence": "output/playwright/layout-style-comparison/D53",
@@ -1939,7 +3498,31 @@
     ],
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/library.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/library/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css;index.html；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：44px选择会议与开始按钮同高同顶"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css;index.html；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：紧凑会议行与固定侧栏沿用最新标注"
+      },
+      {
+        "status": "被用户覆盖或取消",
+        "component": "frontend/app.js;ui-components.js;design-layout.css;index.html；frontend/design-layout.css",
+        "result": "不沿用历史较矮选择按钮；样例日期不同"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D54.png",
@@ -1953,10 +3536,10 @@
     "viewport": [1280, 800],
     "dpr": 1,
     "category": "A",
-    "status": "本轮已实施、真实 Electron 捕获并对照；残余及未覆盖状态见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "交互与数据边界由真实源码、IPC 和运行断言验证；字体与未提供的 SVG 为推断，不宣称逐像素一致",
     "comparison": "原尺寸1280×800参考与真实Electron截图对照；参考含模拟外框，保留边框/阴影与真实数据差异，不拉伸或选择性裁剪。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。仅隔离测试窗口注入状态，不替换生产数据。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": ["desktop-library-selection-exit-v11"],
     "unverified": ["PNG 原字体/SVG 未提供；外框、抗锯齿、样例日期/内容仍有差异。"],
     "evidence": "output/playwright/layout-style-comparison/D54",
@@ -1966,7 +3549,31 @@
     ],
     "feedback_capture": "output/playwright/layout-style-comparison/captures/feedback/selection-empty.png",
     "feedback_comparison": "output/playwright/layout-style-comparison/feedback/selection-empty/comparison-board.jpg",
-    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。"
+    "feedback_note": "2026-10-14用户标注覆盖部分旧PNG；独立真实窗口复拍，非全册重新验收。",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css;index.html；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：0项多选工具栏不挤走主动作"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;ui-components.js;design-layout.css;index.html；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：导出/删除弱化禁用，切换/全选/退出保持"
+      },
+      {
+        "status": "仍有差异",
+        "component": "frontend/app.js;ui-components.js;design-layout.css;index.html；frontend/design-layout.css",
+        "result": "示例数量来自fixture；恢复已选状态通过真实点击"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D55.png",
@@ -1978,10 +3585,10 @@
     "dpr": 1,
     "category": "A",
     "scene": "desktop-update-first-launch-changelog-zh",
-    "status": "第十三轮已实施；真实 Electron 中英文捕获并对照，残余见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "完整日志与版本/分类/引用复用真实源码；升级去重、延后、键盘与最小窗口由运行断言验证；字体/阴影为推断",
     "comparison": "原尺寸1280×800比较；浮窗几何按PNG约736×676，保留真实会议背景/任务数量和字体差异，不拉伸参考图。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。升级场景只在隔离测试窗口设置已读版本，不替换生产日志。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-update-changelog-scroll",
       "desktop-update-changelog-history",
@@ -2009,7 +3616,31 @@
     ],
     "pending_scenes": [],
     "locale": "zh",
-    "reference_revision": "2026-10-13 revision-13"
+    "reference_revision": "2026-10-13 revision-13",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;changelog.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：736px升级浮窗与固定78px标题/动作区保持"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;changelog.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：中文分类日志、历史折叠/长文滚动与已读行为保留"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;changelog.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "字体/局部换行和背景内容不同，跨版本签名安装未验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
   },
   {
     "reference": "D56.png",
@@ -2021,10 +3652,10 @@
     "dpr": 1,
     "category": "A",
     "scene": "desktop-update-first-launch-changelog-en",
-    "status": "第十三轮已实施；真实 Electron 中英文捕获并对照，残余见 visual-report.md",
+    "status": "已修复并复拍验证；保留差异见 visual_audit",
     "confidence": "完整日志与版本/分类/引用复用真实源码；升级去重、延后、键盘与最小窗口由运行断言验证；字体/阴影为推断",
     "comparison": "原尺寸1280×800比较；浮窗几何按PNG约736×676，保留真实会议背景/任务数量和字体差异，不拉伸参考图。",
-    "reproduce": "npm run build；BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test；python scripts/compare-design.py。升级场景只在隔离测试窗口设置已读版本，不替换生产日志。",
+    "reproduce": "BREVIA_DESIGN_CAPTURE_DIR=output/playwright/layout-style-comparison/captures/desktop PATH=\"$PWD/.venv/bin:$PATH\" npm test",
     "supplementary_scenes": [
       "desktop-update-changelog-en-long",
       "desktop-update-changelog-en-links",
@@ -2044,6 +3675,199 @@
     ],
     "pending_scenes": [],
     "locale": "en",
-    "reference_revision": "2026-10-13 revision-13"
+    "reference_revision": "2026-10-13 revision-13",
+    "visual_audit": [
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/tailwind.css；frontend/design-layout.css",
+        "result": "追加反馈修正：正文/辅助恢复400，共享搜索清除label字重继承；侧栏品牌/按钮位置、24px图标及工作区分隔线重校。原图字族未提供，保留系统回退。 追加标注：统一共用编辑/复制/重新生成图形及特殊动作尺寸；工作区添加24/18px居中，会议行右箭头和状态列位置。保留真实菜单/数据。"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;changelog.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：复用D55容器与长英文滚动"
+      },
+      {
+        "status": "已修复并复拍验证",
+        "component": "frontend/app.js;changelog.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "沿用既有实现，本轮复查：英文标题/按钮、条目链接与深色状态保持"
+      },
+      {
+        "status": "环境阻塞/硬件未验证",
+        "component": "frontend/app.js;changelog.js;ui-components.js;design-layout.css；frontend/design-layout.css",
+        "result": "英文换行依赖系统字体，真实升级安装未验证"
+      }
+    ],
+    "capture_provenance": "output/playwright/layout-style-comparison/captures/desktop/capture-run.json",
+    "last_verified": "2026-10-14T00:25:20.414Z"
+  },
+  {
+    "pixels": [1280, 800],
+    "route": "onboarding",
+    "component": "frontend/ui-components.js;app.js;design-layout.css",
+    "viewport": [1280, 800],
+    "dpr": 1,
+    "category": "A",
+    "status": "第十五轮重设计；横向导航/连续动效尚未接入应用，独立预览单独验证",
+    "reference_revision": "2026-10-14 revision-15",
+    "confidence": "高：五步/右侧字段来自真实源码及用户截图；中：静态插图与动效意图；未验证：实际动画/跳转与可达性",
+    "comparison": "新左侧不能继承旧品牌/三机制图标或静态步骤截图的通过状态；生成坐标不等同CSS精确测量",
+    "reproduce": "实施后补充真实引导轮播/暂停/导航/减少动态效果场景，并按visual-report.md捕获；不把静态分镜拼成生产页面",
+    "evidence": null,
+    "captured_scenes": [],
+    "capture_provenance": null,
+    "last_verified": null,
+    "reference": "D57.png",
+    "surface": "引导左侧 · 录音轮播与横向导航",
+    "scene": "desktop-onboarding-carousel-recording",
+    "supplementary_scenes": [
+      "desktop-onboarding-horizontal-step-navigation",
+      "desktop-onboarding-carousel-pause"
+    ],
+    "coverage": "共享哑光内容画面、连续声音曲线、细线轮播控制、底部等宽横向五步导航；当前仍第3步，右侧模型/保存字段不变。",
+    "unverified": [
+      "新轮播与可点击导航尚未实施；暂停/键盘/草稿/下载保持及步骤校验待验证。",
+      "1280×800新布局的英文长文案、短窗口、实际权限和减少动态效果待核对。"
+    ],
+    "pending_scenes": [
+      "desktop-onboarding-carousel-recording",
+      "desktop-onboarding-horizontal-step-navigation",
+      "desktop-onboarding-carousel-pause"
+    ],
+    "visual_audit": [
+      {
+        "status": "待实施/验证",
+        "component": "frontend/ui-components.js;design-layout.css",
+        "result": "第十五轮：旧竖排改底部横向五步条，不改变实际5步流程；未到达步骤不能绕过既有校验。"
+      },
+      {
+        "status": "待实施/验证",
+        "component": "frontend/app.js;ui-components.js",
+        "result": "共享内容画面与可播放设计预览；预览的seek/播放验证不等于真实应用接入。"
+      },
+      {
+        "status": "设计边界",
+        "component": "能力插图/示例数据",
+        "result": "录音波形为演示素材，不请求麦克风、不展示实时说话人。"
+      }
+    ],
+    "design_preview": {
+      "path": "videos/onboarding-motion/preview.html",
+      "duration_seconds": 9,
+      "canvas": [1280, 800],
+      "production_evidence": false
+    }
+  },
+  {
+    "pixels": [1280, 800],
+    "route": "onboarding",
+    "component": "frontend/ui-components.js;app.js;design-layout.css",
+    "viewport": [1280, 800],
+    "dpr": 1,
+    "category": "A",
+    "status": "第十五轮重设计；横向导航/连续动效尚未接入应用，独立预览单独验证",
+    "reference_revision": "2026-10-14 revision-15",
+    "confidence": "高：五步/右侧字段来自真实源码及用户截图；中：静态插图与动效意图；未验证：实际动画/跳转与可达性",
+    "comparison": "新左侧不能继承旧品牌/三机制图标或静态步骤截图的通过状态；生成坐标不等同CSS精确测量",
+    "reproduce": "实施后补充真实引导轮播/暂停/导航/减少动态效果场景，并按visual-report.md捕获；不把静态分镜拼成生产页面",
+    "evidence": null,
+    "captured_scenes": [],
+    "capture_provenance": null,
+    "last_verified": null,
+    "reference": "D58.png",
+    "surface": "引导左侧 · 纪要轮播与暂停状态",
+    "scene": "desktop-onboarding-carousel-summary-paused",
+    "supplementary_scenes": [
+      "desktop-onboarding-carousel-manual-selection",
+      "desktop-onboarding-carousel-resume"
+    ],
+    "coverage": "共享产品周会内容画面整理为纪要分组；第三分页/播放轮播状态，横向五步导航仍第3步；右侧字段与操作不变。",
+    "unverified": ["实际手动切换/自动恢复、标题高度稳定、当前配置步骤和长文案尚未运行核对。"],
+    "pending_scenes": [
+      "desktop-onboarding-carousel-summary-paused",
+      "desktop-onboarding-carousel-manual-selection",
+      "desktop-onboarding-carousel-resume"
+    ],
+    "visual_audit": [
+      {
+        "status": "待实施/验证",
+        "component": "frontend/ui-components.js;app.js",
+        "result": "横向导航固定、当前设置步骤不随能力预览前进；纪要为会后示意，未调用真实AI。"
+      },
+      {
+        "status": "待实施/验证",
+        "component": "frontend/app.js;design-layout.css",
+        "result": "手动选页暂停，明确播放轮播；标题/说明预留固定高度、导航不跳动。"
+      },
+      {
+        "status": "设计边界",
+        "component": "能力插图/示例数据",
+        "result": "纪要为会后能力示意，不显示录音中即时产出会后纪要。"
+      }
+    ],
+    "design_preview": {
+      "path": "videos/onboarding-motion/preview.html",
+      "duration_seconds": 9,
+      "canvas": [1280, 800],
+      "production_evidence": false
+    }
+  },
+  {
+    "pixels": [1280, 800],
+    "route": "onboarding",
+    "component": "frontend/ui-components.js;app.js;design-layout.css",
+    "viewport": [1280, 800],
+    "dpr": 1,
+    "category": "B",
+    "status": "第十五轮重设计；横向导航/连续动效尚未接入应用，独立预览单独验证",
+    "reference_revision": "2026-10-14 revision-15",
+    "confidence": "高：五步/右侧字段来自真实源码及用户截图；中：静态插图与动效意图；未验证：实际动画/跳转与可达性",
+    "comparison": "静态关键帧用于看构图，可播放预览用于看时序；两者不是生产页面捕获，应用接入后逐状态比较。",
+    "reproduce": "实施后补充真实引导轮播/暂停/导航/减少动态效果场景，并按visual-report.md捕获；不把静态分镜拼成生产页面",
+    "evidence": null,
+    "captured_scenes": [],
+    "capture_provenance": null,
+    "last_verified": null,
+    "reference": "D59.png",
+    "surface": "引导左侧 · 横向导航与连续动效分镜",
+    "scene": "desktop-onboarding-carousel-transition",
+    "supplementary_scenes": [
+      "desktop-onboarding-carousel-transcript",
+      "desktop-onboarding-carousel-reduced-motion",
+      "desktop-onboarding-carousel-background-pause"
+    ],
+    "coverage": "共享画面连续声音曲线收束为文本基线、整行揭示、纪要分组轻落位；600ms缓出/120ms文字交叠/45ms错峰/最大6px，无弹跳旋转。",
+    "unverified": [
+      "没有制作视频或可运行动画；插图局部时序/循环、读屏播报、键盘与减少动态效果需实施后验证。"
+    ],
+    "pending_scenes": [
+      "desktop-onboarding-carousel-transition",
+      "desktop-onboarding-carousel-transcript",
+      "desktop-onboarding-carousel-reduced-motion",
+      "desktop-onboarding-carousel-background-pause"
+    ],
+    "visual_audit": [
+      {
+        "status": "静态分镜/待验证",
+        "component": "轮播插图与动效",
+        "result": "连续过渡的视觉隐喻不代表模型/会议处理的真实速度；9秒预览缩短停留。"
+      },
+      {
+        "status": "待实施/验证",
+        "component": "frontend/app.js;design-layout.css",
+        "result": "小幅过渡，不移动导航/右侧字段；悬停、焦点、手动和后台暂停。"
+      },
+      {
+        "status": "待实施/验证",
+        "component": "frontend/ui-components.js;app.js",
+        "result": "自动切换不反复读屏播报；减少动态效果采用静态手动选择。"
+      }
+    ],
+    "design_preview": {
+      "path": "videos/onboarding-motion/preview.html",
+      "duration_seconds": 9,
+      "canvas": [1280, 800],
+      "production_evidence": false
+    }
   }
 ]

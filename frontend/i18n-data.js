@@ -253,8 +253,8 @@
         '在手机上录制的离线音频，连接后需确认上传': '在手机上录制的离线音频，连接后需确认上传',
         '跨设备便捷': '跨设备便捷',
         '支持 iPhone 与 Android 手机录音并传输': '支持 iPhone 与 Android 手机录音并传输',
-        '在手机端选择这台电脑，扫描二维码或输入配对码。':
-          '在手机端选择这台电脑，扫描二维码或输入配对码。',
+        '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。':
+          '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。',
         '配对二维码': '配对二维码',
         '等待手机提交配对请求…': '等待手机提交配对请求…',
         '请保持手机与电脑在同一局域网。': '请保持手机与电脑在同一局域网。',
@@ -288,10 +288,11 @@
         '扫码安装 Brevia': '扫码安装 Brevia',
         'ModelScope 下载源': 'ModelScope 下载源',
         'App Store 正式版': 'App Store 正式版',
-        '在手机上录制会议或对话，录音保存在手机中。': '在手机上录制会议或对话，录音保存在手机中。',
-        '连接电脑后转写并整理会议内容。': '连接电脑后转写并整理会议内容。',
+        '在手机上录制会议或对话，录音保存在手机中。':
+          '随身录音或作为无线麦克风，离线录音保存在手机。',
+        '连接电脑后转写并整理会议内容。': '接收手机音频，生成字幕、转写文字与 AI 会议纪要。',
         '在手机上打开 Brevia，连接新设备，开始使用。':
-          '在手机上打开 Brevia，连接新设备，开始使用。',
+          '打开手机端 Brevia，搜索这台电脑，扫码或输入配对码。',
         '随时回顾': '随时回顾',
         '搜索、整理与分享': '搜索、整理与分享',
         '在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。':
@@ -316,6 +317,10 @@
         '请选择一段清晰的已有录音。': '请选择一段清晰的已有录音。',
         '声纹样本': '声纹样本',
         '存储使用情况': '存储使用情况',
+        '系统磁盘': '系统磁盘',
+        '已使用': '已使用',
+        '可用空间': '可用空间',
+        '系统磁盘信息暂不可用': '系统磁盘信息暂不可用',
         '开始使用': '开始使用',
         '任务': '任务',
         '选择要导出的内容及格式。': '选择要导出的内容及格式。',
@@ -372,7 +377,7 @@
         '手机连接': '手机连接',
         '连接你的手机': '连接你的手机',
         '手机录音，电脑转写。也可以离线录音，稍后确认上传。':
-          '手机录音，电脑转写。也可以离线录音，稍后确认上传。',
+          '把手机变成随身录音助手，让每一次对话都能带回电脑整理。',
         '已安装手机端？': '已安装手机端？',
         '进入功能演示': '进入功能演示',
         '手机采集与保存': '手机采集与保存',
@@ -915,8 +920,8 @@
           'Confirm uploads of offline recordings after connecting',
         '跨设备便捷': 'Across your devices',
         '支持 iPhone 与 Android 手机录音并传输': 'Record and transfer from iPhone and Android',
-        '在手机端选择这台电脑，扫描二维码或输入配对码。':
-          'Choose this computer on your phone, scan the QR code or enter the pairing code.',
+        '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。':
+          'Open Brevia on your phone and choose Connect to computer. Scan this QR code in the app, or select this computer and enter the pairing code.',
         '配对二维码': 'Pairing QR code',
         '等待手机提交配对请求…': 'Waiting for a pairing request…',
         '请保持手机与电脑在同一局域网。': 'Keep the phone and computer on the same local network.',
@@ -952,11 +957,11 @@
         'ModelScope 下载源': 'Download via ModelScope',
         'App Store 正式版': 'App Store release',
         '在手机上录制会议或对话，录音保存在手机中。':
-          'Record meetings on your phone. Audio is saved on the phone.',
+          'Record anywhere or use your phone as a wireless microphone. Offline recordings stay on your phone.',
         '连接电脑后转写并整理会议内容。':
-          'Connect to a computer to transcribe and organize meetings.',
+          'Receive phone audio for live captions, transcription and AI meeting summaries.',
         '在手机上打开 Brevia，连接新设备，开始使用。':
-          'Open Brevia on your phone and connect a new device.',
+          'Open Brevia on your phone, find this computer, then scan the QR code or enter the pairing code.',
         '随时回顾': 'Revisit anytime',
         '搜索、整理与分享': 'Search, organize and share',
         '在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。':
@@ -980,6 +985,10 @@
         '请选择一段清晰的已有录音。': 'Choose an existing recording with clear speech.',
         '声纹样本': 'Voice samples',
         '存储使用情况': 'Storage usage',
+        '系统磁盘': 'System disk',
+        '已使用': 'Used',
+        '可用空间': 'Available space',
+        '系统磁盘信息暂不可用': 'System disk information is unavailable',
         '开始使用': 'Get started',
         '任务': 'Tasks',
         '选择要导出的内容及格式。': 'Choose the content and formats to export.',
@@ -1039,7 +1048,7 @@
         '手机连接': 'Phone connection',
         '连接你的手机': 'Connect your phone',
         '手机录音，电脑转写。也可以离线录音，稍后确认上传。':
-          'Record on your phone, transcribe on your computer. Record offline and confirm upload later.',
+          'Turn your phone into a pocket recorder, and bring every conversation back to your computer.',
         '已安装手机端？': 'Already installed?',
         '进入功能演示': 'Explore features',
         '手机采集与保存': 'Phone records and saves',
@@ -1754,8 +1763,8 @@
           'Confirma la subida de grabaciones sin conexión al conectarte',
         '跨设备便捷': 'Entre dispositivos',
         '支持 iPhone 与 Android 手机录音并传输': 'Graba y transfiere desde iPhone y Android',
-        '在手机端选择这台电脑，扫描二维码或输入配对码。':
-          'Elige este ordenador en el teléfono, escanea el QR o introduce el código.',
+        '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。':
+          'Abre Brevia en el móvil y elige Conectar al ordenador. Escanea este QR desde la aplicación o selecciona este ordenador e introduce el código de vinculación.',
         '配对二维码': 'QR de emparejamiento',
         '等待手机提交配对请求…': 'Esperando una solicitud de emparejamiento…',
         '请保持手机与电脑在同一局域网。':
@@ -1792,11 +1801,11 @@
         'ModelScope 下载源': 'Descarga desde ModelScope',
         'App Store 正式版': 'Versión del App Store',
         '在手机上录制会议或对话，录音保存在手机中。':
-          'Graba reuniones en el móvil. El audio se guarda en él.',
+          'Graba donde estés o usa el móvil como micrófono inalámbrico. Las grabaciones sin conexión quedan en el móvil.',
         '连接电脑后转写并整理会议内容。':
-          'Conecta un ordenador para transcribir y organizar reuniones.',
+          'Recibe audio del móvil para generar subtítulos, transcripciones y resúmenes con IA.',
         '在手机上打开 Brevia，连接新设备，开始使用。':
-          'Abre Brevia en el móvil y conecta un nuevo dispositivo.',
+          'Abre Brevia en el móvil, busca este ordenador y escanea el QR o introduce el código de vinculación.',
         '随时回顾': 'Revisa cuando quieras',
         '搜索、整理与分享': 'Busca, organiza y comparte',
         '在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。':
@@ -1820,6 +1829,10 @@
         '请选择一段清晰的已有录音。': 'Elige una grabación existente con voz clara.',
         '声纹样本': 'Muestras de voz',
         '存储使用情况': 'Uso de almacenamiento',
+        '系统磁盘': 'Disco del sistema',
+        '已使用': 'Usado',
+        '可用空间': 'Espacio disponible',
+        '系统磁盘信息暂不可用': 'La información del disco del sistema no está disponible',
         '开始使用': 'Comenzar',
         '任务': 'Tareas',
         '选择要导出的内容及格式。': 'Elige el contenido y los formatos para exportar.',
@@ -1879,7 +1892,7 @@
         '手机连接': 'Conexión móvil',
         '连接你的手机': 'Conecta tu teléfono',
         '手机录音，电脑转写。也可以离线录音，稍后确认上传。':
-          'Graba en el teléfono y transcribe en el ordenador. También puedes grabar sin conexión y confirmar la carga después.',
+          'Convierte tu móvil en una grabadora de bolsillo y lleva cada conversación al ordenador.',
         '已安装手机端？': '¿Ya está instalado?',
         '进入功能演示': 'Ver funciones',
         '手机采集与保存': 'El teléfono graba y guarda',
@@ -2598,8 +2611,8 @@
           '接続後、オフライン録音のアップロードを確認してください',
         '跨设备便捷': 'デバイス間で便利に',
         '支持 iPhone 与 Android 手机录音并传输': 'iPhoneとAndroidで録音・転送',
-        '在手机端选择这台电脑，扫描二维码或输入配对码。':
-          'スマートフォンでこのパソコンを選び、QRコードをスキャンするかコードを入力してください。',
+        '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。':
+          'スマートフォンの Brevia で「パソコンに接続」を開き、アプリで QR コードを読み取るか、このパソコンを選んでペアリングコードを入力してください。',
         '配对二维码': 'ペアリングQRコード',
         '等待手机提交配对请求…': 'ペアリング要求を待機中…',
         '请保持手机与电脑在同一局域网。':
@@ -2635,10 +2648,11 @@
         'ModelScope 下载源': 'ModelScope からダウンロード',
         'App Store 正式版': 'App Store 正式版',
         '在手机上录制会议或对话，录音保存在手机中。':
-          'スマートフォンで会議を録音し、端末に保存します。',
-        '连接电脑后转写并整理会议内容。': 'パソコンに接続して文字起こしと整理を行います。',
+          '外出先での録音やワイヤレスマイクとして利用できます。オフライン録音は端末に保存されます。',
+        '连接电脑后转写并整理会议内容。':
+          'スマートフォンの音声から字幕、文字起こし、AI 議事録を生成します。',
         '在手机上打开 Brevia，连接新设备，开始使用。':
-          'スマートフォンで Brevia を開き、新しいデバイスに接続します。',
+          'スマートフォンで Brevia を開き、このパソコンを検索して QR コードを読み取るかペアリングコードを入力します。',
         '随时回顾': 'いつでも振り返る',
         '搜索、整理与分享': '検索・整理・共有',
         '在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。':
@@ -2662,6 +2676,10 @@
         '请选择一段清晰的已有录音。': '音声が明瞭な既存の録音を選択してください。',
         '声纹样本': '声紋サンプル',
         '存储使用情况': 'ストレージ使用状況',
+        '系统磁盘': 'システムディスク',
+        '已使用': '使用済み',
+        '可用空间': '空き容量',
+        '系统磁盘信息暂不可用': 'システムディスクの情報を取得できません',
         '开始使用': '利用を開始',
         '任务': 'タスク',
         '选择要导出的内容及格式。': 'エクスポートする内容と形式を選択してください。',
@@ -2721,7 +2739,7 @@
         '手机连接': 'スマートフォン接続',
         '连接你的手机': 'スマートフォンを接続',
         '手机录音，电脑转写。也可以离线录音，稍后确认上传。':
-          'スマートフォンで録音、コンピューターで文字起こし。オフライン録音は後でアップロードを確認できます。',
+          'スマートフォンをいつでも使える録音ツールに。大切な会話をパソコンで振り返れます。',
         '已安装手机端？': 'インストール済みですか？',
         '进入功能演示': '機能を見る',
         '手机采集与保存': 'スマートフォンで録音・保存',
@@ -3432,8 +3450,8 @@
         '在手机上录制的离线音频，连接后需确认上传': '연결 후 오프라인 녹음 업로드를 확인하세요',
         '跨设备便捷': '여러 기기에서 편리하게',
         '支持 iPhone 与 Android 手机录音并传输': 'iPhone 및 Android에서 녹음 및 전송',
-        '在手机端选择这台电脑，扫描二维码或输入配对码。':
-          '휴대폰에서 이 컴퓨터를 선택하고 QR을 스캔하거나 연결 코드를 입력하세요.',
+        '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。':
+          '휴대폰의 Brevia에서 컴퓨터 연결을 열고 앱으로 QR 코드를 스캔하거나 이 컴퓨터를 선택해 페어링 코드를 입력하세요.',
         '配对二维码': '연결 QR 코드',
         '等待手机提交配对请求…': '연결 요청을 기다리는 중…',
         '请保持手机与电脑在同一局域网。': '휴대폰과 컴퓨터를 같은 로컬 네트워크에 연결하세요.',
@@ -3468,10 +3486,11 @@
         'ModelScope 下载源': 'ModelScope 다운로드',
         'App Store 正式版': 'App Store 정식 버전',
         '在手机上录制会议或对话，录音保存在手机中。':
-          '휴대폰에서 회의를 녹음하고 휴대폰에 저장합니다.',
-        '连接电脑后转写并整理会议内容。': '컴퓨터에 연결해 회의 내용을 전사하고 정리합니다.',
+          '어디서나 녹음하거나 무선 마이크로 사용하세요. 오프라인 녹음은 휴대폰에 저장됩니다.',
+        '连接电脑后转写并整理会议内容。':
+          '휴대폰 오디오로 실시간 자막, 전사 및 AI 회의 요약을 만듭니다.',
         '在手机上打开 Brevia，连接新设备，开始使用。':
-          '휴대폰에서 Brevia를 열고 새 기기에 연결하세요.',
+          '휴대폰에서 Brevia를 열고 이 컴퓨터를 찾아 QR 코드를 스캔하거나 페어링 코드를 입력하세요.',
         '随时回顾': '언제든 다시 보기',
         '搜索、整理与分享': '검색, 정리 및 공유',
         '在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。':
@@ -3495,6 +3514,10 @@
         '请选择一段清晰的已有录音。': '음성이 선명한 기존 녹음을 선택하세요.',
         '声纹样本': '음성 샘플',
         '存储使用情况': '저장 공간 사용량',
+        '系统磁盘': '시스템 디스크',
+        '已使用': '사용됨',
+        '可用空间': '사용 가능한 공간',
+        '系统磁盘信息暂不可用': '시스템 디스크 정보를 사용할 수 없습니다',
         '开始使用': '시작하기',
         '任务': '작업',
         '选择要导出的内容及格式。': '내보낼 내용과 형식을 선택하세요.',
@@ -3554,7 +3577,7 @@
         '手机连接': '휴대폰 연결',
         '连接你的手机': '휴대폰 연결하기',
         '手机录音，电脑转写。也可以离线录音，稍后确认上传。':
-          '휴대폰으로 녹음하고 컴퓨터로 전사합니다. 오프라인 녹음은 나중에 업로드를 확인할 수 있습니다.',
+          '휴대폰을 휴대용 녹음 도우미로 활용하고 모든 대화를 컴퓨터에서 정리하세요.',
         '已安装手机端？': '이미 설치했나요?',
         '进入功能演示': '기능 살펴보기',
         '手机采集与保存': '휴대폰 녹음 및 저장',
@@ -4264,8 +4287,8 @@
         '跨设备便捷': 'Entre vos appareils',
         '支持 iPhone 与 Android 手机录音并传输':
           'Enregistrez et transférez depuis iPhone et Android',
-        '在手机端选择这台电脑，扫描二维码或输入配对码。':
-          'Choisissez cet ordinateur sur le téléphone, scannez le QR ou saisissez le code.',
+        '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。':
+          'Ouvrez Brevia sur le téléphone, puis Connexion à un ordinateur. Scannez ce QR code dans l’application ou sélectionnez cet ordinateur et saisissez le code de jumelage.',
         '配对二维码': 'QR d’association',
         '等待手机提交配对请求…': 'En attente d’une demande d’association…',
         '请保持手机与电脑在同一局域网。':
@@ -4302,11 +4325,11 @@
         'ModelScope 下载源': 'Téléchargement via ModelScope',
         'App Store 正式版': 'Version App Store',
         '在手机上录制会议或对话，录音保存在手机中。':
-          'Enregistrez sur votre téléphone. L’audio y est conservé.',
+          'Enregistrez partout ou utilisez le téléphone comme micro sans fil. Les enregistrements hors ligne restent sur le téléphone.',
         '连接电脑后转写并整理会议内容。':
-          'Connectez un ordinateur pour transcrire et organiser les réunions.',
+          'Recevez le son du téléphone pour les sous-titres, la transcription et les comptes rendus IA.',
         '在手机上打开 Brevia，连接新设备，开始使用。':
-          'Ouvrez Brevia sur le téléphone et connectez un nouvel appareil.',
+          'Ouvrez Brevia sur le téléphone, trouvez cet ordinateur, puis scannez le QR code ou saisissez le code de jumelage.',
         '随时回顾': 'Consulter à tout moment',
         '搜索、整理与分享': 'Rechercher, organiser et partager',
         '在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。':
@@ -4330,6 +4353,10 @@
         '请选择一段清晰的已有录音。': 'Choisissez un enregistrement existant avec une voix claire.',
         '声纹样本': 'Échantillons vocaux',
         '存储使用情况': 'Utilisation du stockage',
+        '系统磁盘': 'Disque système',
+        '已使用': 'Utilisé',
+        '可用空间': 'Espace disponible',
+        '系统磁盘信息暂不可用': 'Les informations du disque système sont indisponibles',
         '开始使用': 'Commencer',
         '任务': 'Tâches',
         '选择要导出的内容及格式。': 'Choisissez le contenu et les formats à exporter.',
@@ -4390,7 +4417,7 @@
         '手机连接': 'Connexion du téléphone',
         '连接你的手机': 'Connectez votre téléphone',
         '手机录音，电脑转写。也可以离线录音，稍后确认上传。':
-          'Enregistrez sur le téléphone, transcrivez sur l’ordinateur. Vous pouvez enregistrer hors ligne et confirmer le transfert plus tard.',
+          'Transformez votre téléphone en enregistreur de poche et retrouvez vos conversations sur ordinateur.',
         '已安装手机端？': 'Déjà installé ?',
         '进入功能演示': 'Découvrir les fonctions',
         '手机采集与保存': 'Le téléphone enregistre et conserve',
@@ -5116,8 +5143,8 @@
           'Offline-Aufnahmen nach der Verbindung zum Hochladen bestätigen',
         '跨设备便捷': 'Geräteübergreifend',
         '支持 iPhone 与 Android 手机录音并传输': 'Mit iPhone und Android aufnehmen und übertragen',
-        '在手机端选择这台电脑，扫描二维码或输入配对码。':
-          'Wählen Sie diesen Computer auf dem Telefon, scannen Sie den QR-Code oder geben Sie den Code ein.',
+        '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。':
+          'Öffnen Sie Brevia auf dem Handy und wählen Sie Verbindung zum Computer. Scannen Sie diesen QR-Code in der App oder wählen Sie diesen Computer und geben Sie den Kopplungscode ein.',
         '配对二维码': 'Kopplungs-QR-Code',
         '等待手机提交配对请求…': 'Warten auf eine Kopplungsanfrage…',
         '请保持手机与电脑在同一局域网。':
@@ -5153,11 +5180,11 @@
         'ModelScope 下载源': 'Download über ModelScope',
         'App Store 正式版': 'App Store-Version',
         '在手机上录制会议或对话，录音保存在手机中。':
-          'Meetings auf dem Smartphone aufnehmen und dort speichern.',
+          'Überall aufnehmen oder als drahtloses Mikrofon nutzen. Offline-Aufnahmen bleiben auf dem Handy.',
         '连接电脑后转写并整理会议内容。':
-          'Mit dem Computer verbinden, um Meetings zu transkribieren und aufzubereiten.',
+          'Handy-Audio für Live-Untertitel, Transkription und KI-Besprechungsprotokolle empfangen.',
         '在手机上打开 Brevia，连接新设备，开始使用。':
-          'Brevia auf dem Smartphone öffnen und ein neues Gerät verbinden.',
+          'Brevia auf dem Handy öffnen, diesen Computer suchen und den QR-Code scannen oder den Kopplungscode eingeben.',
         '随时回顾': 'Jederzeit nachlesen',
         '搜索、整理与分享': 'Suchen, organisieren und teilen',
         '在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。':
@@ -5181,6 +5208,10 @@
         '请选择一段清晰的已有录音。': 'Wählen Sie eine vorhandene Aufnahme mit klarer Sprache.',
         '声纹样本': 'Stimmproben',
         '存储使用情况': 'Speichernutzung',
+        '系统磁盘': 'Systemlaufwerk',
+        '已使用': 'Belegt',
+        '可用空间': 'Verfügbarer Speicher',
+        '系统磁盘信息暂不可用': 'Informationen zum Systemlaufwerk sind nicht verfügbar',
         '开始使用': 'Loslegen',
         '任务': 'Aufgaben',
         '选择要导出的内容及格式。': 'Inhalte und Formate für den Export auswählen.',
@@ -5241,7 +5272,7 @@
         '手机连接': 'Telefonverbindung',
         '连接你的手机': 'Telefon verbinden',
         '手机录音，电脑转写。也可以离线录音，稍后确认上传。':
-          'Am Telefon aufnehmen, am Computer transkribieren. Offline aufnehmen und den Upload später bestätigen.',
+          'Machen Sie Ihr Handy zum Aufnahmebegleiter und halten Sie jedes Gespräch am Computer fest.',
         '已安装手机端？': 'Bereits installiert?',
         '进入功能演示': 'Funktionen ansehen',
         '手机采集与保存': 'Telefon nimmt auf und speichert',
@@ -5969,8 +6000,8 @@
           'После подключения подтвердите загрузку офлайн-записей',
         '跨设备便捷': 'На разных устройствах',
         '支持 iPhone 与 Android 手机录音并传输': 'Запись и передача с iPhone и Android',
-        '在手机端选择这台电脑，扫描二维码或输入配对码。':
-          'Выберите этот компьютер на телефоне, сканируйте QR-код или введите код.',
+        '打开手机端 Brevia，进入「连接电脑」，用应用扫描此二维码，或选择这台电脑并输入配对码。':
+          'Откройте Brevia на телефоне и выберите подключение к компьютеру. Сканируйте QR-код в приложении или выберите этот компьютер и введите код сопряжения.',
         '配对二维码': 'QR-код сопряжения',
         '等待手机提交配对请求…': 'Ожидание запроса на сопряжение…',
         '请保持手机与电脑在同一局域网。': 'Телефон и компьютер должны быть в одной локальной сети.',
@@ -6005,11 +6036,11 @@
         'ModelScope 下载源': 'Загрузка через ModelScope',
         'App Store 正式版': 'Версия из App Store',
         '在手机上录制会议或对话，录音保存在手机中。':
-          'Записывайте встречи на телефоне. Аудио сохраняется на нём.',
+          'Записывайте где угодно или используйте телефон как беспроводной микрофон. Офлайн-записи сохраняются на телефоне.',
         '连接电脑后转写并整理会议内容。':
-          'Подключите компьютер для расшифровки и обработки встреч.',
+          'Получайте звук с телефона для субтитров, транскрипции и ИИ-протоколов встреч.',
         '在手机上打开 Brevia，连接新设备，开始使用。':
-          'Откройте Brevia на телефоне и подключите новое устройство.',
+          'Откройте Brevia на телефоне, найдите этот компьютер, затем отсканируйте QR-код или введите код сопряжения.',
         '随时回顾': 'Возвращайтесь в любое время',
         '搜索、整理与分享': 'Поиск, организация и обмен',
         '在同一局域网，使用手机扫描二维码或输入配对码，将手机与 Brevia 连接。':
@@ -6033,6 +6064,10 @@
         '请选择一段清晰的已有录音。': 'Выберите существующую запись с чёткой речью.',
         '声纹样本': 'Образцы голоса',
         '存储使用情况': 'Использование хранилища',
+        '系统磁盘': 'Системный диск',
+        '已使用': 'Использовано',
+        '可用空间': 'Доступное пространство',
+        '系统磁盘信息暂不可用': 'Информация о системном диске недоступна',
         '开始使用': 'Начать',
         '任务': 'Задачи',
         '选择要导出的内容及格式。': 'Выберите содержимое и форматы для экспорта.',
@@ -6092,7 +6127,7 @@
         '手机连接': 'Подключение телефона',
         '连接你的手机': 'Подключите телефон',
         '手机录音，电脑转写。也可以离线录音，稍后确认上传。':
-          'Запись на телефоне, расшифровка на компьютере. Можно записывать офлайн и подтвердить загрузку позже.',
+          'Превратите телефон в карманный диктофон и сохраняйте каждую беседу для работы на компьютере.',
         '已安装手机端？': 'Уже установлено?',
         '进入功能演示': 'Посмотреть функции',
         '手机采集与保存': 'Телефон записывает и сохраняет',
@@ -10759,9 +10794,9 @@
     // 首启使用画板的短简介；模型库仍保留真实语言范围与完整介绍。
     const onboardingDescriptions = {
       zh: [
-        '轻量高效，适合多数日常会议场景',
-        '更强的识别效果，适合复杂语言场景',
-        '开源社区模型，识别效果优秀',
+        '轻量高效，中文识别效果更佳。',
+        '通用语音识别模型，支持多语言。',
+        '在英语等西方语言上表现优异。',
       ],
       en: [
         'Lightweight and efficient, with strong Chinese recognition.',

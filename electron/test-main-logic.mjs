@@ -1199,3 +1199,39 @@ console.log('Electron behavior tests passed');
     /requires macOS or Windows/,
   );
 }
+
+// 容量读取失败不能影响目录设置；已用空间与用户可用空间来自各自的系统计数。
+const diskHandlers = new Map();
+const diskContext = {
+  handleIpc: (channel, handler) => diskHandlers.set(channel, handler),
+  app: {
+    getPath: (name) => {
+      assert.equal(name, 'home');
+      return '/home';
+    },
+  },
+  statfs: async () => ({ blocks: 1000, bsize: 4096, bfree: 300, bavail: 270 }),
+  modelsDir: () => '/models',
+  recordingsDir: () => '/recordings',
+  process: { env: {} },
+};
+runInNewContext(
+  mainSource.slice(
+    mainSource.indexOf("handleIpc('storage.locations'"),
+    mainSource.indexOf("handleIpc('storage.choose-folder'"),
+  ),
+  diskContext,
+);
+const diskLocations = await diskHandlers.get('storage.locations')();
+assert.deepEqual(JSON.parse(JSON.stringify(diskLocations.disk)), {
+  total: 4096000,
+  used: 2867200,
+  free: 1105920,
+});
+diskContext.statfs = async () => {
+  throw new Error('unavailable');
+};
+const unavailableLocations = await diskHandlers.get('storage.locations')();
+assert.equal(unavailableLocations.disk, null);
+assert.equal(unavailableLocations.models, '/models');
+assert.equal(unavailableLocations.recordingsManaged, true);

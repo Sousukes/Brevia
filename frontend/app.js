@@ -150,7 +150,8 @@ function renderTaskSummary(cards, active) {
   summary.title = label;
   summary.setAttribute('aria-label', label);
 }
-document.querySelector('[data-task-summary]').addEventListener('click', () => {
+document.querySelector('[data-task-summary]').addEventListener('click', async () => {
+  if (activeView === 'settings') await showView('home');
   taskCards.classList.remove('is-collapsed');
   document.querySelector('[data-toggle-task-stack]').setAttribute('aria-expanded', 'true');
   const active = taskCards.querySelector('.task-card-stack-item:not(.is-task-card-back)');
@@ -539,8 +540,7 @@ let summaryFeedback = null;
 // 内置供应商在表单里待选的模型。重新渲染（下载/删除/选择）时存活，切换供应商时重置。
 let selectedBuiltinModel = '';
 let selectedAiAssistBuiltinModel = '';
-// onboarding 里选了「在线 AI 供应商」后，供应商下拉不再列出「内置 AI」，
-// 避免在线配置流程里混入本地内置选项。关闭模态框时复位。
+// 首启浮窗共用供应商表单；标志控制功能开关显示与本地模型下载，关闭时复位。
 let onboardingOnlineProvider = false;
 let onboardingBuiltinProvider = false;
 function providerEntry(config, provider = config.provider) {
@@ -703,8 +703,23 @@ function configureSettingsPage(kind) {
   } else panel.removeAttribute('aria-labelledby');
   panel.setAttribute('role', page ? 'region' : 'dialog');
   panel.setAttribute('aria-modal', String(!page));
-  settingsModal.querySelector('.settings-navigation')?.remove();
-  if (page) settingsModal.insertAdjacentHTML('afterbegin', renderSettingsNavigation(kind));
+  const navigation = settingsModal.querySelector('.settings-navigation');
+  const navigationKind = ['summary-model', 'ai-assist'].includes(kind) ? 'ai-features' : kind;
+  if (
+    !page ||
+    navigation?.dataset.page !== navigationKind ||
+    navigation?.dataset.locale !== locale
+  ) {
+    const scrollTop = navigation?.scrollTop || 0;
+    navigation?.remove();
+    if (page) {
+      settingsModal.insertAdjacentHTML('afterbegin', renderSettingsNavigation(kind));
+      const next = settingsModal.querySelector('.settings-navigation');
+      next.dataset.page = navigationKind;
+      next.dataset.locale = locale;
+      next.scrollTop = scrollTop;
+    }
+  }
   const back = settingsModal.querySelector('.modal-close');
   back.innerHTML = interfaceIcon(page ? 'back' : 'close');
   back.classList.toggle('settings-back', page);
@@ -716,6 +731,7 @@ let whatsNewRetryTimer;
 let updateLogReturn;
 // 维护事件提供真实字节数；未知时不展示示例容量或假配额。
 let storageUsage;
+let systemDiskUsage;
 let modelsReturnTo = null;
 // 从功能设置跳到模型库时，还未安装的内置 AI 模型 id；其中任意一个装好后跳回一次。
 let modelsReturnToPending = null;
@@ -1634,7 +1650,7 @@ const modelDownloadPayload = (modelId) => ({
 });
 const chinaModelSourceToggle = () =>
   locale === 'zh'
-    ? `<p class="model-source-switch"><label><input type="checkbox" data-china-model-source${useChinaModelSource() ? ' checked' : ''} /><span>国内下载源</span></label></p>`
+    ? `<p class="model-source-switch"><label data-tooltip="启用后优先使用 ModelScope，为中国大陆地区提供模型下载加速。"><input type="checkbox" data-china-model-source${useChinaModelSource() ? ' checked' : ''} /><span>国内下载源</span></label></p>`
     : '';
 const onboardingCopy = window.BreviaLocaleData.appCopy.onboardingCopy;
 const onboardingLanguageCopy = window.BreviaLocaleData.appCopy.onboardingLanguageCopy;
@@ -2178,15 +2194,11 @@ function renderModelConfigFields(config, selectedModel, { required = true, hint 
   const isBuiltin = provider === 'built-in';
 
   const providerOptions = summaryProviders
-    .filter(
-      (id) =>
-        !(onboardingOnlineProvider || settingsModal.classList.contains('settings-page')) ||
-        id !== 'built-in',
-    )
-    .map((id) => [id, summaryProviderLabel(id)]);
+    .filter((id) => !settingsModal.classList.contains('settings-page') || id !== 'built-in')
+    .map((id) => [id, id === 'built-in' ? t('本地模型') : summaryProviderLabel(id)]);
   const page = settingsModal.classList.contains('settings-page');
   const providerField =
-    onboardingBuiltinProvider || (page && isBuiltin)
+    page && isBuiltin
       ? '<input type="hidden" name="provider" value="built-in" />'
       : `<label class="config-select-field">${copy.provider}${flowSelect('provider', provider, providerOptions)}</label>`;
   let fields = '';
@@ -2257,6 +2269,68 @@ function renderAiSettingsTabs(active) {
 function renderAiServiceChoice(config) {
   return `<fieldset class="ai-service-choice"><legend>${t('服务方式')}</legend><label><input type="radio" name="ai-service-way" value="built-in"${config.provider === 'built-in' ? ' checked' : ''} />${t('本地模型')}</label><label><input type="radio" name="ai-service-way" value="online"${config.provider !== 'built-in' ? ' checked' : ''} />${t('在线服务')}</label></fieldset>`;
 }
+/** 同页刷新保留阅读位置与展开状态；换页才复位，不能把刷新当作重新打开。 */
+function replaceModalBody(kind, markup) {
+  const body = settingsModal.querySelector('.modal-body');
+  const panel = settingsModal.querySelector('.modal-panel');
+  const same = !settingsModal.hidden && body.dataset.contentKind === kind;
+  const scrollTop = body.scrollTop;
+  const panelScrollTop = panel.scrollTop;
+  const modalScrollTop = settingsModal.scrollTop;
+  const scrollers = [
+    '.model-library-list',
+    '.speaker-directory',
+    '.speaker-profile-detail',
+    '.speaker-profile-list',
+  ];
+  const scrolls = scrollers.map((selector) => {
+    const node = body.querySelector(selector);
+    return [node?.scrollTop || 0, node?.scrollLeft || 0];
+  });
+  const details = [...body.querySelectorAll('details')].map((node, index) => [
+    node.dataset.modalDetail || node.id || `${node.className}:${index}`,
+    node.open,
+  ]);
+  const focused = body.contains(document.activeElement) ? document.activeElement : null;
+  const focusAttribute =
+    focused &&
+    [...focused.attributes].find(
+      (attribute) =>
+        attribute.value &&
+        (attribute.name === 'id' ||
+          attribute.name === 'name' ||
+          attribute.name.startsWith('data-')),
+    );
+  body.innerHTML = markup;
+  body.dataset.contentKind = kind;
+  if (!same) {
+    body.scrollTop = 0;
+    panel.scrollTop = 0;
+    settingsModal.scrollTop = 0;
+    return;
+  }
+  const expanded = new Map(details);
+  body.querySelectorAll('details').forEach((node, index) => {
+    const key = node.dataset.modalDetail || node.id || `${node.className}:${index}`;
+    if (expanded.has(key)) node.open = expanded.get(key);
+  });
+  scrollers.forEach((selector, index) => {
+    const node = body.querySelector(selector);
+    if (node) {
+      node.scrollTop = scrolls[index][0];
+      node.scrollLeft = scrolls[index][1];
+    }
+  });
+  if (focusAttribute) {
+    const matches = body.querySelectorAll(
+      `[${focusAttribute.name}="${CSS.escape(focusAttribute.value)}"]`,
+    );
+    if (matches.length === 1 && !matches[0].disabled) matches[0].focus({ preventScroll: true });
+  }
+  body.scrollTop = scrollTop;
+  panel.scrollTop = panelScrollTop;
+  settingsModal.scrollTop = modalScrollTop;
+}
 function renderSummaryModelModal() {
   summaryConfigDraft ||= structuredClone(summaryConfig);
   const copy = summaryModelCopy[locale] || summaryModelCopy.en;
@@ -2264,8 +2338,10 @@ function renderSummaryModelModal() {
   settingsModal.querySelector('.modal-title h2').textContent = page ? t('AI 功能') : copy.title;
   settingsModal.querySelector('.modal-title p').textContent =
     copy.featureIntro || summaryModelCopy.en.featureIntro;
-  settingsModal.querySelector('.modal-body').innerHTML =
-    `${renderAiSettingsTabs('summary-model')}${onboardingBuiltinProvider || onboardingOnlineProvider ? '' : `<label class="summary-enabled-control"><span>${t('会议纪要')}</span><input type="checkbox" data-summary-enabled${summaryConfig.enabled ? ' checked' : ''} /></label>`}${page ? renderAiServiceChoice(summaryConfigDraft) : ''}${renderSummaryModelForm()}`;
+  replaceModalBody(
+    'summary-model',
+    `${renderAiSettingsTabs('summary-model')}${onboardingBuiltinProvider || onboardingOnlineProvider ? '' : `<label class="summary-enabled-control"><span>${t('会议纪要')}</span><input type="checkbox" data-summary-enabled${summaryConfig.enabled ? ' checked' : ''} /></label>`}${page ? renderAiServiceChoice(summaryConfigDraft) : ''}${renderSummaryModelForm()}`,
+  );
 }
 
 /** 渲染「AI 笔记」设置模态框：开关、主动性与独立模型连接。@returns {void} */
@@ -2292,8 +2368,10 @@ function renderAiAssistModal() {
   const fields = renderModelConfigFields(config, selectedAiAssistBuiltinModel, {
     required: config.enabled,
   });
-  settingsModal.querySelector('.modal-body').innerHTML =
-    `${renderAiSettingsTabs('ai-assist')}<form class="ai-assist-config-form"><div class="ai-service-row">${renderAiServiceChoice(config)}<label class="summary-enabled-control"><span>${t('智能笔记')}</span><input type="checkbox" name="enabled" data-ai-settings-enabled${config.enabled ? ' checked' : ''} /></label></div>${fields.markup}<fieldset class="ai-assist-proactivity"><legend>${t('主动性')}</legend><div class="ai-assist-levels">${levels}</div></fieldset>${warning}<div class="modal-form-actions">${renderSaveState(JSON.stringify(config) === JSON.stringify(aiAssistConfig) ? 'saved' : 'dirty')}<button class="secondary" data-cancel-model-config type="button">${t('取消')}</button><button class="modal-action" type="submit"${fields.saveDisabled && config.enabled ? ' disabled' : ''}>${t('保存配置')}</button></div></form>`;
+  replaceModalBody(
+    'ai-assist',
+    `${renderAiSettingsTabs('ai-assist')}<form class="ai-assist-config-form"><label class="summary-enabled-control"><span>${t('智能笔记')}</span><input type="checkbox" name="enabled" data-ai-settings-enabled${config.enabled ? ' checked' : ''} /></label>${renderAiServiceChoice(config)}${fields.markup}<fieldset class="ai-assist-proactivity"><legend>${t('主动性')}</legend><div class="ai-assist-levels">${levels}</div></fieldset>${warning}<div class="modal-form-actions">${renderSaveState(JSON.stringify(config) === JSON.stringify(aiAssistConfig) ? 'saved' : 'dirty')}<button class="secondary" data-cancel-model-config type="button">${t('取消')}</button><button class="modal-action" type="submit"${fields.saveDisabled && config.enabled ? ' disabled' : ''}>${t('保存配置')}</button></div></form>`,
+  );
 }
 
 async function switchAiAssistTo2B() {
@@ -2341,8 +2419,10 @@ function renderSpeakerProfileModal() {
         `<button type="button" class="speaker-person" data-toggle-speaker-samples="${escapeHtml(item.id)}" aria-pressed="${item.id === profile?.id}"${speakerProfileName(item).toLocaleLowerCase().includes(speakerProfileSearch.toLocaleLowerCase()) ? '' : ' hidden'}>${interfaceIcon('person')}<span><b>${escapeHtml(speakerProfileName(item))}</b><small>${item.sample_count} ${escapeHtml(copy.samples)}</small></span>${interfaceIcon('chevron-right')}</button>`,
     )
     .join('');
-  settingsModal.querySelector('.modal-body').innerHTML =
-    `<div class="speaker-manager"><aside class="speaker-directory"><label class="search">${interfaceIcon('search')}<input type="search" data-speaker-search aria-label="${t('搜索')}" placeholder="${t('搜索')}" value="${escapeHtml(speakerProfileSearch)}" /></label><details class="speaker-create"><summary>${interfaceIcon('plus')}${copy.add}</summary><form class="speaker-profile-form"><label>${copy.name}<input name="name" maxlength="32" required /></label><button class="modal-action" type="submit">${copy.add}</button></form></details><div class="speaker-profile-list">${list || `<p class="page-empty">${copy.intro}</p>`}</div></aside><section class="speaker-profile-detail">${profile ? `<header class="speaker-detail-header"><div>${name}<small>${profile.sample_count}/50 ${copy.samples} · ${formatMeetingTime(profile.duration_ms || 0)} / 05:00</small></div><div class="speaker-detail-actions"><button class="secondary" data-verify-speaker-profile="${escapeHtml(profile.id)}" type="button">${voiceCopy.verify}</button><button class="secondary" data-rename-speaker-profile="${escapeHtml(profile.id)}" type="button">${t('更改名称')}</button></div></header><section class="speaker-add"><h3>${copy.addSample}</h3><form class="speaker-sample-form" data-speaker-profile="${escapeHtml(profile.id)}"><div class="speaker-audio-dropzone">${interfaceIcon('upload')}<p>${t('请选择一段清晰的已有录音。')}</p></div><button class="modal-action" type="submit">${t('选择录音并添加')}</button></form></section><section><h3>${t('声纹样本')}</h3><div class="speaker-sample-list">${samples.length ? samples.map((sample) => `<article><button class="sample-play" data-play-speaker-sample="${escapeHtml(sample.id)}" type="button" aria-label="${t('播放录音')}">${interfaceIcon('play')}</button><input type="range" data-speaker-sample-seek="${escapeHtml(sample.id)}" min="0" max="${(sample.duration_ms || 0) / 1000}" step=".1" value="0" aria-label="${t('播放进度')}" /><time>${formatMeetingTime(sample.duration_ms || 0)}</time><button class="model-delete" data-delete-speaker-sample="${escapeHtml(sample.id)}" data-profile-id="${escapeHtml(profile.id)}" type="button">${copy.remove}</button></article>`).join('') : `<p class="page-empty">${copy.empty}</p>`}</div></section><button class="model-delete" data-delete-speaker-profile="${escapeHtml(profile.id)}" type="button">${copy.remove}</button>` : `<div class="page-empty">${interfaceIcon('person')}<h2>${t('声纹管理')}</h2><p>${copy.intro}</p></div>`}</section></div>`;
+  replaceModalBody(
+    'speaker-profiles',
+    `<div class="speaker-manager"><aside class="speaker-directory"><label class="search">${interfaceIcon('search')}<input type="search" data-speaker-search aria-label="${t('搜索')}" placeholder="${t('搜索')}" value="${escapeHtml(speakerProfileSearch)}" /></label><details class="speaker-create"><summary>${interfaceIcon('plus')}${copy.add}</summary><form class="speaker-profile-form"><label>${copy.name}<input name="name" maxlength="32" required /></label><button class="modal-action" type="submit">${copy.add}</button></form></details><div class="speaker-profile-list">${list || `<p class="page-empty">${copy.intro}</p>`}</div></aside><section class="speaker-profile-detail">${profile ? `<header class="speaker-detail-header"><div>${name}<small>${profile.sample_count}/50 ${copy.samples} · ${formatMeetingTime(profile.duration_ms || 0)} / 05:00</small></div><div class="speaker-detail-actions"><button class="secondary" data-verify-speaker-profile="${escapeHtml(profile.id)}" type="button">${voiceCopy.verify}</button><button class="secondary" data-rename-speaker-profile="${escapeHtml(profile.id)}" type="button">${t('更改名称')}</button></div></header><section class="speaker-add"><h3>${copy.addSample}</h3><form class="speaker-sample-form" data-speaker-profile="${escapeHtml(profile.id)}"><div class="speaker-audio-dropzone">${interfaceIcon('upload')}<p>${t('请选择一段清晰的已有录音。')}</p></div><button class="modal-action" type="submit">${t('选择录音并添加')}</button></form></section><section><h3>${t('声纹样本')}</h3><div class="speaker-sample-list">${samples.length ? samples.map((sample) => `<article><button class="sample-play" data-play-speaker-sample="${escapeHtml(sample.id)}" type="button" aria-label="${t('播放录音')}">${interfaceIcon('play')}</button><input type="range" data-speaker-sample-seek="${escapeHtml(sample.id)}" min="0" max="${(sample.duration_ms || 0) / 1000}" step=".1" value="0" aria-label="${t('播放进度')}" /><time>${formatMeetingTime(sample.duration_ms || 0)}</time><button class="model-delete" data-delete-speaker-sample="${escapeHtml(sample.id)}" data-profile-id="${escapeHtml(profile.id)}" type="button">${copy.remove}</button></article>`).join('') : `<p class="page-empty">${copy.empty}</p>`}</div></section><button class="model-delete" data-delete-speaker-profile="${escapeHtml(profile.id)}" type="button">${copy.remove}</button>` : `<div class="page-empty">${interfaceIcon('person')}<h2>${t('声纹管理')}</h2><p>${copy.intro}</p></div>`}</section></div>`,
+  );
 }
 speakerSampleAudio.addEventListener('timeupdate', () => {
   const id = speakerSampleAudio._button?.dataset.playSpeakerSample;
@@ -2510,14 +2590,19 @@ function renderExportModal() {
   const copy = exportHubCopy[locale] || exportHubCopy.en;
   settingsModal.querySelector('.modal-title h2').textContent = copy.title;
   settingsModal.querySelector('.modal-title p').textContent = t('选择要导出的内容及格式。');
-  exportSelection = {};
-  exportContentMeta().forEach(({ content }) => {
-    exportSelection[content] =
-      activeView === 'detail' && detailActiveTab === 'summary' && content !== 'notes'
-        ? null
-        : exportDefaultFormat[content];
-  });
-  settingsModal.querySelector('.modal-body').innerHTML = exportHubHtml();
+  if (
+    settingsModal.hidden ||
+    settingsModal.querySelector('.modal-body').dataset.contentKind !== activeModal
+  ) {
+    exportSelection = {};
+    exportContentMeta().forEach(({ content }) => {
+      exportSelection[content] =
+        activeView === 'detail' && detailActiveTab === 'summary' && content !== 'notes'
+          ? null
+          : exportDefaultFormat[content];
+    });
+  }
+  replaceModalBody(activeModal, exportHubHtml());
   updateExportBuilderState();
 }
 // 统一「导出与分享」面板。
@@ -2624,6 +2709,11 @@ function refreshModelConfigModels() {
 /** 渲染一个设置模态框。@param {'models'|'storage'|'summary-model'} kind 请求的模态框。@returns {void} */
 let mobileConnectionContent;
 function renderModal(kind) {
+  const body = settingsModal.querySelector('.modal-body');
+  const storageScrollTop =
+    kind === 'storage' && !settingsModal.hidden && body.dataset.contentKind === kind
+      ? body.scrollTop
+      : 0;
   settingsModal.querySelector('[data-mobile-install-toggle]')?.remove();
   settingsModal.classList.remove('confirmation-modal');
   settingsFolders.hidden = true;
@@ -2632,24 +2722,29 @@ function renderModal(kind) {
   settingsModal.classList.toggle('summary-model-modal', kind === 'summary-model');
   if (kind === 'device-connection') {
     mobileConnectionContent ||= document.getElementById('mobile-dialog');
+    const body = settingsModal.querySelector('.modal-body');
+    const same = body.contains(mobileConnectionContent);
     settingsModal.querySelector('.modal-title h2').textContent = t('设备连接');
     settingsModal.querySelector('.modal-title p').textContent = t(
       '手机录音，电脑转写。也可以离线录音，稍后确认上传。',
     );
-    settingsModal.querySelector('.modal-body').replaceChildren(mobileConnectionContent);
+    if (!same) body.replaceChildren(mobileConnectionContent);
+    body.dataset.contentKind = kind;
     mobileConnectionContent.hidden = false;
     const install = mobileConnectionContent.querySelector('.mobile-install');
     install.id = 'mobile-install-panel';
-    install.hidden = true;
-    install.open = false;
-    mobileConnectionContent.prepend(install);
+    if (!same) {
+      install.hidden = true;
+      install.open = false;
+      mobileConnectionContent.prepend(install);
+    }
     const installToggle = document.createElement('button');
     installToggle.className = 'secondary mobile-install-toggle';
     installToggle.type = 'button';
     installToggle.dataset.mobileInstallToggle = '';
     installToggle.textContent = t('安装Brevia手机端');
     installToggle.setAttribute('aria-controls', install.id);
-    installToggle.setAttribute('aria-expanded', 'false');
+    installToggle.setAttribute('aria-expanded', String(!install.hidden));
     installToggle.addEventListener('click', () => {
       install.hidden = !install.hidden;
       install.open = !install.hidden;
@@ -2664,8 +2759,10 @@ function renderModal(kind) {
     settingsModal.querySelector('.modal-title p').textContent = t(
       '为特定会议环境微调识别、端点检测、说话人分离和本地模型。',
     );
-    settingsModal.querySelector('.modal-body').innerHTML =
-      `${renderPermissionSettings()}<form class="advanced-settings-form">${renderAdvancedSettings(advancedSettings?.settings || {}, advancedSettings || {})}<div class="modal-form-actions"><button class="modal-action" type="submit">${t('确定')}</button><button class="secondary" data-reset-advanced-settings type="button">${t('恢复默认')}</button></div></form>`;
+    replaceModalBody(
+      kind,
+      `${renderPermissionSettings()}<form class="advanced-settings-form">${renderAdvancedSettings(advancedSettings?.settings || {}, advancedSettings || {})}<div class="modal-form-actions"><button class="modal-action" type="submit">${t('确定')}</button><button class="secondary" data-reset-advanced-settings type="button">${t('恢复默认')}</button></div></form>`,
+    );
     return;
   }
   if (kind === 'summary-model') {
@@ -2696,16 +2793,14 @@ function renderModal(kind) {
       '查看和管理保存在此设备上的会议录音、会议纪要与模型。',
     );
     renderSettingsFolderRows();
-    const total = storageUsage ? storageUsage.meetings + storageUsage.models : 0;
-    const recordingShare = total ? (storageUsage.meetings / total) * 100 : 0;
-    const sizes = storageUsage
-      ? [storageUsage.meetings, storageUsage.models].map(formatBytes)
-      : ['—', '—'];
-    const breakdown = copy.items.map(([name], index) => `${name} · ${sizes[index]}`).join('　');
-    settingsModal.querySelector('.modal-body').innerHTML =
-      `<section class="storage-overview"><div class="storage-usage-heading"><h3>${t('存储使用情况')}</h3><span>${storageUsage ? formatBytes(total) : '—'}</span></div><div class="storage-usage-bar" role="img" aria-label="${escapeHtml(breakdown)}" title="${escapeHtml(breakdown)}"><i style="width:${recordingShare}%"></i><i style="width:${total ? 100 - recordingShare : 0}%"></i></div></section><div class="storage-data-heading"><h3>${t('数据管理')}</h3><button class="secondary" data-cleanup-storage type="button">${cleanup.button}</button></div><div class="storage-list">${copy.items.map(([name], index) => `<section>${interfaceIcon('trash')}<span><b>${escapeHtml(t(index ? '清空模型' : '清空会议数据'))}</b><small>${escapeHtml(t(index ? '清空已下载的模型文件。' : '删除此设备上的会议录音、转写文本与笔记。'))}</small></span><button class="secondary modal-danger" data-clear-storage="${['meetings', 'models'][index]}" type="button">${t(index ? '清空模型' : '清空会议数据')}</button></section>`).join('')}</div><h3 class="storage-privacy-heading">${t('隐私说明')}</h3><details class="storage-privacy"><summary>${interfaceIcon('document')}<span><b>${t('隐私说明')}</b><small>${t('本地模型在此设备上运行。')}</small></span>${interfaceIcon('chevron-down')}</summary><p>${t('本地模型在此设备上运行。')}</p><p>${t('在线 AI 会将相关文字发送至所选服务商。')}</p></details>`;
+    replaceModalBody(
+      kind,
+      `<section class="storage-overview"><div class="storage-usage-heading"><h3>${t('存储使用情况')}</h3></div><div data-storage-system-disk>${renderSystemDiskUsage()}</div><div class="storage-app-usage"><span></span><span></span></div></section><div class="storage-data-heading"><h3>${t('数据管理')}</h3><button class="secondary" data-cleanup-storage type="button">${cleanup.button}</button></div><div class="storage-list">${copy.items.map(([name], index) => `<section>${interfaceIcon('trash')}<span><b>${escapeHtml(t(index ? '清空模型' : '清空会议数据'))}</b><small>${escapeHtml(t(index ? '清空已下载的模型文件。' : '删除此设备上的会议录音、转写文本与笔记。'))}</small></span><button class="secondary modal-danger" data-clear-storage="${['meetings', 'models'][index]}" type="button">${t(index ? '清空模型' : '清空会议数据')}</button></section>`).join('')}</div><h3 class="storage-privacy-heading">${t('隐私说明')}</h3><details class="storage-privacy"><summary>${interfaceIcon('document')}<span><b>${t('隐私说明')}</b><small>${t('本地模型在此设备上运行。')}</small></span>${interfaceIcon('chevron-down')}</summary><p>${t('本地模型在此设备上运行。')}</p><p>${t('在线 AI 会将相关文字发送至所选服务商。')}</p></details>`,
+    );
     settingsModal.querySelector('.storage-overview').after(settingsFolders);
     settingsFolders.hidden = false;
+    updateStorageUsage();
+    body.scrollTop = storageScrollTop;
     return;
   }
   if (kind === 'models') {
@@ -2718,13 +2813,16 @@ function renderModal(kind) {
   });
   settingsModal.querySelector('.modal-title h2').textContent = copy.title;
   settingsModal.querySelector('.modal-title p').textContent = copy.intro;
-  settingsModal.querySelector('.modal-body').innerHTML = `<div class="modal-list">${copy.items
-    .map((item, index) => {
-      const [name, detail] = item;
-      const label = `<b>${escapeHtml(name)}</b>`;
-      return `<div><span>${label}<small>${escapeHtml(detail)}</small></span></div>`;
-    })
-    .join('')}</div>`;
+  replaceModalBody(
+    kind,
+    `<div class="modal-list">${copy.items
+      .map((item, index) => {
+        const [name, detail] = item;
+        const label = `<b>${escapeHtml(name)}</b>`;
+        return `<div><span>${label}<small>${escapeHtml(detail)}</small></span></div>`;
+      })
+      .join('')}</div>`,
+  );
 }
 
 /** 模型库分组顺序与标题。键是清单里的 ``stages``；只读的随包组件单独一组。 */
@@ -2840,8 +2938,10 @@ function renderModelLibrary() {
     );
   }).join('');
 
-  settingsModal.querySelector('.modal-body').innerHTML =
-    `<div class="model-library-toolbar"><div class="settings-tabs"><button type="button" data-model-library-tab="installed" aria-selected="${modelLibraryTab === 'installed'}">${t('已安装')}</button><button type="button" data-model-library-tab="available" aria-selected="${modelLibraryTab === 'available'}">${t('可下载')}</button></div>${chinaModelSourceToggle()}</div><div class="modal-list model-library-list">${rows || `<p class="page-empty">${t('暂无内容')}</p>`}</div>`;
+  replaceModalBody(
+    'models',
+    `<div class="model-library-toolbar"><div class="settings-tabs"><button type="button" data-model-library-tab="installed" aria-selected="${modelLibraryTab === 'installed'}">${t('已安装')}</button><button type="button" data-model-library-tab="available" aria-selected="${modelLibraryTab === 'available'}">${t('可下载')}</button></div>${chinaModelSourceToggle()}</div><div class="modal-list model-library-list">${rows || `<p class="page-empty">${t('暂无内容')}</p>`}</div>`,
+  );
 }
 
 /** 渲染“更新日志”弹窗：标题 + 按版本倒序的内容列表。@returns {void} */
@@ -2850,21 +2950,24 @@ function renderWhatsNewModal() {
   if (activeModal === 'upgrade-log') {
     settingsModal.querySelector('.modal-title h2').textContent = copy.title;
     settingsModal.querySelector('.modal-title p').textContent = '';
-    settingsModal.querySelector('.modal-body').innerHTML = renderWhatsNewList(installedAppVersion);
-    settingsModal
-      .querySelector('.modal-panel')
-      .insertAdjacentHTML(
-        'beforeend',
-        `<footer class="upgrade-log-actions"><button type="button" data-update-log-about>${escapeHtml(copy.view)}${interfaceIcon('arrow-right')}</button><button class="modal-action" type="button" data-update-log-dismiss>${escapeHtml(t('开始使用'))}</button></footer>`,
-      );
+    replaceModalBody(activeModal, renderWhatsNewList(installedAppVersion));
+    if (!settingsModal.querySelector('.upgrade-log-actions'))
+      settingsModal
+        .querySelector('.modal-panel')
+        .insertAdjacentHTML(
+          'beforeend',
+          `<footer class="upgrade-log-actions"><button type="button" data-update-log-about>${escapeHtml(copy.view)}${interfaceIcon('arrow-right')}</button><button class="modal-action" type="button" data-update-log-dismiss>${escapeHtml(t('开始使用'))}</button></footer>`,
+        );
     return;
   }
   settingsModal.querySelector('.modal-title h2').textContent = t('关于与更新');
   settingsModal.querySelector('.modal-title p').textContent = t(
     '了解 Brevia 的版本信息、更新内容及相关资源。',
   );
-  settingsModal.querySelector('.modal-body').innerHTML =
-    `<section class="about-version"><span class="about-brand-mark" aria-hidden="true">B</span><div><h3>Brevia</h3><p>v${escapeHtml(installedAppVersion || '—')}</p></div><button class="secondary" data-check-app-update type="button">${t('检查更新')}</button></section><a class="about-repository" href="https://github.com/zerolovesea/Brevia" target="_blank" rel="noopener noreferrer">${interfaceIcon('github')}<span><b>zerolovesea / Brevia</b><small>github.com/zerolovesea/Brevia</small></span>${interfaceIcon('chevron-right')}</a><h3>${t('更新日志')}</h3>${renderWhatsNewList()}`;
+  replaceModalBody(
+    activeModal,
+    `<section class="about-version"><span class="about-brand-mark" aria-hidden="true"><img src="./assets/brevia-mark.svg" alt="" /></span><div><h3>Brevia</h3><p>v${escapeHtml(installedAppVersion || '—')}</p></div><button class="secondary" data-check-app-update type="button">${t('检查更新')}</button></section><a class="about-repository" href="https://github.com/zerolovesea/Brevia" target="_blank" rel="noopener noreferrer">${interfaceIcon('github')}<span><b>zerolovesea / Brevia</b><small>github.com/zerolovesea/Brevia</small></span>${interfaceIcon('chevron-right')}</a><h3>${t('更新日志')}</h3>${renderWhatsNewList()}`,
+  );
 }
 /** 当前版本展开、历史版本折叠；分类条目附提交引用与首次贡献者。 */
 function renderWhatsNewList(installedVersion) {
@@ -2921,8 +3024,8 @@ function renderWhatsNewList(installedVersion) {
       const heading = `<div class="whatsnew-heading"><h3>v${escapeHtml(version)}${current ? `<em>${escapeHtml(copy.current)}</em>` : ''}</h3>${date ? `<time datetime="${escapeHtml(date)}">${escapeHtml(date)}</time>` : ''}</div>`;
       const body = `${content.summary ? `<p class="whatsnew-summary">${escapeHtml(content.summary)}</p>` : ''}${sections}${contributors}${footer}`;
       return current
-        ? `<details class="whatsnew-entry is-current" open><summary>${heading}</summary>${body}</details>`
-        : `<details class="whatsnew-entry"><summary>${heading}</summary>${body}</details>`;
+        ? `<details class="whatsnew-entry is-current" data-modal-detail="${escapeHtml(entry.version)}" open><summary>${heading}</summary>${body}</details>`
+        : `<details class="whatsnew-entry" data-modal-detail="${escapeHtml(entry.version)}"><summary>${heading}</summary>${body}</details>`;
     })
     .join('')}</div>`;
 }
@@ -2945,7 +3048,15 @@ function showSettingsModal(focusSelector) {
   const protectedFocus = !settingsModal.classList.contains('settings-page');
   document.querySelector('.app-shell').inert = protectedFocus;
   if (onboardingPage) onboardingPage.inert = protectedFocus;
-  requestAnimationFrame(() => settingsModal.classList.add('modal-enter'));
+  const panel = settingsModal.querySelector('.modal-panel');
+  requestAnimationFrame(() => {
+    if (
+      !settingsModal.hidden &&
+      !settingsModal.classList.contains('modal-leave') &&
+      settingsModal.querySelector('.modal-panel') === panel
+    )
+      settingsModal.classList.add('modal-enter');
+  });
   document.body.classList.add('modal-open');
   const actions = settingsModal.querySelector('form .modal-form-actions');
   if (
@@ -2969,9 +3080,14 @@ function openConfirmation(title, detail, action, anchor) {
     const page = document.createElement('div');
     page.className = settingsModal.className;
     page.inert = true;
-    storageConfirmationPage = { page, returnFocus: anchor || document.activeElement };
+    storageConfirmationPage = {
+      page,
+      returnFocus: anchor || document.activeElement,
+      scrollTop: settingsModal.querySelector('.modal-body').scrollTop,
+    };
     page.append(...settingsModal.childNodes);
     settingsModal.before(page);
+    page.querySelector('.modal-body').scrollTop = storageConfirmationPage.scrollTop;
     settingsModal.innerHTML = settingsModalMarkup();
   }
   configureSettingsPage('confirmation');
@@ -2995,9 +3111,15 @@ function openConfirmation(title, detail, action, anchor) {
     ]);
 }
 async function openModal(kind) {
+  if (kind === 'ai-features') kind = 'summary-model';
+  const same =
+    activeModal === kind &&
+    !settingsModal.hidden &&
+    settingsModal.querySelector('.modal-body').dataset.contentKind === kind &&
+    !settingsModal.classList.contains('modal-leave');
+  if (same) return;
   window.clearInterval(permissionPollTimer);
   clearTimeout(modalDismissTimer);
-  if (kind === 'ai-features') kind = 'summary-model';
   if (kind === 'advanced-settings') {
     try {
       const [settings, status] = await Promise.all([
@@ -3034,6 +3156,8 @@ async function openModal(kind) {
     settingsModal.querySelector(focusTarget).setAttribute('tabindex', '-1');
   showSettingsModal(focusTarget);
   settingsModal.querySelector('.modal-body').scrollTop = 0;
+  settingsModal.querySelector('.modal-panel').scrollTop = 0;
+  settingsModal.scrollTop = 0;
   if (kind === 'advanced-settings') startPermissionPoll();
 }
 /** 在高级设置模态框打开时轮询系统权限状态，并仅在更改时重新渲染该部分。@returns {void} */
@@ -3048,24 +3172,34 @@ function startPermissionPoll() {
     if (!status) return;
     const changed = JSON.stringify(status) !== JSON.stringify(permissionStatus);
     permissionStatus = status;
-    const section = settingsModal.querySelector('[data-permission-settings]');
-    if (changed && section) section.outerHTML = renderPermissionSettings();
+    if (changed) refreshPermissionSettings();
   }, 1000);
+}
+function refreshPermissionSettings() {
+  const section = settingsModal.querySelector('[data-permission-settings]');
+  if (!section) return;
+  const body = settingsModal.querySelector('.modal-body');
+  const scrollTop = body.scrollTop;
+  const open = section.open;
+  section.outerHTML = renderPermissionSettings();
+  settingsModal.querySelector('[data-permission-settings]').open = open;
+  body.scrollTop = scrollTop;
 }
 /** 关闭活动的设置模态框并恢复页面滚动。@returns {void} */
 function closeModal() {
   if (settingsModal.hidden) return;
   if (storageConfirmationPage) {
     clearTimeout(modalDismissTimer);
-    const { page, returnFocus } = storageConfirmationPage;
+    const { page, returnFocus, scrollTop } = storageConfirmationPage;
     storageConfirmationPage = undefined;
     confirmationAction = undefined;
-    settingsModal.replaceChildren(...page.childNodes);
     settingsModal.className = page.className;
+    settingsModal.replaceChildren(...page.childNodes);
     page.remove();
     activeModal = 'storage';
     document.querySelector('.app-shell').inert = false;
-    if (returnFocus?.isConnected) returnFocus.focus();
+    settingsModal.querySelector('.modal-body').scrollTop = scrollTop;
+    if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
     return;
   }
   if (activeModal === 'whats-new' || activeModal === 'upgrade-log') markWhatsNewSeen();
@@ -3091,9 +3225,9 @@ function closeModal() {
     if (onboardingPage) onboardingPage.inert = false;
     if (returnTo) {
       void showView(returnTo.view).then(() => {
-        if (returnTo.focus?.isConnected) returnTo.focus.focus();
+        if (returnTo.focus?.isConnected) returnTo.focus.focus({ preventScroll: true });
       });
-    } else if (modalReturnFocus?.isConnected) modalReturnFocus.focus();
+    } else if (modalReturnFocus?.isConnected) modalReturnFocus.focus({ preventScroll: true });
     settingsModal.classList.remove('modal-leave');
     if (onboardingPage?.dataset.aiSettings !== 'true') document.body.classList.remove('modal-open');
   }, 220);
@@ -3244,6 +3378,24 @@ function renderSettingsFolderRows() {
   void refreshSettingsFolderRows();
 }
 
+/** 维护只更新容量，保留当前页面的按钮、焦点、滚动和展开状态。 */
+function updateStorageUsage() {
+  const sizes = storageUsage
+    ? [storageUsage.meetings, storageUsage.models].map(formatBytes)
+    : ['—', '—'];
+  const usage = document.querySelector('.storage-app-usage');
+  if (usage) {
+    const copy = (modalCopy[locale] || modalCopy.en).storage;
+    usage.children[0].textContent = `Brevia · ${storageUsage ? formatBytes(storageUsage.meetings + storageUsage.models) : '—'}`;
+    usage.children[1].textContent = copy.items
+      .map(([name], index) => `${name} · ${sizes[index]}`)
+      .join('　');
+  }
+  settingsFolders.querySelectorAll('.storage-size').forEach((size, index) => {
+    size.textContent = sizes[index];
+  });
+}
+
 let storageMovePending = false;
 /** Keep setup and settings inert until the move and UI refresh both finish. */
 async function withStorageMigration(operation) {
@@ -3278,9 +3430,22 @@ function storageErrorMessage(error) {
   if (/environment variable/.test(message)) return t('此文件夹由环境变量指定，无法在应用内更改。');
   return t('文件夹更改失败，请检查路径、磁盘连接和写入权限。');
 }
+/** 容量来自系统磁盘，Brevia 文件占用另行展示，避免把两种百分比混在一起。 */
+function renderSystemDiskUsage() {
+  const disk = systemDiskUsage;
+  if (!disk || disk.total <= 0)
+    return `<p class="storage-disk-detail">${t(disk === undefined ? '加载中' : '系统磁盘信息暂不可用')}</p>`;
+  const percent = Math.round(Math.max(0, Math.min(1, disk.used / disk.total)) * 1000) / 10;
+  const used = `${t('已使用')} ${formatBytes(disk.used)} / ${formatBytes(disk.total)}`;
+  const free = `${t('可用空间')} ${formatBytes(disk.free)}`;
+  return `<div class="storage-disk-heading"><span>${t('系统磁盘')}</span><strong>${t('已使用')} ${percent}%</strong></div><div class="storage-usage-bar" role="progressbar" aria-label="${escapeHtml(t('系统磁盘'))}" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100" aria-valuetext="${escapeHtml(`${used} · ${free}`)}"><i style="width:${percent}%"></i></div><div class="storage-disk-detail"><span>${escapeHtml(used)}</span><span>${escapeHtml(free)}</span></div>`;
+}
 async function refreshSettingsFolderRows() {
   try {
     const locations = await window.brevia.storage.locations();
+    systemDiskUsage = locations.disk ?? null;
+    const overview = document.querySelector('[data-storage-system-disk]');
+    if (overview) overview.innerHTML = renderSystemDiskUsage();
     for (const key of ['recordings', 'models']) {
       const path = document.querySelector(`[data-settings-path="${key}"]`);
       const button = document.querySelector(`[data-change-folder="${key}"]`);
@@ -3465,9 +3630,9 @@ async function openOnboardingSetup() {
       `<div class="onboarding-setup-sections">` +
       storageRows +
       `<section class="onboarding-section onboarding-model-selection">` +
-      `<h2>${t('选择模型')}</h2><div class="onboarding-model-grid">${cards}</div></section>` +
+      `<div class="onboarding-model-heading"><h2>${t('选择模型')}</h2><div class="onboarding-model-source">${chinaModelSourceToggle()}</div></div><div class="onboarding-model-grid">${cards}</div></section>` +
       `<section class="onboarding-section onboarding-bundled-section">${bundledRow}</section>` +
-      `<div class="onboarding-model-source">${chinaModelSourceToggle()}</div></div>` +
+      `</div>` +
       `<div class="onboarding-actions"><div class="onboarding-model-summary"><strong>${escapeHtml(copy.estimate || '')}: <span data-onboarding-estimate></span></strong><small data-onboarding-guard hidden>${escapeHtml(copy.atLeastOne || '')}</small></div><button class="secondary onboarding-previous" data-onboarding-back-language type="button">${t('上一步')}</button><button class="secondary" data-finish-onboarding type="button">${escapeHtml(copy.later || '')}</button><button class="modal-action" data-download-onboarding-models type="button">${escapeHtml(copy.download || '')}${interfaceIcon('arrow-right')}</button></div></section>`,
   );
 
@@ -3573,11 +3738,11 @@ function openOnboardingAi(settingsMode = false) {
         ? ''
         : `<header><h1>${escapeHtml(copy.title)}</h1>${copy.intro ? `<div class="onboarding-intro"><p>${escapeHtml(copy.intro)}</p></div>` : ''}</header>`
     }
-    <div class="onboarding-ai-sections"><section class="onboarding-section onboarding-ai-feature onboarding-ai-row">
+    <div class="onboarding-ai-sections">${settingsMode ? '' : `<div class="onboarding-shared-service"><span>${interfaceIcon('model')}<b>${escapeHtml(t('配置服务'))}</b></span><button class="secondary" data-configure-ai-summary type="button">${escapeHtml(t('配置服务'))}</button></div>`}<section class="onboarding-section onboarding-ai-feature onboarding-ai-row">
       <div class="onboarding-ai-copy">
         <div class="onboarding-ai-feature-head"><span class="onboarding-ai-icon">${summaryIcon}</span><h2>${escapeHtml(copy.meetingNotesTitle)}</h2><label class="onboarding-ai-switch"><input type="checkbox" name="onboarding-summary-enabled" aria-label="${escapeHtml(copy.meetingNotesTitle)}"${summaryConfig.enabled ? ' checked' : ''} /></label></div>
         <p class="onboarding-ai-feature-desc">${escapeHtml(copy.meetingNotesDesc)}</p>
-        <div class="onboarding-ai-ways"><label><input type="radio" name="onboarding-ai-way" value="built-in"${summaryConfig.provider === 'built-in' ? ' checked' : ''} /><span><b>${escapeHtml(copy.builtin)}</b><small>${escapeHtml(copy.builtinHint)}</small></span></label><label><input type="radio" name="onboarding-ai-way" value="online"${summaryConfig.provider !== 'built-in' ? ' checked' : ''} /><span><b>${escapeHtml(copy.online)}${recommendTag(deviceIsWeak())}</b><small>${escapeHtml(copy.onlineHint)}</small></span></label></div>
+        ${settingsMode ? `<div class="onboarding-ai-ways"><label><input type="radio" name="onboarding-ai-way" value="built-in"${summaryConfig.provider === 'built-in' ? ' checked' : ''} /><span><b>${escapeHtml(copy.builtin)}</b><small>${escapeHtml(copy.builtinHint)}</small></span></label><label><input type="radio" name="onboarding-ai-way" value="online"${summaryConfig.provider !== 'built-in' ? ' checked' : ''} /><span><b>${escapeHtml(copy.online)}${recommendTag(deviceIsWeak())}</b><small>${escapeHtml(copy.onlineHint)}</small></span></label></div>` : ''}
         ${settingsMode ? `<button class="secondary" data-configure-ai-summary type="button">${escapeHtml(t('配置服务'))}</button>` : ''}
       </div><div class="onboarding-ai-frame" data-onboarding-summary-demo></div>
     </section>
@@ -3590,7 +3755,7 @@ function openOnboardingAi(settingsMode = false) {
         ${settingsMode ? `<button class="secondary" data-configure-ai-notes type="button">${escapeHtml(t('配置 AI 笔记'))}</button>` : ''}
       </div><div class="onboarding-ai-frame"><aside class="onboarding-ai-demo" data-onboarding-ai-demo></aside></div>
     </section>
-    ${settingsMode ? `<p class="onboarding-privacy-hint">${interfaceIcon('info')}${escapeHtml(t('在线 AI 会将相关文字发送至所选服务商。'))}</p>` : `<div class="onboarding-shared-service"><span>${interfaceIcon('model')}<b>${escapeHtml(t('配置服务'))}</b></span><button class="secondary" data-configure-ai-summary type="button">${escapeHtml(t('配置服务'))}</button></div>`}</div>
+    ${settingsMode ? `<p class="onboarding-privacy-hint">${interfaceIcon('info')}${escapeHtml(t('在线 AI 会将相关文字发送至所选服务商。'))}</p>` : ''}</div>
     <div class="onboarding-actions">${settingsMode ? '' : `<button class="secondary onboarding-previous" data-onboarding-back-language type="button">${escapeHtml(t('上一步'))}</button>`}<button class="secondary" data-onboarding-ai-skip type="button">${escapeHtml(settingsMode ? t('取消') : copy.skip)}</button><button class="modal-action" data-onboarding-ai-finish type="button">${escapeHtml(settingsMode ? t('保存配置') : t('下一步'))}${settingsMode ? '' : interfaceIcon('arrow-right')}</button></div>
   </section>`;
   if (settingsMode) {
@@ -3601,7 +3766,11 @@ function openOnboardingAi(settingsMode = false) {
     document.body.classList.add('modal-open');
     const page = onboardingPage;
     requestAnimationFrame(() => page.classList.add('modal-enter'));
-    page.querySelector('[data-close-ai-features]').focus();
+    const focusTarget = page.querySelector(
+      activeView === 'settings' ? '.modal-title h2' : '[data-close-ai-features]',
+    );
+    focusTarget.tabIndex = -1;
+    focusTarget.focus();
   } else showOnboardingPage('ai', content);
   onboardingPage.dataset.aiSettings = String(settingsMode);
   onboardingPage.querySelector('.onboarding-ai-segments').addEventListener('keydown', (event) => {
@@ -3692,17 +3861,20 @@ function openOnboardingAi(settingsMode = false) {
       )
         return;
       onboardingOnlineProvider =
+        settingsMode &&
         (
           aiWay?.querySelector('input') ||
           onboardingPage.querySelector('[name="onboarding-ai-way"]:checked')
         ).value !== 'built-in';
-      onboardingBuiltinProvider = !onboardingOnlineProvider;
+      onboardingBuiltinProvider = !settingsMode || !onboardingOnlineProvider;
       summaryConfigDraft = structuredClone(summaryConfig);
-      summaryConfigDraft.provider = onboardingOnlineProvider
-        ? summaryConfig.provider === 'built-in'
-          ? 'openai'
-          : summaryConfig.provider
-        : 'built-in';
+      summaryConfigDraft.provider = !settingsMode
+        ? summaryConfig.provider
+        : onboardingOnlineProvider
+          ? summaryConfig.provider === 'built-in'
+            ? 'openai'
+            : summaryConfig.provider
+          : 'built-in';
       openModal('summary-model');
       return;
     }
@@ -3815,7 +3987,7 @@ function openOnboardingMobile() {
       <div class="onboarding-phone-mechanism"><span>${interfaceIcon('phone')}<span><b>${t('手机采集与保存')}</b><small>${t('在手机上录制会议或对话，录音保存在手机中。')}</small></span></span><i aria-hidden="true">${interfaceIcon('arrow-right')}</i><span>${interfaceIcon('laptop')}<span><b>${t('电脑转写与 AI 整理')}</b><small>${t('连接电脑后转写并整理会议内容。')}</small></span></span></div>
       <div class="onboarding-phone-pair"><b>${t('已安装手机端？')}</b><small>${t('在手机上打开 Brevia，连接新设备，开始使用。')}</small><button class="modal-action" data-onboarding-mobile-pair type="button">${t('连接新设备')}</button></div>
       <div class="onboarding-actions"><button class="secondary onboarding-previous" data-onboarding-mobile-back type="button">${t('上一步')}</button><button class="secondary" data-onboarding-mobile-skip type="button">${t('稍后')}</button><button class="modal-action" data-onboarding-mobile-next type="button">${t('开始使用')}</button></div>
-    </section><section class="onboarding-pair-intro"><h1>${t('让每一次对话，都有记录。')}</h1><p>${t('录制会议，转写内容，生成要点，帮助你专注于真正重要的事。')}</p><div>${['microphone', 'document', 'list'].map((icon, index) => `<span>${interfaceIcon(icon)}<span><b>${t(['录制会议', '生成笔记', '随时回顾'][index])}</b><small>${t(['高质量录音', '提炼要点', '搜索、整理与分享'][index])}</small></span></span>`).join('')}</div></section>`,
+    </section>`,
   );
   onboardingPage.addEventListener('click', (event) => {
     if (event.target.closest('[data-onboarding-mobile-pair]'))
@@ -4185,8 +4357,7 @@ settingsModal.addEventListener('click', async (event) => {
       showToast(error.message, undefined, 'error');
     }
     permissionStatus = await window.brevia?.permissions.status().catch(() => permissionStatus);
-    const section = settingsModal.querySelector('[data-permission-settings]');
-    if (section) section.outerHTML = renderPermissionSettings();
+    refreshPermissionSettings();
     return;
   }
   if (event.target.closest('[data-confirm-action]')) {
@@ -4219,8 +4390,9 @@ settingsModal.addEventListener('click', async (event) => {
       t('此操作不可恢复。'),
       async () => {
         try {
-          await window.brevia?.storage.clear({ partition });
-          renderModal('storage');
+          storageUsage = await window.brevia?.storage.clear({ partition });
+          updateStorageUsage();
+          void refreshSettingsFolderRows();
           showToast(t('已清空'), undefined, 'success');
         } catch (error) {
           showToast(error.message, undefined, 'error');
@@ -4233,7 +4405,8 @@ settingsModal.addEventListener('click', async (event) => {
   if (event.target.closest('[data-cleanup-storage]')) {
     try {
       const result = await window.brevia?.storage.cleanup();
-      renderModal('storage');
+      updateStorageUsage();
+      void refreshSettingsFolderRows();
       const copy = storageCleanupCopy[locale] || storageCleanupCopy.en;
       showToast(copy.done.replace('{size}', formatBytes(result.freed_bytes)), undefined, 'success');
     } catch (error) {
@@ -5234,6 +5407,18 @@ async function transitionPage(current, next, swap = () => {}) {
   const previous = pageTransition;
   const transition = (async () => {
     if (previous) await previous.catch(() => {});
+    // 所有导航入口共用退出逻辑，会议库切换也必须清除设置页遮罩。
+    if (next.id !== 'settings-view') {
+      if (!settingsModal.hidden && settingsModal.classList.contains('settings-page')) {
+        closeModal();
+        clearTimeout(modalDismissTimer);
+        settingsModal.hidden = true;
+        settingsModal.classList.remove('modal-leave');
+        document.querySelector('.app-shell').inert = false;
+        document.body.classList.remove('modal-open');
+      }
+      if (onboardingPage?.dataset.aiSettings === 'true') dismissOnboardingPage();
+    }
     current = document.querySelector('.view.active') || current;
     const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 160;
     current.classList.add('leaving');
@@ -5245,6 +5430,14 @@ async function transitionPage(current, next, swap = () => {}) {
       document
         .querySelector('.app-shell')
         .classList.toggle('is-live-meeting', activeView === 'live' && meetingActive);
+      document
+        .querySelector('.app-shell')
+        .classList.toggle('is-settings-view', activeView === 'settings');
+      if (activeView === 'settings') {
+        const heading = document.querySelector('#settings-view h1');
+        heading.tabIndex = -1;
+        heading.focus({ preventScroll: true });
+      }
       crumb.textContent =
         activeView === 'prepare' && prepareView.dataset.mode === 'import'
           ? t('导入录音')
@@ -5274,18 +5467,6 @@ async function transitionPage(current, next, swap = () => {}) {
 }
 /** 在顶级应用视图之间切换。@param {'home'|'prepare'|'live'|'detail'|'settings'} name 目标视图。*/
 const showView = async (name) => {
-  // 页面式设置退出时立即退场，避免继续会议后仍覆盖录制区。
-  if (
-    name !== 'settings' &&
-    !settingsModal.hidden &&
-    settingsModal.classList.contains('settings-page')
-  ) {
-    closeModal();
-    clearTimeout(modalDismissTimer);
-    settingsModal.hidden = true;
-    settingsModal.classList.remove('modal-leave');
-    document.body.classList.remove('modal-open');
-  }
   if (name === activeView && !pageTransition) return;
   const current = document.querySelector(`#${activeView}-view`);
   const next = document.querySelector(`#${name}-view`);
@@ -6749,8 +6930,10 @@ function openBatchExport() {
     locale,
     selectedMeetings().length,
   );
-  settingsModal.querySelector('.modal-body').innerHTML =
-    `<div class="export-options">${batchExportFormats.map((format) => `<button type="button" data-batch-export-format="${format}"><span><b>${format.toUpperCase()}</b></span><strong>.${format}</strong></button>`).join('')}</div>`;
+  replaceModalBody(
+    'batch-export',
+    `<div class="export-options">${batchExportFormats.map((format) => `<button type="button" data-batch-export-format="${format}"><span><b>${format.toUpperCase()}</b></span><strong>.${format}</strong></button>`).join('')}</div>`,
+  );
   showSettingsModal();
 }
 function showBatchResults(meetings, results, action, retry) {
@@ -6764,14 +6947,17 @@ function showBatchResults(meetings, results, action, retry) {
     (meeting) => results.find((result) => result.meeting_id === meeting.id)?.error,
   );
   const success = results.filter((result) => result.path || result.completed).length;
-  settingsModal.querySelector('.modal-body').innerHTML = `<div class="batch-results">${meetings
-    .map((meeting) => {
-      const result = results.find((result) => result.meeting_id === meeting.id);
-      return `<article>${interfaceIcon('document')}<strong>${escapeHtml(meeting.title)}</strong><div class="${result?.error ? 'batch-result-error' : ''}">${interfaceIcon(result?.error ? 'warning' : result?.path || result?.completed ? 'check' : 'info')}<span>${escapeHtml(t(result?.error ? '操作失败' : result?.path || result?.completed ? (action === 'export' ? '已导出' : '已完成') : '结果待确认'))}</span>${result?.error ? `<small>${escapeHtml(userFacingError(result.error))}</small>` : ''}</div></article>`;
-    })
-    .join(
-      '',
-    )}<footer><span>${escapeHtml(t('已完成'))} ${success} / ${meetings.length}</span>${failures.length && retry ? `<button class="secondary" data-retry-batch>${escapeHtml(t('重试失败项'))}</button>` : ''}<button class="secondary" data-close-modal>${escapeHtml(t('关闭'))}</button></footer></div>`;
+  replaceModalBody(
+    'batch-results',
+    `<div class="batch-results">${meetings
+      .map((meeting) => {
+        const result = results.find((result) => result.meeting_id === meeting.id);
+        return `<article>${interfaceIcon('document')}<strong>${escapeHtml(meeting.title)}</strong><div class="${result?.error ? 'batch-result-error' : ''}">${interfaceIcon(result?.error ? 'warning' : result?.path || result?.completed ? 'check' : 'info')}<span>${escapeHtml(t(result?.error ? '操作失败' : result?.path || result?.completed ? (action === 'export' ? '已导出' : '已完成') : '结果待确认'))}</span>${result?.error ? `<small>${escapeHtml(userFacingError(result.error))}</small>` : ''}</div></article>`;
+      })
+      .join(
+        '',
+      )}<footer><span>${escapeHtml(t('已完成'))} ${success} / ${meetings.length}</span>${failures.length && retry ? `<button class="secondary" data-retry-batch>${escapeHtml(t('重试失败项'))}</button>` : ''}<button class="secondary" data-close-modal>${escapeHtml(t('关闭'))}</button></footer></div>`,
+  );
   const retryButton = settingsModal.querySelector('[data-retry-batch]');
   retryButton?.addEventListener('click', async () => {
     if (retryButton.disabled) return;
@@ -8610,7 +8796,10 @@ if (window.brevia) {
       );
       renderSpeakerProfileCard();
       renderMeetingList();
-      if (activeModal === 'storage') renderModal('storage');
+      if (activeModal === 'storage' || storageConfirmationPage) {
+        updateStorageUsage();
+        void refreshSettingsFolderRows();
+      }
       if (recoverable.length) showToast(t('发现可恢复录音').replace('{count}', recoverable.length));
     },
   );

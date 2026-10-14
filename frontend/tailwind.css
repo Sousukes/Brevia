@@ -63,7 +63,7 @@
     background: #ffffff;
     font-size: 16px;
     letter-spacing: normal;
-    font-weight: 500;
+    font-weight: 400;
   }
   button,
   input,
@@ -1776,7 +1776,7 @@
   .transcript-scroll .segment p {
     font-size: 14px;
     line-height: 1.6;
-    font-weight: 500;
+    font-weight: 400;
     color: #333;
     word-break: normal;
     overflow-wrap: break-word;
@@ -2394,7 +2394,7 @@
     right: 0;
   }
   .detail-notes-panel {
-    @apply min-h-0 flex-1 overflow-y-auto pt-5 pr-4 text-[15px] leading-7;
+    @apply min-h-0 flex-1 overflow-y-auto pr-4 text-[15px] leading-7;
   }
   .detail-notes-empty {
     @apply py-3 text-[13px] text-[#767676];
@@ -4424,6 +4424,13 @@ html[data-theme="dark"] input[type="checkbox"] {
 html[data-theme="dark"] input[type="checkbox"]:checked {
   background-color: #eee;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 8 2.7 2.7L12.5 4.5' fill='none' stroke='%23111' stroke-width='1.75' stroke-linecap='square'/%3E%3C/svg%3E");
+}
+/* 开关只用圆钮表达状态，避免继承普通勾选框的对勾；深色圆钮与浅色轨道保持对比。 */
+html[data-theme="dark"] .onboarding-ai-switch input[type="checkbox"]:checked {
+  background-image: none;
+}
+html[data-theme="dark"] .onboarding-ai-switch input[type="checkbox"]:checked::after {
+  background: var(--color-text-inverse);
 }
 html[data-theme="dark"] .primary-action,
 html[data-theme="dark"] .play {

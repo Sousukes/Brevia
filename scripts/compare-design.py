@@ -1,6 +1,7 @@
 """用原尺寸 Electron 截图生成参考/当前/叠加/差异；合成画板只做视觉对照。"""
 
 import argparse
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -9,6 +10,15 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 DESIGNS = ROOT / "docs/redesign-2026-10-12"
+
+
+def capture_matches_sources(capture_run):
+    """旧图即使同名，也不能替代当前源码的完整运行。"""
+    sources = capture_run.get("sources", {})
+    return bool(capture_run.get("checksPassed") and sources) and all(
+        (ROOT / name).is_file() and hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+        for name, digest in sources.items()
+    )
 
 
 def compare(reference, current):
@@ -46,6 +56,17 @@ def comparison_board(reference, current, overlay, heat):
 
 
 def self_test():
+    source = Path(__file__).resolve()
+    valid_run = {
+        "checksPassed": True,
+        "sources": {str(source.relative_to(ROOT)): hashlib.sha256(source.read_bytes()).hexdigest()},
+    }
+    assert capture_matches_sources(valid_run)
+    assert not capture_matches_sources({})
+    assert not capture_matches_sources({**valid_run, "checksPassed": False})
+    assert not capture_matches_sources(
+        {"checksPassed": True, "sources": {"scripts/compare-design.py": "old"}}
+    )
     white = Image.new("RGB", (16, 16), "white")
     black = Image.new("RGB", (16, 16), "black")
     assert compare(white, white)[2] == 0
@@ -78,6 +99,16 @@ def compare_feedback(args):
     ]
     pairs = [
         ("library", "D53.png", "选择按钮与主操作同高、导航/列表紧凑；示例文字和日期不同"),
+        (
+            "sidebar-six-tasks",
+            "D50.png",
+            "六种真实任务组件共存；标题、动作、独立滚动与底部入口；进度为隔离fixture",
+        ),
+        (
+            "detail-summary-sidebar-scroll",
+            "D10.png",
+            "长纪要侧栏：显式横线与标题边框不重复，滚动条保留16px正文留白",
+        ),
         ("workspace-picker", "D50.png", "菜单不被正文穿透、选择器不裁剪；真实选项/任务数量不同"),
         ("selection-empty", "D54.png", "0项、复选框、禁用导出/删除；示例会议不同"),
         ("meeting-submenu", "D43.png", "主/二级菜单顶边、间隙和连接；实际工作区选项不同"),
@@ -110,6 +141,9 @@ def run(args):
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     manifest = json.loads((DESIGNS / "design-manifest.json").read_text())
+    run_path = Path(args.capture) / "capture-run.json"
+    capture_run = json.loads(run_path.read_text()) if run_path.is_file() else {}
+    current_sources = capture_matches_sources(capture_run)
     measurements_path = Path(args.capture) / "measurements.json"
     measurements = (
         {item["name"]: item for item in json.loads(measurements_path.read_text())}
@@ -120,6 +154,7 @@ def run(args):
     for item in manifest:
         scene = item["scene"]
         row = {"reference": item["reference"], "scene": scene, "category": item["category"]}
+        row["visual_audit"] = item.get("visual_audit", [])
         results.append(row)
         if not scene:
             row["status"] = "historical"
@@ -131,6 +166,14 @@ def run(args):
             continue
         target = output / Path(item["reference"]).stem
         target.mkdir(exist_ok=True)
+        row["fresh_capture"] = (
+            current_sources
+            and not scene.startswith("mobile-")
+            and (scene + ".png" in capture_run.get("files", []))
+        )
+        (target / "audit.json").write_text(
+            json.dumps(row["visual_audit"], ensure_ascii=False, indent=2) + "\n"
+        )
         shutil.copyfile(DESIGNS / item["reference"], target / "reference.png")
         shutil.copyfile(shot, target / "current.png")
         row["supplementary"] = []
@@ -140,7 +183,14 @@ def run(args):
             captured = extra_shot.is_file()
             if captured:
                 shutil.copyfile(extra_shot, target / (extra + ".png"))
-            row["supplementary"].append({"scene": extra, "captured": captured})
+            row["supplementary"].append(
+                {
+                    "scene": extra,
+                    "captured": captured,
+                    "fresh_capture": current_sources
+                    and extra + ".png" in capture_run.get("files", []),
+                }
+            )
         if scene in measurements:
             row["layout"] = measurements[scene]
         reference = Image.open(target / "reference.png").convert("RGB")
@@ -225,9 +275,13 @@ def run(args):
         "图片在同名子目录中。desktop 主参考与渲染文件均为 1280×800，无裁剪或缩放；实际 CSS 尺寸与导出 DPR 见 captures/desktop/measurements.json。",
         "阈值 24 的差异率包括模拟窗口、示例内容和字体抗锯齿，仅为定位线索，不是验收分数。",
         "合成画板/手机只输出并排图；展示缩放等比、不评分、不伪造覆盖其他分镜。",
+        "本轮捕获时间、源码SHA256与文件清单见 captures/desktop/capture-run.json；手机截图未复拍。",
+        "每页 audit.json 从设计 manifest 生成，记录主要差异、根因与处理结果。",
+        "源码指纹与捕获检查状态："
+        + ("匹配，通过。" if current_sources else "不匹配或缺失，不能作为当前源码完成证据。"),
         "",
-        "| 原图 | 场景 | 证据 | 原尺寸差异率 |",
-        "| --- | --- | --- | --- |",
+        "| 原图 | 场景 | 证据 | 本轮复拍 | 原尺寸差异率 |",
+        "| --- | --- | --- | --- | --- |",
     ]
     for row in results:
         name = Path(row["reference"]).stem
@@ -237,7 +291,8 @@ def run(args):
             else row["status"]
         )
         lines.append(
-            f"| {row['reference']} | {row['scene'] or '历史'} | {link} | {row.get('diff_fraction', '—')} |"
+            f"| {row['reference']} | {row['scene'] or '历史'} | {link} | "
+            f"{'是' if row.get('fresh_capture') else '否'} | {row.get('diff_fraction', '—')} |"
         )
     (output / "README.md").write_text("\n".join(lines) + "\n")
     print(

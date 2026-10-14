@@ -624,6 +624,52 @@ assert.deepEqual(
 );
 const componentContext = {};
 runInNewContext(text(components), componentContext);
+// 动效只处理真实键盘点击，不改变点击行为；快速重复按键取消上一段反馈。
+let keyboardPress;
+let reduceButtonMotion = false;
+let cancelPressCount = 0;
+const buttonAnimations = [];
+runInNewContext(text(components), {
+  document: {
+    addEventListener(type, handler, capture) {
+      if (type === 'click') {
+        keyboardPress = handler;
+        assert.equal(capture, true);
+      }
+    },
+  },
+  getComputedStyle: () => ({ getPropertyValue: () => '1' }),
+  matchMedia: () => ({ matches: reduceButtonMotion }),
+});
+const motionButton = {
+  disabled: false,
+  closest() {
+    return this;
+  },
+  matches() {
+    return this.disabled;
+  },
+  animate(frames, options) {
+    buttonAnimations.push({ frames, options });
+    return { cancel: () => cancelPressCount++ };
+  },
+};
+const pressEvent = { target: motionButton, isTrusted: true, detail: 0 };
+keyboardPress(pressEvent);
+assert.equal(buttonAnimations.length, 1);
+assert.equal(buttonAnimations[0].options.duration, 260);
+assert.equal(buttonAnimations[0].frames[1].scale, '.98');
+keyboardPress(pressEvent);
+assert.equal(cancelPressCount, 1);
+reduceButtonMotion = true;
+keyboardPress(pressEvent);
+reduceButtonMotion = false;
+motionButton.disabled = true;
+keyboardPress(pressEvent);
+motionButton.disabled = false;
+keyboardPress({ ...pressEvent, isTrusted: false });
+keyboardPress({ ...pressEvent, detail: 1 });
+assert.equal(buttonAnimations.length, 2, '减少动态、禁用和非键盘点击不启动补充动画');
 assert.match(componentContext.renderTaskProgressLabel('<long title>', 0), /&lt;long title&gt;/);
 assert.match(componentContext.renderTaskProgressLabel('Meeting', 0), /task-progress-value.*0%/);
 assert.doesNotMatch(componentContext.renderTaskProgressLabel('Waiting'), /task-progress-value/);
@@ -3789,7 +3835,7 @@ for (const code of ['zh', 'en']) {
   assert.ok(rendered.includes(changelogContext.whatsNewCopy[code].contributors));
   assert.ok(rendered.includes('https://github.com/Sousukes'));
   assert.ok(rendered.includes('/pull/4'));
-  assert.ok(rendered.includes('<details class="whatsnew-entry"><summary>'));
+  assert.match(rendered, /<details class="whatsnew-entry" data-modal-detail="[^"]+"><summary>/);
   assert.ok(rendered.includes('Legacy entry'));
   assert.ok(!rendered.includes('<新增>'));
 }
@@ -4004,6 +4050,7 @@ const summaryContext = {
     classList: { contains: () => false },
     querySelector: (selector) => summaryNodes[selector],
   },
+  replaceModalBody: (_kind, markup) => (summaryNodes['.modal-body'].innerHTML = markup),
 };
 runInNewContext(`${text(components)}\nthis.escapeHtml = escapeHtml;`, summaryContext);
 // escapeHtml 是所有模型名/会议名/用户文本进 innerHTML 的唯一出口，它就是 XSS 边界。
@@ -4071,11 +4118,13 @@ const renderSummaryModal = (provider, { providers = {}, installed = [] } = {}) =
 };
 summaryContext.onboardingBuiltinProvider = true;
 let onboardingSummaryHtml = renderSummaryModal('built-in');
+assert.doesNotMatch(onboardingSummaryHtml, /data-summary-enabled|data-china-model-source/);
 assert.match(onboardingSummaryHtml, /name="provider" value="built-in"/);
-assert.doesNotMatch(
+assert.match(
   onboardingSummaryHtml,
-  /data-flow-select-choice="provider"|data-summary-enabled|data-china-model-source/,
+  /data-flow-select-choice="provider" data-value="built-in"[^>]*>本地模型/,
 );
+assert.match(onboardingSummaryHtml, /data-flow-select-choice="provider" data-value="openai"/);
 assert.equal(summaryNodes['.modal-title h2'].textContent, 'AI 会议纪要');
 assert.equal(
   summaryNodes['.modal-title p'].textContent,
@@ -4306,7 +4355,7 @@ assert.doesNotMatch(
   /function organizeNotes|function factCheckNotes|function recallWorkspace|function askMeeting/,
 );
 assert.doesNotMatch(text(html), /data-ai-actions|data-ai-action/);
-assert.match(text(html), /class="brand-mark"[^>]*>B/);
+assert.match(text(html), /class="brand-mark"[^>]*><img src="\.\/assets\/brevia-mark\.svg"/);
 assert.match(text(html), /class="new-meeting-label">开始会议/);
 assert.match(
   text(app),
@@ -4743,6 +4792,8 @@ let visibleView = viewA;
 const navigationContext = {
   pageTransition: null,
   activeView: 'a',
+  settingsModal: { hidden: true },
+  onboardingPage: undefined,
   breviaClient: null,
   document: {
     querySelector: (selector) =>
@@ -4784,6 +4835,27 @@ assert.ok(
   !viewA.classList.contains('active') &&
     !viewB.classList.contains('active') &&
     viewC.classList.contains('active'),
+);
+// 会议库直接调用 transitionPage，必须与 showView 一样释放设置页。
+let settingsClosed = false;
+const appShellStub = { inert: true, classList: { toggle() {} } };
+navigationContext.settingsModal = viewNode('settings-modal');
+navigationContext.settingsModal.hidden = false;
+navigationContext.settingsModal.classList.add('settings-page');
+navigationContext.closeModal = () => {
+  settingsClosed = true;
+};
+navigationContext.clearTimeout = () => {};
+navigationContext.modalDismissTimer = undefined;
+navigationContext.document.body = { classList: { remove() {} } };
+navigationContext.document.querySelector = (selector) =>
+  selector === '.view.active' ? visibleView : appShellStub;
+const libraryNavigation = navigationContext.transitionPage(viewC, viewA);
+navigationWaits.shift()();
+await libraryNavigation;
+assert.ok(
+  settingsClosed && navigationContext.settingsModal.hidden && !appShellStub.inert,
+  '离开设置后会议库可交互',
 );
 
 const liveElement = () => ({
@@ -5206,3 +5278,155 @@ assert.equal(removedDrafts, 0);
 draftHandlers['transcript.final'](draftPayload);
 assert.equal(removedDrafts, 1);
 assert.equal(activeDrafts.size, 0);
+
+// 配对刷新途中关闭浮窗，返回的旧请求不能重新打开它。
+const mobileConnectionSource = await readFile('mobile-connection.js', 'utf8');
+const mobilePairFunction = mobileConnectionSource.match(
+  /  (async function pair\([\s\S]*?)(?=  async function render)/,
+);
+assert.ok(mobilePairFunction);
+let finishPairRefresh;
+let pairRefreshCalls = 0;
+const refreshDisplays = [];
+const pairRefreshContext = {
+  pairingBusy: false,
+  pairClosing: null,
+  pairDialog: { open: true, querySelector: () => ({ textContent: '' }) },
+  api: {
+    pair: () => {
+      pairRefreshCalls++;
+      return new Promise((resolve) => {
+        finishPairRefresh = resolve;
+      });
+    },
+  },
+  render: () => refreshDisplays.push('render'),
+  showPairDialog: () => refreshDisplays.push('open'),
+};
+runInNewContext(mobilePairFunction[1], pairRefreshContext);
+const pendingPairRefresh = pairRefreshContext.pair(true);
+assert.equal(pairRefreshContext.pairingBusy, true);
+pairRefreshContext.pairClosing = Promise.resolve();
+finishPairRefresh({});
+await pendingPairRefresh;
+assert.equal(pairRefreshContext.pairingBusy, false);
+assert.deepEqual(refreshDisplays, [], '关闭期间不重绘或重新打开配对浮窗');
+pairRefreshContext.pairClosing = null;
+pairRefreshContext.pairDialog.open = false;
+await pairRefreshContext.pair(true);
+assert.equal(pairRefreshCalls, 1, '关闭浮窗后不自动生成新配对码');
+
+const diskUsageContext = {
+  systemDiskUsage: { total: 1000, used: 700, free: 270 },
+  escapeHtml: summaryContext.escapeHtml,
+  t: (value) => value,
+  formatBytes: (value) => `${value} B`,
+};
+runInNewContext(summaryFn('renderSystemDiskUsage'), diskUsageContext);
+assert.match(diskUsageContext.renderSystemDiskUsage(), /aria-valuenow="70"/);
+assert.match(diskUsageContext.renderSystemDiskUsage(), /700 B \/ 1000 B/);
+assert.match(diskUsageContext.renderSystemDiskUsage(), /可用空间 270 B/);
+diskUsageContext.systemDiskUsage = null;
+assert.match(diskUsageContext.renderSystemDiskUsage(), /系统磁盘信息暂不可用/);
+assert.doesNotMatch(diskUsageContext.renderSystemDiskUsage(), /progressbar/);
+
+// 两种清空操作仅更新已有容量节点；失败时保留页面和旧用量。
+const storageUsageLabels = { children: [{ textContent: '' }, { textContent: '' }] };
+const storageSizeLabels = [{ textContent: '' }, { textContent: '' }];
+const storageClearCalls = [];
+const storageClearToasts = [];
+let storageClearAction;
+let storageClearFailure = false;
+let storageFolderRefreshes = 0;
+const storageClearContext = {
+  storageUsage: { meetings: 100, models: 200 },
+  locale: 'zh',
+  modalCopy: {
+    zh: {
+      storage: {
+        items: [
+          ['会议', ''],
+          ['模型', ''],
+        ],
+      },
+    },
+  },
+  formatBytes: (value) => `${value} B`,
+  document: { querySelector: () => storageUsageLabels },
+  settingsFolders: { querySelectorAll: () => storageSizeLabels },
+  t: (value) => value,
+  openConfirmation: (_title, _detail, action) => (storageClearAction = action),
+  renderModal: () => assert.fail('清空不能重建存储页'),
+  refreshSettingsFolderRows: () => storageFolderRefreshes++,
+  showToast: (message) => storageClearToasts.push(message),
+  window: {
+    brevia: {
+      storage: {
+        clear: async ({ partition }) => {
+          storageClearCalls.push(partition);
+          if (storageClearFailure) throw Error('清空失败');
+          return { ...storageClearContext.storageUsage, [partition]: 0 };
+        },
+      },
+    },
+  },
+};
+const storageClickStart = summaryAppSource.indexOf(
+  "  const clearStorage = event.target.closest('[data-clear-storage]');",
+);
+const storageClickEnd = summaryAppSource.indexOf(
+  "  if (event.target.closest('[data-cleanup-storage]'))",
+  storageClickStart,
+);
+runInNewContext(
+  `${summaryFn('updateStorageUsage')}\nasync function clearStorageClick(event) {${summaryAppSource.slice(storageClickStart, storageClickEnd)}}`,
+  storageClearContext,
+);
+for (const partition of ['meetings', 'models']) {
+  await storageClearContext.clearStorageClick({
+    target: { closest: () => ({ dataset: { clearStorage: partition } }) },
+  });
+  await storageClearAction();
+  assert.equal(storageClearContext.storageUsage[partition], 0);
+}
+assert.deepEqual(storageClearCalls, ['meetings', 'models']);
+assert.equal(storageUsageLabels.children[0].textContent, 'Brevia · 0 B');
+assert.equal(storageUsageLabels.children[1].textContent, '会议 · 0 B　模型 · 0 B');
+assert.deepEqual(
+  storageSizeLabels.map((label) => label.textContent),
+  ['0 B', '0 B'],
+);
+assert.equal(storageFolderRefreshes, 2);
+storageClearFailure = true;
+await storageClearAction();
+assert.equal(storageFolderRefreshes, 2, '失败不刷新或重建当前页');
+assert.equal(storageClearToasts.at(-1), '清空失败');
+
+// 导出浮窗刷新不重选用户取消的项；下一次真正打开仍按当前标签初始化。
+const exportRefreshBody = { dataset: { contentKind: 'export' } };
+const exportRefreshContext = {
+  locale: 'en',
+  activeModal: 'export',
+  activeView: 'detail',
+  detailActiveTab: 'summary',
+  exportHubCopy: { en: { title: 'Export' } },
+  exportSelection: { notes: null, transcript: 'txt' },
+  exportDefaultFormat: { notes: 'md', transcript: 'srt' },
+  exportContentMeta: () => [{ content: 'notes' }, { content: 'transcript' }],
+  exportHubHtml: () => '',
+  replaceModalBody: () => {},
+  updateExportBuilderState: () => {},
+  t: (value) => value,
+  settingsModal: {
+    hidden: false,
+    querySelector: (selector) => (selector === '.modal-body' ? exportRefreshBody : {}),
+  },
+};
+runInNewContext(summaryFn('renderExportModal'), exportRefreshContext);
+exportRefreshContext.renderExportModal();
+assert.equal(exportRefreshContext.exportSelection.notes, null);
+assert.equal(exportRefreshContext.exportSelection.transcript, 'txt');
+exportRefreshContext.settingsModal.hidden = true;
+exportRefreshContext.renderExportModal();
+assert.equal(exportRefreshContext.exportSelection.notes, 'md');
+assert.equal(exportRefreshContext.exportSelection.transcript, null);

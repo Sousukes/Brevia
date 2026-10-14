@@ -1,0 +1,1 @@
+PASS: AI 62s / phone 55s; exact 4s idle and 800ms save guards; phone trust/expiry/upload semantics; backward seek; all captured right-side and top pixels identical; clip bounds; original 9s files unchanged; file player/switch/pause/scrub/replay/segment loop; reduced motion; 390px no overflow; zero JS errors or runtime network.

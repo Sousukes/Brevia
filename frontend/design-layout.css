@@ -317,7 +317,7 @@ html[data-theme="dark"] .modal-danger {
   border: 1px solid var(--color-line);
   border-radius: 6px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--color-text-muted);
   white-space: nowrap;
 }
@@ -597,7 +597,7 @@ textarea,
   font-size: 13px;
 }
 #transcript-scroll .segment p {
-  font-weight: 500;
+  font-weight: 400;
 }
 #transcript-scroll .segment p.translation {
   font-size: 15px;
@@ -634,7 +634,7 @@ textarea,
 }
 .permission-optional {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   padding: 2px 8px;
   border-radius: 4px;
   background: var(--color-selected);
@@ -1054,6 +1054,7 @@ html[data-theme="dark"] .modal-backdrop:not(.settings-page) > .modal-panel {
 }
 .search {
   min-width: 0;
+  font-weight: 400;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -1178,7 +1179,7 @@ html[data-theme="dark"] .modal-backdrop:not(.settings-page) > .modal-panel {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 16px 4px 32px 0;
+  padding: 8px 16px 16px 0;
 }
 
 #detail-view .summary-preview {
@@ -1520,8 +1521,11 @@ html[data-theme="dark"] .modal-backdrop:not(.settings-page) > .modal-panel {
   appearance: none;
   width: 44px;
   height: 26px;
+  min-height: 26px;
+  border: 0;
   border-radius: 20px;
   background: var(--color-line);
+  background-image: none;
   padding: 3px;
 }
 .summary-enabled-control input[type="checkbox"]::after {
@@ -1537,6 +1541,12 @@ html[data-theme="dark"] .modal-backdrop:not(.settings-page) > .modal-panel {
 }
 .summary-enabled-control input:checked::after {
   transform: translateX(18px);
+}
+html[data-theme="dark"] .summary-enabled-control input[type="checkbox"]:checked {
+  background-image: none;
+}
+html[data-theme="dark"] .summary-enabled-control input[type="checkbox"]:checked::after {
+  background: var(--color-text-inverse);
 }
 .ai-service-choice {
   display: flex;
@@ -1619,7 +1629,7 @@ html[data-theme="dark"] .modal-backdrop:not(.settings-page) > .modal-panel {
   gap: 12px;
 }
 .model-group-heading h3 small {
-  font-weight: 500;
+  font-weight: 400;
   font-size: 14px;
   color: var(--color-text-muted);
 }
@@ -1934,7 +1944,7 @@ html[data-theme] .processing-bar {
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
-/* API 只提供分类用量：条形表示真实占用组成，不假设磁盘容量或配额。 */
+/* 磁盘进度只表示本机磁盘占比，应用文件分类以独立文字展示。 */
 .storage-usage-bar {
   display: flex;
   height: 10px;
@@ -1945,8 +1955,28 @@ html[data-theme] .processing-bar {
 .storage-usage-bar i:first-child {
   background: var(--color-text);
 }
-.storage-usage-bar i:last-child {
-  background: var(--color-text-muted);
+.storage-disk-heading,
+.storage-disk-detail,
+.storage-app-usage {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.storage-disk-heading {
+  margin: 12px 0;
+}
+.storage-disk-detail {
+  margin-top: 10px;
+  color: var(--color-text-muted);
+}
+.storage-app-usage {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-text-muted);
 }
 .storage-data-heading {
   margin-top: 16px;
@@ -2206,7 +2236,7 @@ html[data-theme] .processing-bar {
 .mobile-device small {
   display: block;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   margin-top: 6px;
   color: var(--color-text-muted);
 }
@@ -2273,7 +2303,7 @@ html[data-theme] .processing-bar {
 /* 会议目录、批量管理和任务状态。 */
 #home-view #home-slogan {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--color-text-muted);
   line-height: 1.6;
 }
@@ -2284,7 +2314,7 @@ html[data-theme] .processing-bar {
   padding: 16px 0 10px;
   border-bottom: 1px solid var(--color-line);
 }
-.library-group h2 {
+#home-view .library-group h2 {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
@@ -2303,7 +2333,7 @@ html[data-theme] .processing-bar {
   grid-column: 2;
 }
 .meeting-row:has(.meeting-row-checkbox[hidden]) {
-  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 180px) auto auto;
+  grid-template-columns: 44px minmax(0, 1fr) minmax(120px, 0.62fr) minmax(140px, 0.34fr) 40px;
 }
 .meeting-row:has(.meeting-row-checkbox[hidden]) .meeting-row-icon {
   grid-column: 1;
@@ -2316,6 +2346,8 @@ html[data-theme] .processing-bar {
 }
 .meeting-row .meeting-status {
   grid-column: -3;
+  justify-self: start;
+  text-align: left;
 }
 .meeting-row .meeting-actions {
   grid-column: -2;
@@ -2356,8 +2388,8 @@ html[data-theme] .processing-bar {
 }
 .workspace-subnav-content h3 {
   margin: 12px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 400;
   color: var(--color-text-muted);
 }
 .workspace-heading {
@@ -2368,11 +2400,15 @@ html[data-theme] .processing-bar {
 .workspace-heading .new-workspace {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  min-height: 32px;
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
   margin: 0;
-  padding: 4px;
+  padding: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 .confirmation-modal .modal-title h2 {
   display: none;
@@ -2762,6 +2798,10 @@ html[data-theme] .processing-bar {
 .modal-backdrop.modal-leave .modal-panel {
   animation: overlay-out 200ms ease-in both;
 }
+/* 连续设置页刷新或从上层浮窗恢复时，不能重新从透明状态进入。 */
+.modal-backdrop.settings-page > .modal-panel {
+  animation: none;
+}
 
 #prepare-view .prepare-layout,
 #prepare-view .prepare-layout > div {
@@ -3055,6 +3095,31 @@ html[data-theme] .processing-bar {
   font-size: 18px;
   font-weight: 600;
 }
+.onboarding-model-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.onboarding-model-heading h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--color-text-muted);
+}
+.onboarding-folder-section {
+  interpolate-size: allow-keywords;
+}
+.onboarding-folder-section::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 220ms ease-out,
+    content-visibility 220ms allow-discrete;
+}
+.onboarding-folder-section[open]::details-content {
+  block-size: auto;
+}
 .onboarding-folder-row button {
   padding: 8px 16px;
   min-height: 40px;
@@ -3106,10 +3171,7 @@ html[data-theme] .processing-bar {
 }
 
 .onboarding-model-card .asr-tagline {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: block;
   font-size: 14px;
   line-height: 1.5;
   color: var(--color-text-muted);
@@ -3335,7 +3397,7 @@ html[data-theme] .processing-bar {
 }
 .onboarding-preview-paper h3 small {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--color-text-muted);
 }
 .onboarding-ai-frame.is-disabled {
@@ -3420,11 +3482,7 @@ html[data-theme] .processing-bar {
   border-radius: 8px;
 }
 
-.onboarding-pair-intro {
-  display: none;
-}
-/* D31：引导中的配对保留紧凑六步导航，二维码与 PIN、审批两栏分开。 */
-
+/* 配对二维码与 PIN、审批两栏分开，背景保持当前引导页。 */
 .mobile-pair-header {
   display: flex;
   align-items: start;
@@ -3455,7 +3513,7 @@ html[data-theme] .processing-bar {
 .mobile-pair-code h3 {
   margin: 0 0 8px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--color-text-muted);
 }
 .mobile-pin-field {
@@ -3573,85 +3631,6 @@ html[data-theme] .processing-bar {
   border-radius: 8px;
 }
 
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) .onboarding-rail {
-  padding: 32px 24px;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) .onboarding-wordmark {
-  font-size: 36px;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open])
-  .onboarding-rail
-  :is(h2, p, .onboarding-mechanism) {
-  display: none;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) .onboarding-rail ol {
-  border: 0;
-  padding-top: 32px;
-  gap: 20px;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) .onboarding-rail li {
-  padding: 12px 0;
-  align-items: start;
-  font-size: 16px;
-  gap: 16px;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) .onboarding-rail li small {
-  display: block;
-  margin-top: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.6;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) .onboarding-rail li::after {
-  top: 52px;
-  height: 48px;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open])
-  .onboarding-rail
-  li[aria-current] {
-  background: var(--color-selected);
-  border-radius: 8px;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) .onboarding-mobile-page {
-  display: none;
-}
-body:has(#mobile-pair-dialog[open]) .onboarding-pair-intro {
-  display: block;
-}
-.onboarding-pair-intro > p {
-  margin-top: 12px;
-  color: var(--color-text-muted);
-  font-size: 18px;
-}
-.onboarding-pair-intro > div {
-  display: flex;
-  justify-content: space-around;
-  gap: 24px;
-
-  margin-top: 16px;
-}
-.onboarding-pair-intro > div > span {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.onboarding-pair-intro .interface-icon {
-  width: 36px;
-  height: 36px;
-}
-.onboarding-pair-intro small {
-  display: block;
-  margin-top: 6px;
-}
-body:has(.onboarding-phone-overlay) #mobile-pair-dialog {
-  position: fixed;
-
-  margin: 0;
-  width: min(840px, calc(100vw - 328px));
-
-  inset: 220px auto auto calc(248px + (100vw - 248px - min(740px, 100vw - 280px)) / 2);
-  max-height: calc(100dvh - 244px);
-}
 /* 引导服务配置沿用真实配置浮窗。 */
 body:has(.onboarding-page) .summary-model-modal {
   padding: 24px;
@@ -3670,11 +3649,16 @@ body:has(.onboarding-page) .summary-model-modal .modal-body {
   padding: 0;
 }
 body:has(.onboarding-page) .summary-model-modal .model-picker-intro {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
+  display: block;
+  overflow-wrap: anywhere;
   line-height: 20px;
+}
+body:has(.onboarding-page) .summary-model-modal .model-picker {
+  margin-top: 0;
+}
+body:has(.onboarding-page) .summary-model-modal .model-picker-foot {
+  margin: 8px 0 0;
+  gap: 12px;
 }
 body:has(.onboarding-page) .summary-model-modal .model-picker-foot .modal-action {
   margin-left: auto;
@@ -3685,9 +3669,12 @@ body:has(.onboarding-page) .summary-model-modal .onboarding-privacy-hint {
   background: transparent;
 }
 body:has(.onboarding-page) .summary-model-modal .modal-form-actions {
-  margin-top: 16px;
+  margin-top: 0;
   padding-top: 16px;
   gap: 12px;
+}
+body:has(.onboarding-page) .summary-model-modal .config-fields {
+  gap: 16px;
 }
 body:has(.onboarding-page) .summary-model-modal .config-fields label {
   display: grid;
@@ -3696,12 +3683,18 @@ body:has(.onboarding-page) .summary-model-modal .config-fields label {
   gap: 16px;
   font-size: 16px;
 }
-body:has(.onboarding-page) .summary-model-modal .config-fields :is(input, .flow-select-toggle) {
+body:has(.onboarding-page)
+  .summary-model-modal
+  .modal-panel
+  .config-fields
+  :is(input:not([type="hidden"]), .flow-select-toggle) {
   min-height: 40px;
+  height: 40px;
   font-size: 16px;
 }
 body:has(.onboarding-page) .summary-model-modal .model-picker .flow-select-toggle {
   min-height: 40px;
+  height: 40px;
 }
 /* 1280×800 原生画布：以下每个默认选择器只拥有一份布局定义。 */
 html {
@@ -3711,7 +3704,7 @@ html {
 body {
   font-size: 16px;
   line-height: 1.5;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: normal;
 }
 .app-shell {
@@ -3726,7 +3719,7 @@ body {
   grid-template-columns: 224px minmax(0, 1fr);
 }
 .sidebar {
-  padding: 64px 20px 20px;
+  padding: 76px 12px 20px;
   background: var(--color-navigation);
   border-right: 1px solid var(--color-line);
 }
@@ -3736,17 +3729,20 @@ body {
 }
 .sidebar nav .nav-item {
   flex: none;
+  padding-inline: 16px;
 }
 .sidebar .workspace-subnav {
   flex: none;
   height: 100px;
   min-height: 100px;
-  padding: 8px 0 12px;
+  padding: 14px 6px 12px;
+  border-top: 1px solid var(--color-line);
   border-left: 0;
   margin-left: 0;
   overflow: visible;
 }
 .sidebar .workspace-subnav-content {
+  border-top: 0;
   overflow: visible;
 }
 .sidebar .workspace-container:empty {
@@ -3756,27 +3752,43 @@ body {
   order: 2;
   flex: none;
 }
+.sidebar .brand {
+  padding-inline: 12px;
+}
+.sidebar .brand-mark {
+  display: grid;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+}
+.sidebar .brand-mark img,
+.about-brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 .brand-name {
-  font-size: 30px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 36px;
 }
 .sidebar .new-meeting {
-  margin-top: 20px;
-  padding: 8px 12px;
+  margin-top: 32px;
+  padding: 8px 16px;
   gap: 12px;
   min-height: 40px;
 }
 .sidebar .import-recording {
-  margin-top: 4px;
-  padding: 8px 12px;
+  margin-top: 0;
+  padding: 8px 16px;
   gap: 12px;
   min-height: 40px;
 }
 .sidebar .interface-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
 }
 .app-shell.is-live-meeting:not(:has(.sidebar:hover, .sidebar:focus-within))
   .sidebar
@@ -3790,7 +3802,7 @@ body {
 }
 .sidebar :is(.nav-item, .new-meeting, .import-recording) {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 400;
 }
 .sidebar :is(.new-meeting-icon, .import-recording-icon) {
   margin: 0;
@@ -3809,8 +3821,8 @@ body {
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 2px;
+  margin-top: 2px;
 }
 .sidebar nav #all-meetings {
   order: 0;
@@ -3871,7 +3883,7 @@ body {
   font-size: 16px;
   padding: 10px 18px;
   line-height: 1.4;
-  font-weight: 500;
+  font-weight: 400;
 }
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
 textarea,
@@ -4003,7 +4015,7 @@ textarea,
 }
 #meeting-form :is(input, .flow-select-toggle, .flow-select-options button) {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 400;
 }
 #meeting-form .form-grid .flow-select-toggle {
   min-height: 44px;
@@ -4075,7 +4087,8 @@ textarea,
   height: 16px;
   border-radius: 0;
   background: var(--color-selected);
-  mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 10px);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='12'%3E%3Crect width='6' height='12' rx='2'/%3E%3C/svg%3E")
+    repeat left center / 10px 100%;
 }
 .prepare-extra-settings {
   display: grid;
@@ -4199,7 +4212,7 @@ textarea,
   height: 100%;
   position: relative;
   overflow: hidden;
-  --detail-columns: minmax(0, 1fr) 320px;
+  --detail-columns: minmax(0, 1fr) 340px;
   grid-template-columns: var(--detail-columns);
 
   column-gap: 24px;
@@ -4321,27 +4334,40 @@ textarea,
   border-radius: var(--control-radius);
 }
 #detail-view .summary-tools svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 #detail-view .summary-body {
+  padding-right: 16px;
   font-size: 16px;
-  line-height: 1.65;
+  line-height: 1.5;
   padding-top: 8px;
 }
 #detail-view .summary-body :is(p, li) {
   font-size: 16px;
-  line-height: 1.65;
+  line-height: 1.5;
 }
 #detail-view .summary-body h1 {
   font-size: 24px;
   line-height: 1.35;
 }
 #detail-view .summary-body h2 {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.4;
-  margin: 24px 0 12px;
-  padding-top: 20px;
+  margin: 20px 0 8px;
+  padding-top: 16px;
+}
+#detail-view .summary-body hr {
+  margin: 20px 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}
+#detail-view .summary-body hr + hr {
+  display: none;
+}
+#detail-view .summary-body hr + h2 {
+  border-top: 0;
+  margin-top: 0;
 }
 #detail-view .summary-body h3 {
   font-size: 18px;
@@ -4531,7 +4557,7 @@ textarea,
 }
 #detail-view .detail-transcript-toolbar {
   gap: 8px;
-  padding-block: 16px;
+  padding-block: 8px;
 }
 #detail-view .detail-transcript-toolbar .tabbar-extra {
   gap: 6px;
@@ -4722,21 +4748,28 @@ textarea,
   font-size: 17px;
   line-height: 1.65;
 }
-#detail-view .detail-notes-content :is(p, li) {
+#detail-view .detail-notes-content :is(p, li),
+#detail-view .notes-editor :is(p, li, td, th) {
   font-size: 16px;
   line-height: 1.65;
 }
-#detail-view .detail-notes-content h1 {
+#detail-view .detail-notes-content h1,
+#detail-view .notes-editor h1 {
   font-size: 28px;
   line-height: 1.3;
   font-weight: 700;
 }
-#detail-view .detail-notes-content h2 {
+#detail-view .detail-notes-content h2,
+#detail-view .notes-editor h2 {
   font-size: 20px;
   line-height: 1.4;
   font-weight: 700;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-line);
 }
-#detail-view .detail-notes-content h3 {
+#detail-view .detail-notes-content h3,
+#detail-view .notes-editor h3 {
   font-size: 19px;
   line-height: 1.4;
   font-weight: 700;
@@ -4747,10 +4780,6 @@ textarea,
 }
 #detail-view .notes-editor {
   padding-top: 8px;
-}
-#detail-view .notes-editor :is(p, li, td, th) {
-  font-size: 17px;
-  line-height: 1.65;
 }
 #detail-view .player {
   grid-column: 1;
@@ -5062,7 +5091,7 @@ textarea,
   text-align: left;
   font-size: 16px;
   color: var(--color-text);
-  font-weight: 500;
+  font-weight: 400;
 }
 .settings-page > .modal-panel {
   width: 100%;
@@ -5109,7 +5138,7 @@ textarea,
   max-height: none;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 0 12px;
+  padding: 0 16px 12px 0;
 }
 .settings-tabs {
   display: flex;
@@ -5209,7 +5238,7 @@ textarea,
 .mobile-pair-preview h4 {
   margin: 0 0 8px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
 }
 .mobile-pair-preview p {
   font-size: 13px;
@@ -5224,8 +5253,8 @@ textarea,
   font-size: 14px;
 }
 .mobile-connection-capabilities .interface-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
 }
 .mobile-install > summary {
   display: flex;
@@ -5317,7 +5346,7 @@ textarea,
 .onboarding-rail h2 {
   margin: 8px 0 16px;
   font-size: 26px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
 }
 .onboarding-page .onboarding-rail p {
@@ -5328,10 +5357,10 @@ textarea,
   max-width: 360px;
 }
 .onboarding-mechanism {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1.15fr) 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
   padding: 40px 0 28px;
 }
 .onboarding-mechanism .interface-icon {
@@ -5346,11 +5375,15 @@ textarea,
   margin-top: 4px;
   font-size: 17px;
   font-weight: 600;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 .onboarding-page .onboarding-mechanism small {
   font-size: 14px;
   color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 .onboarding-rail ol {
   display: grid;
@@ -5509,7 +5542,7 @@ textarea,
 .onboarding-setup-sections {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-height: 0;
   flex: 1;
   overflow-y: auto;
@@ -5519,7 +5552,7 @@ textarea,
 }
 .onboarding-page .onboarding-folder-section {
   display: block;
-  padding: 12px 18px;
+  padding: 8px 18px;
   border: 1px solid var(--color-line);
   border-radius: 8px;
   background: var(--color-surface);
@@ -5550,7 +5583,7 @@ textarea,
 }
 .onboarding-model-card .asr-meter :is(small, b) {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
 }
 .onboarding-page .onboarding-bundled-section {
   padding: 12px 18px;
@@ -5571,6 +5604,9 @@ textarea,
 .onboarding-ai-content {
   padding: 24px 44px 20px;
   grid-template-rows: minmax(0, 1fr);
+}
+.onboarding-ai-content [data-onboarding-summary-demo] {
+  min-height: 180px;
 }
 .onboarding-page .onboarding-ai-setup-page,
 .ai-features-content {
@@ -5741,12 +5777,6 @@ textarea,
   border-top: 1px solid var(--color-line);
   padding-top: 12px;
 }
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) .onboarding-phone-overlay {
-  --onboarding-rail-width: 248px;
-}
-body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) #mobile-pair-dialog {
-  width: min(740px, calc(100vw - 280px));
-}
 /* 图册共享控件：菜单、角标与浮层不再继承旧版密度。 */
 .flow-select-options button,
 .meeting-workspace-menu .menu-item {
@@ -5848,27 +5878,37 @@ body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) #mobile-pair-
   outline: none;
 }
 .settings-page .summary-enabled-control {
-  margin-bottom: 16px;
-}
-.ai-service-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 152px minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: start;
+  gap: 24px;
+  min-height: 40px;
+  margin-bottom: 20px;
+  font-size: 16px;
 }
-.ai-service-row .ai-service-choice {
-  flex: 1;
-  margin: 0;
-}
-.ai-service-row .summary-enabled-control {
-  margin: 0;
-  font-size: 14px;
-  gap: 12px;
-}
-
 .settings-page .ai-service-choice {
-  margin-bottom: 0;
+  position: relative;
+  align-items: center;
+  min-height: 40px;
+  padding-left: 176px;
+  margin-bottom: 20px;
+}
+.settings-page .ai-service-choice legend {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 152px;
+  margin: 0;
+  padding: 0;
+}
+.settings-page .ai-service-choice input {
+  margin: 0;
+  flex: none;
+}
+.settings-page .ai-assist-config-form > :is(.summary-enabled-control, .ai-service-choice) {
+  margin: 0;
 }
 .settings-page .config-fields:has(> input[type="hidden"]):not(:has(label)) {
   display: none;
@@ -5913,7 +5953,7 @@ body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) #mobile-pair-
 .settings-page .advanced-fields b {
   min-width: 136px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
 }
 .settings-page .advanced-fields small {
   margin: 0;
@@ -5928,7 +5968,7 @@ body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) #mobile-pair-
   max-width: none;
 }
 .settings-page .modal-body > :is(.summary-model-form, .ai-assist-config-form) {
-  gap: 16px;
+  gap: 20px;
 }
 .settings-page .config-fields {
   gap: 20px;
@@ -6137,8 +6177,8 @@ body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) #mobile-pair-
   font-style: normal;
 }
 .export-modal {
-  padding-top: 96px;
-  padding-left: 248px;
+  padding-top: 84px;
+  padding-left: 216px;
 }
 body:has(.app-shell.is-live-meeting) .export-modal {
   padding-left: 88px;
@@ -6489,19 +6529,9 @@ body:has(.app-shell.is-live-meeting) .export-modal {
 .sidebar .workspace-subnav {
   margin-top: 20px;
 }
-.sidebar .new-workspace {
-  width: 28px;
-  height: 28px;
-  min-height: 28px;
-  padding: 4px;
-  border: 1px solid var(--color-line);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
-}
 .sidebar .new-workspace .interface-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 .sidebar .mobile-sidebar-card {
   min-height: 60px;
@@ -6512,7 +6542,7 @@ body:has(.app-shell.is-live-meeting) .export-modal {
 }
 .mobile-sidebar-heading strong {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 400;
 }
 #mobile-sidebar-status {
   position: absolute;
@@ -6560,7 +6590,7 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   display: grid;
   grid-auto-rows: max-content;
   align-content: start;
-  gap: 4px;
+  gap: 6px;
   min-height: 64px;
   max-height: 260px;
   margin: 0;
@@ -6579,7 +6609,7 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   height: auto;
   min-height: 48px;
   margin: 0;
-  padding: 6px;
+  padding: 8px 10px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-auto-rows: max-content;
@@ -6593,27 +6623,34 @@ body:has(.app-shell.is-live-meeting) .export-modal {
 }
 .sidebar .task-card-heading {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto auto;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 4px;
   height: auto;
   min-height: 20px;
 }
 .sidebar .task-card-heading > .task-kind-icon {
-  grid-area: 1 / 1;
-  width: 20px;
-  height: 20px;
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
   background: transparent;
 }
 .sidebar .task-kind-icon .interface-icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
+}
+.sidebar .mini-playback .task-kind-icon .interface-icon {
+  width: 32px;
+  height: 32px;
 }
 .sidebar .task-card-heading > p {
   grid-area: 1 / 2;
   margin: 0;
   min-width: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 20px;
   font-weight: 600;
   white-space: nowrap;
@@ -6648,8 +6685,8 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   content: none;
 }
 .sidebar .task-card-actions .task-card-pause {
-  background: var(--color-text);
-  color: var(--color-text-inverse);
+  background: transparent;
+  color: var(--color-text);
 }
 .sidebar .task-card-pause span {
   display: none;
@@ -6666,10 +6703,10 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   display: block;
   min-width: 0;
   height: auto;
-  margin: 0 0 0 24px;
+  margin: 0 0 0 32px;
   font-size: 12px;
   line-height: 14px;
-  font-weight: 500;
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6696,7 +6733,7 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: 0 0 0 24px;
+  margin: 0 0 0 32px;
   min-height: 4px;
 }
 .sidebar .task-card-progress .processing-bar,
@@ -6726,6 +6763,12 @@ body:has(.app-shell.is-live-meeting) .export-modal {
 }
 .sidebar .mini-meeting .task-kind-icon {
   color: var(--color-recording);
+}
+.sidebar .mini-meeting .mini-recording {
+  color: var(--color-text);
+}
+.sidebar .task-cards > .mini-playback {
+  border-color: var(--color-text-muted);
 }
 .sidebar .mini-meeting .mini-recording > i {
   display: none;
@@ -6830,6 +6873,8 @@ body:has(.app-shell.is-live-meeting) .export-modal {
 }
 .app-shell.is-live-meeting:not(:has(.sidebar:hover, .sidebar:focus-within))
   .task-summary:not([hidden]),
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within))
+  .task-summary:not([hidden]),
 .app-shell.is-live-meeting .task-summary:focus {
   display: grid;
   gap: 2px;
@@ -6839,6 +6884,7 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   order: 1;
   margin: auto auto 14px;
   padding: 5px;
+  max-width: 100%;
   border: 1px solid var(--color-line);
   border-radius: 8px;
   background: var(--color-surface);
@@ -6854,12 +6900,22 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   align-items: center;
   justify-content: space-between;
   gap: 3px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.task-summary [data-task-summary-label] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: inherit;
 }
 .task-summary > span:last-child {
   justify-content: flex-start;
   white-space: nowrap;
 }
 .task-summary [data-task-summary-count] {
+  flex: none;
+  font-size: inherit;
   padding: 0 3px;
   border-radius: 4px;
   background: var(--color-selected);
@@ -6892,6 +6948,11 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   min-height: 0;
   overflow-y: auto;
 }
+.app-shell:is(.is-live-meeting, .is-settings-view):not(:has(.sidebar:hover, .sidebar:focus-within))
+  .sidebar:has(.task-summary:not([hidden]))
+  .mobile-sidebar-card {
+  margin-top: 0;
+}
 .app-shell.is-live-meeting .sidebar::after {
   content: none;
 }
@@ -6903,7 +6964,8 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   height: 12px;
   border-radius: 0;
   background: var(--color-selected);
-  mask: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 10px);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='12'%3E%3Crect width='6' height='12' rx='2'/%3E%3C/svg%3E")
+    repeat left center / 10px 100%;
 }
 html[data-theme] .input-meter::after,
 .input-meter::after {
@@ -6985,16 +7047,8 @@ html[data-theme] .input-meter::after,
   margin-left: 4px;
   padding-left: 8px;
 }
-#detail-view .notes-editor h1 {
-  font-size: 30px;
-  line-height: 1.3;
-}
 #detail-view .notes-editor > :first-child {
   margin-top: 0;
-}
-#detail-view .notes-editor h2 {
-  font-size: 22px;
-  line-height: 1.4;
 }
 /* D12：四列在同一基线上，固定格式与可选格式占用同一列。 */
 .export-modal .modal-title p {
@@ -7205,11 +7259,6 @@ html[data-theme] .toast,
   padding-top: 0;
   gap: 0;
 }
-#detail-view .notes-editor h2 {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--color-line);
-}
 /* 后层明确按标题、元信息和底边进度排布，避免旧 Grid 自动行把标题压成 0px。 */
 .sidebar .workspace-heading {
   min-height: 36px;
@@ -7338,7 +7387,7 @@ html[data-theme] .toast,
 
 /* D11 的字幕页标题紧凑；保留全局导出与真实转写操作。 */
 #detail-view:has([data-detail-panel="transcript"]:not([hidden])) {
-  padding-top: 24px;
+  padding-top: 16px;
   grid-template-rows: 0 auto minmax(0, 1fr) auto;
   row-gap: 8px;
   --detail-columns: minmax(0, 1fr) 280px;
@@ -7458,14 +7507,22 @@ html[data-theme] .toast,
 }
 
 /* D47–D49：连接状态、可信设备和同一配对会话分阶段呈现。 */
+.settings-page:has(#mobile-dialog:not([hidden])) .modal-head {
+  border-bottom: 1px solid var(--color-line);
+  margin-bottom: 24px;
+}
 .settings-page #mobile-dialog .mobile-service-heading {
   display: flex;
+  justify-content: flex-start;
   align-items: center;
   gap: 16px;
-  margin: 0 0 24px;
+  margin: 0 0 16px;
 }
 .mobile-service-heading > div {
-  flex: 1;
+  flex: 0 1 280px;
+}
+.mobile-service-heading .onboarding-ai-switch {
+  margin-left: 0;
 }
 .mobile-service-heading h3 {
   margin: 0 0 8px;
@@ -7509,6 +7566,10 @@ html[data-theme] .toast,
   width: 56px;
   height: 56px;
 }
+.mobile-device-illustration [data-interface-icon="more"] .interface-icon {
+  width: 32px;
+  height: 24px;
+}
 .mobile-connection-summary h3 {
   margin: 0;
   font-size: 20px;
@@ -7540,8 +7601,11 @@ html[data-theme] .toast,
   gap: 20px;
 }
 .mobile-device-empty .interface-icon {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
+  padding: 16px;
+  border-radius: 50%;
+  background: var(--color-navigation);
 }
 .mobile-connection-capabilities {
   border-top: 1px solid var(--color-line);
@@ -7563,6 +7627,9 @@ html[data-theme] .toast,
 .mobile-connection-capabilities small {
   display: block;
 }
+.mobile-connection-capabilities b {
+  font-size: 16px;
+}
 .mobile-connection-capabilities small {
   margin-top: 8px;
   font-size: 14px;
@@ -7572,7 +7639,7 @@ html[data-theme] .toast,
   position: fixed;
   inset: 0;
   margin: auto;
-  width: 500px;
+  width: 620px;
   max-width: calc(100vw - 48px);
   padding: 24px 24px 0;
   border: 1px solid var(--color-line);
@@ -7772,7 +7839,7 @@ html[data-theme] .toast,
 /* D25/D50：固定工作区选择器，菜单和任务分别滚动，底部入口始终可达。 */
 .sidebar .workspace-subnav,
 .sidebar:has(.task-cards:not(.is-collapsed) > :not([hidden])) .workspace-subnav {
-  margin-top: 16px;
+  margin-top: 10px;
 }
 .sidebar .workspace-subnav-content {
   display: grid;
@@ -7808,10 +7875,10 @@ html[data-theme] .toast,
   inset: auto;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  width: 320px;
+  width: 256px;
   max-width: calc(100vw - 16px);
   height: auto;
-  max-height: min(432px, calc(100dvh - 32px));
+  max-height: min(336px, calc(100dvh - 32px));
   padding: 12px;
   border: 1px solid var(--color-line);
   border-radius: 12px;
@@ -7820,8 +7887,9 @@ html[data-theme] .toast,
   box-shadow: 0 6px 20px #00000014;
 }
 .sidebar .workspace-picker .search {
-  min-height: 40px;
-  padding: 6px 12px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
   margin-bottom: 8px;
 }
 .sidebar .workspace-picker .search .interface-icon {
@@ -7829,7 +7897,7 @@ html[data-theme] .toast,
   height: 20px;
 }
 .workspace-picker-list {
-  max-height: 320px;
+  max-height: 240px;
   min-height: 0;
   overflow: auto;
 }
@@ -7837,8 +7905,8 @@ html[data-theme] .toast,
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) 20px;
   width: 100%;
-  min-height: 40px;
-  padding: 8px;
+  min-height: 30px;
+  padding: 3px 8px;
   margin: 0;
   text-align: left;
   font-size: 16px;
@@ -7846,7 +7914,7 @@ html[data-theme] .toast,
 .sidebar .workspace-picker > button {
   display: flex;
   gap: 12px;
-  padding: 12px 8px 4px;
+  padding: 8px 8px 0;
   border-top: 1px solid var(--color-line);
   text-align: left;
 }
@@ -7856,7 +7924,7 @@ html[data-theme] .toast,
 }
 .sidebar .task-stack-toggle {
   border-top: 1px solid var(--color-line);
-  margin-top: 12px;
+  margin-top: 0;
   padding-top: 12px;
 }
 .sidebar .task-cards .required-models-card ul {
@@ -7868,7 +7936,7 @@ html[data-theme] .toast,
   border-top: 1px solid var(--color-line);
 }
 .sidebar .task-cards {
-  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 /* D52沿用逐句阅读几何，输入框自动增高且不保留空白预览列。 */
@@ -8034,9 +8102,9 @@ html[data-theme] .toast,
   gap: 12px;
   align-items: center;
 }
-#meeting-selection-toggle .interface-icon {
-  width: 16px;
-  height: 16px;
+#home-view .page-head .interface-icon {
+  width: 20px;
+  height: 20px;
 }
 .meeting-menu {
   min-width: 248px;
@@ -8170,7 +8238,7 @@ html[data-theme] .toast,
 .batch-toolbar strong {
   font-size: 14px;
   color: var(--color-text-muted);
-  font-weight: 500;
+  font-weight: 400;
 }
 .batch-toolbar .batch-actions {
   margin-left: auto;
@@ -8249,7 +8317,7 @@ body:has(.onboarding-phone-overlay) #mobile-pair-dialog,
 body:has(.onboarding-phone-overlay):has(#mobile-pair-dialog[open]) #mobile-pair-dialog {
   inset: 0;
   margin: auto;
-  width: 500px;
+  width: 620px;
   max-width: calc(100vw - 48px);
   max-height: calc(100dvh - 48px);
 }
@@ -8405,7 +8473,7 @@ body:has(.onboarding-phone-overlay) #mobile-pair-dialog::backdrop {
 .upgrade-log .whatsnew-entry :is(p, ul, li) {
   font-size: 16px;
   line-height: 24px;
-  font-weight: 500;
+  font-weight: 400;
 }
 .upgrade-log .whatsnew-entry ul {
   gap: 4px;
@@ -8623,6 +8691,8 @@ body:has(.meeting-workspace-menu) .meeting-menu:not([hidden]) [data-meeting-acti
 .sidebar .workspace-picker .search input {
   height: 28px;
   min-height: 28px;
+  padding: 0;
+  line-height: 20px;
 }
 #home-view .page-head > :is(.secondary, .primary-action) {
   height: 44px;
@@ -8636,6 +8706,211 @@ body:has(.meeting-workspace-menu) .meeting-menu:not([hidden]) [data-meeting-acti
 }
 .sidebar .workspace-picker .search input:focus-visible {
   outline: 0;
+}
+
+/* 设置保留主导航图标，把空间留给设置导航和内容。 */
+.app-shell.is-settings-view {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+.app-shell.is-settings-view:has(.sidebar:hover, .sidebar:focus-within) {
+  grid-template-columns: 224px minmax(0, 1fr);
+}
+/* 设置浮层首次显示时也不能遮住正在收起的主导航。 */
+.app-shell.is-settings-view:not([inert]) .sidebar {
+  z-index: 61;
+}
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within)) .sidebar {
+  padding-inline: 10px;
+}
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within)) .brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within))
+  :is(
+    .brand-name,
+    .new-meeting-label,
+    .import-recording-label,
+    .workspace-subnav,
+    .task-stack-toggle,
+    .task-cards,
+    .mobile-sidebar-heading strong,
+    #mobile-sidebar-status
+  ) {
+  display: none;
+}
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within))
+  .sidebar
+  :is(.new-meeting, .import-recording, .nav-item, .mobile-sidebar-card) {
+  justify-content: center;
+  padding-inline: 8px;
+  gap: 0;
+  font-size: 0;
+}
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within))
+  .sidebar
+  :is(.new-meeting-icon, .import-recording-icon) {
+  margin: 0;
+}
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within)) .mobile-sidebar-card {
+  min-height: 44px;
+}
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within))
+  .mobile-sidebar-heading {
+  justify-content: center;
+}
+.app-shell.is-settings-view:not(:has(.sidebar:hover, .sidebar:focus-within)) .sidebar-settings {
+  min-height: 40px;
+}
+body:has(.app-shell.is-settings-view) .settings-page {
+  left: 72px;
+  transition:
+    left 220ms ease-out,
+    opacity 220ms ease-out;
+}
+body:has(.app-shell.is-settings-view):has(.sidebar:hover, .sidebar:focus-within) .settings-page {
+  left: 224px;
+}
+
+.app-shell:is(.is-live-meeting, .is-settings-view) {
+  transition:
+    grid-template-columns 220ms ease-out,
+    opacity 260ms ease,
+    background-color 300ms ease,
+    color 300ms ease;
+}
+.app-shell:is(.is-live-meeting, .is-settings-view):not(:has(.sidebar:hover, .sidebar:focus-within))
+  .sidebar
+  :is(.mobile-sidebar-card, .sidebar-settings) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  height: 44px;
+  padding: 8px;
+}
+.app-shell:is(.is-live-meeting, .is-settings-view):not(:has(.sidebar:hover, .sidebar:focus-within))
+  .mobile-sidebar-heading {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  gap: 0;
+}
+.app-shell:is(.is-live-meeting, .is-settings-view):not(:has(.sidebar:hover, .sidebar:focus-within))
+  #mobile-nav-dot {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.settings-page .settings-back,
+.ai-features-modal.settings-page [data-close-ai-features] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell:is(.is-live-meeting, .is-settings-view),
+  body:has(.app-shell.is-settings-view) .settings-page {
+    transition: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-folder-section::details-content {
+    transition: none;
+  }
+}
+@media (max-width: 1100px) {
+  .settings-page .summary-enabled-control {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .settings-page .ai-service-choice {
+    padding-left: 0;
+  }
+  .settings-page .ai-service-choice legend {
+    position: static;
+    transform: none;
+    width: auto;
+    margin-bottom: 12px;
+  }
+}
+
+/* 独立 scale 保留定位按钮原有的 transform，按压不改变布局或焦点范围。 */
+:is(button, a):is(
+  .primary-action,
+  .modal-action,
+  .secondary,
+  .icon-button,
+  .modal-close,
+  .task-card-close,
+  .onboarding-back,
+  .text-button,
+  .player-icon-button,
+  .pause-button,
+  .mark-button,
+  .end-button
+) {
+  --button-press-feedback: 1;
+  transition:
+    scale 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 120ms ease-out,
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    opacity 120ms ease-out;
+}
+:is(button, a):is(
+    .primary-action,
+    .modal-action,
+    .secondary,
+    .icon-button,
+    .modal-close,
+    .task-card-close,
+    .onboarding-back,
+    .text-button,
+    .player-icon-button,
+    .pause-button,
+    .mark-button,
+    .end-button
+  ):active:not(:disabled, [aria-disabled="true"]) {
+  opacity: 0.9;
+  transition-duration: 80ms;
+}
+:is(button, a):is(.primary-action, .modal-action):active:not(
+    :disabled,
+    [aria-disabled="true"],
+    .modal-danger
+  ) {
+  background-color: color-mix(in srgb, var(--color-text) 85%, var(--color-surface));
+}
+:is(button, a):is(
+    .secondary,
+    .icon-button,
+    .modal-close,
+    .task-card-close,
+    .onboarding-back,
+    .text-button,
+    .player-icon-button
+  ):active:not(:disabled, [aria-disabled="true"]) {
+  background-color: color-mix(in srgb, var(--color-text) 8%, var(--color-surface));
+}
+@media (prefers-reduced-motion: no-preference) {
+  :is(button, a):is(
+      .primary-action,
+      .modal-action,
+      .secondary,
+      .icon-button,
+      .modal-close,
+      .task-card-close,
+      .onboarding-back,
+      .text-button,
+      .player-icon-button,
+      .pause-button,
+      .mark-button,
+      .end-button
+    ):active:not(:disabled, [aria-disabled="true"]) {
+    scale: 0.98;
+  }
 }
 
 /* 引导品牌共用实际图标；五步左侧动效共用品牌与横向导航。 */

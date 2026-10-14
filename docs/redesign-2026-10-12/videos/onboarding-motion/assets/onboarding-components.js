@@ -16,9 +16,8 @@ function interfaceIcon(name) {
       '<g transform="scale(1.5)"><path fill="currentColor" stroke="none" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.65 7.65 0 0 1 8 4.73c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></g>',
     chat: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H5l-3 2 1.8-5A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01" stroke-width="2"/>',
     list: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3" cy="6" r=".8" fill="currentColor"/><circle cx="3" cy="12" r=".8" fill="currentColor"/><circle cx="3" cy="18" r=".8" fill="currentColor"/>',
-    copy: '<rect x="8" y="7" width="12" height="14" rx="2"/><path d="M16 7V3H4v14h4"/>',
-    laptop:
-      '<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M2 17h20v3H2zM8 7h8M8 11h6"/>',
+    copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H4v14h4"/>',
+    laptop: '<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M2 20h20"/>',
     notes: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
     document:
       '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/>',
@@ -30,6 +29,10 @@ function interfaceIcon(name) {
       '<path d="M13 6c0-3 2-4 4-4 0 2-1 4-4 4Z"/><path d="M17 12c0-2 1-3 3-4-1-2-4-3-6-2l-2 1-2-1C5 4 2 8 3 13c1 5 3 9 5 9l4-1 4 1c2 0 4-4 5-6-3-1-4-2-4-4Z"/>',
     android:
       '<path d="m7 3 2 3m8-3-2 3M5 11V9a7 7 0 0 1 14 0v2H5ZM5 13h14v6H5zM8 19v3m8-3v3M2 13v6m20-6v6"/><path d="M9 9h.01M15 9h.01"/>',
+    'cloud-upload':
+      '<path d="M7 18H6a4 4 0 0 1-.8-7.9 7 7 0 0 1 13.6 0A4 4 0 0 1 18 18h-1M12 21V10m-4 4 4-4 4 4"/>',
+    'device-phone':
+      '<rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="18" r=".7" fill="currentColor"/>',
     phone: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/>',
     advanced:
       '<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>',
@@ -37,7 +40,7 @@ function interfaceIcon(name) {
       '<path d="m9.5 3-.5 2-2 1.2-2-.6-2.5 4.3L4 11.3v2.4l-1.5 1.4L5 19.4l2-.6 2 1.2.5 2h5l.5-2 2-1.2 2 .6 2.5-4.3-1.5-1.4v-2.4l1.5-1.4L19 5.6l-2 .6L15 5l-.5-2Z"/><circle cx="12" cy="12.5" r="3"/>',
     close: '<path d="m5 5 14 14M19 5 5 19"/>',
     check: '<path d="m5 12 4 4L19 6"/>',
-    refresh: '<path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 3M4 16l2 3a8 8 0 0 0 13-3"/>',
+    refresh: '<path d="M20 4v6h-6M20 10a8 8 0 1 0-1 7"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/>',
     moon: '<path d="M20 14A9 9 0 0 1 10 3a9 9 0 1 0 10 11Z"/>',
     minimize: '<path d="M5 12h14"/>',
@@ -83,7 +86,7 @@ function interfaceIcon(name) {
     more: '<path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/>',
     warning: '<path d="m12 3 10 18H2zM12 9v5M12 17h.01"/>',
     'arrow-right': '<path d="M4 12h16m-6-6 6 6-6 6"/>',
-    edit: '<path d="m14.5 4.5 3-3a2.1 2.1 0 0 1 3 3L7 18l-5 1 1-5Z"/><path d="m14.5 4.5 3 3"/>',
+    edit: '<path d="m16 3 5 5L8 21H3v-5ZM14 5l5 5"/>',
     person: '<circle cx="12" cy="7" r="4"/><path d="M4 21v-3c0-6 16-6 16 0v3"/>',
     'chevron-down': '<path d="m6 9 6 6 6-6"/>',
     'chevron-right': '<path d="m9 6 6 6-6 6"/>',

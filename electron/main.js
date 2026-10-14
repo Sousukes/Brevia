@@ -15,7 +15,16 @@ const {
   systemPreferences,
 } = require('electron');
 const { execFile, spawn } = require('node:child_process');
-const { appendFile, copyFile, mkdir, readFile, rm, stat, writeFile } = require('node:fs/promises');
+const {
+  appendFile,
+  copyFile,
+  mkdir,
+  readFile,
+  rm,
+  stat,
+  statfs,
+  writeFile,
+} = require('node:fs/promises');
 const { existsSync } = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -1538,12 +1547,26 @@ function registerIpc() {
     const directory = partition === 'models' ? modelsDir() : recordingsDir();
     return shell.openPath(directory);
   });
-  handleIpc('storage.locations', () => ({
-    models: modelsDir(),
-    recordings: recordingsDir(),
-    modelsManaged: !process.env.BREVIA_MODELS_DIR,
-    recordingsManaged: !process.env.BREVIA_MEETINGS_DIR,
-  }));
+  handleIpc('storage.locations', async () => {
+    let disk = null;
+    try {
+      const stats = await statfs(app.getPath('home'));
+      disk = {
+        total: stats.blocks * stats.bsize,
+        used: (stats.blocks - stats.bfree) * stats.bsize,
+        free: stats.bavail * stats.bsize,
+      };
+    } catch {
+      // 系统统计不可用时，仍允许查看和更改文件夹。
+    }
+    return {
+      models: modelsDir(),
+      recordings: recordingsDir(),
+      modelsManaged: !process.env.BREVIA_MODELS_DIR,
+      recordingsManaged: !process.env.BREVIA_MEETINGS_DIR,
+      disk,
+    };
+  });
   handleIpc('storage.choose-folder', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory', 'createDirectory'],

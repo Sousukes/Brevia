@@ -9,7 +9,8 @@
  * 不引入新依赖：用 Node 内置的 fetch + WebSocket 直接讲 CDP。
  */
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { request as httpsRequest } from 'node:https';
 import { createServer } from 'node:net';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -27,6 +28,26 @@ if (typeof WebSocket === 'undefined') {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
+const captureStartedAt = Date.now();
+const captureSources = process.env.BREVIA_DESIGN_CAPTURE_DIR
+  ? (() => {
+      const sources = [
+        ...readdirSync(path.join(root, 'frontend'))
+          .filter((name) => /\.(js|css|html)$/.test(name))
+          .map((name) => 'frontend/' + name),
+        'electron/main.js',
+        'electron/test-e2e.mjs',
+      ];
+      return Object.fromEntries(
+        sources.map((name) => [
+          name,
+          createHash('sha256')
+            .update(readFileSync(path.join(root, name)))
+            .digest('hex'),
+        ]),
+      );
+    })()
+  : {};
 
 /** Electron 可执行文件路径，跨平台。 */
 function electronBinary() {
@@ -523,7 +544,7 @@ try {
   });
   check(
     aiOnboarding.result?.value?.cards === 2 &&
-      aiOnboarding.result?.value?.choices === 2 &&
+      aiOnboarding.result?.value?.choices === 0 &&
       aiOnboarding.result?.value?.off === 'off' &&
       aiOnboarding.result?.value?.on === 'auto' &&
       aiOnboarding.result?.value?.aligned &&
@@ -614,8 +635,8 @@ try {
     const inheritsSource = modelDownloadPayload(candidates[0].id).source === 'china';
     if (previousSource === null) localStorage.removeItem('brevia-china-model-source');
     else localStorage.setItem('brevia-china-model-source', previousSource);
-    const fixedProvider = inheritsSource && body.querySelector('[name="provider"]').value === 'built-in'
-      && !body.querySelector('[data-flow-select-choice="provider"]') && !body.querySelector('[data-summary-enabled]')
+    const localProvider = inheritsSource && body.querySelector('[name="provider"]').value === 'built-in'
+      && body.querySelectorAll('[data-flow-select-choice="provider"]').length === summaryProviders.length && !body.querySelector('[data-summary-enabled]')
       && !body.querySelector('[data-china-model-source]') && settingsModal.querySelector('h2').textContent === 'AI 会议纪要';
     const offered = body.querySelectorAll('[data-flow-select-choice="model"]').length === candidates.length;
     const initialDownload = body.querySelector('[data-download-model]');
@@ -633,14 +654,14 @@ try {
     modelPaths.clear(); savedPaths.forEach((value, key) => modelPaths.set(key, value));
     selectedBuiltinModel = savedSelection;
     closeModal();
-    return { fixedProvider, offered, downloadAvailable, switched, progressVisible, ready };
+    return { localProvider, offered, downloadAvailable, switched, progressVisible, ready };
   })()`,
     returnByValue: true,
   });
   check(
     Object.values(builtinOnboarding.result?.value || {}).length === 6 &&
       Object.values(builtinOnboarding.result?.value || {}).every(Boolean),
-    `内置 AI 引导应固定供应商，支持模型选择、下载进度及安装后保存：${JSON.stringify(builtinOnboarding.result?.value || builtinOnboarding.exceptionDetails)}`,
+    `AI 引导应默认本地供应商，支持模型选择、下载进度及安装后保存：${JSON.stringify(builtinOnboarding.result?.value || builtinOnboarding.exceptionDetails)}`,
   );
   const cancelledProvider = await client.send('Runtime.evaluate', {
     expression: `(() => {
@@ -950,6 +971,7 @@ try {
     expression: `(async () => {
     const errors = [];
     for (const code of ['zh', 'en']) for (const theme of ['light', 'dark']) {
+      closeModal();await new Promise(resolve=>setTimeout(resolve,250));
       applyLanguage(code); applyTheme(theme);
       await openModal('whats-new');
       const current = settingsModal.querySelector('.whatsnew-entry.is-current');
@@ -960,6 +982,10 @@ try {
       if (!history || history.open) errors.push(code + ': history must start collapsed');
       history.querySelector('summary').click();
       if (!history.open || !history.querySelector('section')) errors.push(code + ': history cannot be expanded');
+      const version=history.dataset.modalDetail,top=body.scrollTop;
+      renderWhatsNewModal();
+      const refreshed=[...body.querySelectorAll('details.whatsnew-entry')].find(entry=>entry.dataset.modalDetail===version);
+      if(!refreshed?.open||Math.abs(body.scrollTop-top)>1)errors.push(code+': history refresh lost reading state');
       if (whatsNewLog[0].contributors?.length && !current.textContent.includes(whatsNewCopy[code].contributors)) errors.push(code + ': missing contributors');
       for (const anchor of current.querySelectorAll('a')) if (!anchor.href.startsWith('https://github.com/') || anchor.target !== '_blank') errors.push('unsafe release link');
     }
@@ -1139,20 +1165,23 @@ try {
     const live = activeView === 'live' && meetingActive && document.querySelector('#pause').disabled && !document.querySelector('#end-meeting').disabled;
     const source = !document.querySelector('.mobile-source-tag') && !document.querySelector('#transcript-scroll .speaker-name') && document.querySelector('[data-ai-assist-empty]').hidden && document.querySelector('#live-input-label').textContent===t('手机录音');
     const unique = uiData.meetings.filter(m => m.id === meeting.id).length === 1;
+    await document.querySelector('#mobile-nav').onclick();
+    const deviceFromLive = activeView === 'settings' && meetingActive && !miniMeeting.hidden && miniTitle.textContent === meeting.title;
+    closeModal(); await showView('live');
     minimizeMeeting(); await showView('home');
     const miniDiagnostic={title:miniTitle.textContent,hidden:miniMeeting.hidden,source:!!miniMeeting.querySelector('.mobile-source-tag'),position:getComputedStyle(taskCards).position,task:taskCards.getBoundingClientRect().toJSON(),mini:miniMeeting.getBoundingClientRect().toJSON(),sidebar:document.querySelector('.sidebar').getBoundingClientRect().toJSON(),view:activeView};
     const mini = !miniMeeting.hidden && !miniMeeting.querySelector('.mobile-source-tag') && miniTitle.textContent === meeting.title && getComputedStyle(taskCards).position === 'relative' && miniMeeting.getBoundingClientRect().bottom <= document.querySelector('.sidebar').getBoundingClientRect().bottom;
-    document.querySelector('#mobile-manage').click();
+    await document.querySelector('#mobile-manage').onclick();
     // 后台窗口的动画帧可能被节流，等待实际打开而不是固定延迟。
     for (let i = 0; i < 60 && !settingsModal.classList.contains('modal-enter'); i++) await new Promise(resolve => setTimeout(resolve, 50));
     await settingsModal.querySelector('.mobile-install img').decode();
-    const dialog = activeModal === 'device-connection' && !settingsModal.hidden && settingsModal.classList.contains('modal-enter') && !!settingsModal.querySelector('#mobile-dialog') && settingsModal.querySelector('.mobile-install img').complete && settingsModal.querySelector('.mobile-install img').naturalWidth > 0;
+    const dialog = activeView === 'settings' && settingsModal.classList.contains('settings-page') && activeModal === 'device-connection' && !settingsModal.hidden && settingsModal.classList.contains('modal-enter') && !!settingsModal.querySelector('#mobile-dialog') && settingsModal.querySelector('.mobile-install img').complete && settingsModal.querySelector('.mobile-install img').naturalWidth > 0;
     settingsModal.querySelector('.modal-close').click();
     const closing = settingsModal.classList.contains('modal-leave');
     await new Promise(resolve => setTimeout(resolve, 250));
     await openModal('storage'); closeModal();
     await new Promise(resolve => setTimeout(resolve, 250));
-    document.querySelector('#mobile-manage').click();
+    await document.querySelector('#mobile-manage').onclick();
     const retained = !!settingsModal.querySelector('#mobile-pair')?.onclick;
     document.querySelector('#mobile-pair').click();
     const pairing = document.querySelector('#mobile-pair-dialog');
@@ -1166,7 +1195,7 @@ try {
     for (let i = 0; i < 60 && pairing.open; i++) await new Promise(resolve => setTimeout(resolve, 50));
     const pairingClosed = preview.hidden && !pairing.open && !settingsModal.hidden;
     closeModal();
-    return {live, source, unique, mini, dialog: dialog && closing && retained && inlinePairing && pairingClosed,miniDiagnostic};
+    return {live, source, unique, mini, dialog: deviceFromLive && dialog && closing && retained && inlinePairing && pairingClosed,miniDiagnostic};
 
   })()`,
     awaitPromise: true,
@@ -1352,28 +1381,28 @@ try {
     const certificate = JSON.parse(
       readFileSync(path.join(dataDir, 'mobile', 'identity.json'), 'utf8'),
     ).cert;
-    const response = new Promise((resolve, reject) => {
-      const request = httpsRequest(
-        {
-          hostname: '127.0.0.1',
-          port: new URL(pairState.status.addresses[0]).port,
-          path: '/pair',
-          method: 'POST',
-          ca: certificate,
-          checkServerIdentity: () => undefined,
-          headers: { 'Content-Type': 'application/json' },
-        },
-        (reply) => {
-          reply.resume();
-          reply.on('end', () => resolve(reply.statusCode));
-        },
-      );
-      request.on('error', reject);
-      request.setTimeout(10000, () => request.destroy(new Error('Phone approval timed out')));
-      request.end(
-        JSON.stringify({ name: '<UI test phone>', code: pairState.pin, nonce: 'b'.repeat(32) }),
-      );
-    });
+    const requestPhone = (pin, nonce) =>
+      new Promise((resolve, reject) => {
+        const request = httpsRequest(
+          {
+            hostname: '127.0.0.1',
+            port: new URL(pairState.status.addresses[0]).port,
+            path: '/pair',
+            method: 'POST',
+            ca: certificate,
+            checkServerIdentity: () => undefined,
+            headers: { 'Content-Type': 'application/json' },
+          },
+          (reply) => {
+            reply.resume();
+            reply.on('end', () => resolve(reply.statusCode));
+          },
+        );
+        request.on('error', reject);
+        request.setTimeout(10000, () => request.destroy(new Error('Phone approval timed out')));
+        request.end(JSON.stringify({ name: '<UI test phone>', code: pin, nonce }));
+      });
+    const response = requestPhone(pairState.pin, 'b'.repeat(32));
     const approval = await client.send('Runtime.evaluate', {
       expression: `(async()=>{
         const deadline=Date.now()+6000;
@@ -1436,6 +1465,46 @@ try {
       expression: "document.querySelector('.mobile-request-actions button').click()",
     });
     check((await response) === 403, '电脑拒绝后真实配对请求应返回 403');
+    if (process.env.BREVIA_DESIGN_CAPTURE_DIR) {
+      for (const allowed of [false, true]) {
+        if (allowed) {
+          const session = await client.send('Runtime.evaluate', {
+            expression: `(async()=>{await document.querySelector('#mobile-pair').onclick();return document.querySelector('#mobile-pin').textContent;})()`,
+            awaitPromise: true,
+            returnByValue: true,
+          });
+          const accepted = requestPhone(session.result.value, 'c'.repeat(32));
+          const decision = await client.send('Runtime.evaluate', {
+            expression: `(async()=>{const deadline=Date.now()+6000;while(!document.querySelector('.mobile-request-actions .modal-action')){if(Date.now()>deadline)throw Error('允许连接入口未出现');await new Promise(r=>setTimeout(r,25));}await document.querySelector('.mobile-request-actions .modal-action').onclick();const state=await window.brevia.mobile.status();return !document.querySelector('#mobile-pair-dialog').open&&state.devices.some(d=>d.name==='<UI test phone>')&&!document.querySelector('#mobile-nav').classList.contains('is-connected');})()`,
+            awaitPromise: true,
+            returnByValue: true,
+          });
+          check(
+            (await accepted) === 200 && decision.result?.value === true,
+            '真实允许连接必须建立信任、关闭审批且不伪装成已连接',
+          );
+        }
+        await client.send('Runtime.evaluate', {
+          expression: `(async()=>{if(onboardingPage)await new Promise(r=>dismissOnboardingPage(r));await showView('settings');await openModal('device-connection');await document.fonts.ready;document.getAnimations().forEach(a=>a.effect.getComputedTiming().iterations===Infinity?a.pause():a.finish());})()`,
+          awaitPromise: true,
+        });
+        const shot = await client.send('Page.captureScreenshot', {
+          format: 'png',
+          captureBeyondViewport: false,
+        });
+        writeFileSync(
+          path.join(
+            path.resolve(process.env.BREVIA_DESIGN_CAPTURE_DIR),
+            `desktop-mobile-pairing-${allowed ? 'approved' : 'denied'}.png`,
+          ),
+          Buffer.from(shot.data, 'base64'),
+        );
+      }
+      await client.send('Runtime.evaluate', {
+        expression: `(async()=>{closeModal();await new Promise(r=>setTimeout(r,250));await showView('home');})()`,
+        awaitPromise: true,
+      });
+    }
   }
   await client.send('Runtime.evaluate', {
     expression: `(async()=>{document.querySelector('#mobile-close-pairing').click();await new Promise(r=>setTimeout(r,300));if(onboardingPage)await new Promise(resolve=>dismissOnboardingPage(resolve));})()`,
@@ -1590,7 +1659,7 @@ try {
       const meters=[...document.querySelectorAll('#mic-level,[data-onboarding-mic-level],[data-live-mic-level]')];
       const masks=new Set(meters.map(e=>getComputedStyle(e).maskImage));
       const fills=new Set(meters.map(e=>getComputedStyle(e,'::after').backgroundColor));
-      if(meters.length<3 || masks.size!==1 || fills.size!==1 || ![...masks][0].includes('repeating-linear-gradient')) errors.push('inconsistent input meters');
+      if(meters.length<3 || masks.size!==1 || fills.size!==1 || ![...masks][0].includes('data:image/svg+xml')) errors.push('inconsistent input meters');
       breviaClient.onLevel('mic',0);
       if(meters.some(e=>e.style.getPropertyValue('--level')!=='0')) errors.push('silent input still active');
       await new Promise(resolve=>dismissOnboardingPage(resolve));
@@ -1599,6 +1668,18 @@ try {
       if(!onboardingPage.querySelector('.onboarding-shared-service [data-configure-ai-summary]')) errors.push('shared service not separated');
       await new Promise(resolve=>dismissOnboardingPage(resolve));
       await showView('home');
+      for(const destination of ['all-meetings','recently-deleted']) {
+        await showView('settings');
+        await openModal('models');
+        if(!document.querySelector('.app-shell').classList.contains('is-settings-view')) errors.push('settings sidebar not collapsed');
+        await showLibraryNav(destination);
+        if(activeView!=='home' || activeLibraryNav!==destination || !settingsModal.hidden || document.querySelector('.app-shell').inert || document.querySelector('.app-shell').classList.contains('is-settings-view')) errors.push('settings navigation blocked '+destination);
+      }
+      await showView('settings');
+      openOnboardingAi(true);
+      await showLibraryNav('all-meetings');
+      await new Promise(resolve=>setTimeout(resolve,300));
+      if(onboardingPage || document.body.classList.contains('modal-open')) errors.push('AI settings still cover library');
       showRefinementProgress(42,100,'视觉回归任务',currentMeetingDetail.id,'正在识别');
       miniPlayback.hidden=false;syncTaskCardStack(miniPlayback);
       const r=refinementCard.getBoundingClientRect(),bar=refinementBar.parentElement.getBoundingClientRect();
@@ -1608,6 +1689,13 @@ try {
       toggle.click();
       if(getComputedStyle(taskCards).display==='none') errors.push('task stack cannot restore');
       miniPlayback.hidden=true;refinementCard.hidden=true;
+      miniMeeting.hidden=false;syncTaskCardStack(miniMeeting);
+      await showView('settings');
+      const taskSummary=document.querySelector('[data-task-summary]');
+      if(getComputedStyle(taskSummary).display==='none') errors.push('settings hide ongoing meeting');
+      taskSummary.click();await pageTransition;
+      if(activeView!=='home' || getComputedStyle(taskCards).display==='none') errors.push('settings cannot restore ongoing tasks');
+      miniMeeting.hidden=true;
       for(const tone of ['success','error','info']) {
         showToast(t('工作区已创建'),undefined,tone);
         if(!toast.querySelector('.toast-status-mark svg') || getComputedStyle(toast).borderRadius!=='8px' || toast.dataset.tone!==tone || toast.getAttribute('role')!==(tone==='error'?'alert':'status')) errors.push('legacy notification '+tone);
@@ -1639,7 +1727,8 @@ try {
       const selectors=['[data-edit-transcript]','[data-detail-translation-toggle]','[data-refine-more]','[data-open-summary-edit]','[data-copy-summary]'];
       for(const selector of selectors){
         const button=document.querySelector(selector),icon=button?.querySelector('svg');
-        if(!button||!icon||Math.abs(parseFloat(getComputedStyle(icon).width)-20)>.1||button.getBoundingClientRect().height<31.5||button.getBoundingClientRect().height>36||!button.textContent.trim())errors.push(selector+': detail action geometry');
+        const iconSize=button?.closest('.summary-tools')?18:20;
+        if(!button||!icon||Math.abs(parseFloat(getComputedStyle(icon).width)-iconSize)>.1||button.getBoundingClientRect().height<31.5||button.getBoundingClientRect().height>36||!button.textContent.trim())errors.push(selector+': detail action geometry');
       }
       if(!document.querySelector('.refine-state.is-done[role=status]')||document.querySelector('.refine-state.is-done svg'))errors.push('legacy refined state');
       const checkMenu=selector=>{
@@ -1760,7 +1849,8 @@ try {
       if(rows.length!==2 || list.clientHeight<rows.reduce((sum,row)=>sum+row.getBoundingClientRect().height,0)-1) errors.push('storage rows clipped');
       if(!settingsModal.querySelector('.storage-usage-bar')||!settingsModal.querySelector('[data-cleanup-storage]')) errors.push('storage usage/cleanup');
       const bar=settingsModal.querySelector('.storage-usage-bar');
-      if(storageUsage && !bar.getAttribute('aria-label').includes(formatBytes(storageUsage.meetings))) errors.push('usage not real');
+      if(!systemDiskUsage || Math.abs(Number(bar.getAttribute('aria-valuenow'))-systemDiskUsage.used/systemDiskUsage.total*100)>.1 || !bar.getAttribute('aria-valuetext').includes(formatBytes(systemDiskUsage.total))) errors.push('disk usage not real');
+      if(storageUsage && !settingsModal.querySelector('.storage-app-usage').textContent.includes(formatBytes(storageUsage.meetings))) errors.push('app usage not real');
       const clear=settingsModal.querySelector('[data-clear-storage="meetings"]');clear.click();
       if(!storageConfirmationPage||!storageConfirmationPage.page.querySelector('.storage-usage-bar')||!storageConfirmationPage.page.inert)errors.push('storage confirmation lost page');
       settingsModal.querySelector('[data-cancel-confirmation]').click();
@@ -1790,6 +1880,7 @@ try {
     expression: `(async()=>{
       const errors=[];
       await showView('settings');
+      await new Promise(resolve=>setTimeout(resolve,260));
       const navigation=document.querySelector('#settings-view .settings-navigation');
       if(navigation.querySelectorAll('[data-settings-page]').length!==8) errors.push('general navigation');
       const general=document.querySelector('.settings-general-main').getBoundingClientRect();
@@ -1801,6 +1892,7 @@ try {
       await openModal('device-connection');
       if(settingsModal.querySelector('.modal-body').scrollTop!==0) errors.push('settings retained previous scroll');
       closeModal();await new Promise(resolve=>setTimeout(resolve,250));
+      await showView('home');
       const deleted=document.getElementById('recently-deleted').getBoundingClientRect();
       const workspace=document.querySelector('.workspace-heading').getBoundingClientRect();
       if(deleted.top>=workspace.top || !document.querySelector('.new-workspace[aria-label]')) errors.push('sidebar order');
@@ -1873,7 +1965,7 @@ try {
         document.getAnimations().forEach(a=>a.effect.getComputedTiming().iterations===Infinity?a.pause():a.finish());
         await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         const panel=settingsModal.querySelector('.modal-panel'),p=panel.getBoundingClientRect(),w=document.querySelector('.workspace').getBoundingClientRect();
-        if(Math.abs(p.left+p.width/2-w.left-w.width/2)>1||p.top<0||p.bottom>innerHeight+1)errors.push(code+': export position');
+        if(Math.abs(p.left+p.width/2-w.left-w.width/2+16)>1||p.top<0||p.bottom>innerHeight+1)errors.push(code+': export position');
         const buttons=[...panel.querySelectorAll('.export-actions button')];
         const checkActions=()=>{if(buttons.some(b=>{const r=b.getBoundingClientRect();return r.left<p.left||r.right>p.right+1||r.top<p.top||r.bottom>p.bottom+1;}))errors.push(code+': export actions clipped');};
         checkActions();
@@ -1994,6 +2086,7 @@ try {
     '最小窗口检查后必须恢复默认画布',
   );
 
+  await client.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1100, y: 100 });
   const taskLayoutChecks = await client.send('Runtime.evaluate', {
     expression: `(async()=>{
       const errors=[];
@@ -2252,7 +2345,7 @@ try {
       ],
       [
         'desktop-onboarding-ai-config',
-        `(()=>{const enabled=onboardingPage.querySelector('[name="onboarding-summary-enabled"]'); if(!enabled.checked) enabled.click(); onboardingPage.querySelector('[name="onboarding-ai-way"][value="online"]').click();settingsModal.querySelector('[data-flow-select-choice="provider"][data-value="custom-openai"]').click();})()`,
+        `(()=>{const enabled=onboardingPage.querySelector('[name="onboarding-summary-enabled"]'); if(!enabled.checked) enabled.click(); onboardingPage.querySelector('[data-configure-ai-summary]').click();settingsModal.querySelector('[data-flow-select-choice="provider"][data-value="custom-openai"]').click();})()`,
       ],
       [
         'desktop-onboarding-phone',
@@ -2584,12 +2677,12 @@ try {
     captures.push(
       [
         'desktop-sidebar-workspace-selector-tasks',
-        `(async()=>{closeModal();await new Promise(r=>setTimeout(r,250));await switchWorkspace('');uiData.meetings=window.visualLibraryMeetings;renderMeetingList();taskCards.querySelectorAll('.is-minimized').forEach(c=>c.classList.remove('is-minimized'));workspaces=Array.from({length:24},(_,i)=>({id:'visual-workspace-'+i,name:['产品','访谈','海外','未分类'][i%4]+(i>3?' '+i:''),meeting_count:i}));renderWorkspaceNav();miniMeeting.hidden=false;miniTitle.textContent='产品周会';miniTimer.textContent='00:12:36';miniPlayback.hidden=false;document.querySelector('#mini-playback-title').textContent='客户访谈';modelDownloads.clear();renderModelDownloadQueue();showRefinementProgress(42,100,'产品周会',currentMeetingDetail.id,'正在识别');syncTaskCardStack(refinementCard);taskCards.scrollTop=0;})()`,
+        `(async()=>{closeModal();await new Promise(r=>setTimeout(r,250));await switchWorkspace('');uiData.meetings=window.visualLibraryMeetings;renderMeetingList();taskCards.querySelectorAll('.is-minimized').forEach(c=>toggleTaskCardMinimized(c,c.querySelector('[data-minimize-task-card]')));workspaces=Array.from({length:24},(_,i)=>({id:'visual-workspace-'+i,name:['产品','访谈','海外','未分类'][i%4]+(i>3?' '+i:''),meeting_count:i}));renderWorkspaceNav();miniMeeting.hidden=false;miniTitle.textContent='产品周会';miniTimer.textContent='00:12:36';miniPlayback.hidden=false;document.querySelector('#mini-playback-title').textContent='客户访谈';modelDownloads.clear();renderModelDownloadQueue();showRefinementProgress(42,100,'产品周会',currentMeetingDetail.id,'正在识别');syncTaskCardStack(refinementCard);taskCards.scrollTop=0;})()`,
       ],
       ['desktop-library-select-entry-v11', `(()=>{})()`],
       [
         'desktop-sidebar-workspace-popover-tasks',
-        `document.querySelector('#workspace-selector').click()`,
+        `(()=>{onboardingAsrModels().slice(0,3).forEach(model=>modelDownloads.set(model.id,{received:model.size_bytes*.42,total:model.size_bytes}));renderModelDownloadQueue();showTranslationProgress(56,100,'en');showSummaryProgress(68,100,'summary.generating',uiData.meetings[0].id);document.querySelectorAll('#translation-progress,#summary-progress').forEach(card=>card.hidden=false);syncTaskCardStack();taskCards.scrollTop=0;document.querySelector('#workspace-selector').click();})()`,
       ],
       [
         'desktop-sidebar-workspace-search',
@@ -2605,11 +2698,15 @@ try {
       ],
       [
         'desktop-meeting-workspace-targets',
-        `document.querySelector('[data-meeting-action=workspace]').click()`,
+        `(()=>{document.querySelector('[data-meeting-action=workspace]').click();window.dispatchEvent(new Event('resize'));const parent=document.querySelector('.meeting-menu:not([hidden])').getBoundingClientRect(),menu=document.querySelector('.meeting-workspace-menu'),r=menu.getBoundingClientRect(),list=menu.querySelector('.menu-section');if(Math.abs(parent.top-r.top)>1||r.bottom>innerHeight-7||list.scrollHeight<=list.clientHeight)throw Error('长工作区菜单必须同顶对齐并独立滚动');const last=list.querySelector('button:last-child');last.focus();if(last.getBoundingClientRect().bottom>list.getBoundingClientRect().bottom+1)throw Error('键盘无法到达末项');menu.querySelector('.active')?.focus();})()`,
       ],
       [
         'desktop-meeting-rename-inline',
         `document.querySelector('[data-meeting-action=rename]').click()`,
+      ],
+      [
+        'desktop-meeting-rename-error',
+        `(async()=>{const input=document.querySelector('[data-rename-meeting] input');input.value='产品周会 · 失败后保留草稿';input.dispatchEvent(new Event('input',{bubbles:true}));input.form.requestSubmit();const deadline=Date.now()+5000;while(meetingRenameDraft?.saving){if(Date.now()>deadline)throw Error('重命名请求未结束');await new Promise(r=>setTimeout(r,25));}if(!meetingRenameDraft?.error||input.disabled||input.value!=='产品周会 · 失败后保留草稿')throw Error('重命名失败草稿未保留');})()`,
       ],
       [
         'desktop-meeting-batch-none',
@@ -2651,11 +2748,11 @@ try {
       ],
       [
         'desktop-devices-empty',
-        `(async()=>{clearMeetingSelection();await showView('settings');await openModal('device-connection');const devices=(await window.brevia.mobile.status()).devices;for(const device of devices)await window.brevia.mobile.revoke({id:device.id});await new Promise(r=>setTimeout(r,1200));settingsModal.querySelector('.modal-body').scrollTop=0;})()`,
+        `(async()=>{clearMeetingSelection();await showView('settings');await openModal('device-connection');for(const button of document.querySelectorAll('#mobile-devices button'))await button.onclick();if((await window.brevia.mobile.status()).devices.length||!document.querySelector('.mobile-device-empty'))throw Error('空设备场景仍残留已信任设备');settingsModal.querySelector('.modal-body').scrollTop=0;})()`,
       ],
       [
         'desktop-devices-service-off',
-        `(async()=>{await window.brevia.mobile.disable();await new Promise(r=>setTimeout(r,1200));})()`,
+        `(async()=>{await window.brevia.mobile.disable();const deadline=Date.now()+5000;while(document.querySelector('#mobile-service-toggle').checked){if(Date.now()>deadline)throw Error('服务关闭UI未更新');await new Promise(r=>setTimeout(r,50));}})()`,
       ],
       [
         'desktop-mobile-discovery-pairing',
@@ -2663,17 +2760,32 @@ try {
       ],
       [
         'desktop-mobile-pairing-expired',
-        `(async()=>{const clock=Date.now;try{Date.now=()=>clock()+121000;await new Promise(r=>setTimeout(r,1500));}finally{Date.now=clock;}if(document.querySelector('#mobile-retry-pairing').hidden||!document.querySelector('#mobile-copy-pin').disabled||!document.querySelector('#mobile-pair-error').textContent)throw new Error('配对过期状态错误');})()`,
+        `(async()=>{const clock=Date.now,qr=document.querySelector('#mobile-qr').src;try{Date.now=()=>clock()+121000;await new Promise(r=>setTimeout(r,1500));}finally{Date.now=clock;}if(qr===document.querySelector('#mobile-qr').src||!document.querySelector('#mobile-retry-pairing').hidden||document.querySelector('#mobile-copy-pin').disabled||document.querySelector('#mobile-pair-error').textContent)throw new Error('配对码未自动刷新');})()`,
       ],
     );
     const measurements = [];
     for (const [name, expression] of captures) {
+      console.log('Capturing', name);
       await evaluate(expression);
       if (name.startsWith('desktop-update-') && (await evaluate(`activeModal==='upgrade-log'`))) {
         const issues = await evaluate(
           `(()=>{const body=settingsModal.querySelector('.modal-body'),panel=settingsModal.querySelector('.modal-panel'),footer=settingsModal.querySelector('.upgrade-log-actions');const errors=[];if(body.scrollWidth>body.clientWidth+1)errors.push('正文横向溢出');if(footer.getBoundingClientRect().bottom>innerHeight||panel.scrollHeight>panel.clientHeight+1)errors.push('固定动作溢出');if(settingsModal.querySelectorAll('.upgrade-log-actions').length!==1)errors.push('重复动作');if(!settingsModal.querySelector('.whatsnew-entry.is-current[open]')?.textContent.includes(installedAppVersion))errors.push('实际版本未展开');if(!document.querySelector('.app-shell').inert)errors.push('背景仍可操作');return errors;})()`,
         );
         if (issues.length) throw Error(name + ': ' + issues.join(', '));
+      }
+      if (name === 'desktop-sidebar-workspace-popover-tasks') {
+        const cardsFit = await evaluate(
+          `(()=>{const title=refinementCard.querySelector('header p');return [...taskCards.children].filter(c=>!c.hidden).length===6&&title.scrollWidth<=title.clientWidth+1;})()`,
+        );
+        if (!cardsFit)
+          throw Error(
+            '六任务场景缺少卡片，或普通任务标题被动作挤截：' +
+              JSON.stringify(
+                await evaluate(
+                  `({cards:[...taskCards.children].map(c=>[c.id,c.hidden]),title:refinementCard.querySelector('header p').textContent,width:refinementCard.querySelector('header p').clientWidth,scroll:refinementCard.querySelector('header p').scrollWidth})`,
+                ),
+              ),
+          );
       }
       if (name.startsWith('desktop-live-task-summary-compact')) {
         await client.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 1100, y: 100 });
@@ -2738,6 +2850,8 @@ try {
       if (!name.startsWith('desktop-notification-'))
         await evaluate(`toast.classList.remove('visible')`);
       await evaluate(`document.fonts.ready.then(()=>true)`);
+      if (await evaluate(`!!document.querySelector('#startup-splash')`))
+        throw Error(name + ': 启动遮罩尚未退出');
       await delay(500);
       await evaluate(
         `document.getAnimations().forEach(animation=>animation.effect.getComputedTiming().iterations===Infinity?animation.pause():animation.finish())`,
@@ -2750,6 +2864,16 @@ try {
           `(()=>{const panel=settingsModal.querySelector('.modal-panel'),r=panel.getBoundingClientRect();return Math.abs(r.width-450)<2&&Math.abs(r.left-(innerWidth-r.width)/2)<2&&r.top>=0&&r.bottom<=innerHeight&&(!onboardingBuiltinProvider||(!!panel.querySelector('[data-download-model]')&&panel.querySelector('[type="submit"]').disabled));})()`,
         );
         if (!configFits) throw Error(name + ': 引导配置浮窗错位或缺少真实下载状态');
+        const compact = await evaluate(
+          `(()=>{const panel=settingsModal.querySelector('.modal-panel');return panel.getBoundingClientRect().height<520&&[...panel.querySelectorAll('.config-fields input:not([type=hidden]),.config-fields .flow-select-toggle')].every(e=>Math.abs(e.getBoundingClientRect().height-40)<1);})()`,
+        );
+        if (!compact) throw Error(name + ': 共享字段或模型区的留白覆盖了紧凑配置样式');
+      }
+      if (['desktop-detail', 'desktop-notes-edit'].includes(name)) {
+        const rhythm = await evaluate(
+          `(()=>{const root=document.querySelector('.detail-notes-content,.detail-notes-edit .notes-editor');const first=root.querySelector('h1'),section=root.querySelector('h2'),paragraph=root.querySelector('p');return first&&getComputedStyle(first).fontSize==='28px'&&getComputedStyle(section).fontSize==='20px'&&getComputedStyle(paragraph).fontSize==='16px'&&parseFloat(getComputedStyle(section).marginTop)===20;})()`,
+        );
+        if (!rhythm) throw Error(name + ': 阅读与编辑的排版层级不一致');
       }
       const menuErrors = await evaluate(
         `([...document.querySelectorAll('.flow-select-options.is-floating:not([hidden])')].filter(menu=>{const bounds=menu.getBoundingClientRect(),anchor=menu.closest('.flow-select').querySelector('[data-flow-select-toggle]').getBoundingClientRect();return bounds.width>Math.max(anchor.width,160)+1||bounds.left<0||bounds.right>innerWidth+1||bounds.top<0||bounds.bottom>innerHeight+1;}).length)`,
@@ -2773,7 +2897,7 @@ try {
         ['desktop-library-select-entry-v11', 'desktop-library-selection-empty-v11'].includes(name)
       ) {
         const valid = await evaluate(
-          `(()=>{const button=document.querySelector('#meeting-selection-toggle'),r=button.getBoundingClientRect(),icon=button.querySelector('svg').getBoundingClientRect(),start=document.querySelector('#home-view .page-head > .primary-action').getBoundingClientRect();if(Math.abs(r.height-44)>1||Math.abs(icon.width-16)>1||Math.abs(start.left-r.right-12)>1)return false;const fields=[...meetingList.querySelectorAll('.meeting-row:not([hidden]) [data-select-meeting]')];if(!meetingSelectionMode)return batchToolbar.hidden&&fields.every(f=>f.hidden)&&button.getAttribute('aria-pressed')==='false';return selectedMeetingKeys.size===0&&!batchToolbar.hidden&&fields.every(f=>!f.hidden&&!f.checked)&&batchToolbar.querySelector('[data-batch-export]').disabled&&batchToolbar.querySelector('[data-batch-delete]').disabled&&!batchToolbar.querySelector('[data-batch-clear]').disabled&&getComputedStyle(batchToolbar.querySelector('[data-batch-delete]')).color===getComputedStyle(batchToolbar.querySelector('[data-batch-export]')).color&&batchToolbar.querySelector('[data-batch-count]').textContent===t('已选择')+' 0 / '+fields.length;})()`,
+          `(()=>{const button=document.querySelector('#meeting-selection-toggle'),r=button.getBoundingClientRect(),icon=button.querySelector('svg').getBoundingClientRect(),start=document.querySelector('#home-view .page-head > .primary-action').getBoundingClientRect();if(Math.abs(r.height-44)>1||Math.abs(icon.width-20)>1||Math.abs(start.left-r.right-12)>1)return false;const fields=[...meetingList.querySelectorAll('.meeting-row:not([hidden]) [data-select-meeting]')];if(!meetingSelectionMode)return batchToolbar.hidden&&fields.every(f=>f.hidden)&&button.getAttribute('aria-pressed')==='false';return selectedMeetingKeys.size===0&&!batchToolbar.hidden&&fields.every(f=>!f.hidden&&!f.checked)&&batchToolbar.querySelector('[data-batch-export]').disabled&&batchToolbar.querySelector('[data-batch-delete]').disabled&&!batchToolbar.querySelector('[data-batch-clear]').disabled&&getComputedStyle(batchToolbar.querySelector('[data-batch-delete]')).color===getComputedStyle(batchToolbar.querySelector('[data-batch-export]')).color&&batchToolbar.querySelector('[data-batch-count]').textContent===t('已选择')+' 0 / '+fields.length;})()`,
         );
         if (!valid) throw new Error(name + ': 选择入口几何或0项初始状态不符合D53/D54');
       }
@@ -2830,6 +2954,7 @@ try {
       }
       measurements.push({
         name,
+        capturedAt: new Date().toISOString(),
         imageWidth: png.readUInt32BE(16),
         imageHeight: png.readUInt32BE(20),
         ...(await evaluate(
@@ -2860,6 +2985,22 @@ try {
         await resizeNativeWindow(675, 491);
         const nativeScenes = [
           [
+            'desktop-sidebar-tasks-small-window',
+            `(async()=>{meetingActive=false;await showLibraryNav('all-meetings');uiData.meetings=window.visualLibraryMeetings;renderMeetingList();miniMeeting.hidden=false;miniPlayback.hidden=false;refinementCard.hidden=false;syncTaskCardStack();taskCards.scrollTop=0;})()`,
+          ],
+          [
+            'desktop-sidebar-workspace-small-window',
+            `document.querySelector('#workspace-selector').click()`,
+          ],
+          [
+            'desktop-update-changelog-small-window',
+            `(async()=>{closeWorkspacePicker(true);await openModal('upgrade-log');})()`,
+          ],
+          [
+            'desktop-device-connection-native-minimum',
+            `(async()=>{closeModal();await showView('home');await document.querySelector('#mobile-nav').onclick();const body=settingsModal.querySelector('.modal-body');if(!settingsModal.classList.contains('settings-page')||body.scrollWidth>body.clientWidth+1)throw Error('设备设置页窄窗布局');})()`,
+          ],
+          [
             'desktop-live-task-summary-native-minimum',
             `(async()=>{closeModal();meetingActive=true;await showView('live');taskCards.querySelectorAll('.task-card-stack-item').forEach(card=>card.hidden=true);miniMeeting.hidden=false;miniPlayback.hidden=false;refinementCard.hidden=false;miniTimer.textContent='18:42';syncTaskCardStack(miniMeeting);document.activeElement?.blur();})()`,
           ],
@@ -2873,7 +3014,7 @@ try {
           await client.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 800, y: 100 });
           await delay(350);
           const geometry = await evaluate(
-            `(()=>{const errors=[];if(document.querySelector('dialog[open]')||!settingsModal.hidden)errors.push('前序弹窗未关闭');if(document.body.scrollWidth>innerWidth+1)errors.push('横向溢出');const summary=document.querySelector('[data-task-summary]').getBoundingClientRect(),player=document.querySelector('#detail-view .player').getBoundingClientRect();if(activeView==='live'&&(Math.abs(summary.width-52)>1||Math.abs(summary.height-44)>1||summary.bottom>document.querySelector('#mobile-nav').getBoundingClientRect().top))errors.push('汇总入口错位');if(activeView==='detail'&&(document.querySelectorAll('[data-transcript-save]').length!==1||player.bottom>innerHeight+1))errors.push('编辑动作或播放器溢出');return {errors,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,overflow:document.body.scrollWidth>innerWidth+1};})()`,
+            `(()=>{const errors=[];if(document.querySelector('dialog[open]')||(!settingsModal.hidden&&!['upgrade-log','device-connection'].includes(activeModal)))errors.push('前序弹窗未关闭');if(activeModal==='upgrade-log'&&settingsModal.querySelector('.upgrade-log-actions').getBoundingClientRect().bottom>innerHeight+1)errors.push('升级操作溢出');if(activeView==='home'){const nav=document.querySelector('.workspace-subnav').getBoundingClientRect(),selector=document.querySelector('#workspace-selector').getBoundingClientRect(),device=document.querySelector('#mobile-nav').getBoundingClientRect();if(selector.bottom>nav.bottom+1||device.bottom>innerHeight+1||taskCards.getBoundingClientRect().bottom>device.top+1)errors.push('侧栏分区溢出');if(workspacePicker&&workspacePicker.getBoundingClientRect().bottom>innerHeight+1)errors.push('工作区菜单溢出');}if(document.body.scrollWidth>innerWidth+1)errors.push('横向溢出');const summary=document.querySelector('[data-task-summary]').getBoundingClientRect(),player=document.querySelector('#detail-view .player').getBoundingClientRect();if(activeView==='live'&&(Math.abs(summary.width-52)>1||Math.abs(summary.height-44)>1||summary.bottom>document.querySelector('#mobile-nav').getBoundingClientRect().top))errors.push('汇总入口错位');if(activeView==='detail'&&(document.querySelectorAll('[data-transcript-save]').length!==1||player.bottom>innerHeight+1))errors.push('编辑动作或播放器溢出');return {errors,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,overflow:document.body.scrollWidth>innerWidth+1};})()`,
           );
           if (geometry.errors.length) throw Error(name + ': ' + geometry.errors.join(','));
           const shot = await client.send('Page.captureScreenshot', {
@@ -2886,6 +3027,7 @@ try {
             name,
             imageWidth: png.readUInt32BE(16),
             imageHeight: png.readUInt32BE(20),
+            capturedAt: new Date().toISOString(),
             nativeContent: { width: 675, height: 491 },
             ...geometry,
           });
@@ -2920,6 +3062,20 @@ try {
       await evaluate(`window.brevia.floatingCaption.close()`);
     }
     writeFileSync(path.join(output, 'measurements.json'), JSON.stringify(measurements, null, 2));
+    // 文件时间与源码指纹将本轮截图和历史补拍分开，避免旧图被算作最新覆盖。
+    const run = {
+      startedAt: new Date(captureStartedAt).toISOString(),
+      completedAt: new Date().toISOString(),
+      checksPassed: failures.length === 0 && pageErrors.length === 0,
+      nativeContent: { width: 981, height: 613 },
+      zoom: 23 / 30,
+      sources: captureSources,
+      files: readdirSync(output).filter(
+        (name) =>
+          name.endsWith('.png') && statSync(path.join(output, name)).mtimeMs >= captureStartedAt,
+      ),
+    };
+    writeFileSync(path.join(output, 'capture-run.json'), JSON.stringify(run, null, 2) + '\n');
   }
   check(pageErrors.length === 0, `页面操作期间脚本异常：${pageErrors.join('\n')}`);
   client.close();

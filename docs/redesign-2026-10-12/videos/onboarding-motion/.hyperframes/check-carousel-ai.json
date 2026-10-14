@@ -1,0 +1,88 @@
+{
+  "ok": true,
+  "strict": true,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "duration": 9,
+    "samples": [
+      0,
+      1.1,
+      3.5,
+      6.5,
+      8.8
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 0,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "specPath": "/Users/zyaztec/Projects/Brevia/docs/redesign-2026-10-12/videos/onboarding-motion/.hyperframes/verify-ai/index.motion.json",
+    "samples": 181
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      0,
+      1.1,
+      3.5,
+      6.5,
+      8.8
+    ],
+    "checked": 69,
+    "passed": 69
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  },
+  "saved": {
+    "id": "4f9d58d7-c8bb-45cb-8fcf-faa720d04254",
+    "revision": "cb675d41-3030-4c52-b53b-d8e8a1627db9",
+    "report": "/Users/zyaztec/Projects/Brevia/docs/redesign-2026-10-12/videos/onboarding-motion/.hyperframes/verify-ai/.hyperframes/artifacts/checks/4f9d58d7-c8bb-45cb-8fcf-faa720d04254.json",
+    "attribution": "recorded-revision"
+  },
+  "_meta": {
+    "version": "0.8.156",
+    "latestVersion": "0.8.155",
+    "updateAvailable": false
+  }
+}

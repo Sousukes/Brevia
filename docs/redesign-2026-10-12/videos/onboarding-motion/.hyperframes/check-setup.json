@@ -1,0 +1,87 @@
+{
+  "ok": true,
+  "strict": true,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "duration": 14,
+    "samples": [
+      0,
+      2.7,
+      4.7,
+      5.8,
+      10
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 0,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      0,
+      2.7,
+      4.7,
+      5.8,
+      10
+    ],
+    "checked": 93,
+    "passed": 93
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  },
+  "saved": {
+    "id": "3fd985d5-76d0-4e4f-890a-a5331fbe8a44",
+    "revision": "cccc61f7-2ee1-4cea-ba4b-3cbd01c3f353",
+    "report": "/Users/zyaztec/Projects/Brevia/docs/redesign-2026-10-12/videos/onboarding-motion/.hyperframes/verify-setup/.hyperframes/artifacts/checks/3fd985d5-76d0-4e4f-890a-a5331fbe8a44.json",
+    "attribution": "recorded-revision"
+  },
+  "_meta": {
+    "version": "0.8.156",
+    "latestVersion": "0.8.155",
+    "updateAvailable": false
+  }
+}
