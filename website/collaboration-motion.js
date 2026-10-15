@@ -221,7 +221,7 @@ window.createCollaborationScene = async (stage, scene, locale) => {
   });
   const source = new URL('./product-motion.html', location.href);
   source.search = new URLSearchParams({
-    v: '20261015-prepare',
+    v: '20261015-tasks',
     scene: 'live',
     capture: field ? 'field' : 'microphone',
     lang: locale,

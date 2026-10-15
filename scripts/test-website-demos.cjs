@@ -469,6 +469,27 @@ app
             assert.equal(acceptance.checkboxes, 0);
             assert.equal(acceptance.headings, 0);
             assert.equal(acceptance.flying, 0);
+            const acceptedUI = await win.webContents.executeJavaScript(`(() => {
+              productMotion.seek(6600);
+              const root=document.querySelector('[data-live-notes-root]');
+              return {suggestionInside:root.contains(document.querySelector('[data-ai-suggestion]')),
+                toolbarHidden:root.querySelector('.notes-toolbar').hidden,
+                toast:document.querySelector('#toast.visible')?.innerText};
+            })()`);
+            assert.equal(
+              acceptedUI.suggestionInside,
+              true,
+              'Suggestions share the official notes surface',
+            );
+            assert.equal(
+              acceptedUI.toolbarHidden,
+              true,
+              'Notes toolbar starts collapsed in the app',
+            );
+            assert.equal(acceptedUI.toast, locale === 'zh' ? '已加入笔记' : 'Added to notes');
+            await capture(
+              join(root, 'output/playwright/affine-implementation', `notes-added-${locale}.png`),
+            );
           }
           if (scene === 'tour') {
             const choreography = await win.webContents.executeJavaScript(`(() => {
@@ -504,7 +525,63 @@ app
             `${locale}/${scene}: demos must not zoom or pan`,
           );
           if (scene === 'summary') {
-            assert.ok(states[2].summary.length > states[0].summary.length);
+            assert.equal(
+              states[0].summary,
+              undefined,
+              'Summary text is absent while the task runs',
+            );
+            const generation = await win.webContents.executeJavaScript(`(() => {
+              return [500,1200,3000,5000,5300,8000,12500].map(time => {
+                productMotion.seek(time);
+                const task=document.querySelector('#summary-progress');
+                return {body:document.querySelector('.summary-body')?.innerText,
+                  taskVisible:!task.hidden, inSidebar:!!task.closest('.sidebar #task-cards'),
+                  progress:Number(task.querySelector('[role=progressbar]').getAttribute('aria-valuenow')),
+                  step:task.dataset.stage, canGenerate:!!document.querySelector('[data-generate-summary]:not([disabled])'),
+                  canCopy:!!document.querySelector('[data-copy-summary]'),
+                  pending:!!document.querySelector('.summary-actions button[disabled]')};
+              });
+            })()`);
+            assert.equal(generation[0].taskVisible, false);
+            assert.equal(generation[0].canGenerate, true);
+            generation.slice(1, 4).forEach((state) => {
+              assert.equal(state.taskVisible, true);
+              assert.equal(state.inSidebar, true);
+              assert.equal(state.body, undefined, 'No partial summary before task completion');
+              assert.equal(state.canCopy, false);
+              assert.equal(state.pending, true);
+            });
+            assert.ok(
+              generation[1].progress < generation[2].progress &&
+                generation[2].progress < generation[3].progress,
+            );
+            assert.deepEqual(
+              generation.slice(1, 5).map((state) => state.step),
+              ['summary.prepare', 'summary.generating', 'summary.saving', 'summary.complete'],
+            );
+            assert.equal(generation[4].progress, 100);
+            assert.equal(generation[4].canCopy, true);
+            assert.equal(generation[4].pending, false);
+            assert.equal(
+              generation[4].body,
+              generation[5].body,
+              'Completed summary appears in full',
+            );
+            assert.equal(generation[6].body, undefined, 'Loop clears the previous summary');
+            assert.equal(generation[6].taskVisible, false);
+            for (const [name, time] of [
+              ['task', 3000],
+              ['complete', 6000],
+            ]) {
+              await win.webContents.executeJavaScript(`productMotion.seek(${time})`);
+              await capture(
+                join(
+                  root,
+                  'output/playwright/affine-implementation',
+                  `summary-${name}-${locale}.png`,
+                ),
+              );
+            }
             assert.ok(states[2].summary.includes(locale === 'zh' ? '行动项' : 'Action items'));
           }
           if (scene === 'library') {

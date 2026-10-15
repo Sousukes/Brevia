@@ -120,7 +120,7 @@ window.detailActiveTab = 'summary';
       else view.classList.toggle('active', view.id === viewId);
     });
     shell.classList.toggle('is-live-meeting', scene === 'live');
-    stage.append(shell);
+    stage.append(shell, template.querySelector('#toast').cloneNode(true));
     const textNodes = document.createTreeWalker(shell, NodeFilter.SHOW_TEXT);
     while (textNodes.nextNode()) {
       const node = textNodes.currentNode;
@@ -147,9 +147,10 @@ window.detailActiveTab = 'summary';
         ? pick('手机麦克风', 'Phone microphone')
         : pick('麦克风 + 系统音频', 'Microphone + system audio');
       const notesRoot = shell.querySelector('[data-live-notes-root]');
-      notesRoot.replaceChildren();
+      notesRoot.replaceChildren(shell.querySelector('[data-ai-suggestion]'));
       liveNotesEditor = createNotesEditor(notesRoot);
       notesRoot.querySelector('.notes-editor').contentEditable = 'false';
+      notesRoot.querySelector('.notes-toolbar').hidden = true;
       shell.querySelector('#translation-options').innerHTML = BreviaI18n.languageOptions(locale, t)
         .map(
           ([value, label]) =>
@@ -168,6 +169,12 @@ window.detailActiveTab = 'summary';
         `${renderDetailTabbar()}<div data-detail-panel="summary"></div>`;
       detail.append(detail.querySelector('.detail-actions'));
       detail.querySelector('#player-duration').textContent = '18:24';
+      const task = shell.querySelector('#refinement-progress').cloneNode(true);
+      task.id = 'summary-progress';
+      task.querySelectorAll('[id]').forEach((element) => element.removeAttribute('id'));
+      task.classList.add('task-card-stack-item');
+      task.querySelector('.task-kind-icon').innerHTML = interfaceIcon('document');
+      shell.querySelector('#task-cards').append(task);
     }
     if (scene === 'library' || tour) {
       shell.querySelector('#home-eyebrow').textContent = pick('产品', 'Product');
@@ -288,16 +295,25 @@ window.detailActiveTab = 'summary';
           type: index === 0 ? 'decision' : 'action',
         }));
     const acceptedEvents = events.filter((event) => seconds >= event.accept);
-    if (acceptedEvents.length !== acceptedCount) {
+    if (acceptedCount < 0 || acceptedEvents.length < acceptedCount) {
       liveNotesEditor.setMarkdown('');
-      acceptedEvents.forEach((event) => liveNotesEditor.appendMarkdown(`- ${event.text}`));
-      acceptedCount = acceptedEvents.length;
+      acceptedCount = 0;
     }
+    acceptedEvents
+      .slice(acceptedCount)
+      .forEach((event) => liveNotesEditor.appendMarkdown(`- ${event.text}`));
+    acceptedCount = acceptedEvents.length;
+    const lastAccepted = acceptedEvents.at(-1);
+    renderToast(lastAccepted && seconds - lastAccepted.accept < 4 ? t('已加入笔记') : '');
     const current = events.find((event) => seconds >= event.start && seconds < event.accept);
     const suggestion = stage.querySelector('[data-ai-suggestion]');
     suggestion.hidden = !current;
     const assist = stage.querySelector('[data-ai-assist-toggle]');
     assist.classList.toggle('is-enabled', !transcription);
+    const assistCopy = BreviaLocaleData.appCopy.aiAssistCopy[locale];
+    assist.querySelector('[data-ai-assist-toggle-label]').textContent = transcription
+      ? assistCopy.toggleOff
+      : assistCopy.toggleOn;
     assist.classList.toggle(
       'is-analyzing',
       events.some((event) => seconds >= event.start - 0.35 && seconds < event.start),
@@ -350,28 +366,85 @@ window.detailActiveTab = 'summary';
         ? transcript.scrollTop + (target - transcript.scrollTop) * 0.2
         : target;
   }
+  function renderToast(message) {
+    const toast = stage.querySelector('#toast');
+    toast.classList.toggle('visible', Boolean(message));
+    toast.dataset.tone = 'success';
+    write(
+      '#toast',
+      message
+        ? `<i class="toast-status-mark" aria-hidden="true">${interfaceIcon('check')}</i><span>${escapeHtml(message)}</span>`
+        : '',
+    );
+  }
   function renderSummary(time) {
-    const seconds = time / 500;
-    const progress = clamp((seconds - 1) / 13);
-    const markdown = `# ${meeting}\n\n${reveal(summaryBlocks.join('\n\n'), progress)}`;
-    const html = renderMeetingSummary({ markdown, generating: progress < 1 });
+    const seconds = time / 1000;
+    const started = seconds >= 0.9;
+    const complete = seconds >= 5.3;
+    const progress = clamp((seconds - 0.9) / 4.4);
+    const markdown = complete ? `# ${meeting}\n\n${summaryBlocks.join('\n\n')}` : '';
+    const html = renderMeetingSummary({ markdown, generating: started && !complete });
     if (rendered.get('summary') !== html) {
       rendered.set('summary', html);
       stage.querySelector('[data-detail-panel="summary"]').replaceChildren();
       stage.querySelector('.notes').innerHTML = html;
       syncDetailSummaryPanel();
     }
-    const copy = stage.querySelector('[data-copy-summary]');
-    if (copy && seconds >= 16)
-      copy.innerHTML = `${interfaceIcon('check')}${pick('已复制', 'Copied')}`;
-    cursor.hidden = seconds < 14.7 || seconds > 17.3;
-    pointAt(copy, (seconds - 14.7) / 1.1, seconds >= 15.9 ? (seconds - 15.9) / 0.6 : -1);
-    copy?.classList.toggle('motion-pressed', seconds >= 15.9 && seconds < 16.3);
+    const task = stage.querySelector('#summary-progress');
+    task.hidden = !started;
+    const copy = BreviaLocaleData.appCopy.summaryTaskCopy[locale];
+    const step = complete ? 4 : seconds < 1.5 ? 1 : seconds < 4.85 ? 2 : 3;
+    const percent = Math.round(progress * 100);
+    task.querySelector('.task-card-heading p').textContent = copy[0];
+    task.querySelector('strong').innerHTML = renderTaskProgressLabel(copy[step], percent);
+    Object.assign(task.dataset, {
+      completed: percent,
+      total: 100,
+      stage: ['', 'summary.prepare', 'summary.generating', 'summary.saving', 'summary.complete'][
+        step
+      ],
+    });
+    const bar = task.querySelector('.processing-bar');
+    bar.setAttribute('role', 'progressbar');
+    bar.setAttribute('aria-label', copy[0]);
+    bar.setAttribute('aria-valuemin', '0');
+    bar.setAttribute('aria-valuemax', '100');
+    bar.setAttribute('aria-valuenow', String(percent));
+    bar.removeAttribute('aria-hidden');
+    bar.querySelector('i').style.transform = `scaleX(${progress})`;
+    task.querySelector('[data-pause-task]').disabled = complete;
+    const summary = stage.querySelector('[data-task-summary]');
+    summary.hidden = !started;
+    summary.querySelector('[data-task-summary-label]').textContent = t('任务');
+    summary.querySelector('[data-task-summary-count]').textContent = '1';
+    summary.querySelector('[data-task-summary-status]').textContent = `${percent}%`;
+    const toggle = stage.querySelector('[data-toggle-task-stack]');
+    toggle.hidden = !started;
+    toggle.querySelector('[data-task-count]').textContent = `${t('任务')} · 1`;
+    stage.querySelector('.app-shell').style.setProperty('--task-progress', progress);
+    renderToast(
+      complete && seconds < 7
+        ? t('会议纪要已生成')
+        : seconds >= 7.2 && seconds < 11.2
+          ? t('已复制到剪贴板')
+          : '',
+    );
+    cursor.hidden = (started && seconds < 6.5) || seconds > 7.5;
+    const target = stage.querySelector(started ? '[data-copy-summary]' : '[data-generate-summary]');
+    pointAt(
+      target,
+      (seconds - (started ? 6.5 : 0.1)) / 0.3,
+      seconds >= (started ? 7 : 0.65) ? (seconds - (started ? 7 : 0.65)) / 0.18 : -1,
+    );
+    target?.classList.toggle(
+      'motion-pressed',
+      started ? seconds >= 7 && seconds < 7.2 : seconds >= 0.65,
+    );
     const body = stage.querySelector('.summary-body');
     if (body)
       body.parentElement.scrollTop =
-        seconds > 10 && seconds < 16
-          ? clamp((seconds - 10) / 5) *
+        seconds >= 8
+          ? clamp((seconds - 8) / 2.5) *
             (body.parentElement.scrollHeight - body.parentElement.clientHeight)
           : 0;
   }
@@ -515,6 +588,11 @@ window.detailActiveTab = 'summary';
     const enteredPrepare = phase === 'prepare' && stage.dataset.tourPhase !== phase;
     stage.dataset.tourPhase = phase;
     if (enteredPrepare) fitPrepare();
+    if (phase !== 'summary') {
+      stage.querySelector('#summary-progress').hidden = true;
+      stage.querySelector('[data-task-summary]').hidden = true;
+      stage.querySelector('[data-toggle-task-stack]').hidden = true;
+    }
     if (phase === 'home') {
       renderLive(0);
       renderLibrary(0);
