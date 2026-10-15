@@ -361,7 +361,7 @@ body[data-focus]:not([data-focus=""]) #home-view .meeting-row-title {
   position: absolute;
   left: 0;
   top: 0;
-  z-index: 8;
+  z-index: 100;
   width: 30px;
   height: 39px;
   background: url("./assets/demo-cursor.svg") center / contain no-repeat;

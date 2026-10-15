@@ -26,6 +26,7 @@ window.detailActiveTab = 'summary';
   let renderCollaboration;
   let renderCapture;
   let liveNotesEditor;
+  let fitPrepare;
   let acceptedCount = -1;
   const stage = document.querySelector('#motion-stage');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -177,27 +178,45 @@ window.detailActiveTab = 'summary';
       shell.querySelector('#workspace-edit').hidden = false;
     }
     if (tour) {
-      shell.querySelector('.form-grid').innerHTML = [
-        ['工作区', 'meeting-workspace', pick('产品', 'Product')],
-        ['会议语言', 'meeting-language', pick('中文', 'English')],
-        ['译文目标', 'translation-target', pick('不翻译', 'No translation')],
-        ['识别模型', 'refined-model', 'SenseVoice Small'],
-      ]
-        .map(
-          ([label, name, value]) =>
-            `<label>${t(label)}${flowSelect(name, value, [[value, value]])}</label>`,
-        )
-        .join('');
-      shell.querySelector('#capture-mode-mount').innerHTML = flowSelect('capture-mode', 'both', [
-        ['both', t('麦克风 + 系统音频')],
-        ['mic', t('仅麦克风')],
-        ['system', t('仅系统音频')],
-      ]);
-      shell.querySelector('#mic-device-mount').innerHTML = flowSelect('mic-device', 'default', [
+      const prepare = shell.querySelector('#prepare-view');
+      prepare.querySelector('h1').textContent = t('新建会议');
+      prepare.querySelector('[data-prepare-description]').textContent =
+        t('设置会议信息并选择录制来源，开始记录你的会议。');
+      prepare.querySelector('[data-prepare-source-description]').textContent =
+        t('选择要录制的音频来源，可单选。');
+      prepare.querySelector('.form-grid').innerHTML =
+        `<label>${t('工作区')}${flowSelect('meeting-workspace', 'product', [['product', pick('产品', 'Product')]])}</label><label>${t('会议语言')}${flowSelect('meeting-language', locale === 'zh' ? 'zh' : 'auto', BreviaI18n.languageOptions(locale, t, true))}</label><label>${t('译文目标')}${flowSelect('translation-target', '', BreviaI18n.languageOptions(locale, t))}</label>`;
+      prepare.querySelector('[data-prepare-extra-settings]').innerHTML =
+        `<label>${t('预期说话人数')}${flowSelect('meeting-speakers', '-1', [['-1', t('自动检测')], ...Array.from({ length: 10 }, (_, i) => [String(i + 1), String(i + 1)])])}</label><label class="prepare-model-select">${t('识别模型')}${flowSelect('refined-model', locale === 'zh' ? 'funasr-nano-mlx' : 'parakeet-tdt-0.6b-v3-mlx', [[locale === 'zh' ? 'funasr-nano-mlx' : 'parakeet-tdt-0.6b-v3-mlx', pick('Fun-ASR-Nano', 'Parakeet TDT 0.6B v3')]])}</label>`;
+      prepare.querySelector('#capture-mode-mount').innerHTML =
+        `<div class="flow-select capture-mode-select capture-source-list"><input type="hidden" name="capture-mode" value="both" /><div class="flow-select-options" role="radiogroup" aria-label="${t('录制来源')}">${[
+          ['mic', '仅麦克风', '适合面对面交流、个人口述', 'microphone'],
+          ['system', '仅系统音频', '适合网课、视频和电脑播放的音频', 'appearance'],
+          ['both', '麦克风 + 系统音频', '适合线上会议，同时收录双方声音', 'waveform'],
+          ['phone', '手机麦克风', '适合线下会议，用手机近距离收音', 'phone'],
+        ]
+          .map(
+            ([value, label, description, icon]) =>
+              `<button type="button" role="radio" aria-checked="${value === 'both'}" data-flow-select-choice="capture-mode" data-value="${value}">${interfaceIcon(icon)}<span><b>${t(label)}</b><small>${t(description)}</small></span><i></i></button>`,
+          )
+          .join('')}</div></div>`;
+      prepare.querySelector('#mic-device-mount').innerHTML = flowSelect('mic-device', 'default', [
         ['default', pick('内置麦克风', 'Built-in microphone')],
       ]);
-      shell.querySelector('#mic-input-label').textContent = t('输入良好');
-      shell.querySelector('#system-input-label').textContent = t('已连接');
+      prepare.querySelector('#mic-input-label').textContent = t('输入良好');
+      prepare.querySelector('#system-input-label').textContent = t('已连接');
+      prepare.querySelector('.primary-action').innerHTML =
+        `${interfaceIcon('record')}${t('开始录制')}`;
+      // 与正式应用保持相同的紧凑布局判断，避免较矮的演示窗口挤压电平和按钮。
+      fitPrepare = () => {
+        if (!prepare.classList.contains('active')) return;
+        prepare.classList.remove('is-compact');
+        const crowded =
+          prepare.querySelector('fieldset').getBoundingClientRect().bottom + 12 >
+          prepare.querySelector('.prepare-input-status').getBoundingClientRect().top;
+        prepare.classList.toggle('is-compact', innerWidth <= 850 || crowded);
+      };
+      new ResizeObserver(fitPrepare).observe(prepare);
     }
   } else {
     stage.innerHTML = `<section class="motion-phone"><header class="motion-phone-header"><strong>${scene === 'phone-offline' ? pick('客户访谈', 'Customer interview') : pick('设计周会', 'Design weekly')}</strong><span class="motion-phone-meta"></span><i>${interfaceIcon('more')}</i></header><div class="motion-phone-tabs"></div><div class="motion-phone-content"></div><div class="motion-phone-sync"></div><footer class="motion-phone-controls"><button>${interfaceIcon('pause')}</button><button class="phone-bookmark">${interfaceIcon('bookmark')}</button><button class="phone-stop">${interfaceIcon('stop')}</button></footer><div class="motion-phone-toast"></div></section>`;
@@ -492,7 +511,10 @@ window.detailActiveTab = 'summary';
       .querySelectorAll('.workspace > .view')
       .forEach((view) => view.classList.toggle('active', view.id === viewId));
     stage.querySelector('.app-shell').classList.toggle('is-live-meeting', phase === 'live');
+    stage.querySelector('#all-meetings').classList.toggle('active', phase === 'home');
+    const enteredPrepare = phase === 'prepare' && stage.dataset.tourPhase !== phase;
     stage.dataset.tourPhase = phase;
+    if (enteredPrepare) fitPrepare();
     if (phase === 'home') {
       renderLive(0);
       renderLibrary(0);
@@ -505,20 +527,13 @@ window.detailActiveTab = 'summary';
     } else if (phase === 'prepare') {
       const title = stage.querySelector('#meeting-title');
       title.value = reveal(meeting, (time - 1900) / 350);
-      const toggle = stage.querySelector('#capture-mode-mount .flow-select-toggle');
-      const options = stage.querySelector('#capture-mode-mount .flow-select-options');
-      const expanded = time >= 2700 && time < 3400;
-      options.hidden = !expanded;
-      toggle.setAttribute('aria-expanded', String(expanded));
       cursor.hidden = false;
       if (time < 2400) pointAt(title, (time - 1600) / 250, time >= 1850 ? (time - 1850) / 180 : -1);
-      else if (time < 3100)
-        pointAt(toggle, (time - 2400) / 250, time >= 2650 ? (time - 2650) / 180 : -1);
       else if (time < 3400)
         pointAt(
-          options.querySelector('[data-flow-select-choice]'),
-          (time - 3100) / 100,
-          (time - 3200) / 180,
+          stage.querySelector('#capture-mode-mount [data-value="both"]'),
+          (time - 2400) / 250,
+          time >= 2650 ? (time - 2650) / 180 : -1,
         );
       else
         pointAt(

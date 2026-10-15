@@ -384,7 +384,60 @@ app
               ['home', 'prepare', 'prepare', 'live', 'summary', 'home'],
             );
             assert.ok(flow.states[1].title.length > 0, 'Tour types the meeting title');
-            assert.equal(flow.states[2].options, true, 'Tour demonstrates the audio source');
+            assert.equal(flow.states[2].options, true, 'Audio source cards stay visible');
+            for (const height of [720, 800]) {
+              win.setContentSize(1280, height);
+              await win.webContents.executeJavaScript('productMotion.seek(2900)');
+              await wait(80);
+              const prepare = await win.webContents.executeJavaScript(`(() => {
+                const view = document.querySelector('#prepare-view');
+                const source = view.querySelector('fieldset').getBoundingClientRect();
+                const status = view.querySelector('.prepare-input-status').getBoundingClientRect();
+                const button = view.querySelector('.primary-action').getBoundingClientRect();
+                return {
+                  heading: view.querySelector('h1').textContent,
+                  fields: [...view.querySelectorAll('.form-grid input')].map(input => input.name),
+                  extras: [...view.querySelectorAll('[data-prepare-extra-settings] input')].map(input => input.name),
+                  sources: [...view.querySelectorAll('[role=radio]')].map(button => button.dataset.value),
+                  selected: view.querySelector('[role=radio][aria-checked=true]')?.dataset.value,
+                  dropdowns: view.querySelectorAll('#capture-mode-mount .flow-select-toggle:not([hidden])').length,
+                  language: view.querySelector('[name=meeting-language]').value,
+                  model: view.querySelector('[name=refined-model]').value,
+                  recordIcon: !!view.querySelector('.primary-action .interface-icon'),
+                  libraryActive: document.querySelector('#all-meetings').classList.contains('active'),
+                  fits: source.bottom <= status.top && status.bottom <= button.top && button.bottom <= innerHeight,
+                };
+              })()`);
+              assert.equal(prepare.heading, locale === 'zh' ? '新建会议' : 'New meeting');
+              assert.deepEqual(prepare.fields, [
+                'meeting-workspace',
+                'meeting-language',
+                'translation-target',
+              ]);
+              assert.deepEqual(prepare.extras, ['meeting-speakers', 'refined-model']);
+              assert.deepEqual(prepare.sources, ['mic', 'system', 'both', 'phone']);
+              assert.equal(prepare.selected, 'both');
+              assert.equal(prepare.dropdowns, 0, 'Sources use official radio cards');
+              assert.equal(prepare.language, locale === 'zh' ? 'zh' : 'auto');
+              assert.equal(
+                prepare.model,
+                locale === 'zh' ? 'funasr-nano-mlx' : 'parakeet-tdt-0.6b-v3-mlx',
+              );
+              assert.equal(prepare.recordIcon, true);
+              assert.equal(
+                prepare.libraryActive,
+                false,
+                'Only Start meeting is selected in the sidebar',
+              );
+              assert.equal(
+                prepare.fits,
+                true,
+                `${locale}/prepare: sources, levels and record button must fit at ${height}px`,
+              );
+            }
+            const prepareCapture = join(root, 'output/playwright/affine-implementation');
+            mkdirSync(prepareCapture, { recursive: true });
+            await capture(join(prepareCapture, `prepare-${locale}.png`));
             assert.ok(flow.states[3].notes >= 3, 'Tour accepts AI notes during recording');
             assert.ok(flow.states[4].summary.includes(locale === 'zh' ? '行动项' : 'Action items'));
             assert.equal(flow.states[5].notes, 0, 'Tour resets notes when the next meeting starts');
