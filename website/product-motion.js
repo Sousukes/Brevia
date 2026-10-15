@@ -9,6 +9,7 @@ window.detailActiveTab = 'summary';
 (async () => {
   const pick = (zh, en) => (locale === 'en' ? en : zh);
   const scene = [
+    'tour',
     'live',
     'summary',
     'library',
@@ -20,6 +21,7 @@ window.detailActiveTab = 'summary';
     ? motionParams.get('scene')
     : 'live';
   const phone = scene.startsWith('phone-');
+  const tour = scene === 'tour';
   const collaboration = scene.startsWith('pair-');
   let renderCollaboration;
   let renderCapture;
@@ -27,8 +29,9 @@ window.detailActiveTab = 'summary';
   let acceptedCount = -1;
   const stage = document.querySelector('#motion-stage');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const duration =
-    collaboration || motionParams.has('capture')
+  const duration = tour
+    ? 60000
+    : collaboration || motionParams.has('capture')
       ? pairingTimes.duration
       : scene === 'summary'
         ? 22000
@@ -109,9 +112,11 @@ window.detailActiveTab = 'summary';
     const viewId =
       scene === 'live' ? 'live-view' : scene === 'summary' ? 'detail-view' : 'home-view';
     shell.querySelectorAll('.workspace > .view').forEach((view) => {
-      if (view.id !== viewId && !(motionParams.has('capture') && view.id === 'prepare-view'))
-        view.remove();
-      else view.classList.add('active');
+      const keep = tour
+        ? ['home-view', 'prepare-view', 'live-view', 'detail-view'].includes(view.id)
+        : view.id === viewId || (motionParams.has('capture') && view.id === 'prepare-view');
+      if (!keep) view.remove();
+      else view.classList.toggle('active', view.id === viewId);
     });
     shell.classList.toggle('is-live-meeting', scene === 'live');
     stage.append(shell);
@@ -135,7 +140,7 @@ window.detailActiveTab = 'summary';
       `<div class="workspace-subnav-content"><div class="workspace-heading"><h3>${t('工作区')}</h3><button class="new-workspace">${interfaceIcon('plus')}</button></div><button class="workspace-item workspace-selector">${interfaceIcon('folder')}<span class="workspace-label">${pick('产品', 'Product')}</span>${interfaceIcon('chevron-down')}</button></div>`;
     if (motionParams.has('capture'))
       renderCapture = createCaptureDemo(stage, shell, template, locale, renderLive);
-    if (scene === 'live') {
+    if (scene === 'live' || tour) {
       shell.querySelector('#live-name').textContent = meeting;
       shell.querySelector('#live-input-label').textContent = motionParams.has('capture')
         ? pick('手机麦克风', 'Phone microphone')
@@ -144,7 +149,8 @@ window.detailActiveTab = 'summary';
       notesRoot.replaceChildren();
       liveNotesEditor = createNotesEditor(notesRoot);
       notesRoot.querySelector('.notes-editor').contentEditable = 'false';
-    } else if (scene === 'summary') {
+    }
+    if (scene === 'summary' || tour) {
       const detail = shell.querySelector('#detail-view');
       detail.querySelector('h1').textContent = meeting;
       detail.querySelector('.detail-layout').classList.add('is-summary-mode');
@@ -155,13 +161,37 @@ window.detailActiveTab = 'summary';
         `${renderDetailTabbar()}<div data-detail-panel="summary"></div>`;
       detail.append(detail.querySelector('.detail-actions'));
       detail.querySelector('#player-duration').textContent = '18:24';
-    } else {
+    }
+    if (scene === 'library' || tour) {
       shell.querySelector('#home-eyebrow').textContent = pick('产品', 'Product');
       shell.querySelector('#home-slogan').textContent = pick(
         '所有对话，清晰归档。',
         'Every conversation, clearly organized.',
       );
       shell.querySelector('#workspace-edit').hidden = false;
+    }
+    if (tour) {
+      shell.querySelector('.form-grid').innerHTML = [
+        ['工作区', 'meeting-workspace', pick('产品', 'Product')],
+        ['会议语言', 'meeting-language', pick('中文', 'English')],
+        ['译文目标', 'translation-target', pick('不翻译', 'No translation')],
+        ['识别模型', 'refined-model', 'SenseVoice Small'],
+      ]
+        .map(
+          ([label, name, value]) =>
+            `<label>${t(label)}${flowSelect(name, value, [[value, value]])}</label>`,
+        )
+        .join('');
+      shell.querySelector('#capture-mode-mount').innerHTML = flowSelect('capture-mode', 'both', [
+        ['both', t('麦克风 + 系统音频')],
+        ['mic', t('仅麦克风')],
+        ['system', t('仅系统音频')],
+      ]);
+      shell.querySelector('#mic-device-mount').innerHTML = flowSelect('mic-device', 'default', [
+        ['default', pick('内置麦克风', 'Built-in microphone')],
+      ]);
+      shell.querySelector('#mic-input-label').textContent = t('输入良好');
+      shell.querySelector('#system-input-label').textContent = t('已连接');
     }
   } else {
     stage.innerHTML = `<section class="motion-phone"><header class="motion-phone-header"><strong>${scene === 'phone-offline' ? pick('客户访谈', 'Customer interview') : pick('设计周会', 'Design weekly')}</strong><span class="motion-phone-meta"></span><i>${interfaceIcon('more')}</i></header><div class="motion-phone-tabs"></div><div class="motion-phone-content"></div><div class="motion-phone-sync"></div><footer class="motion-phone-controls"><button>${interfaceIcon('pause')}</button><button class="phone-bookmark">${interfaceIcon('bookmark')}</button><button class="phone-stop">${interfaceIcon('stop')}</button></footer><div class="motion-phone-toast"></div></section>`;
@@ -171,6 +201,21 @@ window.detailActiveTab = 'summary';
   cursor.className = 'motion-cursor';
   cursor.hidden = true;
   stage.append(cursor);
+
+  const shot = ['captions', 'notes'].includes(motionParams.get('shot'))
+    ? motionParams.get('shot')
+    : 'overview';
+  function pointAt(target, approach, click = -1) {
+    if (!target) return;
+    const box = target.getBoundingClientRect();
+    const remaining = (1 - clamp(approach)) ** 3;
+    const x = box.left + box.width * 0.65;
+    const y = box.top + box.height * 0.65;
+    cursor.dataset.clicking = String(click >= 0 && click <= 1);
+    cursor.style.setProperty('--click-progress', clamp(click));
+    const press = click >= 0 && click <= 1 ? 1 - 0.12 * Math.sin(click * Math.PI) : 1;
+    cursor.style.transform = `translate(${x + remaining * 70}px,${y - remaining * 50}px) scale(${press})`;
+  }
 
   function renderLive(time) {
     const seconds = time / 1000;
@@ -216,9 +261,18 @@ window.detailActiveTab = 'summary';
         '[data-ai-suggestion]',
         `<div class="ai-suggestion-card"><div class="ai-suggestion-head"><span class="ai-suggestion-star">${interfaceIcon('ai')}</span><span class="ai-suggestion-type">${t(current.type === 'decision' ? '可能的决策' : '可能的待办')}</span><span class="ai-suggestion-evidence">${t('依据 {count} 段字幕').replace('{count}', '1')}</span></div><p class="ai-suggestion-text">${escapeHtml(current.text)}</p><div class="ai-suggestion-actions"><button class="ai-suggestion-accept${phase > 2.35 ? ' motion-pressed' : ''}" data-ai-accept>${interfaceIcon('plus')} ${t('加入笔记')}</button><button class="ai-suggestion-ignore" data-ai-ignore>${t('忽略')}</button></div></div>`,
       );
-      const box = suggestion.querySelector('[data-ai-accept]').getBoundingClientRect();
-      const approach = (1 - clamp((phase - 0.6) / 1.5)) ** 4;
-      cursor.style.transform = `translate(${box.left + box.width * 0.65 + approach * 55}px,${box.top + box.height * 0.65 - approach * 45}px) scale(${phase > 2.35 ? 0.9 : 1})`;
+      pointAt(
+        suggestion.querySelector('[data-ai-accept]'),
+        (phase - 0.6) / 1.5,
+        phase >= 2.25 ? (phase - 2.25) / 0.45 : -1,
+      );
+    }
+    if (shot === 'captions' && !motionParams.has('capture')) {
+      cursor.hidden = seconds < 1.5 || seconds > 16;
+      pointAt(
+        stage.querySelector('#transcript-scroll .segment:last-child p'),
+        (seconds - 1.5) / 1.2,
+      );
     }
     stage.querySelector('#timer').textContent = `00:${timeText(12 + seconds)}`;
     const transcript = stage.querySelector('#transcript-scroll');
@@ -242,6 +296,9 @@ window.detailActiveTab = 'summary';
     const copy = stage.querySelector('[data-copy-summary]');
     if (copy && seconds >= 16)
       copy.innerHTML = `${interfaceIcon('check')}${pick('已复制', 'Copied')}`;
+    cursor.hidden = seconds < 14.7 || seconds > 17.3;
+    pointAt(copy, (seconds - 14.7) / 1.1, seconds >= 15.9 ? (seconds - 15.9) / 0.6 : -1);
+    copy?.classList.toggle('motion-pressed', seconds >= 15.9 && seconds < 16.3);
     const body = stage.querySelector('.summary-body');
     if (body)
       body.parentElement.scrollTop =
@@ -294,6 +351,16 @@ window.detailActiveTab = 'summary';
     stage.querySelector('.meeting-row').classList.toggle('motion-selected', seconds >= 11);
     const exportAction = menu.querySelector('[data-meeting-action="export"]');
     exportAction.classList.toggle('motion-pressed', seconds >= 14);
+    cursor.hidden = seconds < 2 || seconds > 15.5;
+    if (seconds < 10)
+      pointAt(search, (seconds - 2) / 0.8, seconds >= 2.8 ? (seconds - 2.8) / 0.6 : -1);
+    else if (seconds < 12)
+      pointAt(
+        stage.querySelector('[data-meeting-menu]'),
+        (seconds - 10) / 0.9,
+        seconds >= 11.5 ? (seconds - 11.5) / 0.6 : -1,
+      );
+    else pointAt(exportAction, (seconds - 12) / 1.6, seconds >= 13.9 ? (seconds - 13.9) / 0.6 : -1);
     let toast = stage.querySelector('.motion-export-toast');
     if (!toast) {
       toast = document.createElement('div');
@@ -351,6 +418,12 @@ window.detailActiveTab = 'summary';
     stage
       .querySelector('.phone-bookmark')
       .classList.toggle('motion-pressed', seconds >= 5 && seconds < 6.5);
+    cursor.hidden = seconds < 4 || seconds > 7;
+    pointAt(
+      stage.querySelector('.phone-bookmark'),
+      seconds - 4,
+      seconds >= 5 ? (seconds - 5) / 0.6 : -1,
+    );
     const toast = stage.querySelector('.motion-phone-toast');
     toast.hidden = !(seconds >= 5.2 && seconds < 7.2);
     toast.textContent = pick('已标记重点', 'Highlight saved');
@@ -362,15 +435,71 @@ window.detailActiveTab = 'summary';
         `<span>${interfaceIcon('phone')}<b>${pick('录音保存在本机', 'Audio saved locally')}</b><small>${elapsedLabel}</small></span><span>${interfaceIcon('laptop')}<b>${pick('已传到电脑', 'Sent to computer')}</b><small>${elapsedLabel}</small></span>`,
       );
   }
+  function renderTour(time) {
+    const phase =
+      time < 4500 ? 'home' : time < 13500 ? 'prepare' : time < 38000 ? 'live' : 'summary';
+    const viewId = phase === 'summary' ? 'detail-view' : `${phase}-view`;
+    stage
+      .querySelectorAll('.workspace > .view')
+      .forEach((view) => view.classList.toggle('active', view.id === viewId));
+    stage.querySelector('.app-shell').classList.toggle('is-live-meeting', phase === 'live');
+    stage.dataset.tourPhase = phase;
+    if (phase === 'home') {
+      renderLive(0);
+      renderLibrary(0);
+      cursor.hidden = time < 900;
+      pointAt(
+        stage.querySelector('.new-meeting'),
+        (time - 900) / 1500,
+        time >= 3500 ? (time - 3500) / 600 : -1,
+      );
+    } else if (phase === 'prepare') {
+      const title = stage.querySelector('#meeting-title');
+      title.value = reveal(meeting, (time - 5600) / 1800);
+      const toggle = stage.querySelector('#capture-mode-mount .flow-select-toggle');
+      const options = stage.querySelector('#capture-mode-mount .flow-select-options');
+      const expanded = time >= 9000 && time < 10600;
+      options.hidden = !expanded;
+      toggle.setAttribute('aria-expanded', String(expanded));
+      cursor.hidden = false;
+      if (time < 8400) pointAt(title, (time - 4600) / 900, time >= 5600 ? (time - 5600) / 600 : -1);
+      else if (time < 10000)
+        pointAt(toggle, (time - 8400) / 600, time >= 9000 ? (time - 9000) / 600 : -1);
+      else if (time < 10600)
+        pointAt(
+          options.querySelector('[data-flow-select-choice]'),
+          (time - 10000) / 200,
+          (time - 10300) / 400,
+        );
+      else
+        pointAt(
+          stage.querySelector('#meeting-form .primary-action'),
+          (time - 11000) / 1400,
+          time >= 13000 ? (time - 13000) / 500 : -1,
+        );
+    } else if (phase === 'live') {
+      renderLive(time - 13500);
+      if (time >= 35000) {
+        cursor.hidden = false;
+        pointAt(
+          stage.querySelector('#end-meeting'),
+          (time - 35000) / 1500,
+          time >= 37200 ? (time - 37200) / 600 : -1,
+        );
+      }
+    } else renderSummary(time - 38000);
+  }
   const paint = collaboration
     ? renderCollaboration
-    : scene === 'live'
-      ? renderCapture || renderLive
-      : scene === 'summary'
-        ? renderSummary
-        : scene === 'library'
-          ? renderLibrary
-          : renderPhone;
+    : tour
+      ? renderTour
+      : scene === 'live'
+        ? renderCapture || renderLive
+        : scene === 'summary'
+          ? renderSummary
+          : scene === 'library'
+            ? renderLibrary
+            : renderPhone;
   function renderAt(time) {
     const phase = ((time % duration) + duration) % duration;
     stage.style.opacity = String(

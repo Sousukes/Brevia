@@ -38,6 +38,7 @@
     element.classList.remove('is-ready');
     const source = new URL('./product-motion.html', location.href);
     source.searchParams.set('scene', element.dataset.motionScene);
+    source.searchParams.set('shot', element.dataset.motionShot || 'overview');
     source.searchParams.set('lang', zh ? 'zh' : 'en');
     source.searchParams.set(
       'version',
@@ -152,7 +153,6 @@
   ).observe(software);
   document.addEventListener('visibilitychange', syncSoftware);
   reducedMotion.addEventListener('change', syncSoftware);
-
   document.documentElement.classList.add('has-motion');
 
   const disclosures = [...document.querySelectorAll('.disclosure')];

@@ -12,6 +12,7 @@ html.is-collaboration body {
   background: transparent;
 }
 #motion-stage {
+  position: relative;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
@@ -304,7 +305,7 @@ body.is-phone {
   transform: none;
 }
 
-/* 仅官网演示的镜头放大，不修改正式应用布局。 */
+/* 官网演示的单栏与紧凑布局，不修改正式应用。 */
 body[data-focus]:not([data-focus=""]) #motion-stage .sidebar,
 body.is-compact #motion-stage .sidebar {
   display: none;
@@ -361,12 +362,44 @@ body[data-focus]:not([data-focus=""]) #home-view .meeting-row-title {
   left: 0;
   top: 0;
   z-index: 8;
-  width: 21px;
-  height: 27px;
-  clip-path: polygon(5% 0, 95% 70%, 55% 75%, 40% 100%);
-  background: #0878d1;
-  filter: drop-shadow(1px 3px 2px #211b3240);
+  width: 30px;
+  height: 39px;
+  background: url("./assets/demo-cursor.svg") center / contain no-repeat;
+  filter: drop-shadow(1px 2px 1px #211b3230);
+  transform-origin: 2px 2px;
   pointer-events: none;
+}
+.motion-cursor::after {
+  content: "Brevia";
+  position: absolute;
+  left: 24px;
+  top: 30px;
+  border: 1.5px solid white;
+  border-radius: 4px 6px 5px 4px;
+  background: #0878d1;
+  color: white;
+  font:
+    600 12px/1.4 -apple-system,
+    sans-serif;
+  padding: 3px 8px;
+  transform: rotate(-3deg);
+}
+.motion-cursor::before {
+  content: "";
+  display: none;
+  position: absolute;
+  left: -19px;
+  top: -19px;
+  width: 40px;
+  height: 40px;
+  border: 2.5px solid #0878d1;
+  border-radius: 47% 53% 51% 49%;
+  background: #0878d11a;
+  transform: scale(calc(0.45 + var(--click-progress, 0) * 1.8));
+  opacity: calc(1 - var(--click-progress, 0));
+}
+.motion-cursor[data-clicking="true"]::before {
+  display: block;
 }
 [data-reduced="true"] .motion-cursor {
   display: none;

@@ -15,3 +15,9 @@ Color palette: cobalt #0878d1, cool white, light blue, neutral gray. No purple, 
 Text: none. Paper lines only, no letters.
 Constraints: genuine transparent background with preserved alpha, no logos, no watermark, no photographic microphone, no computer or phone, no extra objects, no borders or enclosing card.
 ```
+
+## 手绘版
+
+[conversation-sketch.webp](conversation-sketch.webp) 为内置 imagegen 生成的原创透明手绘插画，用于官网的声音、笔记与行动流程。画面使用墨线、彩铅纹理、对话气泡、笔记本、便签和铅笔；通过 cwebp 转为 WebP，保留透明通道。它用于概念说明，不代表应用界面。
+
+生成要求：front-facing editorial notebook doodle collage, imperfect double ink contours and colored-pencil texture, cobalt blue, cream paper, warm yellow, orange and sage; speech bubbles flow into a notepad and checked sticky note; no readable text, logos, watermark, enclosing rectangle or 3D rendering; actual transparent background.

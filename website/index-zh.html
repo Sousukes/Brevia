@@ -5,7 +5,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1" /><meta
       name="color-scheme"
-      content="light" /><meta name="theme-color" content="#f8f8f7" /><title
+      content="light" /><meta name="theme-color" content="#fafaf8" /><title
       >言录 Brevia — 专注对话，留下重点。</title
     ><meta
       name="description"
@@ -94,11 +94,17 @@
     ><main id="main">
       <section id="overview" class="hero"
         ><div class="hero-copy container"
+          ><p class="eyebrow hero-eyebrow"><span></span>本地优先的 AI 会议助手</p
           ><h1
-            ><span class="hero-line">转写，笔记，纪要。</span
-            ><span class="hero-line">专注对话，留下<span class="accent">重点。</span></span></h1
+            ><span class="hero-line">专注每一次对话。</span
+            ><span class="hero-line"
+              >让<span class="accent"
+                >重点<svg class="sketch-underline" viewBox="0 0 260 28" aria-hidden="true">
+                  <use href="./sketches.svg#underline" /></svg></span
+              >，自然留下。</span
+            ></h1
           ><p class="lead"
-            >实时转写，AI 整理，电脑与手机协同。<br />把讨论变成下一步，让自己的电脑完成处理。</p
+            >实时转写、AI 笔记、会议纪要，一条思路贯穿始终。<br />让自己的电脑处理，让你专心在场。</p
           ><div class="hero-actions"
             ><a class="button desktop-download" href="#download"
               >免费下载电脑端<svg
@@ -137,28 +143,38 @@
               >
                 <use href="./icons.svg#play" /></svg></a></div
           ><p class="hero-trust"
-            ><svg
-              class="icon "
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.65"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <use href="./icons.svg#code" /></svg
-            >免费开源<i></i>无需账号<i></i>本地优先</p
+            ><span
+              ><svg
+                class="icon "
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.65"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <use href="./icons.svg#code" /></svg
+              >免费开源</span
+            ><span>无需账号</span><span>本地优先</span></p
+          ><div class="hero-annotation" aria-hidden="true"
+            ><svg class="sketch-arrow" viewBox="0 0 100 100" aria-hidden="true">
+              <use href="./sketches.svg#arrow" /></svg
+            ><span>好想法，别漏掉。</span></div
           ></div
         ><figure class="hero-visual container"
+          ><svg class="stage-sticker" viewBox="0 0 100 100" aria-hidden="true">
+            <use href="./sketches.svg#spark" /></svg
+          ><div class="stage-callout" aria-hidden="true"><span>边聊边记，不打断思路。</span></div
           ><div class="hero-window"
             ><div
               class="motion-demo"
-              data-motion-scene="live"
-              data-start="6200"
+              data-motion-scene="tour"
+              data-motion-shot="overview"
+              data-start="0"
               data-hero-demo
               role="img"
-              aria-label="桌面演示：转写与 AI 笔记并排"
+              aria-label="完整演示：新建会议、录音转写、AI 笔记与会议纪要"
               ><img
                 class="motion-poster"
                 src="../docs/assets/screenshots/desktop/zh/live.png"
@@ -166,14 +182,32 @@
                 width="1280"
                 height="800"
                 decoding="async"
-                loading="lazy" /></div></div></figure></section
+                fetchpriority="high" /></div></div
+          ><figcaption class="hero-caption"
+            ><span>听见，理清，然后行动。</span
+            ><a
+              class="text-link"
+              href="../docs/assets/screenshots/desktop/zh/live.png"
+              target="_blank"
+              rel="noopener"
+              >放大查看界面<svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.65"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <use href="./icons.svg#external" /></svg></a></figcaption></figure></section
       ><section class="software-section" aria-labelledby="software-title"
         ><div class="container"
           ><h2 id="software-title">会议、通话、视频，<br />都能留下文字。</h2
           ><p class="software-description"
             >通过系统音频，转写会议软件、浏览器与播放器中的声音；搭配麦克风，收录对话双方。</p
           ></div
-        ><div class="software-wall" tabindex="0" aria-label="音源软件"
+        ><div class="software-wall" tabindex="0" aria-label="音源软件，聚焦或悬停暂停滚动"
           ><div class="software-row"
             ><ul class="software-group"
               ><li class="software-brand brand-zoom"
@@ -207,6 +241,14 @@
                   height="36"
                   loading="lazy"
                 /><span>腾讯会议</span></li
+              ><li class="software-brand brand-feishu"
+                ><img
+                  src="./assets/apps/feishu.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                  loading="lazy"
+                /><span>飞书</span></li
               ><li class="software-brand brand-discord"
                 ><img
                   src="./assets/apps/discord.svg"
@@ -223,18 +265,34 @@
                   height="36"
                   loading="lazy"
                 /><span>Slack</span></li
-              ></ul
-            ></div
-          ><div class="software-row"
-            ><ul class="software-group"
-              ><li class="software-brand brand-feishu"
+              ><li class="software-brand brand-telegram"
                 ><img
-                  src="./assets/apps/feishu.svg"
+                  src="./assets/apps/telegram.svg"
                   alt=""
                   width="36"
                   height="36"
                   loading="lazy"
-                /><span>飞书</span></li
+                /><span>Telegram</span></li
+              ><li class="software-brand brand-whatsapp"
+                ><img
+                  src="./assets/apps/whatsapp.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                  loading="lazy"
+                /><span>WhatsApp</span></li
+              ><li class="software-brand brand-wechat"
+                ><img
+                  src="./assets/apps/wechat.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                  loading="lazy"
+                /><span>微信</span></li
+              ></ul
+            ></div
+          ><div class="software-row"
+            ><ul class="software-group"
               ><li class="software-brand brand-youtube"
                 ><img
                   src="./assets/apps/youtube.svg"
@@ -258,7 +316,7 @@
                   width="36"
                   height="36"
                   loading="lazy"
-                /><span>VLC media player</span></li
+                /><span>VLC</span></li
               ><li class="software-brand brand-googlechrome"
                 ><img
                   src="./assets/apps/googlechrome.svg"
@@ -275,14 +333,92 @@
                   height="36"
                   loading="lazy"
                 /><span>Spotify</span></li
+              ><li class="software-brand brand-twitch"
+                ><img
+                  src="./assets/apps/twitch.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                  loading="lazy"
+                /><span>Twitch</span></li
+              ><li class="software-brand brand-obsstudio"
+                ><img
+                  src="./assets/apps/obsstudio.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                  loading="lazy"
+                /><span>OBS Studio</span></li
+              ><li class="software-brand brand-applepodcasts"
+                ><img
+                  src="./assets/apps/applepodcasts.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                  loading="lazy"
+                /><span>Apple Podcasts</span></li
+              ><li class="software-brand brand-soundcloud"
+                ><img
+                  src="./assets/apps/soundcloud.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                  loading="lazy"
+                /><span>SoundCloud</span></li
+              ><li class="software-brand brand-jitsi"
+                ><img
+                  src="./assets/apps/jitsi.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                  loading="lazy"
+                /><span>Jitsi Meet</span></li
               ></ul
             ></div
           ></div
         ></section
       ><section id="features" class="product-section container" data-nav-section
         ><div class="section-intro"
-          ><h2>不止听见。<br />还能<span class="accent">理清，记住，行动。</span></h2
+          ><p class="eyebrow section-eyebrow">从声音到行动</p
+          ><h2>听见，更要理清。<br /><span class="accent">记住，然后行动。</span></h2
           ><p>从会中到会后，保持同一条思路。<br />少一点切换，多一点专注。</p></div
+        ><nav class="workflow-nav" aria-label="记录流程"
+          ><a href="#transcription"
+            ><span>01</span>实时转写<svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.65"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="./icons.svg#arrow" /></svg></a
+          ><a href="#notes"
+            ><span>02</span>AI 笔记<svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.65"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="./icons.svg#arrow" /></svg></a
+          ><a href="#minutes"
+            ><span>03</span>会议纪要<svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.65"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="./icons.svg#arrow" /></svg></a></nav
         ><div class="workflow-overview">
           <article class="workflow-main"
             ><div class="overview-copy"
@@ -290,7 +426,7 @@
               ><p>录下讨论、跟上转写、留下判断。少一点切换，多一点专注。</p></div
             ><div class="conversation-art" aria-hidden="true"
               ><img
-                src="./assets/illustrations/voice-to-action.webp"
+                src="./assets/illustrations/conversation-sketch.webp"
                 alt=""
                 width="1536"
                 height="1024"
@@ -310,6 +446,7 @@
                     fill="none"
                     stroke="currentColor"
                     stroke-width="1.5"
+                    aria-hidden="true"
                   >
                     <use href="./icons.svg#document" /></svg
                   ><span>产品周会 · 笔记</span></div
@@ -349,6 +486,7 @@
               aria-labelledby="title-transcription"
               data-story-panel="0"
               ><div class="scene-copy"
+                ><span class="scene-label">01 / 实时转写</span
                 ><h3 id="title-transcription">两边的声音，<br />一份清楚的记录。</h3
                 ><p>麦克风与系统音频一起录。发言停顿后，转写接上对话，需要时再打开翻译。</p
                 ><ul
@@ -381,9 +519,13 @@
                   ></ul
                 ></div
               ><div class="scene-visual"
+                ><svg class="stage-sticker" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="./sketches.svg#microphone" /></svg
+                ><div class="stage-callout" aria-hidden="true"><span>每一句，都接得上。</span></div
                 ><div
                   class="motion-demo"
                   data-motion-scene="live"
+                  data-motion-shot="captions"
                   data-start="6200"
                   role="img"
                   aria-label="应用演示：两边的声音，一份清楚的记录。"
@@ -416,6 +558,7 @@
               aria-labelledby="title-notes"
               data-story-panel="1"
               ><div class="scene-copy"
+                ><span class="scene-label">02 / AI 笔记</span
                 ><h3 id="title-notes">AI 帮你理清。<br />你来决定留下什么。</h3
                 ><p
                   >决定、待办、重要数字与未解的问题，从对话中提取。采纳有用的建议，继续写下自己的判断。</p
@@ -449,9 +592,14 @@
                   ></ul
                 ></div
               ><div class="scene-visual"
+                ><svg class="stage-sticker" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="./sketches.svg#pencil" /></svg
+                ><div class="stage-callout" aria-hidden="true"
+                  ><span>有用的建议，由你留下。</span></div
                 ><div
                   class="motion-demo"
                   data-motion-scene="live"
+                  data-motion-shot="notes"
                   data-start="8100"
                   role="img"
                   aria-label="应用演示：AI 帮你理清。你来决定留下什么。"
@@ -484,6 +632,7 @@
               aria-labelledby="title-minutes"
               data-story-panel="2"
               ><div class="scene-copy"
+                ><span class="scene-label">03 / 会议纪要</span
                 ><h3 id="title-minutes">会议结束。<br />下一步，已经清楚。</h3
                 ><p>会后生成可编辑的纪要，整理决定与行动项。使用本地 AI，或接入你选择的在线服务。</p
                 ><ul
@@ -516,6 +665,10 @@
                   ></ul
                 ></div
               ><div class="scene-visual"
+                ><svg class="stage-sticker" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="./sketches.svg#paper" /></svg
+                ><div class="stage-callout" aria-hidden="true"
+                  ><span>会后，下一步已经清楚。</span></div
                 ><div
                   class="motion-demo"
                   data-motion-scene="summary"
@@ -548,7 +701,8 @@
                     /></svg></a></div></article></div></div></section
       ><section id="mobile" class="collaboration-section container" data-nav-section
         ><div class="collaboration-intro"
-          ><h2>先扫码，<br />让手机与电脑连起来。</h2
+          ><p class="eyebrow section-eyebrow">两台设备，同一条思路</p
+          ><h2>手机收音，<br />电脑接着整理。</h2
           ><p
             >第一次配对时，让手机和电脑连接同一网络。<br />在电脑确认后，选择适合当下的记录方式。</p
           ><ol class="pair-setup"
@@ -606,6 +760,9 @@
               ></div
             ></div
           ><figure class="collaboration-visual"
+            ><svg class="stage-sticker" viewBox="0 0 100 100" aria-hidden="true">
+              <use href="./sketches.svg#phone" /></svg
+            ><div class="stage-callout" aria-hidden="true"><span>靠近一点，听清一点。</span></div
             ><div
               class="motion-demo"
               data-motion-scene="pair-microphone"
@@ -636,6 +793,9 @@
               ></div
             ></div
           ><figure class="collaboration-visual"
+            ><svg class="stage-sticker" viewBox="0 0 100 100" aria-hidden="true">
+              <use href="./sketches.svg#phone" /></svg
+            ><div class="stage-callout" aria-hidden="true"><span>文字和笔记，回到手边。</span></div
             ><div
               class="motion-demo"
               data-motion-scene="pair-field"
@@ -668,11 +828,15 @@
               <use href="./icons.svg#download" /></svg></a></div></section
       ><section id="library" class="library-section container" data-nav-section
         ><div class="section-intro"
+          ><p class="eyebrow section-eyebrow">你的会议记忆</p
           ><h2>谈过的事，<br />随时<span class="accent">找得回来。</span></h2
           ><p
             >工作区归类，搜索标题、逐字稿与标签。<br />回听、编辑、导出，让讨论继续发挥作用。</p
           ></div
         ><figure class="library-visual"
+          ><svg class="stage-sticker" viewBox="0 0 100 100" aria-hidden="true">
+            <use href="./sketches.svg#folder" /></svg
+          ><div class="stage-callout" aria-hidden="true"><span>谈过的事，都有迹可循。</span></div
           ><div
             class="motion-demo"
             data-motion-scene="library"
@@ -708,6 +872,7 @@
       <section id="privacy" class="privacy-section" data-nav-section
         ><div class="container"
           ><div class="section-intro"
+            ><p class="eyebrow section-eyebrow">本地优先，自由选择</p
             ><h2>重要的对话，<br />留在<span>自己的掌握里。</span></h2
             ><div
               ><p>语音识别，在自己的电脑上完成。<br />下载所需模型后，本地转写与 AI 可离线使用。</p

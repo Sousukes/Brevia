@@ -309,6 +309,7 @@ app
       win.webContents.debugger.detach();
       for (const locale of ['zh', 'en']) {
         for (const scene of [
+          'tour',
           'live',
           'summary',
           'library',
@@ -332,7 +333,7 @@ app
               productMotion.seek(${time});
               return { text: document.querySelector('#motion-stage').innerText,
                 overflow: document.documentElement.scrollWidth > innerWidth,
-                visible: !document.querySelector('.view') || getComputedStyle(document.querySelector('.view')).opacity === '1',
+                visible: !document.querySelector('.view') || getComputedStyle(document.querySelector('.view.active')).opacity === '1',
                 segments: document.querySelectorAll('.segment').length,
                 notes: document.querySelectorAll('.notes-editor li').length,
                 rows: document.querySelectorAll('.meeting-row').length,
@@ -348,7 +349,7 @@ app
             );
           }
           states.forEach((state) => {
-            assert.equal(state.overflow, false);
+            assert.equal(state.overflow, false, `${locale}/${scene}: motion viewport overflow`);
             assert.equal(state.visible, true);
             assert.equal(
               state.summaryWide,
@@ -361,6 +362,29 @@ app
             states[1].text,
             `${locale}/${scene}: no functional motion`,
           );
+          if (scene === 'tour') {
+            const flow = await win.webContents.executeJavaScript(`(() => {
+              const states = [2000, 7000, 9500, 28000, 56000, 62000].map(time => {
+                productMotion.seek(time);
+                return {phase: document.querySelector('#motion-stage').dataset.tourPhase,
+                  title: document.querySelector('#meeting-title').value,
+                  options: !document.querySelector('#capture-mode-mount .flow-select-options').hidden,
+                  notes: document.querySelectorAll('.notes-editor li').length,
+                  summary: document.querySelector('.summary-body')?.innerText};
+              });
+              return {duration:productMotion.duration, states};
+            })()`);
+            assert.equal(flow.duration, 60000);
+            assert.deepEqual(
+              flow.states.map((state) => state.phase),
+              ['home', 'prepare', 'prepare', 'live', 'summary', 'home'],
+            );
+            assert.ok(flow.states[1].title.length > 0, 'Tour types the meeting title');
+            assert.equal(flow.states[2].options, true, 'Tour demonstrates the audio source');
+            assert.ok(flow.states[3].notes >= 3, 'Tour accepts AI notes during recording');
+            assert.ok(flow.states[4].summary.includes(locale === 'zh' ? '行动项' : 'Action items'));
+            assert.equal(flow.states[5].notes, 0, 'Tour resets notes when the next meeting starts');
+          }
           if (scene === 'live') {
             assert.equal(states[2].segments, 5);
             assert.equal(states[2].notes, 3);
@@ -374,6 +398,39 @@ app
             assert.equal(acceptance.headings, 0);
             assert.equal(acceptance.flying, 0);
           }
+          if (scene === 'tour') {
+            const choreography = await win.webContents.executeJavaScript(`(() => {
+              const at = 18900;
+              const cursor = document.querySelector('.motion-cursor');
+              productMotion.seek(at);
+              const first = cursor.style.transform;
+              const clicking = cursor.dataset.clicking === 'true' && getComputedStyle(cursor, '::before').display === 'block';
+              const target = document.querySelector('[data-ai-accept]');
+              const pointer = cursor.getBoundingClientRect(), button = target.getBoundingClientRect();
+              const hitsTarget = pointer.left >= button.left - 1 && pointer.left <= button.right + 1 && pointer.top >= button.top - 1 && pointer.top <= button.bottom + 1;
+              productMotion.seek(2000);
+              productMotion.seek(at);
+              return {first, repeated: cursor.style.transform, clicking, hitsTarget};
+            })()`);
+            assert.equal(
+              choreography.first,
+              choreography.repeated,
+              'Cursor seeks deterministically',
+            );
+            assert.equal(choreography.clicking, true, `${locale}/${scene}: click ripple missing`);
+            assert.equal(
+              choreography.hitsTarget,
+              true,
+              `${locale}/${scene}: cursor misses its target`,
+            );
+          }
+          assert.equal(
+            await win.webContents.executeJavaScript(
+              "document.querySelector('.motion-camera') === null",
+            ),
+            true,
+            `${locale}/${scene}: demos must not zoom or pan`,
+          );
           if (scene === 'summary') {
             assert.ok(states[2].summary.length > states[0].summary.length);
             assert.ok(states[2].summary.includes(locale === 'zh' ? '行动项' : 'Action items'));
@@ -446,7 +503,7 @@ app
         throw Error(`Player did not load: ${selector}`);
       }
       for (const locale of ['zh', 'en']) {
-        for (const width of [320, 390, 696, 768, 1024, 1440]) {
+        for (const width of [320, 375, 390, 696, 768, 1024, 1280, 1440]) {
           win.setContentSize(width, 900);
           await loadHome(locale);
           await win.webContents.executeJavaScript(`(async () => {
@@ -465,7 +522,7 @@ app
             sticky: getComputedStyle(document.querySelector('.site-header')).position,
             featureSections: [...document.querySelectorAll('[data-story-panel]')].every(panel => panel.getBoundingClientRect().height > 0 && !panel.hasAttribute('aria-hidden')),
             softwareBrands: document.querySelectorAll('.software-group:not([aria-hidden]) .software-brand').length,
-            icons: [...document.querySelectorAll('use')].every(use => use.getAttribute('href').startsWith('./icons.svg#')),
+            icons: [...document.querySelectorAll('use')].every(use => ['./icons.svg#', './sketches.svg#'].some(prefix => use.getAttribute('href').startsWith(prefix))),
             qrWidths: [...document.querySelectorAll('.qr-link img')].map(img=>img.getBoundingClientRect().width),
             mobileFirst: getComputedStyle(document.querySelector('#mobile-download')).order,
           })`);
@@ -512,6 +569,21 @@ app
             'Privacy section includes the real model library',
           );
           assert.equal(page.featureSections, true);
+          if (width >= 1000) {
+            const splitLayout = await win.webContents
+              .executeJavaScript(`['#transcription','#notes','#minutes','#mobile-microphone','#mobile-field','#library'].every(selector => {
+              const panel = document.querySelector(selector);
+              const copy = panel.querySelector('.scene-copy,.collaboration-copy,.section-intro').getBoundingClientRect();
+              const visual = panel.querySelector('.scene-visual,.collaboration-visual,.library-visual').getBoundingClientRect();
+              return visual.left > copy.right && Math.min(copy.bottom, visual.bottom) > Math.max(copy.top, visual.top);
+            })`);
+            assert.equal(
+              splitLayout,
+              true,
+              `${locale}/${width}: feature text must sit left of its application window`,
+            );
+          }
+
           const artwork = await win.webContents.executeJavaScript(`(() => {
             const image = document.querySelector('.privacy-app');
             const parent = image.closest('.privacy-local').getBoundingClientRect();
@@ -529,7 +601,7 @@ app
           );
           assert.equal(artwork.note, true);
 
-          assert.equal(page.softwareBrands, 12);
+          assert.equal(page.softwareBrands, 20);
           assert.equal(page.icons, true);
           assert.deepEqual(page.missingAnchors, []);
           assert.ok(page.downloads.some((url) => url.endsWith('.dmg')));
@@ -604,6 +676,9 @@ app
               );
               assert.equal(effect.cursor, true);
               assert.ok(effect.suggestion.includes(locale === 'zh' ? '周四' : 'Thursday'));
+              await win.webContents.executeJavaScript(
+                "document.querySelector('#notes iframe').contentWindow.productMotion.seek(9400)",
+              );
             }
             if ([390, 1440].includes(width))
               writeFileSync(
@@ -678,7 +753,30 @@ app
           await win.webContents.executeJavaScript(
             "delete document.hidden;document.dispatchEvent(new Event('visibilitychange'))",
           );
+          const navigation = await win.webContents.executeJavaScript(`(() => {
+            const links = [...document.querySelectorAll('.workflow-nav a')];
+            return {
+              destinations: links.map(link => link.hash),
+              readable: links.every(link => link.scrollWidth <= link.clientWidth && link.clientHeight >= 44),
+              heroPreview: !!document.querySelector('.hero-caption a[target="_blank"]'),
+              headingsFit: [...document.querySelectorAll('h1,h2,h3')].every(heading => heading.scrollWidth <= heading.clientWidth),
+              trustLabelsFit: [...document.querySelectorAll('.hero-trust > span')].every(label => label.scrollWidth <= label.clientWidth && getComputedStyle(label).whiteSpace === 'nowrap'),
+              featureHeadingLines: document.querySelector('#features h2').clientHeight / parseFloat(getComputedStyle(document.querySelector('#features h2')).lineHeight),
+            };
+          })()`);
+          assert.deepEqual(navigation.destinations, ['#transcription', '#notes', '#minutes']);
+          assert.equal(navigation.readable, true, `${locale}/${width}: workflow labels clipped`);
+          assert.equal(navigation.heroPreview, true, 'Hero interface can be opened at full size');
+          assert.equal(navigation.headingsFit, true, `${locale}/${width}: heading clipped`);
+          assert.equal(navigation.trustLabelsFit, true, `${locale}/${width}: trust label split`);
+          if (locale === 'zh')
+            assert.ok(
+              navigation.featureHeadingLines <= 2.1,
+              `${width}: Chinese feature heading breaks mid-phrase`,
+            );
           for (const target of [
+            'features',
+            'software-title',
             'mobile',
             'mobile-microphone',
             'mobile-field',
@@ -771,6 +869,20 @@ app
       win.setContentSize(1440, 900);
       await loadHome('zh');
       await waitForPlayer('.hero-visual');
+      const initialTransform = await win.webContents.executeJavaScript(
+        "getComputedStyle(document.querySelector('.hero-window')).transform",
+      );
+      await win.webContents.executeJavaScript(
+        "scrollTo({top:document.querySelector('.hero-visual').offsetTop - document.querySelector('.site-header').offsetHeight - 24,behavior:'instant'})",
+      );
+      await wait(80);
+      const scrolledTransform = await win.webContents.executeJavaScript(
+        "getComputedStyle(document.querySelector('.hero-window')).transform",
+      );
+      assert.equal(initialTransform, 'none');
+      assert.equal(scrolledTransform, 'none', 'Scrolling must not zoom the hero');
+      await win.webContents.executeJavaScript("scrollTo({top:0,behavior:'instant'})");
+      await wait(80);
       await win.webContents.executeJavaScript(
         "const player=document.querySelector('.hero-visual iframe').contentWindow.productMotion;player.seek(player.duration-600)",
       );

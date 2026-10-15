@@ -158,6 +158,8 @@ window.createCaptureDemo = (stage, shell, template, locale, renderLive) => {
         const progress = Math.min(1, (time - start) / 650);
         const ease = (1 - progress) ** 4;
         cursor.style.transform = `translate(${box.left + box.width * 0.7 + ease * 50}px,${box.top + box.height * 0.65 - ease * 35}px)`;
+        cursor.dataset.clicking = String(progress > 0.85);
+        cursor.style.setProperty('--click-progress', Math.max(0, (progress - 0.85) / 0.15));
         button.classList.toggle('motion-pressed', progress > 0.9);
       }
     }
@@ -379,6 +381,9 @@ window.createCollaborationScene = async (stage, scene, locale) => {
         (1 - Math.min(1, (seconds - (scanningTap ? 0.4 : 1.5)) / (scanningTap ? 0.6 : 1.2))) ** 4;
       get('.collab-pointer').style.transform =
         `translate(${box.left + box.width * 0.75 + approach * 30}px,${box.top + box.height * 0.65 - approach * 40}px)`;
+      const click = (seconds - (scanningTap ? 1 : 2.7)) / 0.45;
+      get('.collab-pointer').dataset.clicking = String(click >= 0 && click <= 1);
+      get('.collab-pointer').style.setProperty('--click-progress', Math.max(0, Math.min(1, click)));
       button.classList.toggle('motion-pressed', scanningTap ? time >= 1000 : seconds >= 2.7);
     }
   };
