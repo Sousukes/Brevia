@@ -25,7 +25,7 @@
 
 Mit dem Smartphone scannen und herunterladen.
 
-Stand 15. Oktober 2026: Desktop v1.4.0, Android 1.0.1 und iOS 1.0.0. Die Smartphone-Bilder zeigen die neue Oberfläche 1.0.1; das iOS-Update ist noch nicht öffentlich.
+Stand 15. Oktober 2026: Desktop v1.4.1, Android 1.0.1 und iOS 1.0.0. Die Smartphone-Bilder zeigen die neue Oberfläche 1.0.1; das iOS-Update ist noch nicht öffentlich.
 
 ## Neu in v1.4
 
