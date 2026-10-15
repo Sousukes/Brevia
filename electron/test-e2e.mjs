@@ -319,6 +319,10 @@ try {
   await client.send('Runtime.enable');
   await client.send('Log.enable');
   await client.send('Page.enable');
+  // 普通动画用例不继承 runner 的无障碍偏好；减少动态效果在下方单独验证。
+  await client.send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }],
+  });
 
   let timeoutChecked = false;
   try {
@@ -1407,7 +1411,9 @@ try {
     returnByValue: true,
   });
   check(reducedOnboardingMotion.result?.value === true, '引导减少动态：不自动播放且波形静止');
-  await client.send('Emulation.setEmulatedMedia', { features: [] });
+  await client.send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }],
+  });
   const onboardingFit = await client.send('Runtime.evaluate', {
     expression: `(async()=>{
       const errors=[];

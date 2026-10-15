@@ -445,6 +445,7 @@ const exportIds = [
   '7b7d84f6-6f54-49d8-8c44-99f59cd98a02',
   '7b7d84f6-6f54-49d8-8c44-99f59cd98a03',
 ];
+const exportDirectory = path.join(tmpdir(), 'brevia-exports');
 let batchExportHandler;
 let exportCanceled = false;
 const exportCopies = [];
@@ -460,9 +461,11 @@ runInNewContext(
     handleIpc: (_, handler) => {
       batchExportHandler = handler;
     },
-    dialog: { showOpenDialog: async () => ({ canceled: exportCanceled, filePaths: ['/exports'] }) },
+    dialog: {
+      showOpenDialog: async () => ({ canceled: exportCanceled, filePaths: [exportDirectory] }),
+    },
     existsSync: (file) =>
-      file === '/exports/transcript.md' ||
+      file === path.join(exportDirectory, 'transcript.md') ||
       exportCopies.some(({ destination }) => destination === file),
     prepareExport: async (payload) => {
       exportPrepared.push(payload);
@@ -479,7 +482,10 @@ const exportResult = JSON.parse(
 );
 assert.equal(exportPrepared.length, 3, '单项失败不阻止后续导出');
 assert.equal(exportResult.format, 'md');
-assert.deepEqual(exportResult.paths, ['/exports/transcript-2.md', '/exports/transcript-3.md']);
+assert.deepEqual(
+  exportResult.paths,
+  ['transcript-2.md', 'transcript-3.md'].map((name) => path.join(exportDirectory, name)),
+);
 assert.deepEqual(
   exportResult.results.map(({ meeting_id, error }) => ({ meeting_id, error })),
   exportIds.map((meeting_id, i) => ({
