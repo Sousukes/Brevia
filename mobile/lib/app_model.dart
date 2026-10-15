@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -49,6 +50,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> releaseEngines() async {
+    await setCapturePreview(false);
     final current = engine;
     if (current != null) {
       await current.dispose();
@@ -63,6 +65,60 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
 
   bool serviceRunning = false, refreshing = false, busy = false;
   bool foreground = true, checkingDesktop = false;
+  AudioRecorder? capturePreview;
+  StreamSubscription<Uint8List>? previewAudio;
+  double? previewLevel;
+  Future<void> previewChanges = Future.value();
+
+  Future<void> setCapturePreview(bool enabled) {
+    final change = previewChanges.then((_) async {
+      final wanted =
+          enabled &&
+          foreground &&
+          !busy &&
+          !disposed &&
+          engine == null &&
+          !serviceRunning;
+      if (wanted == (capturePreview != null)) return;
+      final previous = capturePreview;
+      capturePreview = null;
+      previewLevel = null;
+      await previewAudio?.cancel();
+      previewAudio = null;
+      await previous?.dispose();
+      if (!wanted) return;
+      final recorder = AudioRecorder();
+      try {
+        // 试音不弹权限框；正式开始录音仍走已有的权限确认。
+        if (!await recorder.hasPermission(request: false)) {
+          await recorder.dispose();
+          return;
+        }
+        final stream = await recorder.startStream(
+          RecordConfig(
+            encoder: AudioEncoder.pcm16bits,
+            sampleRate: 16000,
+            numChannels: 1,
+            streamBufferSize: 3200,
+            androidConfig: AndroidRecordConfig(manageBluetooth: false),
+          ),
+        );
+        capturePreview = recorder;
+        previewAudio = stream.listen(
+          (bytes) => previewLevel = pcmLevel(bytes),
+          onError: (Object _) => unawaited(setCapturePreview(false)),
+          onDone: () => unawaited(setCapturePreview(false)),
+        );
+      } catch (_) {
+        await recorder.dispose();
+      }
+    });
+    previewChanges = change.catchError(
+      (Object e) => debugPrint('Microphone preview unavailable: $e'),
+    );
+    return previewChanges;
+  }
+
   String? error;
   String appearance = 'system';
   bool desktopOnline = false;
@@ -169,8 +225,12 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
     if (disposed) return;
     unawaited(refresh());
     if (desktop == null) unawaited(discover());
-    timer = Timer.periodic(Duration(seconds: 2), (_) {
+    timer = Timer.periodic(Duration(milliseconds: 250), (tick) {
       if (foreground) {
+        if (tick.tick % 8 != 0) {
+          if (capturePreview != null) unawaited(refresh());
+          return;
+        }
         if (serviceRunning) {
           unawaited(
             sendCommand({'action': 'reconnect'}).catchError((Object _) {}),
@@ -212,7 +272,12 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     foreground = state == AppLifecycleState.resumed;
-    if (foreground) unawaited(refresh());
+    if (foreground) {
+      unawaited(refresh());
+    } else {
+      unawaited(setCapturePreview(false));
+    }
+    notifyListeners();
   }
 
   Future<void> refresh({bool localOnly = false}) async {
@@ -221,15 +286,74 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
     if (!localOnly && desktop != null && !serviceRunning && engine == null) {
       final connection = desktop!;
       checkingDesktop = true;
+      Map<String, dynamic>? captureRequest;
       try {
         await connection.call('GET', '/meetings');
         if (desktop == connection) desktopOnline = true;
+        try {
+          final capture = await connection.call('POST', '/capture', {
+            'available':
+                foreground &&
+                !serviceRunning &&
+                engine == null &&
+                !meetings.any((m) => m['state'] != 'ended'),
+            'level': previewLevel,
+          });
+          if (capture['request'] is Map) {
+            captureRequest = Map<String, dynamic>.from(capture['request']);
+          }
+          await setCapturePreview(
+            capture['preview'] == true && captureRequest == null,
+          );
+        } catch (_) {
+          await setCapturePreview(false);
+          // 旧版电脑没有手机麦克风接口，仍保留原来的手机会议流程。
+        }
       } catch (_) {
+        await setCapturePreview(false);
         if (desktop == connection) desktopOnline = false;
       } finally {
         checkingDesktop = false;
       }
       if (disposed || busy || desktop != connection) return;
+      if (captureRequest != null && foreground) {
+        try {
+          final request = captureRequest;
+          await start(
+            request['title'],
+            desktopRequest: request,
+            settings: {
+              for (final key in [
+                'language',
+                'num_speakers',
+                'target_language',
+                'workspace_id',
+                'refined_model_id',
+                'speaker_segmentation_model_id',
+                'vad_model_id',
+              ])
+                if (request[key] != null) key: request[key],
+            },
+          );
+        } catch (e) {
+          error = e.toString();
+          try {
+            await connection.call(
+              'POST',
+              '/meetings/${captureRequest['id']}/state',
+              {
+                'state': 'interrupted',
+                'error': tr('手机未能开始录音，请打开手机 Brevia 后重试'),
+              },
+            );
+          } catch (_) {
+            // 桌面开始请求有超时兜底，连接失败不会无限等待。
+          }
+        }
+        notifyListeners();
+        return;
+      }
+      if (capturePreview != null) return;
     }
     refreshing = true;
     try {
@@ -389,6 +513,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
     String? existing,
     bool offline = false,
     Map<String, dynamic> settings = const {},
+    Map<String, dynamic>? desktopRequest,
   }) async {
     if (busy ||
         serviceRunning ||
@@ -401,6 +526,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
     busy = true;
     notifyListeners();
     try {
+      await setCapturePreview(false);
       while (refreshing) {
         await Future<void>.delayed(Duration(milliseconds: 50));
       }
@@ -414,7 +540,10 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
       await engine?.dispose();
       engine = null;
       final root = await recordingsRoot();
-      final id = existing ?? Uuid().v4();
+      final id = existing ?? desktopRequest?['id'] ?? Uuid().v4();
+      if (!RegExp(r'^[a-f0-9-]{36}$').hasMatch(id)) {
+        throw FormatException(tr('无效会议'));
+      }
       final directory = await Directory(
         '${root.path}/$id',
       ).create(recursive: true);
@@ -436,6 +565,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
           'created': DateTime.now().toIso8601String(),
           'computer': offline ? null : desktop!.fingerprint,
           'localOnly': offline,
+          if (desktopRequest != null) 'desktopCapture': true,
           'state': 'starting',
           ...settings,
           'language': settings['language'] ?? 'zh',
@@ -448,7 +578,16 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
           ...settings,
           'language': settings['language'] ?? 'zh',
         };
-        if (!offline) await desktop!.call('POST', '/prepare', request);
+        if (desktopRequest != null) {
+          final snapshot = await desktop!.call('GET', '/meetings/$id/snapshot');
+          if (snapshot['desktopCapture'] != true ||
+              snapshot['stopRequested'] == true ||
+              snapshot['ended'] == true) {
+            throw StateError(tr('这场录音已经结束'));
+          }
+        } else if (!offline) {
+          await desktop!.call('POST', '/prepare', request);
+        }
         await store.save();
         if (!offline) await desktop!.call('POST', '/meetings', request);
       }
@@ -670,6 +809,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
     }
     busy = true;
     try {
+      await setCapturePreview(false);
       while (refreshing) {
         await Future<void>.delayed(Duration(milliseconds: 50));
       }

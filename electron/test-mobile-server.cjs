@@ -25,7 +25,12 @@ const { MobileServer } = require('./mobile-server');
     request: async (type, payload) => {
       commands.push(type);
       if (type === 'meeting.get')
-        return { notes: 'notes from PC', segments: [], audio: '/private/path' };
+        return {
+          notes: 'notes from PC',
+          segments: [{ text: 'private transcript' }],
+          summary: { text: 'private summary' },
+          audio: '/private/path',
+        };
       deliveries.push(payload);
       return { id: payload.meeting_id };
     },
@@ -306,6 +311,110 @@ const { MobileServer } = require('./mobile-server');
       200,
     );
     assert.equal(server.sessions.get(id).workspace_id, null);
+    // 桌面发起的会议只向选定手机下发采集指令，不回传逐字稿或笔记。
+    await assert.rejects(server.startCapture(linked.body.deviceId, session), /打开 Brevia/);
+    assert.equal((await call('POST', '/capture', { available: true })).status, 401);
+    assert.equal((await call('POST', '/capture', { available: true }, token)).body.request, null);
+    assert.equal(server.status().devices[0].captureReady, true);
+    // 只有所选手机试音，电平不能跨设备或在租约过期后继续显示。
+    assert.equal(server.previewCapture(linked.body.deviceId).level, null);
+    const preview = await call('POST', '/capture', { available: true, level: 0.4 }, token);
+    assert.equal(preview.body.preview, true);
+    assert.equal(server.previewCapture(linked.body.deviceId).level, 0.4);
+    assert.equal(
+      (await call('POST', '/capture', { available: true, level: 0.9 }, second.body.token)).body
+        .preview,
+      false,
+    );
+    assert.equal(server.previewCapture(linked.body.deviceId).level, 0.4);
+    assert.equal(
+      (await call('POST', '/capture', { available: true, level: 2 }, token)).status,
+      400,
+    );
+    server.captureLevels.get(linked.body.deviceId).at = Date.now() - 1001;
+    assert.equal(server.previewCapture(linked.body.deviceId).level, null);
+    server.capturePreview.expires = Date.now() - 1;
+    assert.equal((await call('POST', '/capture', { available: true }, token)).body.preview, false);
+    server.previewCapture(linked.body.deviceId);
+    const captured = await server.startCapture(linked.body.deviceId, session);
+    const captureId = captured.id;
+    assert.notEqual(captureId, id);
+    await assert.rejects(server.startCapture(linked.body.deviceId, session), /未完成/);
+    const instruction = (await call('POST', '/capture', { available: true }, token)).body.request;
+    assert.equal(instruction.id, captureId);
+    assert.equal(instruction.refined_model_id, session.refined_model_id);
+    assert.equal(instruction.desktopCapture, true);
+    assert.equal((await call('POST', '/capture', { available: true }, token)).body.preview, false);
+    server.previewCapture(null);
+    assert.equal(
+      (await call('POST', '/capture', { available: true }, second.body.token)).body.request,
+      null,
+    );
+    assert.equal(
+      (await call('GET', `/meetings/${captureId}/snapshot`, null, second.body.token)).status,
+      404,
+    );
+    assert.equal(
+      (await call('POST', '/meetings', { ...session, id: captureId }, token)).status,
+      200,
+    );
+    await call('POST', `/meetings/${captureId}/state`, { state: 'recording' }, token);
+    assert.equal((await call('POST', '/capture', { available: true }, token)).body.request, null);
+    await server.pauseCapture(captureId, true);
+    let captureSnapshot = (await call('GET', `/meetings/${captureId}/snapshot`, null, token)).body;
+    assert.equal(captureSnapshot.desiredState, 'paused');
+    assert.equal(captureSnapshot.controlVersion, 1);
+    assert.equal(captureSnapshot.notes, '');
+    assert.deepEqual(captureSnapshot.segments, []);
+    assert.equal(captureSnapshot.summary, null);
+    assert.equal((await call('POST', `/meetings/${captureId}/action`, task, token)).status, 403);
+    await server.pauseCapture(captureId, false);
+    captureSnapshot = (await call('GET', `/meetings/${captureId}/snapshot`, null, token)).body;
+    assert.equal(captureSnapshot.controlVersion, 2);
+    assert.equal(captureSnapshot.desiredState, 'recording');
+    await call('PUT', `/meetings/${captureId}/chunks`, chunk, token);
+    await server.requestStop(captureId);
+    await assert.rejects(server.pauseCapture(captureId, true), /不可控制/);
+    await call('POST', `/meetings/${captureId}/end`, { count: 1, samples: 2 }, token);
+    await server.drain();
+    await server.drain();
+    assert.equal(server.sessions.get(captureId).finished, true);
+    assert.equal(
+      deliveries.find((v) => v.meeting_id === captureId && v.action === 'start').desktop_capture,
+      true,
+    );
+    const expired = await server.startCapture(linked.body.deviceId, session);
+    server.sessions.get(expired.id).captureExpires = Date.now() - 1;
+    assert.equal((await call('POST', '/capture', { available: true }, token)).body.request, null);
+    await server.drain();
+    assert.equal(server.sessions.get(expired.id).finished, true);
+    assert.equal(server.sessions.get(expired.id).stopRequested, true);
+    const failedCapture = await server.startCapture(linked.body.deviceId, session);
+    await call(
+      'POST',
+      `/meetings/${failedCapture.id}/state`,
+      { state: 'interrupted', error: 'microphone denied' },
+      token,
+    );
+    await server.drain();
+    assert.equal(server.sessions.get(failedCapture.id).finished, true);
+    const cancelled = await server.startCapture(linked.body.deviceId, session);
+    await server.requestStop(cancelled.id);
+    assert.equal((await call('POST', '/capture', { available: true }, token)).body.request, null);
+    await server.finishReceived(cancelled.id);
+    await server.drain();
+    await call('POST', '/capture', { available: false }, token);
+    await assert.rejects(server.startCapture(linked.body.deviceId, session), /打开 Brevia/);
+    await call('POST', '/capture', { available: true }, token);
+    const interruptedStart = await server.startCapture(linked.body.deviceId, session);
+    await server.disable();
+    server = new MobileServer(options);
+    await server.init();
+    await server.enable();
+    clearInterval(server.timer);
+    assert.equal((await call('POST', '/capture', { available: true }, token)).body.request, null);
+    await server.drain();
+    assert.equal(server.sessions.get(interruptedStart.id).finished, true);
     const resumedId = randomUUID();
     await call('POST', '/meetings', { ...session, id: resumedId }, token);
     await call('PUT', `/meetings/${resumedId}/chunks`, chunk, token);

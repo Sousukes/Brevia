@@ -296,8 +296,7 @@
   var appShell = root.querySelector('.app-shell');
   function applyScale() {
     if (!viewport || !appShell) return;
-    var rect = viewport.getBoundingClientRect();
-    var scale = Math.min(rect.width / 1200, rect.height / 750, 1);
+    var scale = Math.min(viewport.clientWidth / 1200, viewport.clientHeight / 750, 1);
     appShell.style.transform = 'scale(' + scale + ')';
     appShell.style.transformOrigin = 'top left';
   }

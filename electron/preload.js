@@ -32,6 +32,9 @@ ipcRenderer.on('brevia:event', (_, event) => {
 contextBridge.exposeInMainWorld('brevia', {
   platform: process.platform,
   mobile: {
+    startCapture: invoke('mobile.start-capture'),
+    pauseCapture: invoke('mobile.pause-capture'),
+    previewCapture: invoke('mobile.preview-capture'),
     stop: invoke('mobile.stop'),
     finishReceived: invoke('mobile.finish-received'),
     approve: invoke('mobile.approve'),

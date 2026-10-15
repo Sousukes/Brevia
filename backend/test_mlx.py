@@ -8,7 +8,7 @@ import unittest
 import weakref
 import wave
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 
@@ -260,18 +260,29 @@ class MLXContractTest(unittest.TestCase):
 
         worker = object.__new__(Worker)
         worker.vad = self.vad
+        worker.store = Mock()
+        worker.store.save_segment.return_value = True
+        worker.emit = Mock()
         worker.pending_paragraphs = {}
-        worker.pending_subtitles = {'mic': dict(end_ms=8000, text='这个方案是。')}
+        worker.pending_subtitles = {
+            'mic': dict(end_ms=8000, text='这个方案是。', track='mic', meeting_id='test')
+        }
         worker.pending_join = {'mic': None}
-        with patch.object(worker, '_emit_subtitle') as emit:
+        with patch.object(worker, '_emit_subtitle', wraps=worker._emit_subtitle) as emit:
             # Twenty seconds of uninterrupted audio plus decoding allowance:
             # the old fallback (12 s) finalized this tail before its successor.
             worker._flush_subtitle_tails(29000)
             emit.assert_not_called()
+            worker.store.save_segment.assert_not_called()
             worker._flush_subtitle_tails(31000)
             emit.assert_called_once()
+            worker.store.save_segment.assert_called_once_with(emit.call_args.args[0])
             self.assertEqual(worker.pending_subtitles, {})
             self.assertEqual(worker.pending_join, {})
+            worker.emit.assert_any_call('transcript.final', emit.call_args.args[0])
+            worker.emit.assert_any_call('transcript.settled', emit.call_args.args[0])
+            draft = worker.emit.call_args_list[0].args
+            self.assertEqual((draft[0], draft[1]['text']), ('transcript.draft', ''))
 
     def test_silence_does_not_grow_or_transcribe(self):
         for i in range(30):

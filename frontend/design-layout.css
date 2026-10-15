@@ -784,8 +784,12 @@ html[data-theme="dark"] {
 }
 .capture-source-list [role="radio"] > span {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .capture-source-list [role="radio"] i {
+  flex: 0 0 16px;
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -874,6 +878,26 @@ html[data-theme="dark"] {
 }
 
 /* 共用 AI 服务配置表面；引导的紧凑尺寸在对应上下文中校准。 */
+.modal-backdrop:is(.summary-model-modal, .ai-assist-modal):not(.settings-page) {
+  overflow: clip;
+}
+.modal-backdrop:is(.summary-model-modal, .ai-assist-modal):not(.settings-page) > .modal-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+}
+.modal-backdrop:is(.summary-model-modal, .ai-assist-modal):not(.settings-page) .modal-head {
+  flex: none;
+}
+.modal-backdrop:is(.summary-model-modal, .ai-assist-modal):not(.settings-page) .modal-body {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .summary-model-modal:not(.settings-page) .modal-panel {
   max-width: 660px;
   border-radius: 12px;
@@ -1711,6 +1735,9 @@ html[data-theme="dark"] .summary-enabled-control input[type="checkbox"]:checked:
   gap: 24px;
   font-size: 16px;
 }
+.settings-page .model-picker {
+  margin-top: 0;
+}
 .settings-page .model-picker-intro,
 .settings-page .model-picker-foot {
   margin-left: 176px;
@@ -2047,9 +2074,6 @@ html[data-theme] .processing-bar {
   font-size: 14px;
   line-height: 1.6;
   margin-top: 6px;
-}
-.storage-cleanup {
-  margin: 24px 0;
 }
 .about-version {
   display: flex;
@@ -2713,7 +2737,7 @@ html[data-theme] .processing-bar {
 }
 .settings-page .model-picker-intro {
   font-size: 14px;
-  margin-block: 16px;
+  margin-block: 8px;
 }
 @media (max-width: 850px) {
   #detail-view .player.floating-control-bar {
@@ -3184,12 +3208,6 @@ html[data-theme] .processing-bar {
   font-style: normal;
   color: var(--color-text-muted);
 }
-.onboarding-model-card .asr-meters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
 .onboarding-model-card .asr-badge {
   font-size: 13px;
   padding: 2px 8px;
@@ -3202,10 +3220,6 @@ html[data-theme] .processing-bar {
   border-radius: 999px;
   background: var(--color-selected);
   color: var(--color-text);
-}
-.onboarding-model-card .asr-meter {
-  padding-left: 12px;
-  border-left: 1px solid var(--color-line);
 }
 
 .onboarding-bundled {
@@ -3540,18 +3554,6 @@ html[data-theme] .processing-bar {
   color: var(--color-text);
   font-size: 18px;
   font-variant-numeric: tabular-nums;
-}
-.mobile-pair-hint {
-  display: flex;
-  align-items: start;
-  gap: 8px;
-  color: var(--color-text-muted);
-  font-size: 14px;
-  line-height: 1.6;
-}
-.mobile-pair-hint .interface-icon {
-  width: 20px;
-  height: 20px;
 }
 #mobile-approval:not(:empty) {
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -4040,16 +4042,20 @@ textarea,
   font-weight: 600;
 }
 .capture-source-list .flow-select-options button small {
-  display: none;
-}
-.capture-source-list .flow-select-options button:first-child small {
   display: block;
 }
-.capture-source-list .flow-select-options button:first-child {
-  order: 0;
-  min-height: 56px;
-  padding-block: 10px;
-  font-size: 16px;
+.capture-source-list .flow-select-options button b {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+.capture-phone-count {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+  font-style: normal;
 }
 .capture-source-list .flow-select-options {
   position: static;
@@ -4064,26 +4070,83 @@ textarea,
   flex-direction: column;
 }
 .capture-phone {
-  display: flex;
-  gap: 14px;
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
   align-items: center;
-  min-height: 46px;
-  padding: 10px 14px;
-  margin-top: 10px;
+  min-height: 32px;
+  padding: 4px 8px;
   border: 1px solid var(--color-line);
   border-radius: 8px;
   color: var(--color-text);
-  font-size: 16px;
+  font-size: 13px;
+  font-weight: 400;
+}
+#prepare-view .capture-phone {
+  font-size: 13px;
+}
+.capture-phone .interface-icon {
+  width: 16px;
+  height: 16px;
+}
+#meeting-form fieldset legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#meeting-form fieldset legend > span {
+  min-width: 0;
+}
+.prepare-input-status {
+  grid-column: 2;
+  grid-row: 3;
+  padding-left: 28px;
+  border-left: 1px solid var(--color-line);
+}
+#prepare-view[data-mode="import"] .prepare-input-status {
+  display: none;
+}
+#prepare-view.is-compact #meeting-form fieldset legend {
+  font-size: 20px;
+}
+#prepare-view.is-compact .prepare-source-description {
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+#prepare-view.is-compact .capture-settings {
+  gap: 12px;
+}
+#prepare-view.is-compact .capture-source-list .flow-select-options {
+  gap: 6px;
+}
+#prepare-view.is-compact .capture-source-list .flow-select-options button {
+  padding: 6px 10px;
+}
+#prepare-view.is-compact .capture-source-list .flow-select-options b {
+  font-size: 14px;
+}
+#prepare-view.is-compact .capture-source-list .flow-select-options small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+#prepare-view.is-compact .capture-phone-count {
+  display: none;
+}
+#prepare-view.is-compact .capture-status .input-meter {
+  width: 100px;
 }
 .capture-status {
   display: grid !important;
   gap: 10px;
-  margin-block: 20px;
-  margin: 20px 0;
+  margin: 0;
+  border-top: 1px solid var(--color-line);
+  padding-top: 12px;
   font-size: 13px;
 }
 .capture-status .input-meter {
-  width: 240px;
+  width: min(240px, 15vw);
   height: 16px;
   border-radius: 0;
   background: var(--color-selected);
@@ -5144,10 +5207,10 @@ textarea,
   display: flex;
   gap: 32px;
   border-bottom: 1px solid var(--color-line);
-  margin-bottom: 28px;
+  margin-bottom: 16px;
 }
 .settings-tabs button {
-  padding: 12px 8px;
+  padding: 8px;
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
@@ -5205,7 +5268,7 @@ textarea,
   margin-bottom: 12px;
 }
 .mobile-device-grid {
-  margin-bottom: 28px;
+  margin-bottom: 0;
 }
 .mobile-connect-panel {
   padding-right: 28px;
@@ -5884,7 +5947,7 @@ textarea,
   justify-content: start;
   gap: 24px;
   min-height: 40px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   font-size: 16px;
 }
 .settings-page .ai-service-choice {
@@ -5892,7 +5955,7 @@ textarea,
   align-items: center;
   min-height: 40px;
   padding-left: 176px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 .settings-page .ai-service-choice legend {
   position: absolute;
@@ -5919,7 +5982,8 @@ textarea,
   padding-top: 0;
 }
 .settings-page .model-picker-foot {
-  margin-block: 12px;
+  margin-block: 8px;
+  gap: 8px;
 }
 .settings-page .advanced-settings-section summary {
   min-height: 44px;
@@ -5968,10 +6032,10 @@ textarea,
   max-width: none;
 }
 .settings-page .modal-body > :is(.summary-model-form, .ai-assist-config-form) {
-  gap: 20px;
+  gap: 12px;
 }
 .settings-page .config-fields {
-  gap: 20px;
+  gap: 12px;
 }
 .settings-page .config-fields input {
   padding: 8px 12px;
@@ -6274,13 +6338,19 @@ body:has(.app-shell.is-live-meeting) .export-modal {
   font-size: 13px;
 }
 .ai-assist-empty-tags button {
-  min-height: var(--control-height);
-  padding: 8px 12px;
-  border-color: var(--color-line);
-  border-radius: var(--control-radius);
-  background: var(--color-surface);
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 24px;
+}
+.ai-assist-empty-tags button:hover {
   color: var(--color-text);
-  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 @media (max-width: 1100px) {
@@ -7374,14 +7444,6 @@ html[data-theme] .toast,
   }
 }
 
-.summary-reader-save {
-  display: none;
-}
-.detail-summary-panel .summary-reader-save {
-  display: inline-flex;
-  margin-left: auto;
-}
-
 /* D11 的字幕页标题紧凑；保留全局导出与真实转写操作。 */
 #detail-view:has([data-detail-panel="transcript"]:not([hidden])) {
   padding-top: 16px;
@@ -7506,7 +7568,7 @@ html[data-theme] .toast,
 /* D47–D49：连接状态、可信设备和同一配对会话分阶段呈现。 */
 .settings-page:has(#mobile-dialog:not([hidden])) .modal-head {
   border-bottom: 1px solid var(--color-line);
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 .settings-page #mobile-dialog .mobile-service-heading {
   display: flex;
@@ -7539,13 +7601,13 @@ html[data-theme] .toast,
   gap: 24px;
 }
 .mobile-device-grid > section {
-  min-height: 360px;
+  min-height: 320px;
   border: 1px solid var(--color-line);
   border-radius: 8px;
   padding: 20px;
 }
 .mobile-connection-summary {
-  min-height: 320px;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -7590,7 +7652,7 @@ html[data-theme] .toast,
   color: var(--color-text-muted);
 }
 .mobile-trusted-panel .mobile-device-empty {
-  min-height: 240px;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -7606,8 +7668,8 @@ html[data-theme] .toast,
 }
 .mobile-connection-capabilities {
   border-top: 1px solid var(--color-line);
-  margin-top: 28px;
-  padding-top: 20px;
+  margin-top: 20px;
+  padding-top: 12px;
 }
 .mobile-connection-capabilities > div {
   display: grid;

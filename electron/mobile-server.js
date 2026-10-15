@@ -7,6 +7,7 @@ const {
   createHash,
   randomBytes,
   randomInt,
+  randomUUID,
   X509Certificate,
   timingSafeEqual,
 } = require('node:crypto');
@@ -90,6 +91,9 @@ class MobileServer {
   }) {
     Object.assign(this, { directory, request, approve, active, discovered, advertise, port });
     this.lastSeen = new Map();
+    this.captureReady = new Map();
+    this.captureLevels = new Map();
+    this.capturePreview = null;
     this.discoveryNoticeAt = 0;
     this.queue = Promise.resolve();
     this.sessions = new Map();
@@ -122,6 +126,11 @@ class MobileServer {
     for (const entry of entries.filter((e) => e.isDirectory() && uuid.safeParse(e.name).success)) {
       const session = await readJSON(path.join(this.directory, entry.name, 'session.json'), null);
       if (session) {
+        // 重启后不能让尚未响应的手机突然开启麦克风。
+        if (session.desktopCapture && session.state === 'starting') {
+          Object.assign(session, { ended: true, stopRequested: true, state: 'ended' });
+          await this.save(session);
+        }
         if (session.task?.state === 'running')
           session.task = { ...session.task, state: 'failed', error: '电脑已重启，请重新提交任务' };
         this.sessions.set(session.id, session);
@@ -193,6 +202,9 @@ class MobileServer {
     this.bonjour?.destroy();
     this.bonjour = null;
     this.lastSeen.clear();
+    this.captureReady.clear();
+    this.captureLevels.clear();
+    this.capturePreview = null;
     if (this.server) {
       const server = this.server;
       this.server = null;
@@ -242,6 +254,7 @@ class MobileServer {
         recordingCount: [...this.sessions.values()].filter((s) => s.owner === id && s.samples > 0)
           .length,
         connected: !!this.server && Date.now() - (this.lastSeen.get(id) || 0) < 15000,
+        captureReady: !!this.server && Date.now() - (this.captureReady.get(id) || 0) < 6000,
       })),
       sessions: [...this.sessions.values()]
         .filter((s) => !s.deleted)
@@ -257,6 +270,9 @@ class MobileServer {
             stopRequested,
             finished,
             error,
+            captureError,
+            desktopCapture,
+            owner,
           }) => ({
             id,
             title,
@@ -267,7 +283,9 @@ class MobileServer {
             ended,
             stopRequested,
             finished,
-            error,
+            error: error || captureError,
+            desktopCapture: desktopCapture === true,
+            owner,
           }),
         ),
       error: this.lastError || null,
@@ -302,6 +320,8 @@ class MobileServer {
     if ([...this.sessions.values()].some((s) => s.owner === id && !s.finished))
       throw fail(409, '该设备仍有未完成的录音，请先结束并补传');
     this.remote?.drop(id);
+    this.captureLevels.delete(id);
+    if (this.capturePreview?.deviceId === id) this.capturePreview = null;
     this.devices = this.devices.filter((d) => d.id !== id);
     await atomicJSON(path.join(this.directory, 'devices.json'), this.devices);
     return this.status();
@@ -397,6 +417,8 @@ class MobileServer {
       if (!s) throw fail(404, '会议不存在');
       if (!s.ended) {
         const next = { ...s, stopRequested: true };
+        if (s.desktopCapture && s.state === 'starting' && !s.samples)
+          Object.assign(next, { ended: true, closedOnDesktop: true });
         await this.save(next);
         Object.assign(s, next);
       }
@@ -405,6 +427,78 @@ class MobileServer {
   }
   save(s) {
     return atomicJSON(path.join(this.directory, s.id, 'session.json'), s);
+  }
+  startCapture(deviceId, payload) {
+    return this.serial(async () => {
+      if (!this.status().devices.some((d) => d.id === deviceId && d.connected && d.captureReady))
+        throw fail(409, '请在已连接的手机上打开 Brevia，并结束其他录音');
+      if (this.active() || [...this.sessions.values()].some((s) => !s.finished))
+        throw fail(409, '电脑有未完成的录音，请先结束并补传');
+      const value = createSession.parse({ ...payload, id: randomUUID() });
+      await this.request('mobile.prepare', value);
+      const s = {
+        ...value,
+        owner: deviceId,
+        desktopCapture: true,
+        captureExpires: 0,
+        controlVersion: 0,
+        desiredState: 'recording',
+        state: 'starting',
+        next: 0,
+        processed: 0,
+        samples: 0,
+        ended: false,
+        finished: false,
+        marks: [],
+      };
+      await fs.mkdir(path.join(this.directory, s.id), { recursive: true, mode: 0o700 });
+      await this.save(s);
+      this.sessions.set(s.id, s);
+      try {
+        const meeting = await this.request('mobile.apply', {
+          ...value,
+          meeting_id: s.id,
+          action: 'start',
+          desktop_capture: true,
+        });
+        // 模型加载完成后才给手机计时，避免首次加载耗尽响应窗口。
+        s.captureExpires = Date.now() + 30000;
+        await this.save(s);
+        return meeting;
+      } catch (error) {
+        Object.assign(s, { ended: true, stopRequested: true, state: 'ended' });
+        await this.save(s);
+        throw error;
+      }
+    });
+  }
+  previewCapture(deviceId) {
+    if (
+      deviceId &&
+      !this.status().devices.some((d) => d.id === deviceId && d.connected && d.captureReady)
+    )
+      throw fail(409, '手机端未就绪，请打开或更新 Brevia');
+    // 试音只保留电平；短租约防止桌面关闭后手机继续占用麦克风。
+    if (this.capturePreview?.deviceId !== deviceId) this.captureLevels.clear();
+    this.capturePreview = deviceId ? { deviceId, expires: Date.now() + 3000 } : null;
+    const meter = this.captureLevels.get(deviceId);
+    return { deviceId, level: meter && Date.now() - meter.at < 1000 ? meter.level : null };
+  }
+  pauseCapture(id, paused) {
+    return this.serial(async () => {
+      const s = this.sessions.get(uuid.parse(id));
+      if (!s?.desktopCapture || s.ended || s.stopRequested) throw fail(409, '当前手机录音不可控制');
+      if (Date.now() - (this.lastSeen.get(s.owner) || 0) >= 15000)
+        throw fail(409, '连接中断 · 等待补传');
+      const next = {
+        ...s,
+        desiredState: paused ? 'paused' : 'recording',
+        controlVersion: s.controlVersion + 1,
+      };
+      await this.save(next);
+      Object.assign(s, next);
+      return { requested: true };
+    });
   }
   async route(req) {
     // Browser pages cannot use this native API (no CORS or cookie authentication).
@@ -433,6 +527,35 @@ class MobileServer {
           samples: s.samples,
         }));
     const value = req.method === 'POST' || req.method === 'PUT' ? await body(req) : null;
+    if (req.url === '/capture' && req.method === 'POST') {
+      const { available, level } = z
+        .object({ available: z.boolean(), level: z.number().min(0).max(1).nullable().optional() })
+        .parse(value);
+      if (available) this.captureReady.set(owner, Date.now());
+      else this.captureReady.delete(owner);
+      if (available && level != null && this.capturePreview?.deviceId === owner)
+        this.captureLevels.set(owner, { level, at: Date.now() });
+      else this.captureLevels.delete(owner);
+      const s = [...this.sessions.values()].find(
+        (s) =>
+          s.owner === owner &&
+          s.desktopCapture &&
+          s.state === 'starting' &&
+          !s.ended &&
+          !s.stopRequested &&
+          s.captureExpires > Date.now(),
+      );
+      return {
+        request: available && s ? { ...createSession.parse(s), desktopCapture: true } : null,
+        preview: Boolean(
+          available &&
+            !s &&
+            !this.active() &&
+            this.capturePreview?.deviceId === owner &&
+            this.capturePreview.expires > Date.now(),
+        ),
+      };
+    }
     if (req.url === '/prepare' && req.method === 'POST')
       return this.request('mobile.prepare', createSession.parse(value));
     if (req.url === '/meetings' && req.method === 'POST')
@@ -465,7 +588,7 @@ class MobileServer {
     if (match[2] === 'snapshot' && req.method === 'GET') {
       let meeting = null;
       try {
-        meeting = await this.request('meeting.get', { meeting_id: s.id });
+        if (!s.desktopCapture) meeting = await this.request('meeting.get', { meeting_id: s.id });
       } catch {
         /* Durable spool can exist before worker creation. */
       }
@@ -478,9 +601,12 @@ class MobileServer {
         ended: s.ended,
         finished: s.finished,
         stopRequested: s.stopRequested === true,
+        desktopCapture: s.desktopCapture === true,
+        desiredState: s.desiredState,
+        controlVersion: s.controlVersion,
         task: s.task || null,
         workspace_id: meeting?.workspace_id ?? s.workspace_id ?? null,
-        error: s.error || s.processingWarning || null,
+        error: s.error || s.captureError || s.processingWarning || null,
         marks: s.marks,
         title: meeting?.title || s.title,
         notes: meeting?.notes || '',
@@ -492,6 +618,7 @@ class MobileServer {
       // 等待队列时可能已被永久删除，必须重新检查当前会话。
       const s = this.session(match[1], owner);
       if (match[2] === 'action' && req.method === 'POST') {
+        if (s.desktopCapture) throw fail(403, '请在电脑管理这场会议');
         const v = z
           .discriminatedUnion('action', [
             z.object({ action: z.literal('workspace'), workspace_id: uuid.nullable() }),
@@ -551,9 +678,18 @@ class MobileServer {
       }
       if (match[2] === 'state' && req.method === 'POST') {
         const v = z
-          .object({ state: z.enum(['starting', 'recording', 'paused', 'interrupted', 'ended']) })
+          .object({
+            state: z.enum(['starting', 'recording', 'paused', 'interrupted', 'ended']),
+            error: z.string().max(200).optional(),
+          })
           .parse(value);
-        const next = { ...s, state: v.state };
+        const next = { ...s, state: v.state, captureError: v.error || null };
+        if (s.desktopCapture && v.state === 'interrupted' && s.state === 'starting' && !s.samples)
+          Object.assign(next, {
+            ended: true,
+            stopRequested: true,
+            captureError: v.error || '手机未能开始录音，请打开手机 Brevia 后重试',
+          });
         await this.save(next);
         Object.assign(s, next);
         return { saved: true };
@@ -629,11 +765,30 @@ class MobileServer {
       const s = [...this.sessions.values()].find((value) => !value.finished);
       if (!s) return;
       try {
+        if (
+          s.desktopCapture &&
+          !s.ended &&
+          s.state === 'starting' &&
+          s.captureExpires > 0 &&
+          s.captureExpires <= Date.now()
+        ) {
+          await this.serial(async () => {
+            if (s.state !== 'starting' || s.ended || s.captureExpires > Date.now()) return;
+            Object.assign(s, {
+              ended: true,
+              stopRequested: true,
+              state: 'ended',
+              captureError: '手机未能开始录音，请打开手机 Brevia 后重试',
+            });
+            await this.save(s);
+          });
+        }
         await this.request('mobile.apply', {
           ...createSession.parse(s),
           action: 'start',
           meeting_id: s.id,
           tags: ['手机录音'],
+          desktop_capture: s.desktopCapture === true,
         });
         // ponytail: one worker and ordered replay; separate processing workers if concurrent meetings become a requirement.
         if (s.processed < s.next) {

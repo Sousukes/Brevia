@@ -73,7 +73,8 @@ class MobileWorkerMixin:
         if meeting is None:
             if action != 'start':
                 raise ValueError('请先创建手机会议')
-            return self.start({**payload, 'tags': ['手机录音'], 'audio_tracks': ['mic']})
+            tags = ['手机录音', '手机麦克风'] if payload.get('desktop_capture') else ['手机录音']
+            return self.start({**payload, 'tags': tags, 'audio_tracks': ['mic']})
         if action == 'start':
             if '手机录音' not in meeting.get('tags', []):
                 meeting = self.store.update_meeting(

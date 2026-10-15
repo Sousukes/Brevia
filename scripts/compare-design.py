@@ -137,6 +137,87 @@ def compare_feedback(args):
     print(f"Feedback comparisons: {len(pairs)} (原尺寸，不作相似度验收)")
 
 
+def compare_mobile(args):
+    """手机参考是多分镜画板；原图与完整屏幕并排，不伪造整图像素评分。"""
+    manifest = json.loads((DESIGNS / "design-manifest.json").read_text())
+    run_path = Path(args.mobile) / "capture-run.json"
+    capture_run = json.loads(run_path.read_text()) if run_path.is_file() else {}
+    if not capture_matches_sources(capture_run):
+        raise ValueError("手机截图来源过期或验证未通过，请先重新复拍")
+    native = Path(args.mobile).parent / "mobile-native"
+    native_run = native / "capture-run.json"
+    native_current = native_run.is_file() and capture_matches_sources(
+        json.loads(native_run.read_text())
+    )
+    output = Path(args.output) / "mobile"
+    output.mkdir(parents=True, exist_ok=True)
+    results = []
+    for item in manifest:
+        if not item["reference"].startswith("M"):
+            continue
+        target = output / Path(item["reference"]).stem
+        target.mkdir(exist_ok=True)
+        shutil.copyfile(DESIGNS / item["reference"], target / "reference.png")
+        scenes = list(dict.fromkeys([item["scene"], *item.get("supplementary_scenes", [])]))
+        available = [name for name in scenes if (Path(args.mobile) / (name + ".png")).is_file()]
+        if not available:
+            raise ValueError(f"手机画板没有截图：{item['reference']}")
+        native_scenes = item.get("native_scenes", [])
+        if native_scenes and not native_current:
+            raise ValueError("原生iOS截图来源过期或验证未通过，请重新复拍")
+        sources = [(name, Path(args.mobile) / (name + ".png")) for name in available]
+        sources += [(name, native / (name + ".png")) for name in native_scenes]
+        pictures = [Image.open(path).convert("RGB") for _, path in sources]
+        board = Image.new("RGB", (1280, 832 + ((len(pictures) + 2) // 3) * 940), "#ededed")
+        board.paste(Image.open(target / "reference.png").convert("RGB"), (0, 0))
+        draw = ImageDraw.Draw(board)
+        for index, ((name, path), picture) in enumerate(zip(sources, pictures)):
+            shutil.copyfile(path, target / (name + ".png"))
+            picture.thumbnail((400, 890))
+            x, y = (index % 3) * 426 + 12, 832 + (index // 3) * 940
+            draw.text((x, y), name, fill="#222222")
+            board.paste(picture, (x, y + 28))
+        board.save(target / "side-by-side.jpg", quality=92)
+        shutil.copyfile(Path(args.mobile) / (item["scene"] + ".png"), target / "current.png")
+        if args.before:
+            before = Path(args.before) / (item["scene"] + ".png")
+            if before.is_file():
+                old = Image.open(before).convert("RGB")
+                current = Image.open(target / "current.png").convert("RGB")
+                overlay, heat, _ = compare(old, current)
+                shutil.copyfile(before, target / "before.png")
+                overlay.save(target / "before-current-overlay-50.png")
+                heat.save(target / "before-current-diff.png")
+        results.append(
+            {
+                "reference": item["reference"],
+                "scenes": available,
+                "nativeScenes": native_scenes,
+                "status": "visual-only",
+                "referenceScale": 1,
+                "referenceCrop": None,
+            }
+        )
+    (output / "results.json").write_text(json.dumps(results, ensure_ascii=False, indent=2) + "\n")
+    lines = [
+        "# 手机端最新视觉核对",
+        "",
+        "原始1280×800多分镜画板完整保留，Flutter屏幕只等比例缩略展示、不裁剪、不算像素还原率。",
+        "当前widget截图780×1688（逻辑390×844）；真实iOS引擎截图1179×2556见../captures/mobile-native；系统状态栏/授权/锁屏未验收，批处理结束后的黑屏系统截屏已剔除。",
+        "before-current叠加/Diff只比较同尺寸改前与改后，不冒称参考PNG差异；fixture补上真实Navigator栈，因此返回按钮也会变化。",
+        "来源指纹、尺寸、方法与验证范围见../captures/mobile/capture-run.json；正文、人数、模型和状态使用隔离测试fixture。",
+        "",
+        "| 画板 | 对照与状态截图 |",
+        "| --- | --- |",
+    ]
+    lines += [
+        f"| {row['reference']} | [{len(row['scenes'])}个widget＋{len(row['nativeScenes'])}个iOS场景]({Path(row['reference']).stem}/side-by-side.jpg) |"
+        for row in results
+    ]
+    (output / "README.md").write_text("\n".join(lines) + "\n")
+    print(f"Mobile comparisons: {len(results)} composite boards, visual-only")
+
+
 def run(args):
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
@@ -313,12 +394,17 @@ if __name__ == "__main__":
         "--mobile", default="output/playwright/layout-style-comparison/captures/mobile"
     )
     parser.add_argument("--before")
+    parser.add_argument(
+        "--mobile-only", action="store_true", help="仅更新手机多分镜对照，保留桌面结果"
+    )
     parser.add_argument("--feedback", help="只比较标注反馈的独立Electron截图目录")
     parser.add_argument("--output", default="output/playwright/layout-style-comparison")
     parser.add_argument("--self-test", action="store_true")
     options = parser.parse_args()
     if options.self_test:
         self_test()
+    elif options.mobile_only:
+        compare_mobile(options)
     elif options.feedback:
         compare_feedback(options)
     else:

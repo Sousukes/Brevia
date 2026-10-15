@@ -1082,12 +1082,12 @@
   }
   .ai-assist-empty {
     position: absolute;
-    top: 56px;
+    top: 12px;
     left: 0;
     right: 0;
     bottom: 0;
     pointer-events: none;
-    padding: 4px 8px 0 0;
+    padding: 0 8px 0 0;
   }
   .ai-assist-empty-inner {
     display: grid;
@@ -1163,18 +1163,6 @@
   .ai-assist-config-form {
     display: grid;
     gap: 20px;
-  }
-  .ai-summary-settings {
-    display: grid;
-    gap: 24px;
-  }
-  .ai-summary-section {
-    min-width: 0;
-  }
-  .ai-summary-section h3 {
-    margin: 0 0 16px;
-    font-size: 16px;
-    font-weight: 600;
   }
   .ai-assist-proactivity {
     padding-top: 20px;
@@ -2808,15 +2796,6 @@
   .modal-body {
     @apply grid min-w-0 max-h-[calc(100vh-200px)] overflow-auto overflow-x-hidden py-7 pr-0;
   }
-  .summary-model-modal .modal-panel {
-    overflow: visible;
-  }
-  .summary-model-modal .modal-body {
-    overflow: visible;
-    max-height: none;
-  }
-  /* 面板不再靠 max-height 裁剪内容，改为 backdrop 可滚动 + 安全居中：
-   内容比窗口高时顶部对齐但仍可滚动到，避免出现点不到的字段。 */
   .modal-list {
     @apply grid border-b border-(--color-line);
   }
@@ -3213,10 +3192,6 @@
     display: grid;
     align-items: stretch;
   }
-  .onboarding-ai-frame .app-demo-window {
-    width: 100%;
-    min-height: 100%;
-  }
   .onboarding-ai-frame .onboarding-ai-demo {
     position: static;
     width: 100%;
@@ -3231,119 +3206,6 @@
     text-align: left;
     background: #fafafa;
     overflow: hidden;
-  }
-  /* 应用界面演示窗口（复刻应用内样式） */
-  .app-demo-window {
-    border: 1px solid var(--color-line);
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--color-surface);
-    box-shadow: 0 12px 32px #00000010;
-    text-align: left;
-  }
-  .app-demo-window-bar {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 8px 10px;
-    background: #fafafa;
-    border-bottom: 1px solid var(--color-line);
-  }
-  .app-demo-window-bar i {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-  .app-demo-window-bar i:nth-child(1) {
-    background: #ff5f57;
-  }
-  .app-demo-window-bar i:nth-child(2) {
-    background: #febc2e;
-  }
-  .app-demo-window-bar i:nth-child(3) {
-    background: #28c840;
-  }
-  .app-demo-window-bar span {
-    margin-left: 6px;
-    font-size: 11px;
-    color: #888;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  /* AI 笔记窗口：左侧笔记/AI 建议 + 右侧实时字幕 */
-  .app-demo-live {
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    min-height: 182px;
-  }
-  .app-demo-notes {
-    display: grid;
-    gap: 8px;
-    align-content: start;
-    padding: 12px;
-    border-right: 1px solid var(--color-line);
-    background: #fafafa;
-  }
-  .app-demo-notes-head .eyebrow {
-    margin: 0;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #767676;
-  }
-  .app-demo-notes .ai-suggestion-card {
-    padding: 8px 10px;
-    gap: 4px;
-    animation: onboarding-demo-card-in 0.5s ease both;
-  }
-  .app-demo-notes .ai-suggestion-star {
-    font-size: 10px;
-  }
-  .app-demo-notes .ai-suggestion-type {
-    font-size: 9px;
-  }
-  .app-demo-notes .ai-suggestion-text {
-    font-size: 11px;
-    line-height: 1.5;
-  }
-  .app-demo-notes-note {
-    margin: 0;
-    font-size: 10px;
-    line-height: 1.6;
-    color: #666666;
-  }
-  .app-demo-notes-off {
-    margin: 0;
-    padding: 10px 12px;
-    border: 1px dashed #e0e0e0;
-    font-size: 10px;
-    line-height: 1.6;
-    color: #767676;
-    background: #fff;
-  }
-  .app-demo-captions {
-    display: grid;
-    gap: 10px;
-    align-content: start;
-    padding: 12px;
-  }
-  .app-demo-caption {
-    display: grid;
-    gap: 2px;
-  }
-  .app-demo-caption:nth-child(2) {
-    animation: onboarding-demo-card-in 0.5s 0.6s ease both;
-  }
-  .app-demo-speaker {
-    font-size: 10px;
-    color: #222222;
-  }
-  .app-demo-caption p {
-    margin: 0;
-    font-size: 11px;
-    line-height: 1.5;
-    color: #444444;
   }
   /* AI 会议纪要窗口：直接展示最终内容，方便对比两项功能。 */
   .app-demo-summary {
@@ -3433,32 +3295,8 @@
   .asr-badge.is-recommended {
     @apply border-(--color-success-border) text-(--color-success);
   }
-  .asr-badge.is-installed {
-    @apply border-(--color-success-border) text-(--color-success);
-  }
   .asr-tagline {
     @apply text-[12px] leading-5 text-[#444444];
-  }
-  .asr-meters {
-    @apply flex flex-wrap items-center gap-x-6 gap-y-1;
-  }
-  .asr-meter {
-    @apply flex items-center gap-2;
-  }
-  .asr-meter small {
-    @apply text-[10px] uppercase tracking-[.08em] text-[#767676];
-  }
-  .asr-meter b {
-    @apply text-[11px] font-medium text-black;
-  }
-  .asr-scale {
-    @apply flex items-center gap-1;
-  }
-  .asr-scale i {
-    @apply size-1.5 rounded-full border border-(--color-line);
-  }
-  .asr-scale i.on {
-    @apply border-black bg-black;
   }
   .asr-size {
     @apply text-[11px] not-italic text-[#666666];
@@ -4655,7 +4493,6 @@ html[data-theme="dark"] .model-library-rating b {
    这些类在浅色下用 text-black / #444444，而暗色页面底色是 #191919——不补规则就是
    1.0:1 与 1.7:1，模型名、定位短句和刻度值直接看不见。*/
 html[data-theme="dark"] .asr-card-head b,
-html[data-theme="dark"] .asr-meter b,
 html[data-theme="dark"] .onboarding-bundled b {
   color: #fff;
 }
@@ -4666,13 +4503,6 @@ html[data-theme="dark"] .asr-size,
 html[data-theme="dark"] .onboarding-bundled > i,
 html[data-theme="dark"] .onboarding-bundled small {
   color: #767676;
-}
-html[data-theme="dark"] .asr-scale i {
-  border-color: #5a5a5a;
-}
-html[data-theme="dark"] .asr-scale i.on {
-  border-color: #fff;
-  background: #fff;
 }
 html[data-theme="dark"] .asr-badge {
   border-color: var(--color-line);
@@ -4790,31 +4620,6 @@ html[data-theme="dark"] .onboarding-ai-feature h2,
 html[data-theme="dark"] .onboarding-ai-feature .onboarding-ai-feature-desc,
 html[data-theme="dark"] .onboarding-ai-way-title {
   color: #fff;
-}
-html[data-theme="dark"] .app-demo-window {
-  border-color: var(--color-line);
-}
-html[data-theme="dark"] .app-demo-window-bar {
-  background: #191919;
-  border-color: var(--color-line);
-}
-html[data-theme="dark"] .app-demo-window-bar span {
-  color: #767676;
-}
-html[data-theme="dark"] .app-demo-notes {
-  background: #191919;
-  border-color: var(--color-line);
-}
-html[data-theme="dark"] .app-demo-notes-head .eyebrow,
-html[data-theme="dark"] .app-demo-notes-note {
-  color: #767676;
-}
-html[data-theme="dark"] .app-demo-notes-off {
-  border-color: #555;
-  color: #767676;
-}
-html[data-theme="dark"] .app-demo-caption p {
-  color: #d6d6d6;
 }
 html[data-theme="dark"] .app-demo-summary-body .eyebrow {
   color: #f2f2f2;
@@ -5008,7 +4813,6 @@ html[data-theme="dark"] .required-models-card small {
 }
 html[data-theme="dark"] .storage-list section,
 html[data-theme="dark"] .speaker-profile-form,
-html[data-theme="dark"] .speaker-profile-entry,
 html[data-theme="dark"] .advanced-settings-section {
   border-color: var(--color-line);
 }
@@ -5184,27 +4988,11 @@ body.modal-open {
 .speaker-profile-form input:focus {
   border-color: #000;
 }
-.speaker-profile-entry {
-  padding: 16px 0;
-  border-bottom: 1px solid var(--color-line);
-}
-.speaker-profile-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
 .speaker-profile-list small {
   display: block;
   margin-top: 4px;
   font-size: 11px;
   color: #767676;
-}
-.speaker-profile-head > span:last-child {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 16px;
 }
 .speaker-profile-list .secondary {
   margin-top: 0;
@@ -5245,9 +5033,6 @@ body.modal-open {
 .storage-list .model-delete {
   margin-top: 0;
 }
-.storage-cleanup .model-delete {
-  font-size: 11px;
-}
 .confirmation-actions {
   display: flex;
   align-items: center;
@@ -5276,10 +5061,6 @@ body.modal-open {
   gap: 0.75rem 1rem;
   border-top: 1px solid var(--color-line);
   padding-top: 1rem;
-}
-.modal-body > .advanced-settings-section:first-child {
-  border-top: 0;
-  padding-top: 0;
 }
 .advanced-settings-section h3 {
   grid-column: 1 / -1;
@@ -5387,7 +5168,6 @@ html[data-theme="dark"] .task-cards > .is-task-card-back {
   background: #363636;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
 }
-html[data-theme="dark"] .speaker-profile-entry,
 html[data-theme="dark"] .speaker-sample-list,
 html[data-theme="dark"] .speaker-sample-list article,
 html[data-theme="dark"] .export-options,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,18 @@ import 'storage.dart';
 Future<Directory> recordingsRoot() async {
   final support = await getApplicationSupportDirectory();
   return Directory('${support.path}/recordings').create(recursive: true);
+}
+
+double pcmLevel(Uint8List bytes) {
+  final samples = bytes.length ~/ 2;
+  if (samples == 0) return 0;
+  final data = ByteData.sublistView(bytes);
+  var power = 0.0;
+  for (var i = 0; i < samples; i++) {
+    final value = data.getInt16(i * 2, Endian.little) / 32768;
+    power += value * value;
+  }
+  return min(1, sqrt(power / samples) * 8);
 }
 
 class RecordingEngine {
@@ -375,6 +388,15 @@ class RecordingEngine {
       );
       if (snapshot['stopRequested'] == true && store.meta['state'] != 'ended') {
         await command({'action': 'end'});
+      } else if (store.meta['desktopCapture'] == true &&
+          store.meta['state'] != 'ended' &&
+          (snapshot['controlVersion'] as num? ?? 0) >
+              (store.meta['controlVersion'] as num? ?? 0)) {
+        await command({
+          'action': snapshot['desiredState'] == 'paused' ? 'pause' : 'resume',
+        });
+        store.meta['controlVersion'] = snapshot['controlVersion'];
+        await write(store.save);
       }
       int next = snapshot['next'];
       if (next > store.count || (snapshot['samples'] as int) > store.samples) {

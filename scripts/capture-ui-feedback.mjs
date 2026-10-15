@@ -363,7 +363,7 @@ try {
     ],
     [
       'device-languages',
-      `(async()=>{closeModal();await new Promise(r=>setTimeout(r,350));for(const language of Object.keys(catalog)){applyLanguage(language);await openModal('device-connection');const checks={pair:document.querySelector('#mobile-pair').textContent===t('连接新设备'),title:document.querySelector('#mobile-install-title').textContent===t('安装Brevia手机端'),button:document.querySelector('[data-mobile-install-toggle]').textContent===t('安装Brevia手机端'),heading:document.querySelector('.mobile-install-platform h4').textContent===t('iPhone · App Store'),description:document.querySelector('.mobile-install-platform p').textContent===t('扫码或点击链接，从 App Store 免费安装 Brevia。'),state:document.querySelector('.mobile-device-empty')?.textContent===t('暂无已信任设备'),connected:document.querySelector('#mobile-connected-heading').textContent===t('尚未连接设备'),sidebar:[...document.querySelector('#mobile-nav').querySelectorAll('strong,svg,#mobile-sidebar-status,#mobile-nav-dot')].every(n=>{if(!n.getClientRects().length)return true;const r=n.getBoundingClientRect(),o=document.querySelector('#mobile-nav').getBoundingClientRect();const style=getComputedStyle(n),clipped=n.id==='mobile-sidebar-status'&&style.clipPath==='inset(50%)'&&style.overflow==='hidden';return r.left>=o.left-1&&r.right<=o.right+1&&(clipped||n.scrollWidth<=n.clientWidth+1);})};if(Object.values(checks).some(v=>!v))throw Error(language+JSON.stringify(checks));closeModal();await new Promise(r=>setTimeout(r,350));}applyLanguage('zh');})()`,
+      `(async()=>{closeModal();await new Promise(r=>setTimeout(r,350));for(const language of Object.keys(catalog)){applyLanguage(language);await openModal('device-connection');const checks={pair:document.querySelector('#mobile-pair').textContent===t('连接新设备'),title:document.querySelector('#mobile-install-title').textContent===t('安装Brevia手机端'),button:document.querySelector('[data-mobile-install-toggle]').textContent===t('安装Brevia手机端'),heading:document.querySelector('.mobile-install-platform h4').textContent===t('iPhone · App Store'),description:document.querySelector('.mobile-install-platform p').textContent===t('扫码或点击链接，从 App Store 免费安装 Brevia。'),state:document.querySelector('.mobile-device-empty')?.textContent===t('暂无已信任设备'),connected:document.querySelector('#mobile-connected-heading').textContent===t('尚未连接设备'),sidebar:[...document.querySelector('#mobile-nav').querySelectorAll('strong,svg,#mobile-sidebar-status,#mobile-nav-dot')].every(n=>{if(!n.getClientRects().length)return true;const r=n.getBoundingClientRect(),o=document.querySelector('#mobile-nav').getBoundingClientRect();const style=getComputedStyle(n),clipped=n.id==='mobile-sidebar-status'&&style.clipPath==='inset(50%)'&&style.overflow==='hidden';return r.left>=o.left-1&&r.right<=o.right+1&&(clipped||n.scrollWidth<=n.clientWidth+1);})};if(Object.values(checks).some(v=>!v))throw Error(language+JSON.stringify(checks));closeModal();await new Promise(r=>setTimeout(r,350));}applyLanguage('zh');aiSuggestionHost.hidden=false;renderAiAssistEmptyState();if(!aiAssistEmptyRoot().hidden)throw Error('空态遮挡待采纳AI建议');aiSuggestionHost.hidden=true;liveNotesEditor.setMode('markdown');renderAiAssistEmptyState();const surface=liveNotesRoot.querySelector('.notes-input');if(Math.abs(aiAssistEmptyRoot().getBoundingClientRect().top-surface.getBoundingClientRect().top)>1)throw Error('Markdown空态错位');liveNotesEditor.setMode('rich');renderAiAssistEmptyState();})()`,
     ],
     [
       'settings-language',
@@ -435,11 +435,11 @@ try {
     ],
     [
       'settings-ai-summary-alignment',
-      `(async()=>{await showView('settings');refinementCard.hidden=true;syncTaskCardStack();summaryConfigDraft=structuredClone(summaryConfig);summaryConfigDraft.provider='custom-openai';await openModal('summary-model');await new Promise(r=>setTimeout(r,260));const toggle=settingsModal.querySelector('.summary-enabled-control input'),way=settingsModal.querySelector('.ai-service-choice'),radio=way.querySelector('input'),field=settingsModal.querySelector('.config-fields .flow-select-toggle'),row=settingsModal.querySelector('.summary-enabled-control');if(Math.abs(toggle.getBoundingClientRect().left-field.getBoundingClientRect().left)>1||Math.abs(radio.getBoundingClientRect().left-field.getBoundingClientRect().left)>1)throw Error('会议纪要控件未按选项列对齐');if(way.getBoundingClientRect().top-row.getBoundingClientRect().bottom<19||settingsModal.querySelector('.config-fields').getBoundingClientRect().top-way.getBoundingClientRect().bottom<19)throw Error('服务方式行间距过窄');})()`,
+      `(async()=>{await showView('settings');refinementCard.hidden=true;syncTaskCardStack();summaryConfigDraft=structuredClone(summaryConfig);summaryConfigDraft.provider='custom-openai';await openModal('summary-model');await new Promise(r=>setTimeout(r,260));const toggle=settingsModal.querySelector('.summary-enabled-control input'),way=settingsModal.querySelector('.ai-service-choice'),radio=way.querySelector('input'),field=settingsModal.querySelector('.config-fields .flow-select-toggle'),row=settingsModal.querySelector('.summary-enabled-control');if(Math.abs(toggle.getBoundingClientRect().left-field.getBoundingClientRect().left)>1||Math.abs(radio.getBoundingClientRect().left-field.getBoundingClientRect().left)>1)throw Error('会议纪要控件未按选项列对齐');if(way.getBoundingClientRect().top-row.getBoundingClientRect().bottom<11||settingsModal.querySelector('.config-fields').getBoundingClientRect().top-way.getBoundingClientRect().bottom<11)throw Error('服务方式行间距过窄');})()`,
     ],
     [
       'settings-ai-notes-alignment',
-      `(async()=>{aiAssistConfigDraft=structuredClone(aiAssistConfig);aiAssistConfigDraft.provider='custom-openai';await openModal('ai-assist');await new Promise(r=>setTimeout(r,260));const toggle=settingsModal.querySelector('.summary-enabled-control input'),way=settingsModal.querySelector('.ai-service-choice'),radio=way.querySelector('input'),field=settingsModal.querySelector('.config-fields .flow-select-toggle'),row=settingsModal.querySelector('.summary-enabled-control'),r=toggle.getBoundingClientRect();if(way.getBoundingClientRect().top-row.getBoundingClientRect().bottom<19||Math.abs(r.left-field.getBoundingClientRect().left)>1||Math.abs(radio.getBoundingClientRect().left-field.getBoundingClientRect().left)>1)throw Error('智能笔记未独占开关行或控件未对齐');if(Math.abs(r.width-44)>1||Math.abs(r.height-26)>1||getComputedStyle(toggle).paddingTop!=='3px')throw Error('开关图标尺寸错误 '+JSON.stringify({width:r.width,height:r.height,padding:getComputedStyle(toggle).paddingTop,border:getComputedStyle(toggle).borderWidth}));})()`,
+      `(async()=>{aiAssistConfigDraft=structuredClone(aiAssistConfig);aiAssistConfigDraft.provider='custom-openai';await openModal('ai-assist');await new Promise(r=>setTimeout(r,260));const toggle=settingsModal.querySelector('.summary-enabled-control input'),way=settingsModal.querySelector('.ai-service-choice'),radio=way.querySelector('input'),field=settingsModal.querySelector('.config-fields .flow-select-toggle'),row=settingsModal.querySelector('.summary-enabled-control'),r=toggle.getBoundingClientRect();if(way.getBoundingClientRect().top-row.getBoundingClientRect().bottom<11||Math.abs(r.left-field.getBoundingClientRect().left)>1||Math.abs(radio.getBoundingClientRect().left-field.getBoundingClientRect().left)>1)throw Error('智能笔记未独占开关行或控件未对齐');if(Math.abs(r.width-44)>1||Math.abs(r.height-26)>1||getComputedStyle(toggle).paddingTop!=='3px')throw Error('开关图标尺寸错误 '+JSON.stringify({width:r.width,height:r.height,padding:getComputedStyle(toggle).paddingTop,border:getComputedStyle(toggle).borderWidth}));})()`,
     ],
     [
       'settings-sidebar-collapsed',
@@ -454,7 +454,94 @@ try {
       `(async()=>{await new Promise(r=>setTimeout(r,70));const sidebar=document.querySelector('.sidebar'),width=sidebar.getBoundingClientRect().width;if(width<=72||width>=224)throw Error('侧栏收起缺少动画 '+width);await new Promise(r=>setTimeout(r,220));if(Math.abs(sidebar.getBoundingClientRect().width-72)>1||getComputedStyle(document.querySelector('.brand-name')).display!=='none')throw Error('移开鼠标后侧栏未收起');})()`,
     ],
   ];
+  // 录制笔记空态沿用真实编辑器与动作，数据仅在隔离窗口内。
+  scenes.push(
+    [
+      'live-notes-empty-disabled',
+      `(async()=>{applyTheme('light');await showView('live');meetingActive=true;document.querySelector('.app-shell').classList.add('is-live-meeting');document.querySelector('#live-name').textContent='产品周会';setLiveLayoutMode('notes');aiAssistConfig={...aiAssistConfig,enabled:false};aiAssistTemporarilyDisabled=false;liveNotesToolbar.hidden=true;liveNotesEditor.setMode('rich');liveNotesEditor.setMarkdown('');renderAiAssistToggle();renderAiAssistEmptyState();})()`,
+    ],
+    [
+      'live-notes-empty-enabled',
+      `(()=>{aiAssistConfig.enabled=true;renderAiAssistToggle();renderAiAssistEmptyState();})()`,
+    ],
+    [
+      'live-notes-empty-toolbar-dark',
+      `(()=>{applyTheme('dark');liveNotesToolbar.hidden=false;renderAiAssistEmptyState();})()`,
+    ],
+    [
+      'live-notes-filled',
+      `(()=>{applyTheme('light');liveNotesToolbar.hidden=true;liveNotesEditor.setMarkdown('## 会议重点\\n\\n- 确认下周发布计划。');renderAiAssistEmptyState();if(!aiAssistEmptyRoot().hidden)throw Error('已有笔记仍显示空态');})()`,
+    ],
+  );
+  const joinedSummary =
+    '# **会议纪要格式检查**\n## **会议摘要**\n讨论模型输出的标题、列表与报价，保留原始内容。## **核心结论**\n- 第一项已确认。- 第二项待确认。## **议题讨论**\n### **报价与范围**\n- 主要讨论：报价为 19、22、23.5 美元，范围为 75% 与 100%。- 当前结论：继续核对。### **后续安排**\n- 风险或限制：负责人未明确。- 待确认：交付时间。## **行动项**\n- 核对报价。- 确认负责人。';
+  scenes.push(
+    [
+      'summary-markdown-before',
+      `(async()=>{applyTheme('light');meetingActive=false;await showView('detail');const meetings=await window.brevia.meeting.list({});const id=meetings[0].id;await window.brevia.summary.save({meeting_id:id,markdown:${JSON.stringify(joinedSummary)}});const meeting=await window.brevia.meeting.get({meeting_id:id});meeting.title='会议纪要格式检查';meeting.summary.data.markdown=${JSON.stringify(joinedSummary)};applyBackendDetail(meeting);detailActiveTab='summary';renderMeetingDetail();})()`,
+    ],
+    [
+      'summary-markdown-current',
+      `(async()=>{const meeting=await window.brevia.meeting.get({meeting_id:currentMeetingDetail.id});meeting.title='会议纪要格式检查';applyBackendDetail(meeting);detailActiveTab='summary';renderMeetingDetail();const body=document.querySelector('[data-detail-panel=summary] .summary-body');if(body.querySelectorAll('h2').length!==4||body.querySelectorAll('h3').length!==2||body.querySelectorAll('li').length!==8||body.textContent.includes('##'))throw Error('纪要章节或列表未完整渲染');if(!currentMeetingDetail.summary.data.markdown.includes(${JSON.stringify('。\n- 第二项')}))throw Error('复制入口内容仍有粘连列表');})()`,
+    ],
+    [
+      'summary-markdown-bottom',
+      `(()=>{const body=document.querySelector('[data-detail-panel=summary] .summary-body');body.scrollTop=body.scrollHeight;const last=body.querySelector('li:last-child');if(!body.textContent.endsWith('确认负责人。')||body.querySelectorAll('li').length!==8)throw Error('纪要末尾内容丢失');const items=body.querySelectorAll('li'),r=items[items.length-1].getBoundingClientRect(),b=body.getBoundingClientRect();if(r.bottom>b.bottom+1||r.top<b.top)throw Error('纪要最后一项无法滚动访问');})()`,
+    ],
+    [
+      'summary-markdown-editor',
+      `(()=>{document.querySelector('[data-detail-panel=summary] [data-open-summary-edit]').click();const editor=document.querySelector('[data-inline-summary-editor] .notes-editor');if(editor.querySelectorAll('h2').length!==4||editor.querySelectorAll('h3').length!==2||editor.querySelectorAll('li').length!==8)throw Error('纪要编辑器未复用修复内容');if(!inlineSummaryEditor.getMarkdown().includes('## **核心结论**'))throw Error('纪要编辑往返丢失标题');})()`,
+    ],
+  );
+  scenes.push([
+    'live-ai-online',
+    `(async()=>{applyTheme('light');await showView('live');meetingActive=true;document.querySelector('.app-shell').classList.add('is-live-meeting');setLiveLayoutMode('notes');await openModal('ai-assist');aiAssistConfigDraft={...aiAssistConfig,enabled:true,provider:'custom-claude',providers:{'custom-claude':{endpoint:'https://example.invalid/v1/messages',model:'test-model'}}};renderModal('ai-assist');})()`,
+  ]);
+  scenes.push(
+    [
+      'live-ai-menu',
+      `(()=>{settingsModal.querySelector('.config-fields [data-flow-select-toggle]').click();const list=settingsModal.querySelector('.config-fields [data-flow-select-toggle]').closest('.flow-select').querySelector('.flow-select-options');if(list.hidden||list.getBoundingClientRect().bottom>innerHeight||!list.classList.contains('is-floating'))throw Error('AI供应商下拉被裁剪');})()`,
+    ],
+    [
+      'live-ai-bottom',
+      `(()=>{settingsModal.querySelector('.flow-select-options:not([hidden])').hidden=true;const body=settingsModal.querySelector('.modal-body');body.scrollTop=body.scrollHeight;const save=body.querySelector('[type=submit]');save.focus();const r=save.getBoundingClientRect(),b=body.getBoundingClientRect();if(r.bottom>b.bottom+1||r.top<b.top)throw Error('AI保存按钮无法访问');})()`,
+    ],
+    [
+      'live-ai-dark',
+      `(()=>{applyTheme('dark');settingsModal.querySelector('.modal-body').scrollTop=0;})()`,
+    ],
+    [
+      'live-summary-config',
+      `(async()=>{closeModal();await new Promise(r=>setTimeout(r,260));await openModal('summary-model');summaryConfigDraft={...summaryConfig,provider:'custom-openai',providers:{'custom-openai':{endpoint:'https://example.invalid/v1/chat/completions',model:'test-model'}}};renderModal('summary-model');})()`,
+    ],
+    [
+      'live-ai-short',
+      `(async()=>{closeModal();await new Promise(r=>setTimeout(r,260));applyTheme('light');await openModal('ai-assist');aiAssistConfigDraft={...aiAssistConfig,enabled:true,provider:'custom-claude',providers:{'custom-claude':{endpoint:'https://example.invalid/v1/messages',model:'test-model'}}};renderModal('ai-assist');})()`,
+    ],
+    [
+      'live-ai-closed',
+      `(async()=>{closeModal();await new Promise(r=>setTimeout(r,260));if(!settingsModal.hidden||document.querySelector('.app-shell').inert||document.body.classList.contains('modal-open'))throw Error('关闭AI选项未恢复会议交互');const r=document.querySelector('#live-view .live-control-bar').getBoundingClientRect();if(r.bottom>innerHeight+1)throw Error('会议操作栏被挤出窗口');})()`,
+    ],
+  );
+  const selectedScenes = process.env.BREVIA_FEEDBACK_CAPTURE_SCENES?.split(',');
   for (const [name, expression] of scenes) {
+    if (selectedScenes && !selectedScenes.includes(name)) continue;
+    if (name === 'live-ai-short')
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 800,
+        height: 600,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+    if (name === 'live-ai-closed') {
+      await send('Emulation.clearDeviceMetricsOverride');
+      await send('Emulation.setDeviceMetricsOverride', {
+        width: 0,
+        height: 0,
+        deviceScaleFactor: 30 / 23,
+        mobile: false,
+      });
+    }
     console.log('Checking', name);
     if (name === 'detail-reduced-motion')
       await send('Emulation.setEmulatedMedia', {
@@ -473,9 +560,26 @@ try {
     await evaluate(
       `document.getAnimations().forEach(a=>a.effect.getComputedTiming().iterations===Infinity?a.pause():a.finish())`,
     );
+    if (
+      (name.startsWith('live-ai') && name !== 'live-ai-closed') ||
+      name === 'live-summary-config'
+    ) {
+      await evaluate(
+        `(()=>{const root=settingsModal,p=root.querySelector('.modal-panel'),b=root.querySelector('.modal-body'),r=p.getBoundingClientRect();if(getComputedStyle(root).overflowY!=='clip'||document.scrollingElement.scrollHeight>innerHeight+1||r.top<0||r.bottom>innerHeight+1||getComputedStyle(b).overflowY!=='auto'||getComputedStyle(b).overscrollBehaviorY!=='contain')throw Error('AI浮窗仍撑出外层滚动 '+JSON.stringify({classes:root.className,outer:[root.clientHeight,root.scrollHeight],documentHeight:document.scrollingElement.scrollHeight,height:innerHeight,panel:r.toJSON(),body:[b.clientHeight,b.scrollHeight,getComputedStyle(b).overflowY,getComputedStyle(b).overscrollBehaviorY]}));root.scrollTop=100;if(root.scrollTop!==0||root.querySelector('.modal-head').getBoundingClientRect().top<r.top)throw Error('外层浮窗仍可滚动');})()`,
+      );
+    }
+    if (name.startsWith('live-notes-empty')) {
+      await evaluate(
+        `(()=>{const hint=aiAssistEmptyRoot(),surface=liveNotesRoot.querySelector('.notes-editor:not([hidden]),.notes-input:not([hidden])');if(hint.hidden||Math.abs(hint.getBoundingClientRect().top-surface.getBoundingClientRect().top)>1)throw Error('笔记空态没有对齐正文起点');const action=hint.querySelector('button');if(action&&(getComputedStyle(action).borderTopWidth!=='0px'||action.getBoundingClientRect().height>25))throw Error('空态动作仍为旧描边大按钮');})()`,
+      );
+    }
     const geometry = await evaluate(
       `({width:innerWidth,height:innerHeight,overflow:document.body.scrollWidth>innerWidth+1,splash:!!document.querySelector('#startup-splash'),sidebar:Object.fromEntries(['.brand','.new-meeting','.import-recording','#all-meetings','#recently-deleted','.workspace-subnav','.workspace-heading','#workspace-selector','.task-stack-toggle','.task-cards','#mobile-nav','.sidebar-settings'].map(selector=>{const e=document.querySelector(selector),r=e?.getBoundingClientRect(),s=e&&getComputedStyle(e);return [selector,e?{x:r.x,y:r.y,width:r.width,height:r.height,font:s.fontFamily,fontSize:s.fontSize,fontWeight:s.fontWeight}:null]}))})`,
     );
+    if (name.startsWith('live-ai'))
+      geometry.modal = await evaluate(
+        `(()=>{const root=settingsModal,p=root.querySelector('.modal-panel'),b=root.querySelector('.modal-body');return {outerHeight:root.clientHeight,outerScrollHeight:root.scrollHeight,bodyHeight:b.clientHeight,bodyScrollHeight:b.scrollHeight,panel:p.getBoundingClientRect().toJSON()};})()`,
+      );
     assert.equal(geometry.overflow, false, name + ' overflow');
     assert.equal(geometry.splash, false, name + ' startup overlay');
     const shot = await send('Page.captureScreenshot', {
@@ -483,10 +587,16 @@ try {
       captureBeyondViewport: false,
     });
     const png = Buffer.from(shot.data, 'base64');
-    assert.equal(png.readUInt32BE(16), 1280);
-    assert.equal(png.readUInt32BE(20), 800);
+    assert.equal(png.readUInt32BE(16), name === 'live-ai-short' ? 800 : 1280);
+    assert.equal(png.readUInt32BE(20), name === 'live-ai-short' ? 600 : 800);
     writeFileSync(path.join(output, `${name}.png`), png);
     results.push({ name, ...geometry });
+  }
+  if (!selectedScenes || selectedScenes.includes('live-notes-empty-disabled')) {
+    await evaluate(
+      `(()=>{meetingActive=true;applyTheme('light');aiAssistConfig.enabled=false;liveNotesEditor.setMarkdown('');renderAiAssistEmptyState();latestLiveSegmentId='empty-check';liveSegmentData.set(latestLiveSegmentId,{text:'核对发布计划'});aiAssistEmptyRoot().querySelector('[data-ai-empty-action]').click();if(!currentNotesMarkdown().includes('核对发布计划')||!aiAssistEmptyRoot().hidden)throw Error('空态插入字幕失败');const editor=liveNotesRoot.querySelector('.notes-editor');editor.innerHTML='';editor.dispatchEvent(new InputEvent('input',{bubbles:true}));if(aiAssistEmptyRoot().hidden)throw Error('清空笔记未恢复空态');for(const code of ['zh','en','es','ja','ko','fr','de','ru']){applyLanguage(code);renderAiAssistEmptyState();const root=aiAssistEmptyRoot();if(root.hidden||root.querySelectorAll('button').length!==1||root.scrollWidth>root.clientWidth+1)throw Error('空态语言/真实操作异常 '+code);}applyLanguage('zh');})()`,
+    );
+    console.log('Empty notes: insertion, clear recovery and eight languages passed');
   }
   writeFileSync(path.join(output, 'measurements.json'), JSON.stringify(results, null, 2));
   console.log('Feedback capture and behavior checks passed:', results.length);

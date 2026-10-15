@@ -4,6 +4,8 @@
 
 Read [CONTRIBUTING.md](../CONTRIBUTING.md) before changing code. This guide covers desktop architecture, model selection, local development and packaging. For Flutter and mobile distribution, see the [mobile development guide](../mobile/README.md); for remote phone connections, see [deployment and recovery](mobile-remote.md). Release procedures live in [RELEASING.md](RELEASING.md).
 
+See the [documentation index](README.md) for other user and contributor guides.
+
 ## Architecture
 
 ```mermaid

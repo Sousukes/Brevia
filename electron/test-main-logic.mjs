@@ -304,6 +304,75 @@ const mainSource = (await readFile(new URL('./main.js', import.meta.url), 'utf8'
   /\r\n/g,
   '\n',
 );
+// 运行应用的配置加载顺序，覆盖传输层直接 start() 测试遗漏的重启路径。
+{
+  const { MobileServer } = require('./mobile-server');
+  const start = mainSource.indexOf(
+    '\n  try {\n',
+    mainSource.indexOf('mobileServer = new MobileServer'),
+  );
+  const startup = mainSource.slice(
+    start + '\n  try {\n'.length,
+    mainSource.indexOf('\n  } catch', start),
+  );
+  const directory = await mkdtemp(path.join(tmpdir(), 'brevia-remote-startup-'));
+  try {
+    await writeFile(
+      path.join(directory, 'remote.json'),
+      JSON.stringify({ url: 'wss://test.invalid' }),
+    );
+    for (const enabled of [true, false]) {
+      await writeFile(path.join(directory, 'config.json'), JSON.stringify({ enabled }));
+      const server = new MobileServer({ directory, advertise: false, port: 0 });
+      let starts = 0;
+      try {
+        await runInNewContext(`(async()=>{${startup}})()`, {
+          path,
+          readFile,
+          existsSync: () => true,
+          mobileServer: server,
+          MobileRtc: class {
+            constructor(server) {
+              this.server = server;
+            }
+            async start() {
+              if (this.server.server) starts++;
+            }
+            stop() {}
+          },
+        });
+        assert.equal(starts, enabled ? 1 : 0);
+        assert.equal(server.status().enabled, enabled);
+      } finally {
+        await server.disable();
+      }
+    }
+    for (const config of [
+      '{',
+      JSON.stringify({ url: 'http://test.invalid', secret: 'a'.repeat(64) }),
+    ]) {
+      await writeFile(path.join(directory, 'config.json'), JSON.stringify({ enabled: true }));
+      await writeFile(path.join(directory, 'remote.json'), config);
+      const server = new MobileServer({ directory, advertise: false, port: 0 });
+      try {
+        await assert.rejects(
+          runInNewContext(`(async()=>{${startup}})()`, {
+            path,
+            readFile,
+            existsSync: () => true,
+            mobileServer: server,
+            MobileRtc: require('./mobile-rtc').MobileRtc,
+          }),
+        );
+        assert.equal(server.status().enabled, true, '远程配置错误不能关闭局域网服务');
+      } finally {
+        await server.disable();
+      }
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
 // 文件预选不会导入会议；重试和取消仍走原有后端调用边界。
 const importHandlers = new Map();
 const importRequests = [];

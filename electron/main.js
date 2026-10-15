@@ -1240,6 +1240,29 @@ function registerIpc() {
     return { saved: true };
   });
   handleIpc('mobile.stop', (_, payload) => mobileServer.requestStop(id.parse(payload).meeting_id));
+  handleIpc('mobile.start-capture', (_, payload) => {
+    const { device_id: deviceId, ...value } = meetingStart
+      .extend({
+        device_id: z.string().regex(/^[a-f0-9]{32}$/),
+      })
+      .parse(payload);
+    return mobileServer.startCapture(deviceId, value);
+  });
+  handleIpc('mobile.pause-capture', (_, payload) => {
+    const value = id.extend({ paused: z.boolean() }).parse(payload);
+    return mobileServer.pauseCapture(value.meeting_id, value.paused);
+  });
+  handleIpc('mobile.preview-capture', (_, payload) => {
+    const value = z
+      .object({
+        device_id: z
+          .string()
+          .regex(/^[a-f0-9]{32}$/)
+          .nullable(),
+      })
+      .parse(payload);
+    return mobileServer.previewCapture(value.device_id);
+  });
   handleIpc('mobile.finish-received', (_, payload) =>
     mobileServer.finishReceived(id.parse(payload).meeting_id),
   );
@@ -2433,6 +2456,7 @@ app.whenReady().then(async () => {
         mobileServer,
         JSON.parse(await readFile(remoteConfig, 'utf8')),
       );
+      await mobileServer.remote.start();
     }
   } catch (error) {
     writeLog('ERROR', `mobile service: ${error.message}`);

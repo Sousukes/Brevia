@@ -267,6 +267,7 @@ function flowSelect(name, value, options, activeModel = false, disabled = false)
     'meeting-speakers': 'person',
     'refined-model': 'cpu',
     'mic-device': 'microphone',
+    'phone-device': 'phone',
   }[name];
   disabled = disabled || options.length === 0;
   return `<div class="flow-select"${activeModel ? ' data-active-summary-model' : ''}><button class="flow-select-toggle" data-flow-select-toggle type="button" aria-expanded="false"${disabled ? ' disabled' : ''}>${escapeHtml(selected[1])}${icon ? `<span class="select-value-icon">${interfaceIcon(icon)}</span>` : ''}<span class="select-chevron">${interfaceIcon('chevron-down')}</span></button><input type="hidden" name="${name}" value="${escapeHtml(selected[0])}" /><div class="flow-select-options" hidden>${options.map((option) => `<button type="button" data-flow-select-choice="${name}" data-value="${escapeHtml(option[0])}" data-label="${escapeHtml(option[1])}"${option[0] === selected[0] ? ' aria-current="true"' : ''}${disabled ? ' disabled' : ''}>${escapeHtml(option[1])}${badge(option)}</button>`).join('')}</div></div>`;
@@ -353,12 +354,12 @@ function renderMeetingRow(
   const heading =
     editingMeetingIndex === index
       ? `<form class="meeting-title-rename" data-rename-meeting data-meeting-index="${index}"><div class="meeting-rename-controls"><input name="title" value="${escapeHtml(draft?.title ?? title)}" maxlength="120" required aria-label="${t('重命名')}"${draft?.saving ? ' disabled' : ''} /><button type="submit" class="secondary"${draft?.saving ? ' disabled' : ''}>${interfaceIcon('checkbox-checked')}${t('保存')}</button><button type="button" class="secondary" data-cancel-meeting-rename${draft?.saving ? ' disabled' : ''}>${interfaceIcon('close')}${t('取消')}</button></div><small>${escapeHtml(t('Enter 保存 · Esc 取消'))}</small><p class="meeting-rename-meta">${escapeHtml(meta)}</p><span class="meeting-rename-state" role="status">${escapeHtml(t(draft?.saving ? '正在保存…' : draft?.error ? '重命名失败，修改仍保留' : draft?.title !== title ? '已修改 · 尚未保存' : '未修改'))}${draft?.error ? ` · ${escapeHtml(draft.error)}` : ''}</span></form>`
-      : `<h2>${escapeHtml(title)}${tags.includes('手机录音') ? `<span class="meeting-source">${interfaceIcon('phone')}${escapeHtml(t('手机录音'))}</span>` : ''}</h2>`;
+      : `<h2>${escapeHtml(title)}${tags.includes('手机录音') ? `<span class="meeting-source">${interfaceIcon('phone')}${escapeHtml(t(tags.includes('手机麦克风') ? '手机麦克风' : '手机录音'))}</span>` : ''}</h2>`;
   const workspaceLabel = workspace
     ? `${escapeHtml(t('工作区'))} · ${escapeHtml(workspace.name)}`
     : '';
   return `<article class="meeting-row" data-meeting-index="${index}" data-selection-key="${escapeHtml(id || String(index))}" tabindex="0" aria-selected="false"${id ? ` data-meeting-id="${escapeHtml(id)}"` : ''}${!deleted && id ? ' draggable="true"' : ''}><input class="meeting-row-checkbox" type="checkbox" data-select-meeting aria-label="${escapeHtml(t('选择'))} ${escapeHtml(title)}" /><span class="meeting-row-icon">${interfaceIcon('document')}</span><div class="meeting-main">${heading}${editingMeetingIndex === index ? '' : `<p>${escapeHtml(meta)}</p>`}<div class="meeting-tags">${tags
-    .filter((tag) => tag !== '手机录音')
+    .filter((tag) => tag !== '手机录音' && tag !== '手机麦克风')
     .map((tag) => `<div class="tag">${escapeHtml(tag)}</div>`)
     .join(
       '',
@@ -1200,19 +1201,26 @@ function createNotesEditor(root, options = {}) {
 /** 渲染生成的会议纪要所使用的 Markdown 子集，已对模型输出进行转义。 */
 function renderMarkdown(markdown) {
   const inline = (value) =>
-    escapeHtml(value)
-      .replace(
-        /!\[([^\]]*)\]\(([^)]+)\)/g,
-        (_, alt, src) => `<img src="${sanitizeUrl(src)}" alt="${alt}" />`,
-      )
-      .replace(
-        /\[([^\]]+)\]\(([^)]+)\)/g,
-        (_, text, url) =>
-          `<a href="${sanitizeUrl(url)}" target="_blank" rel="noopener">${text}</a>`,
-      )
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    String(value)
+      // 只解析原始文本，后续标记不能再次改写生成的 HTML 属性。
+      .split(/(!?\[[^\]\n]*\]\([^)\n]+\)|`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g)
+      .map((part) => {
+        const link = part.match(/^(!?)\[([^\]]*)\]\(([^)]+)\)$/);
+        if (link) {
+          const url = escapeHtml(sanitizeUrl(link[3]));
+          return link[1]
+            ? `<img src="${url}" alt="${escapeHtml(link[2])}" />`
+            : `<a href="${url}" target="_blank" rel="noopener">${inline(link[2])}</a>`;
+        }
+        if (part.length > 2 && part.startsWith('`') && part.endsWith('`'))
+          return `<code>${escapeHtml(part.slice(1, -1))}</code>`;
+        if (part.length > 4 && part.startsWith('**') && part.endsWith('**'))
+          return `<strong>${inline(part.slice(2, -2))}</strong>`;
+        if (part.length > 2 && part.startsWith('*') && part.endsWith('*'))
+          return `<em>${inline(part.slice(1, -1))}</em>`;
+        return escapeHtml(part);
+      })
+      .join('');
   const lines = String(markdown || '')
     .replace(/\r/g, '')
     .split('\n');

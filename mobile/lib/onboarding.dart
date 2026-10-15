@@ -1,6 +1,8 @@
+import 'design_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'i18n.dart';
+import 'design_system.dart';
 import 'pairing_illustration.dart';
 
 /// 引导仅保存本机展示偏好，不请求录音、相机或连接权限。
@@ -71,14 +73,7 @@ class _OnboardingGateState extends State<OnboardingGate> {
           children: [
             if (step == 0) ...[
               const SizedBox(height: 32),
-              Center(
-                child: Text(
-                  "Brevia",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.headlineLarge?.copyWith(fontSize: 40),
-                ),
-              ),
+              Center(child: breviaLogo(size: 64)),
               const SizedBox(height: 40),
               const Center(child: PairingIllustration()),
               const SizedBox(height: 24),
@@ -102,19 +97,19 @@ class _OnboardingGateState extends State<OnboardingGate> {
             const SizedBox(height: 28),
             if (step == 1) ...[
               ListTile(
-                leading: const Icon(Icons.phone_iphone_outlined),
+                leading: const BreviaIcon(Icons.phone_iphone_outlined),
                 title: Text(tr('仅保存在手机')),
                 subtitle: Text(tr('无需连接电脑。录音保存在本机，连接后由你主动上传。')),
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.laptop_outlined),
+                leading: const BreviaIcon(Icons.laptop_outlined),
                 title: Text(tr('连接电脑')),
                 subtitle: Text(tr('转写和笔记会回到这里。')),
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.shield_outlined),
+                leading: const BreviaIcon(Icons.shield_outlined),
                 title: Text(tr('在线 AI')),
                 subtitle: Text(tr('电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。')),
               ),
@@ -143,7 +138,7 @@ class _OnboardingGateState extends State<OnboardingGate> {
                             context,
                           ).colorScheme.surfaceContainerLow,
                         ),
-                        child: Icon(permission.$1, size: 28),
+                        child: BreviaIcon(permission.$1, size: 28),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -174,7 +169,7 @@ class _OnboardingGateState extends State<OnboardingGate> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline, size: 20),
+                  const BreviaIcon(Icons.info_outline, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(

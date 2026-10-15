@@ -13,12 +13,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'visual_capture_provenance.dart';
+
 // 显式启用才输出实际 Flutter 页面；字体路径由本机提供，不影响 CI。
 void main() {
   final output = Platform.environment['BREVIA_MOBILE_CAPTURE_DIR'];
   testWidgets('capture implemented mobile surfaces without overflow', (
     tester,
   ) async {
+    final sources = captureSources();
+    final screenshots = <String>[];
+    final runFile = File('$output/capture-run.json');
+    if (runFile.existsSync()) runFile.deleteSync();
     await tester.runAsync(() async {
       final font = Platform.environment['BREVIA_CAPTURE_FONT'];
       if (font != null) {
@@ -55,6 +61,7 @@ void main() {
           '$output/$name.png',
         ).writeAsBytes(bytes!.buffer.asUint8List());
         image.dispose();
+        screenshots.add('$name.png');
       });
     }
 
@@ -62,12 +69,31 @@ void main() {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
+      final page = child is MaterialApp ? child.home : null;
+      final pushed =
+          page is MeetingPage ||
+          page is PrepareMeetingPage ||
+          page is SavedMeetingPage ||
+          page is MobileRecoveryPage;
+      if (pushed) {
+        child = MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: (child as MaterialApp).theme,
+          home: const SizedBox(),
+        );
+      }
       await tester.pumpWidget(
         RepaintBoundary(
           key: boundary,
           child: KeyedSubtree(key: UniqueKey(), child: child),
         ),
       );
+      if (pushed) {
+        tester
+            .state<NavigatorState>(find.byType(Navigator).first)
+            .push(MaterialPageRoute<void>(builder: (_) => page!));
+        await tester.pump();
+      }
       await tester.pump(const Duration(milliseconds: 500));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
@@ -449,5 +475,12 @@ void main() {
     await capture('mobile-permissions');
     await tester.pumpWidget(const SizedBox());
     model.dispose();
+    writeCaptureRun(Directory(output), sources, screenshots, {
+      'method': 'Flutter widget RepaintBoundary, isolated fixtures',
+      'logicalSize': [390, 844],
+      'pixelSize': [780, 1688],
+      'font': Platform.environment['BREVIA_CAPTURE_FONT'],
+      'animationsSettledMs': 500,
+    });
   }, skip: output == null);
 }

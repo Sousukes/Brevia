@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:brevia_mobile/app_model.dart';
 import 'package:record/record.dart';
@@ -91,8 +92,189 @@ class OfflineConnection extends DesktopConnection {
   }
 }
 
+class CaptureConnection extends DesktopConnection {
+  final requests = <String>[];
+  final id = 'b46cbe75-c097-436b-9322-55c336203f38';
+  int controlVersion = 0;
+  String desiredState = 'recording';
+  bool stopRequested = false;
+  bool preview = false, requestRecording = true;
+  final levels = <double?>[];
+  CaptureConnection()
+    : super(address: 'https://192.168.1.2', fingerprint: 'capture');
+  @override
+  Future<dynamic> call(String method, String route, [Object? data]) async {
+    requests.add('$method $route');
+    if (route == '/meetings' && method == 'GET') return [];
+    if (route == '/capture') {
+      levels.add((data as Map)['level'] as double?);
+      return {
+        'preview': preview,
+        'request': requestRecording
+            ? {
+                'id': id,
+                'title': 'Desktop meeting',
+                'language': 'en',
+                'refined_model_id': 'test',
+              }
+            : null,
+      };
+    }
+    if (route.endsWith('/snapshot')) {
+      return {
+        'desktopCapture': true,
+        'stopRequested': stopRequested,
+        'ended': false,
+        'next': 0,
+        'samples': 0,
+        'controlVersion': controlVersion,
+        'desiredState': desiredState,
+      };
+    }
+    return {};
+  }
+}
+
+class CaptureEngine extends RecordingEngine {
+  final fake = FakeRecorder();
+  CaptureEngine(RecordingStore store, DesktopConnection connection)
+    : super(store, connection, (_) {});
+  @override
+  AudioRecorder get recorder => fake;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('PCM microphone preview uses the desktop meter scale', () {
+    expect(pcmLevel(Uint8List(3200)), 0);
+    expect(
+      pcmLevel(Uint8List.fromList(List.generate(3200, (i) => i.isOdd ? 8 : 0))),
+      0.5,
+    );
+    expect(pcmLevel(Uint8List.fromList([255, 127])), 1);
+  });
+  test(
+    'phone preview sends only levels and releases the microphone in background',
+    () async {
+      final root = await Directory.systemTemp.createTemp('brevia-preview-');
+      const channel = MethodChannel('plugins.flutter.io/path_provider');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (_) async => root.path);
+      final previous = RecordPlatform.instance;
+      final platform = LocalRecordPlatform();
+      RecordPlatform.instance = platform;
+      final connection = CaptureConnection()
+        ..preview = true
+        ..requestRecording = false;
+      final model = AppModel()..desktop = connection;
+      try {
+        await model.refresh();
+        expect(model.capturePreview, isNotNull);
+        expect(model.live, isNull);
+        platform.bytes.add(
+          Uint8List.fromList(List.generate(3200, (i) => i.isOdd ? 8 : 0)),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await model.refresh();
+        expect(connection.levels.last, 0.5);
+        expect(await (await recordingsRoot()).list().toList(), isEmpty);
+        model.didChangeAppLifecycleState(AppLifecycleState.paused);
+        await model.previewChanges;
+        expect(model.capturePreview, isNull);
+        expect(model.previewLevel, isNull);
+        model.foreground = true;
+        await model.setCapturePreview(true);
+        connection.preview = false;
+        connection.requestRecording = true;
+        await model.refresh();
+        expect(model.capturePreview, isNull);
+        expect(model.engine?.store.meta['id'], connection.id);
+      } finally {
+        await model.releaseEngines();
+        await platform.bytes.close();
+        model.dispose();
+        RecordPlatform.instance = previous;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+        await root.delete(recursive: true);
+      }
+    },
+  );
+  test(
+    'desktop capture adopts its meeting without preparing a phone meeting',
+    () async {
+      final root = await Directory.systemTemp.createTemp('brevia-capture-');
+      const channel = MethodChannel('plugins.flutter.io/path_provider');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (_) async => root.path);
+      final previous = RecordPlatform.instance;
+      final platform = LocalRecordPlatform();
+      RecordPlatform.instance = platform;
+      final connection = CaptureConnection();
+      final model = AppModel()..desktop = connection;
+      try {
+        await model.refresh();
+        expect(model.live?['id'], connection.id);
+        expect(model.live?['desktopCapture'], true);
+        expect(model.engine?.store.meta['refined_model_id'], 'test');
+        expect(connection.requests, contains('POST /capture'));
+        expect(connection.requests, isNot(contains('POST /prepare')));
+        await model.engine?.syncDone?.future;
+        final recording = model.engine!;
+        model.didChangeAppLifecycleState(AppLifecycleState.paused);
+        platform.bytes.add(Uint8List(32000));
+        await Future<void>.delayed(Duration.zero);
+        await recording.disk;
+        expect(model.engine, same(recording));
+        expect(recording.store.meta['state'], 'recording');
+        expect(recording.store.samples, 16000);
+      } finally {
+        await platform.bytes.close();
+        await model.releaseEngines();
+        model.dispose();
+        RecordPlatform.instance = previous;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+        await root.delete(recursive: true);
+      }
+    },
+  );
+  test(
+    'desktop pause is applied once and stop takes priority over resume',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'brevia-capture-controls-',
+      );
+      final connection = CaptureConnection();
+      final store = RecordingStore(root, {
+        'id': connection.id,
+        'state': 'recording',
+        'desktopCapture': true,
+      });
+      final engine = CaptureEngine(store, connection);
+      try {
+        connection.controlVersion = 1;
+        connection.desiredState = 'paused';
+        await engine.sync();
+        expect(store.meta['state'], 'paused');
+        expect(store.meta['controlVersion'], 1);
+        store.meta['state'] = 'recording';
+        await engine.sync();
+        expect(store.meta['state'], 'recording');
+        connection.controlVersion = 2;
+        connection.desiredState = 'recording';
+        connection.stopRequested = true;
+        await engine.sync();
+        expect(engine.fake.stopped, true);
+        expect(store.meta['state'], 'ended');
+        expect(engine.fake.starts, 0);
+      } finally {
+        await engine.dispose();
+        await connection.dispose();
+        await root.delete(recursive: true);
+      }
+    },
+  );
   test('slow signalling does not delay pause or end commands', () async {
     final dir = await Directory.systemTemp.createTemp('brevia-reconnect-');
     final store = RecordingStore(dir, {'id': 'test', 'state': 'recording'});
@@ -276,7 +458,12 @@ void main() {
         final connection = SyncConnection();
         model.desktop = connection;
         await model.refresh();
-        expect(connection.calls.where((v) => v.startsWith('POST')), isEmpty);
+        expect(
+          connection.calls.where(
+            (v) => v.startsWith('POST') && v != 'POST /capture',
+          ),
+          isEmpty,
+        );
         connection.rejectPrepare = true;
         await expectLater(
           model.upload(id, {'language': 'en'}),
@@ -340,6 +527,61 @@ void main() {
         );
       } finally {
         await engine.dispose();
+        await dir.delete(recursive: true);
+      }
+    },
+  );
+  test(
+    'lost chunk and end acknowledgements survive reload without duplicating audio',
+    () async {
+      final dir = await Directory.systemTemp.createTemp('brevia-lost-ack-');
+      final store = RecordingStore(dir, {'id': 'test', 'state': 'ended'});
+      await store.append(Uint8List.fromList([1, 0]));
+      await store.append(Uint8List.fromList([2, 0]));
+      await store.save();
+      final connection = SyncConnection()
+        ..loseChunkAck = true
+        ..loseEndAck = true;
+      var engine = RecordingEngine(store, connection, (_) {});
+      try {
+        await engine.sync();
+        expect(engine.connected, false);
+        expect(connection.next, 1);
+        expect(store.meta['finished'], isNot(true));
+        await engine.dispose();
+        final recovered = await RecordingStore.load(dir);
+        engine = RecordingEngine(recovered, connection, (_) {});
+        await engine.sync();
+        expect(engine.connected, false);
+        expect(connection.next, 2);
+        expect(recovered.meta['finished'], isNot(true));
+        engine.retryAt = DateTime.fromMillisecondsSinceEpoch(0);
+        await engine.sync();
+        expect(recovered.meta['finished'], true);
+        expect(connection.samples, 2);
+        expect(
+          connection.calls.where((value) => value.endsWith('/chunks')),
+          hasLength(2),
+        );
+        expect(
+          connection.calls.where((value) => value.endsWith('/end')),
+          hasLength(1),
+        );
+        final uploaded = connection.calls.indexed
+            .where((entry) => entry.$2.endsWith('/chunks'))
+            .map((entry) => connection.payloads[entry.$1] as Map)
+            .toList();
+        expect(uploaded.map((chunk) => chunk['start_sample']), [0, 1]);
+        expect(uploaded.map((chunk) => base64Decode(chunk['pcm'])), [
+          [1, 0],
+          [2, 0],
+        ]);
+        expect(await recovered.chunk(0).readAsBytes(), [1, 0]);
+        expect(await recovered.chunk(1).readAsBytes(), [2, 0]);
+        expect((await RecordingStore.metadata(dir))['uploaded'], 2);
+      } finally {
+        await engine.dispose();
+        await connection.dispose();
         await dir.delete(recursive: true);
       }
     },
@@ -479,6 +721,7 @@ void main() {
 class SyncConnection extends DesktopConnection {
   final List<String> calls = [];
   bool deleted = false, rejectPrepare = false;
+  bool loseChunkAck = false, loseEndAck = false;
   int next = 0, samples = 0;
   final List<Object?> payloads = [];
   SyncConnection() : super(address: 'https://192.168.1.2', fingerprint: 'test');
@@ -499,7 +742,15 @@ class SyncConnection extends DesktopConnection {
     if (route.endsWith('/chunks')) {
       next++;
       samples += base64Decode((data as Map)['pcm']).length ~/ 2;
+      if (loseChunkAck) {
+        loseChunkAck = false;
+        throw SocketException('chunk acknowledgement lost');
+      }
       return {'next': next, 'samples': samples};
+    }
+    if (route.endsWith('/end') && loseEndAck) {
+      loseEndAck = false;
+      throw SocketException('end acknowledgement lost');
     }
     return {};
   }
@@ -508,7 +759,7 @@ class SyncConnection extends DesktopConnection {
 class LocalRecordPlatform extends RecordPlatform {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-  final bytes = StreamController<Uint8List>();
+  final bytes = StreamController<Uint8List>.broadcast();
   @override
   Future<void> create(String id) async {}
   @override

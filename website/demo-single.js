@@ -46,8 +46,7 @@
   function calculateScale(viewport) {
     const designWidth = 1200;
     const designHeight = 750;
-    const rect = viewport.getBoundingClientRect();
-    return Math.min(rect.width / designWidth, rect.height / designHeight, 1);
+    return Math.min(viewport.clientWidth / designWidth, viewport.clientHeight / designHeight, 1);
   }
 
   function applyScale() {

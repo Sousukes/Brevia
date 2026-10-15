@@ -590,7 +590,8 @@ class RecordingSessionMixin:
                 text = self._clean_live_text(asr.decode(samples, 16000))
             if not text:
                 return
-            for subtitle in self._chunk_subtitles(event, text):
+            # 先更新全部待提交尾句，再发布正式段落，避免草稿仍包含刚提交的正文。
+            for subtitle in list(self._chunk_subtitles(event, text)):
                 self._emit_subtitle(subtitle)
         except Exception as error:
             self.emit(
@@ -874,7 +875,15 @@ class RecordingSessionMixin:
         return int(max(6.0, seconds) * 1000)
 
     def _emit_subtitle(self, event):
-        if self.store.save_segment(event):
+        saved = self.store.save_segment(event)
+        track = event["track"]
+        if self.pending_paragraphs.get(track) is event:
+            del self.pending_paragraphs[track]
+        if self.pending_subtitles.get(track) is event:
+            del self.pending_subtitles[track]
+            self.pending_join.pop(track, None)
+        if saved:
+            self._emit_draft(event["track"], event["meeting_id"])
             self.emit("transcript.final", event)
             self.emit("transcript.settled", event)
             try:
@@ -940,12 +949,9 @@ class RecordingSessionMixin:
                 >= SUBTITLE_PARAGRAPH_HOLD_SECONDS
             ):
                 self._emit_subtitle(paragraph)
-                del self.pending_paragraphs[track]
         for track, subtitle in list(self.pending_subtitles.items()):
             if now_ms is None or subtitle["end_ms"] <= now_ms - self._tail_hold_ms():
                 self._emit_subtitle(subtitle)
-                del self.pending_subtitles[track]
-                self.pending_join.pop(track, None)
 
     @staticmethod
     def _unfinished_subtitle(text):

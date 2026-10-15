@@ -1,4 +1,7 @@
+import 'design_icons.dart';
+
 import 'package:flutter/material.dart';
+
 import 'i18n.dart';
 
 /// 只展示状态和发送动作；录音、传输和错误处理仍由会议控制器负责。
@@ -29,16 +32,16 @@ class RecordingControls extends StatelessWidget {
     }) => IconButton.filledTonal(
       tooltip: label,
       onPressed: pending ? null : action,
-      icon: Icon(icon, size: 28),
+      icon: BreviaIcon(icon, size: 28),
       style: IconButton.styleFrom(
-        minimumSize: const Size(56, 56),
+        minimumSize: const Size(64, 64),
         backgroundColor: danger
             ? localOnly
                   ? Colors.transparent
                   : dark
                   ? Colors.white
                   : const Color(0xffff3b30)
-            : colors.surfaceContainerLowest,
+            : colors.surface,
         foregroundColor: danger
             ? localOnly || dark
                   ? const Color(0xffff3b30)

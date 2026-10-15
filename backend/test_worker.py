@@ -2436,6 +2436,66 @@ class WorkerTest(unittest.TestCase):
         self.assertIn("<h2>行动项</h2>", printed)
         self.assertNotIn("## **行动项**", printed)
 
+    def test_summary_repairs_joined_markdown_without_rewriting_storage(self):
+        from .markdown import normalize_summary_markdown
+        from .worker_llm import clean_summary_markdown
+
+        raw = (
+            "# **纪要**\n## **会议摘要**\n完成讨论。## **核心结论**\n"
+            "- 第一条。- 第二条。### **报价**\n- 19、22、23.5 美元。"
+        )
+        expected = (
+            "# **纪要**\n## **会议摘要**\n完成讨论。\n\n## **核心结论**\n"
+            "- 第一条。\n- 第二条。\n\n### **报价**\n- 19、22、23.5 美元。"
+        )
+        self.assertEqual(normalize_summary_markdown(raw), expected)
+        self.assertEqual(normalize_summary_markdown(expected), expected)
+        self.assertEqual(clean_summary_markdown("_tag\n" + raw), expected)
+        self.worker.llm_complete = lambda *_args, **_kwargs: raw
+        self.assertEqual(self.worker._complete_with_retry({}, "纪要测试"), expected)
+        for ordinary in (
+            "正常正文 # 不是标题，C# 和 A - B 保持原样。",
+            "# **标题**\n- 一句话。- 并非明确的新列表。",
+        ):
+            self.assertEqual(normalize_summary_markdown(ordinary), ordinary)
+        for protected in (
+            "```md\n正文。## **代码标题**\n- 原样。- 保留。\n```",
+            "~~~md\n正文。## **代码标题**\n~~~",
+            "```md\n正文。## **未闭合代码**",
+            "`正文。## **行内代码**`",
+            "[正文。## **链接**](https://example.test/a-b)",
+        ):
+            self.assertEqual(normalize_summary_markdown(protected), protected)
+            self.assertEqual(
+                normalize_summary_markdown(raw + "\n" + protected), expected + "\n" + protected
+            )
+        meeting = self.worker.start(
+            {"title": "旧纪要", "language": "zh", "refined_model_id": "qwen3-asr-0.6b-int8"}
+        )
+        self.worker.store.save_summary(meeting["id"], {"markdown": raw}, raw)
+        for compact in (False, True):
+            detail = self.worker.store.get_meeting(meeting["id"], compact=compact)
+            self.assertEqual(detail["summary"]["data"]["markdown"], expected)
+        for export_format in ("md", "txt", "pdf", "docx"):
+            exported = self.worker.export(
+                {"meeting_id": meeting["id"], "content": "notes", "format": export_format}
+            )
+            if export_format in ("md", "txt"):
+                self.assertEqual(Path(exported["path"]).read_text(encoding="utf-8"), expected)
+            elif export_format == "pdf":
+                printed = Path(exported["path"]).read_text(encoding="utf-8")
+                self.assertIn("<h2>核心结论</h2>", printed)
+                self.assertNotIn("。##", printed)
+            else:
+                with zipfile.ZipFile(exported["path"]) as archive:
+                    self.assertNotIn("。##", archive.read("word/document.xml").decode())
+        with self.worker.store.connect() as db:
+            stored = db.execute(
+                "SELECT data,raw_response FROM summaries WHERE meeting_id=?", (meeting["id"],)
+            ).fetchone()
+        self.assertEqual(json.loads(stored["data"])["markdown"], raw)
+        self.assertEqual(stored["raw_response"], raw)
+
     def test_exports_use_content_prefixes_and_keep_each_format(self):
         meeting = self.worker.start(
             {

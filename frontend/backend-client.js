@@ -504,6 +504,16 @@ window.breviaClient = window.brevia
       },
       async start(payload, inputs, micDeviceId) {
         await this.stopPreview();
+        if (inputs.phone) {
+          const meeting = await window.brevia.mobile.startCapture({
+            ...payload,
+            device_id: inputs.phone,
+          });
+          this.state.meeting = meeting;
+          this.state.selectedMeetingId = meeting.id;
+          this.state.inputs = { ...inputs };
+          return meeting;
+        }
         this.capture = new AudioCapture(window.brevia.meeting.audio, this.onLevel, (error) =>
           this.onCaptureError?.(error),
         );
@@ -566,6 +576,8 @@ window.breviaClient = window.brevia
       async pause(paused) {
         const meetingId = this.state.meeting?.id || this.capture?.meetingId;
         if (!meetingId) throw new Error(micMessage('当前没有正在进行的会议'));
+        if (this.state.meeting?.tags?.includes('手机麦克风'))
+          return window.brevia.mobile.pauseCapture({ meeting_id: meetingId, paused });
         if (this.capture) await this.capture.setPaused(paused);
         return window.brevia.meeting.pause({ meeting_id: meetingId, paused });
       },

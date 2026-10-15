@@ -263,12 +263,19 @@
                   ><h2>处理选项</h2><div data-prepare-processing></div></section
                 ><p class="prepare-error" data-prepare-error role="alert" hidden></p
                 ><fieldset
-                  ><legend>录制来源</legend
+                  ><legend
+                    ><span>录制来源</span
+                    ><button type="button" class="capture-phone" data-capture-phone
+                      ><span data-interface-icon="plus"></span><span>连接设备</span></button
+                    ></legend
                   ><p class="prepare-source-description" data-prepare-source-description></p
                   ><div class="capture-settings"
                     ><label>采集模式<span id="capture-mode-mount"></span></label
                     ><label id="mic-device-setting"
-                      >麦克风设备<span id="mic-device-mount"></span></label></div
+                      >麦克风设备<span id="mic-device-mount"></span></label
+                    ><label id="phone-device-setting" hidden
+                      >手机设备<span id="phone-device-mount"></span></label></div></fieldset
+                ><div class="prepare-input-status"
                   ><div class="capture-status" aria-live="polite"
                     ><span id="mic-input-state"
                       ><b>麦克风</b
@@ -280,7 +287,7 @@
                       ><b>系统音频</b
                       ><strong><span id="system-input-label">未检测</span></strong></span
                     ></div
-                  ><small id="capture-mode-hint"></small></fieldset
+                  ><small id="capture-mode-hint" hidden></small></div
                 ><button class="primary-action wide" type="submit"
                   >开始录制 <span data-interface-icon="arrow-right"></span></button></form></div
           ></div>

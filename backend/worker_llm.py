@@ -2,6 +2,7 @@
 
 import re
 
+from .markdown import normalize_summary_markdown
 from .transcript import clock, latest_segments
 from .worker_common import UserFacingError, ModelNotInstalled, TaskCancelled, managed_task, require
 
@@ -25,8 +26,8 @@ SUMMARY_MAX_TOKENS = 3072
 
 
 def clean_summary_markdown(markdown):
-    """丢弃模型在 Markdown 标题前泄漏的控制标记。"""
-    text = str(markdown or "").strip()
+    """修复模型输出的粘连结构，丢弃首个标题前泄漏的控制标记。"""
+    text = normalize_summary_markdown(markdown).strip()
     heading = re.search(r"(?m)^#{1,6}\s+", text)
     return text[heading.start() :] if heading else text
 
@@ -386,6 +387,7 @@ class LLMWorkerMixin:
 
     def _complete_with_retry(self, payload, prompt):
         """生成响应；偶发空响应（CPU 上生成超时/被中断）重试一次再判失败。"""
+        prompt += "\n\nPut every Markdown heading and list item on its own line."
         markdown = clean_summary_markdown(self._complete(payload, prompt))
         if not markdown:
             markdown = clean_summary_markdown(self._complete(payload, prompt))

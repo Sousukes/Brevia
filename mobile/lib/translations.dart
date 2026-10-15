@@ -1,6 +1,12 @@
 // Shared mobile UI, recording notifications and error messages. Keep placeholders consistent.
 const translations = {
   "en": {
+    "电脑会议的手机录音": "Phone audio for a desktop meeting",
+    "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
+        "This meeting was started on the computer. Transcripts and notes stay there. Audio is kept on this phone and can upload after reconnecting.",
+    "手机未能开始录音，请打开手机 Brevia 后重试":
+        "The phone could not start recording. Open Brevia on the phone and try again",
+    "请在电脑管理这场会议": "Manage this meeting on the computer",
     "手动连接": "Manual connection",
     "电脑的局域网地址变化后，可在此更新并重新连接。":
         "Update the local network address here to reconnect after it changes.",
@@ -374,6 +380,12 @@ const translations = {
         "Recording can continue while locked. Calls, force-stop or system limits can interrupt it; check the status when you return.\n\nAndroid uses a microphone foreground service. Allow recording notifications. If battery restrictions stop the app, adjust system settings. Return to the app to resume after pausing.",
   },
   "es": {
+    "电脑会议的手机录音": "Audio del teléfono para una reunión del ordenador",
+    "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
+        "Esta reunión se inició en el ordenador. Las transcripciones y notas se guardan allí. El audio queda en el teléfono y puede enviarse al reconectar.",
+    "手机未能开始录音，请打开手机 Brevia 后重试":
+        "El teléfono no pudo grabar. Abre Brevia en el teléfono e inténtalo de nuevo",
+    "请在电脑管理这场会议": "Gestiona esta reunión en el ordenador",
     "手动连接": "Conexión manual",
     "电脑的局域网地址变化后，可在此更新并重新连接。":
         "Actualiza aquí la dirección de red local para volver a conectar.",
@@ -751,6 +763,11 @@ const translations = {
         "La grabación puede continuar con la pantalla bloqueada. Las llamadas, el cierre forzado o los límites del sistema pueden interrumpirla; comprueba el estado al volver.\n\nAndroid usa un servicio de micrófono en primer plano. Permite las notificaciones. Si el ahorro de batería cierra la app, ajusta el sistema. Vuelve a la app para continuar tras pausar.",
   },
   "ja": {
+    "电脑会议的手机录音": "パソコン会議のスマートフォン録音",
+    "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
+        "この会議はパソコンで開始され、文字起こしとノートはパソコンに保存されます。録音はスマートフォンに残り、再接続後に送信できます。",
+    "手机未能开始录音，请打开手机 Brevia 后重试": "録音を開始できませんでした。スマートフォンで Brevia を開いて再試行してください",
+    "请在电脑管理这场会议": "この会議はパソコンで管理してください",
     "手动连接": "手動接続",
     "电脑的局域网地址变化后，可在此更新并重新连接。": "ローカルネットワークのアドレスが変わったら、ここで更新して再接続できます。",
     "新的局域网地址": "新しいローカルネットワークのアドレス",
@@ -1088,6 +1105,12 @@ const translations = {
         "ロック中も録音できます。着信、強制終了、システム制限で中断される場合があるため、戻ったら状態を確認してください。\n\nAndroid はマイクのフォアグラウンドサービスを使用します。録音通知を許可してください。省電力設定でアプリが停止する場合はシステム設定を調整してください。一時停止後はアプリに戻って再開してください。",
   },
   "ko": {
+    "电脑会议的手机录音": "컴퓨터 회의용 휴대폰 녹음",
+    "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
+        "컴퓨터에서 시작한 회의입니다. 전사와 메모는 컴퓨터에 저장됩니다. 녹음은 휴대폰에 보관되며 재연결 후 전송할 수 있습니다.",
+    "手机未能开始录音，请打开手机 Brevia 后重试":
+        "휴대폰 녹음을 시작할 수 없습니다. 휴대폰에서 Brevia를 열고 다시 시도하세요",
+    "请在电脑管理这场会议": "이 회의는 컴퓨터에서 관리하세요",
     "手动连接": "수동 연결",
     "电脑的局域网地址变化后，可在此更新并重新连接。": "로컬 네트워크 주소가 변경되면 여기서 업데이트하고 다시 연결하세요.",
     "新的局域网地址": "새 로컬 네트워크 주소",
@@ -1424,6 +1447,12 @@ const translations = {
         "잠금 후에도 녹음할 수 있습니다. 통화, 강제 종료, 시스템 제한으로 중단될 수 있으니 돌아온 후 상태를 확인하세요.\n\nAndroid는 마이크 포그라운드 서비스를 사용합니다. 녹음 알림을 허용하세요. 절전 정책이 앱을 종료하면 시스템 설정을 조정하세요. 일시정지 후에는 앱에서 재개하세요.",
   },
   "fr": {
+    "电脑会议的手机录音": "Audio du téléphone pour une réunion sur ordinateur",
+    "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
+        "Cette réunion a été lancée sur l’ordinateur. Transcriptions et notes y restent. L’audio est conservé sur le téléphone et peut être envoyé après reconnexion.",
+    "手机未能开始录音，请打开手机 Brevia 后重试":
+        "Le téléphone n’a pas pu enregistrer. Ouvrez Brevia et réessayez",
+    "请在电脑管理这场会议": "Gérez cette réunion sur l’ordinateur",
     "手动连接": "Connexion manuelle",
     "电脑的局域网地址变化后，可在此更新并重新连接。":
         "Modifiez ici l’adresse locale pour vous reconnecter après un changement.",
@@ -1806,6 +1835,12 @@ const translations = {
         "L’enregistrement peut continuer écran verrouillé. Appels, arrêt forcé ou limites système peuvent l’interrompre ; vérifiez l’état au retour.\n\nAndroid utilise un service de microphone au premier plan. Autorisez les notifications. Si l’économie de batterie arrête l’app, ajustez les réglages système. Revenez dans l’app pour reprendre après une pause.",
   },
   "de": {
+    "电脑会议的手机录音": "Telefonaufnahme für ein Desktop-Meeting",
+    "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
+        "Dieses Meeting wurde am Computer gestartet. Transkripte und Notizen bleiben dort. Das Audio bleibt am Telefon und wird nach dem Wiederverbinden übertragen.",
+    "手机未能开始录音，请打开手机 Brevia 后重试":
+        "Aufnahme konnte nicht starten. Brevia am Telefon öffnen und erneut versuchen",
+    "请在电脑管理这场会议": "Dieses Meeting am Computer verwalten",
     "手动连接": "Manuell verbinden",
     "电脑的局域网地址变化后，可在此更新并重新连接。":
         "Aktualisieren Sie hier die lokale Netzwerkadresse, um sich erneut zu verbinden.",
@@ -2187,6 +2222,12 @@ const translations = {
         "Aufnahme ist bei gesperrtem Bildschirm möglich. Anrufe, erzwungenes Beenden oder Systemlimits können sie unterbrechen; prüfen Sie den Status nach der Rückkehr.\n\nAndroid verwendet einen Mikrofon-Vordergrunddienst. Aufnahmebenachrichtigungen erlauben. Bei Beendigung durch Energiesparregeln die Systemeinstellungen anpassen. Nach einer Pause in der App fortsetzen.",
   },
   "ru": {
+    "电脑会议的手机录音": "Запись с телефона для встречи на компьютере",
+    "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
+        "Встреча начата на компьютере. Расшифровка и заметки остаются там. Аудио сохраняется на телефоне и передаётся после восстановления связи.",
+    "手机未能开始录音，请打开手机 Brevia 后重试":
+        "Не удалось начать запись. Откройте Brevia на телефоне и повторите попытку",
+    "请在电脑管理这场会议": "Управляйте этой встречей на компьютере",
     "手动连接": "Подключение вручную",
     "电脑的局域网地址变化后，可在此更新并重新连接。":
         "Обновите локальный адрес здесь, чтобы подключиться снова после его изменения.",

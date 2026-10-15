@@ -1,15 +1,14 @@
 # Brevia 发版清单
 
-发布任何版本前逐项确认。机器无关的步骤写在这里；本机专用的操作（证书、`gh` 登录、离线打包路径）
-见 `docs/RELEASING.local.md`。
+发布任何版本前逐项确认。本指南保留可复用的检查与 CI 流程；证书、登录信息和本机路径由维护者在仓库外管理。
 
 ## 1. 版本号（三处，只有一处是自动的）
 
 | 位置                                  | 内容                                                                           | 谁负责                                                                            |
 | ------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| `package.json` / `package-lock.json`  | `version`                                                                      | 自动：`release.sh` 里的 `npm version`                                             |
+| `package.json` / `package-lock.json`  | `version`                                                                      | 使用 `npm version` 同步更新                                                       |
 | `frontend/changelog.js` 的 `releases` | 新增一条 `{ version, date, current: true }`，并把上一条的 `current: true` 去掉 | 手动；`test-ui.mjs` 只守住「恰好一条 current 且它是最新一条」，条目的增补仍需人工 |
-| `docs/releases/v<version>.md`         | GitHub Release Notes                                                           | 手动，缺文件 `release.sh` 会直接退出                                              |
+| `docs/releases/v<version>.md`         | GitHub Release Notes                                                           | 手动，发布前确认文件存在                                                          |
 
 `releases` 漏更新的后果：应用内「更新日志」把上一个版本标成当前版本。
 `current` 只能有一条，顺序按版本从新到旧。
@@ -53,13 +52,12 @@ npm run build         # tailwind.css → styles.css，构建后 styles.css 应�
 
 ## 5. 打包与发布
 
-工作区必须干净：`release.sh` 只允许 `package.json`、`package-lock.json` 和 release note 处于未提交状态，
-其余改动先提交并推送。
+先提交版本号、更新日志和 release note，确认待发布提交已通过检查，再由维护者创建并推送 `v<version>` 标签。[Release 工作流](../.github/workflows/release.yml)在标签推送时构建并发布 macOS 和 Windows 安装包；也支持手动触发。签名和发布凭据由维护者配置，普通贡献者无需持有。
+
+本机仅构建安装包时运行：
 
 ```bash
-./release.sh <version>          # 公开发布：打标签、推 main、等 GitHub Actions、下载产物
-# 或
-npm run release:offline         # 只在本机出安装包，不推送、不公证
+npm run release:offline
 ```
 
 `pack:backend` 现在会在打包开始时就校验出厂模型清单，模型下架不同步会立刻失败，而不是等到用户机器上。

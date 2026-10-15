@@ -1,3 +1,4 @@
+import 'design_icons.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -284,7 +285,7 @@ class _AppUpdateTileState extends State<AppUpdateTile>
     return ListTile(
       contentPadding: EdgeInsets.zero,
       minTileHeight: 76,
-      leading: const Icon(Icons.system_update),
+      leading: const BreviaIcon(Icons.system_update),
       title: Text(
         tr(
           downloadState == 'ready'
@@ -319,7 +320,7 @@ class _AppUpdateTileState extends State<AppUpdateTile>
             Text('${(progress! * 100).floor()}%'),
         ],
       ),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: const BreviaIcon(Icons.chevron_right),
       onTap: busy || downloading ? null : update,
     );
   }

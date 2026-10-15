@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'design_icons.dart';
 
 // 桌面与手机使用同一语义色板，控件大小遵循原生触控约定。
 ThemeData breviaTheme(Brightness brightness) {
@@ -8,7 +9,7 @@ ThemeData breviaTheme(Brightness brightness) {
   final ink = dark ? Color(0xfff2f2f2) : Color(0xff222222);
   final canvas = dark ? Color(0xff191919) : Color(0xffffffff);
   final muted = dark ? Color(0xffb0b0b0) : Color(0xff666666);
-  final line = dark ? Color(0xff333333) : Color(0xffeaeaea);
+  final line = dark ? Color(0xff4a4a4a) : Color(0xffd6d6d6);
   final sheet = dark ? Color(0xff242424) : Colors.white;
   final scheme = ColorScheme.fromSeed(seedColor: ink, brightness: brightness)
       .copyWith(
@@ -46,7 +47,32 @@ ThemeData breviaTheme(Brightness brightness) {
     fontFamily: fontFamily,
   );
   return base.copyWith(
+    iconTheme: IconThemeData(color: ink, size: 24),
     splashFactory: NoSplash.splashFactory,
+    actionIconTheme: ActionIconThemeData(
+      backButtonIconBuilder: (_) => const BreviaIcon(Icons.chevron_left),
+    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: ink,
+      linearTrackColor: dark ? Color(0xff4a4a4a) : Color(0xffe5e5e9),
+      linearMinHeight: 6,
+      borderRadius: BorderRadius.circular(3),
+      trackGap: 0,
+      stopIndicatorRadius: 0,
+    ),
+    sliderTheme: SliderThemeData(
+      trackHeight: 3,
+      activeTrackColor: ink,
+      inactiveTrackColor: line,
+      thumbColor: ink,
+      thumbShape: const RoundSliderThumbShape(
+        enabledThumbRadius: 3,
+        disabledThumbRadius: 3,
+      ),
+      overlayShape: SliderComponentShape.noOverlay,
+      trackShape: const RoundedRectSliderTrackShape(),
+      padding: EdgeInsets.zero,
+    ),
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(minimumSize: Size(48, 48)),
     ),
@@ -70,7 +96,7 @@ ThemeData breviaTheme(Brightness brightness) {
       titleTextStyle: TextStyle(
         fontFamily: fontFamily,
         fontSize: 18,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: ink,
       ),
       elevation: 0,
@@ -81,28 +107,43 @@ ThemeData breviaTheme(Brightness brightness) {
           headlineLarge: TextStyle(
             fontSize: 32,
             height: 1.25,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: ink,
           ),
           headlineSmall: TextStyle(
             fontSize: 24,
             height: 1.4,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: ink,
           ),
           titleLarge: TextStyle(
             fontSize: 20,
             height: 1.4,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: ink,
           ),
-          bodySmall: TextStyle(fontSize: 14, height: 1.5, color: muted),
-          bodyLarge: TextStyle(fontSize: 18, height: 1.65, color: ink),
-          bodyMedium: TextStyle(fontSize: 16, height: 1.55, color: ink),
+          bodySmall: TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
+            color: muted,
+          ),
+          bodyLarge: TextStyle(
+            fontSize: 17,
+            height: 1.55,
+            fontWeight: FontWeight.w500,
+            color: ink,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 16,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
+            color: ink,
+          ),
         )
         .apply(fontFamily: fontFamily),
     dividerTheme: DividerThemeData(
-      color: dark ? Color(0xff333333) : Color(0xffeaeaea),
+      color: dark ? Color(0xff4a4a4a) : Color(0xffd6d6d6),
       thickness: 1,
       space: 32,
     ),
@@ -130,7 +171,7 @@ ThemeData breviaTheme(Brightness brightness) {
         textStyle: TextStyle(
           fontFamily: fontFamily,
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -144,7 +185,7 @@ ThemeData breviaTheme(Brightness brightness) {
         textStyle: TextStyle(
           fontFamily: fontFamily,
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -156,7 +197,7 @@ ThemeData breviaTheme(Brightness brightness) {
         textStyle: TextStyle(
           fontFamily: fontFamily,
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -171,11 +212,11 @@ ThemeData breviaTheme(Brightness brightness) {
     listTileTheme: ListTileThemeData(
       iconColor: ink,
       contentPadding: EdgeInsets.zero,
-      minVerticalPadding: 20,
+      minVerticalPadding: 14,
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: canvas,
-      height: 72,
+      height: 64,
       elevation: 0,
       indicatorColor: Colors.transparent,
       iconTheme: WidgetStateProperty.resolveWith(
@@ -193,3 +234,11 @@ ThemeData breviaTheme(Brightness brightness) {
     ),
   );
 }
+
+Widget breviaLogo({double size = 32}) => Image.asset(
+  'assets/brevia-logo.png',
+  width: size,
+  height: size,
+  fit: BoxFit.contain,
+  semanticLabel: 'Brevia',
+);

@@ -1,8 +1,9 @@
 import 'i18n.dart';
+import 'design_system.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-/// Play the desktop reveal once while local data initializes, then fade out.
+/// 显示应用Logo，首帧和本机初始化完成后淡出。
 class Startup extends StatefulWidget {
   final Future<void> Function() initialize;
   final Widget child;
@@ -57,38 +58,23 @@ class _StartupState extends State<Startup> {
                 fit: StackFit.expand,
                 children: [
                   if (reduced)
-                    Center(
-                      child: Text(
-                        'brevia',
-                        style: TextStyle(
-                          color: Color(0xff26221e),
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    )
+                    Center(child: breviaLogo(size: 64))
                   else
-                    Image.asset(
-                      'assets/brevia-logo-reveal.gif',
-                      fit: BoxFit.cover,
-                      frameBuilder: (_, child, frame, _) {
-                        if (frame != null) firstFrame();
-                        return Transform.scale(scale: .82, child: child);
-                      },
-                      errorBuilder: (_, _, _) {
-                        firstFrame();
-                        return Center(
-                          child: Text(
-                            'brevia',
-                            style: TextStyle(
-                              color: Color(0xff26221e),
-                              fontSize: 36,
-                              decoration: TextDecoration.none,
-                            ),
-                          ),
-                        );
-                      },
+                    Center(
+                      child: Image.asset(
+                        'assets/brevia-logo.png',
+                        width: 64,
+                        height: 64,
+                        semanticLabel: 'Brevia',
+                        frameBuilder: (_, child, frame, _) {
+                          if (frame != null) firstFrame();
+                          return child;
+                        },
+                        errorBuilder: (_, _, _) {
+                          firstFrame();
+                          return const SizedBox(width: 64, height: 64);
+                        },
+                      ),
                     ),
                   if (error != null)
                     SafeArea(

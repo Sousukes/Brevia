@@ -4,6 +4,8 @@
 
 修改代码前请阅读 [CONTRIBUTING.md](../CONTRIBUTING.md)。本指南介绍桌面端架构、模型选择、本地开发与打包。Flutter 开发和手机端分发见[手机开发指南](../mobile/README.md)，手机跨网连接见[部署与恢复说明](mobile-remote.md)，发布流程见 [RELEASING.md](RELEASING.md)。
 
+其他使用与贡献指南见[文档目录](README.md)。
+
 ## 架构
 
 ```mermaid

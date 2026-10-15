@@ -40,6 +40,21 @@ class Bridge(MobileWorkerMixin):
 
 
 class MobileReplayTest(unittest.TestCase):
+    def test_desktop_capture_has_its_own_source_tag_and_reuses_audio_replay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bridge = Bridge(Store(directory))
+            mid = 'b46cbe75-c097-436b-9322-55c336203f38'
+            payload = dict(
+                action='start', meeting_id=mid, title='Desktop', language='en', desktop_capture=True
+            )
+            meeting = bridge.mobile_apply(payload)
+            self.assertEqual(meeting['tags'], ['手机录音', '手机麦克风'])
+            bridge.mobile_apply(payload)
+            bridge.mobile_apply(dict(action='chunk', meeting_id=mid, start_sample=0, pcm='AQA='))
+            bridge.mobile_apply(dict(action='end', meeting_id=mid, samples=1))
+            self.assertEqual(len(bridge.store.list_meetings()), 1)
+            self.assertEqual(bridge.store.get_meeting(mid)['tags'], ['手机录音', '手机麦克风'])
+
     def test_replay_waits_for_recognition_before_acknowledging(self):
         with tempfile.TemporaryDirectory() as directory, ThreadPoolExecutor(1) as executor:
             bridge = Bridge(Store(directory))

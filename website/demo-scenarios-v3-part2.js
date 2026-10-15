@@ -203,8 +203,11 @@ DemoScenariosV3.prototype._fadeSwapContent = function (newHtml, callback) {
         if (appShell && viewport) {
           const designWidth = 1200;
           const designHeight = 750;
-          const rect = viewport.getBoundingClientRect();
-          const scale = Math.min(rect.width / designWidth, rect.height / designHeight, 1);
+          const scale = Math.min(
+            viewport.clientWidth / designWidth,
+            viewport.clientHeight / designHeight,
+            1,
+          );
           appShell.style.transform = `scale(${scale})`;
           appShell.style.transformOrigin = 'top left';
         }

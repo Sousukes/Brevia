@@ -12,12 +12,15 @@ backend/brevia-worker.exe
 backend/runtime/
 backend/bundled-models/
 /release.sh
-/docs/RELEASING.local.md
+/docs/*.local.md
 
+# 内部设计、prompt、开发记录与调研仅保留在本地。
 design.md
-
-# 调研用的外部仓库克隆与报告（.research/model-download-ux-report.md 是产出，tmp/ 是可再生的克隆）
-.research/tmp/
+/ui/
+/prompts/
+/docs/ui-*.md
+/docs/redesign-*/
+.research/
 
 # 基准测试临时区：会议音频副本、模型软链、Whisper 下载、benchmark JSON
 .bench-tmp/
@@ -28,7 +31,7 @@ design.md
 # 计算样式指纹工具的 Electron 临时目录（脚本自动创建/清理）
 .css-fingerprint-tmp/
 
-# 可重建的截图、调试预览和测试日志；盘点与结论保留在 docs 中。
+# 可重建的截图、调试预览和测试日志。
 /output/
 
 # 凭据与密钥：任何情况下都不得提交。

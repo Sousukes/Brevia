@@ -1018,6 +1018,43 @@ class SentenceTest(unittest.TestCase):
         drafts = [e["payload"] for e in self.events if e["type"] == "transcript.draft"]
         self.assertEqual(drafts[-1]["text"], "")
 
+    def test_first_streamed_paragraph_is_removed_from_draft_before_final(self):
+        body = "".join(f"这是第{i}项已经确认的会议决定。" for i in range(8))
+        tail = "这是还要接着说的尾句。"
+
+        class StreamingASR:
+            def decode_stream(self, samples, sample_rate, partial):
+                partial(body + tail)
+                return body + tail
+
+        self.worker.asr = StreamingASR()
+        self.vad.accept.return_value = [(0, 6000, np.ones(96000, dtype=np.float32), "cut")]
+        self.feed(0, flush=False)
+        self.worker.live_postprocessing.submit(lambda: None).result(2)
+        self.assertTrue(self.finals())
+        draft = ""
+        for event in self.events:
+            if event["type"] == "transcript.draft":
+                draft = event["payload"]["text"]
+            elif event["type"] == "transcript.final":
+                self.assertNotIn(event["payload"]["text"], draft)
+        self.assertEqual(draft, tail)
+        self.worker.pause({"meeting_id": self.meeting["id"], "paused": True})
+        self.worker.live_postprocessing.submit(lambda: None).result(2)
+        drafts = [e["payload"] for e in self.events if e["type"] == "transcript.draft"]
+        self.assertEqual(drafts[-1]["text"], "")
+
+    def test_failed_final_save_keeps_the_held_draft(self):
+        self.asr.decode.return_value = "这是尚未提交的短句。"
+        self.vad.accept.return_value = [(0, 2000, np.ones(32000, dtype=np.float32))]
+        self.feed(0, flush=False)
+        self.worker.live_postprocessing.submit(lambda: None).result(2)
+        held = self.worker.pending_paragraphs["mic"]
+        with patch.object(self.worker.store, "save_segment", side_effect=OSError("disk full")):
+            with self.assertRaisesRegex(OSError, "disk full"):
+                self.worker._flush_subtitle_tails()
+        self.assertIs(self.worker.pending_paragraphs["mic"], held)
+
     def test_pause_promotes_the_last_draft_into_a_final(self):
         # 不足目标的段落只有临时行、没有正式段落；暂停后它必须被排空成正式段落，
         # 而不是永远停在临时行上。

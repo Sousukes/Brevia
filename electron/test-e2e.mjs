@@ -358,6 +358,12 @@ try {
   // 加载完成后给事件队列一点时间把加载期异常送过来。
   await delay(300);
 
+  const markdownBoundary = await client.send('Runtime.evaluate', {
+    expression: `(()=>{const node=document.createElement('div');node.innerHTML=renderMarkdown('![a](brevia-note://missing/[x](https://invalid onerror=alert))');return ![...node.querySelectorAll('*')].some(element=>[...element.attributes].some(attribute=>attribute.name.startsWith('on')));})()`,
+    returnByValue: true,
+  });
+  check(markdownBoundary.result?.value === true, 'Markdown 图片地址不能生成事件属性');
+
   const compactWindow = await client.send('Runtime.evaluate', {
     expression: `({ width:outerWidth, height:outerHeight, scale:outerWidth/innerWidth, viewportWidth:innerWidth, viewportHeight:innerHeight, bodyWidth:document.body.scrollWidth, overflow:document.body.scrollWidth>innerWidth+1 })`,
     returnByValue: true,
@@ -1172,6 +1178,47 @@ try {
       merged.closed,
     `合并 AI 设置回归：${JSON.stringify(mergedAiSettings)}`,
   );
+  const compactSettings = await client.send('Runtime.evaluate', {
+    expression: `(async () => {
+    const previousLocale = locale, previousTheme = theme;
+    const errors = [];
+    await showView('settings');
+    for (const code of ['zh', 'en']) for (const appearance of ['light', 'dark']) {
+      applyLanguage(code); applyTheme(appearance);
+      for (const kind of ['summary-model', 'ai-assist', 'device-connection']) {
+        for (const provider of kind === 'device-connection' ? [''] : ['built-in', 'custom-openai', 'custom-claude']) {
+          await openModal(kind);
+          if (provider) {
+            const config = kind === 'summary-model' ? summaryConfigDraft : aiAssistConfigDraft;
+            config.provider = provider;
+            renderModal(kind);
+          }
+          await new Promise(resolve => setTimeout(resolve, 260));
+          const body = settingsModal.querySelector('.modal-body');
+          if (body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1)
+            errors.push([code, appearance, kind, provider, body.clientHeight, body.scrollHeight]);
+        }
+      }
+    }
+    await openModal('advanced-settings');
+    const permission = settingsModal.querySelector('[data-permission-settings]');
+    if (parseFloat(getComputedStyle(permission).borderTopWidth) === 0) errors.push('permission border');
+    await openModal('device-connection');
+    closeModal(); await new Promise(resolve => setTimeout(resolve, 250));
+    await showView('home');
+    openConfirmation(t('删除'), 'layout regression', () => {});
+    if (settingsModal.querySelector('[data-mobile-install-toggle]')) errors.push('installation button in confirmation');
+    closeModal(); await new Promise(resolve => setTimeout(resolve, 250));
+    applyLanguage(previousLocale); applyTheme(previousTheme);
+    return errors;
+  })()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  check(
+    Array.isArray(compactSettings.result?.value) && !compactSettings.result.value.length,
+    `默认窗口设置布局回归：${JSON.stringify(compactSettings)}`,
+  );
   const settingsModalDescriptions = await client.send('Runtime.evaluate', {
     expression: `(async () => {
     await showView('settings');
@@ -1201,6 +1248,9 @@ try {
     syncBackendMeeting(meeting);
     adoptMobileMeeting(meeting);
     await new Promise(resolve => setTimeout(resolve, 400));
+    const restored = liveSegments.get('mobile-initial') === document.querySelector('#transcript-scroll [data-segment-id="mobile-initial"]')
+      && segmentInfoFor(meeting.id,'mobile-initial')?.text === '初次接管字幕'
+      && latestLiveSegmentId === 'mobile-initial';
     const live = activeView === 'live' && meetingActive && document.querySelector('#pause').disabled && !document.querySelector('#end-meeting').disabled;
     const source = !document.querySelector('.mobile-source-tag') && !document.querySelector('#transcript-scroll .speaker-name') && document.querySelector('[data-ai-assist-empty]').hidden && document.querySelector('#live-input-label').textContent===t('手机录音');
     const unique = uiData.meetings.filter(m => m.id === meeting.id).length === 1;
@@ -1234,14 +1284,14 @@ try {
     for (let i = 0; i < 60 && pairing.open; i++) await new Promise(resolve => setTimeout(resolve, 50));
     const pairingClosed = preview.hidden && !pairing.open && !settingsModal.hidden;
     closeModal();
-    return {live, source, unique, mini, dialog: deviceFromLive && dialog && closing && retained && inlinePairing && pairingClosed,miniDiagnostic};
+    return {live, source, unique, mini, restored, dialog: deviceFromLive && dialog && closing && retained && inlinePairing && pairingClosed,miniDiagnostic};
 
   })()`,
     awaitPromise: true,
     returnByValue: true,
   });
   check(
-    ['live', 'source', 'unique', 'mini', 'dialog'].every(
+    ['live', 'source', 'unique', 'mini', 'restored', 'dialog'].every(
       (key) => mobileLive.result?.value?.[key] === true,
     ),
     `手机会议桌面联动：${JSON.stringify(mobileLive)}`,
@@ -1811,6 +1861,58 @@ try {
       speakerInput.value='4';renderPrepareSelects();setPrepareMode('import');
       if(new FormData(prepareForm).get('meeting-speakers')!=='4' || !prepareForm.querySelector('[data-prepare-processing] [name="meeting-speakers"]')) errors.push('prepare: processing values lost when moving fields');
       setPrepareMode('record');prepareForm.querySelector('[name="meeting-speakers"]').value=previousSpeakers;renderPrepareSelects();
+      const phoneId='a'.repeat(32),secondPhoneId='c'.repeat(32),oldPhoneId='b'.repeat(32);
+      const phones=[{id:phoneId,name:'Phone <test>',connected:true,captureReady:true},{id:secondPhoneId,name:'Pixel 9',connected:true,captureReady:true},{id:oldPhoneId,name:'Old phone',connected:true,captureReady:false}];
+      localStorage.setItem('brevia-capture-mode','mic');
+      setPrepareMode('record');
+      if(currentCaptureMode!=='both'||!captureModeInputs().mic||!captureModeInputs().system) errors.push('capture: new meetings must default to microphone and system audio');
+      updateCapturePhones(phones);
+      const sourceRows=()=>[...prepareForm.querySelectorAll('.capture-source-list [role="radio"]')];
+      if(sourceRows().length!==4||prepareForm.querySelector('[data-flow-select-choice="capture-mode"][data-value="auto"]')) errors.push('capture: expected four source options without automatic mode');
+      if(!prepareForm.querySelector('#phone-device-setting').hidden||prepareForm.querySelector('#mic-device-setting').hidden) errors.push('phone: device dropdown visible before selecting phone source');
+      if(!prepareForm.querySelector('legend [data-capture-phone]')) errors.push('phone: connection entry is not in the heading');
+      prepareForm.querySelector('[data-flow-select-choice="capture-mode"][data-value="phone"]').click();
+      const phoneInput=()=>prepareForm.querySelector('[name="phone-device"]');
+      if(prepareForm.querySelector('#phone-device-setting').hidden||!prepareForm.querySelector('#mic-device-setting').hidden) errors.push('phone: wrong device dropdown for the selected source');
+      const unavailable=prepareForm.querySelector('[data-flow-select-choice="phone-device"][data-value="'+oldPhoneId+'"]');
+      if(!unavailable?.disabled||!unavailable.textContent.includes(t('未就绪'))) errors.push('phone: unavailable devices can be selected');
+      const named=prepareForm.querySelector('[data-flow-select-choice="phone-device"][data-value="'+phoneId+'"]');
+      if(!named.textContent.includes('Phone <test>')||named.querySelector('test')) errors.push('phone: device names are not escaped');
+      prepareForm.querySelector('[data-flow-select-choice="phone-device"][data-value="'+secondPhoneId+'"]').click();
+      const inputs=captureModeInputs();
+      if(phoneInput().value!==secondPhoneId||inputs.phone!==secondPhoneId||inputs.mic||inputs.system||sourceRows().filter(row=>row.getAttribute('aria-checked')==='true').length!==1) errors.push('phone: expected exactly one selected device and source');
+      phonePreviewLevel=0.5;renderPrepareAudioSources();
+      const phoneMeter=prepareForm.querySelector('#mic-level');
+      breviaClient.onLevel('mic',1);
+      if(prepareForm.querySelector('#mic-input-state > b').textContent!==t('手机麦克风')||!prepareForm.querySelector('#system-input-state').hidden||phoneMeter.style.getPropertyValue('--level')!=='0.5'||prepareForm.querySelector('#mic-input-label').textContent!==t('输入良好')) errors.push('phone: meter uses desktop microphone instead of the selected phone');
+      applyLanguage('de');
+      if(phoneInput().value!==secondPhoneId||currentCaptureMode!=='phone') errors.push('phone: language change lost the selected phone');
+      updateCapturePhones(phones.filter(device=>device.id!==secondPhoneId));
+      if(phoneInput().value!==secondPhoneId||!prepareForm.querySelector('.primary-action').disabled) errors.push('phone: disconnection silently selected a different device');
+      prepareForm.querySelector('[data-flow-select-choice="phone-device"][data-value="'+phoneId+'"]').click();
+      if(captureModeInputs().phone!==phoneId||prepareForm.querySelector('.primary-action').disabled) errors.push('phone: manual selection did not recover recording');
+      updateCapturePhones(phones);
+      for(const code of ['zh','en','es','ja','ko','fr','de','ru']){
+        applyLanguage(code);
+        for(const mode of ['both','phone']){
+          renderCaptureMode(mode);
+          for(const radio of sourceRows()){
+            const circle=radio.querySelector('i').getBoundingClientRect();
+            if(Math.abs(circle.width-circle.height)>0.1||circle.width<15.9) errors.push(code+': recording source circle was squeezed');
+            if(getComputedStyle(radio.querySelector('small')).display==='none'||!radio.querySelector('small').textContent.trim()) errors.push(code+': scenario hint is missing');
+            if(radio.scrollWidth>radio.clientWidth+1) errors.push(code+': recording source text overflows');
+          }
+          const meter=prepareForm.querySelector('.capture-status');
+          const start=prepareForm.querySelector('.primary-action');
+          if(!visible(meter)||!visible(start)||meter.getBoundingClientRect().bottom>start.getBoundingClientRect().top||prepareForm.querySelector('fieldset').getBoundingClientRect().bottom>meter.getBoundingClientRect().top) errors.push(code+'/'+mode+': sources, audio levels or start button overlap');
+        }
+      }
+      applyLanguage('zh');
+      updateCapturePhones([]);renderCaptureMode('phone');
+      if(!prepareForm.querySelector('.primary-action').disabled||!prepareForm.querySelector('#phone-device-mount .flow-select-toggle').disabled) errors.push('phone: empty device list permits recording');
+      if(!prepareForm.querySelector('legend [data-capture-phone]')) errors.push('phone: connection entry missing without connected devices');
+      setPrepareMode('record');
+      if(currentCaptureMode!=='both'||!prepareForm.querySelector('#phone-device-setting').hidden) errors.push('capture: starting another meeting did not restore the default source');
       const data=await window.brevia.initialize();const meeting=await window.brevia.meeting.get({meeting_id:data.meetings[0].id});
       summaryGeneratingMeetingId=undefined;applyBackendDetail(meeting);await showView('detail');await new Promise(resolve=>setTimeout(resolve,350));
       uiData.detail.summary={markdown:'# Review\\n\\nSaved memo',hasFull:true};detailActiveTab='notes';renderMeetingDetail();setDetailLayoutMode('transcript');

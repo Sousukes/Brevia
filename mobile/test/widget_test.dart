@@ -1,3 +1,4 @@
+import 'package:brevia_mobile/design_icons.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:brevia_mobile/i18n.dart';
@@ -386,6 +387,35 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('returning-user'), findsOneWidget);
+  });
+
+  testWidgets('shared line icons keep explicit size inside touch targets', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: breviaTheme(Brightness.dark),
+        home: Scaffold(
+          body: SizedBox.square(
+            dimension: 48,
+            child: BreviaIcon(Icons.search, size: 20, semanticLabel: 'search'),
+          ),
+        ),
+      ),
+    );
+    final glyph = find.descendant(
+      of: find.byType(BreviaIcon),
+      matching: find.byType(CustomPaint),
+    );
+    expect(tester.getSize(glyph), const Size(20, 20));
+    expect(find.byIcon(Icons.search), findsOneWidget);
+    final dynamic painter = tester.widget<CustomPaint>(glyph).painter;
+    expect(painter.color, const Color(0xfff2f2f2));
+    expect(breviaTheme(Brightness.light).sliderTheme.trackHeight, 3);
+    expect(
+      breviaTheme(Brightness.light).progressIndicatorTheme.linearMinHeight,
+      6,
+    );
   });
 
   testWidgets('recording commands are icon-only and blocked while pending', (
@@ -997,10 +1027,7 @@ void main() {
         ),
       );
       final image = tester.widget<Image>(find.byType(Image));
-      expect(
-        (image.image as AssetImage).assetName,
-        'assets/brevia-logo-reveal.gif',
-      );
+      expect((image.image as AssetImage).assetName, 'assets/brevia-logo.png');
       image.frameBuilder!(
         tester.element(find.byType(Image)),
         const SizedBox(),

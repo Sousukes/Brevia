@@ -42,10 +42,15 @@
       node.alt = t(key);
     });
     document.querySelector('#mobile-nav strong').textContent = t('设备连接');
-    if (breviaClient?.state.meeting?.tags?.includes('手机录音'))
+    if (
+      breviaClient?.state.meeting?.tags?.includes('手机录音') &&
+      !breviaClient.state.meeting.tags.includes('手机麦克风')
+    )
       document.querySelector('#pause').textContent = t('在手机控制录音');
     if (currentMeetingDetail?.tags?.includes('手机录音'))
-      document.querySelector('#detail-view .detail-title .eyebrow').textContent = t('手机录音');
+      document.querySelector('#detail-view .detail-title .eyebrow').textContent = t(
+        currentMeetingDetail.tags.includes('手机麦克风') ? '手机麦克风' : '手机录音',
+      );
     document.querySelector('#mobile-manage').setAttribute('aria-label', t('查看与管理'));
     dialog.querySelector('#mobile-dialog-status').textContent = messageKey ? t(messageKey) : '';
   }
@@ -140,6 +145,7 @@
   }
   async function render(value) {
     lastStatus = value;
+    updateCapturePhones(value.devices || []);
     const localeChanged = renderedLocale !== locale;
     renderedLocale = locale;
     localize();
@@ -297,6 +303,17 @@
         if (meeting?.status === 'recording') adoptMobileMeeting(meeting);
       }
       if (breviaClient.state.meeting?.id === pending.id) {
+        if (pending.desktopCapture) {
+          const paused = ['paused', 'interrupted'].includes(pending.state);
+          const button = document.querySelector('#pause');
+          button.dataset.paused = String(paused);
+          button.disabled = !!(
+            pending.ended ||
+            pending.stopRequested ||
+            pending.state === 'starting'
+          );
+          renderPauseButton();
+        }
         document
           .querySelector('#transcript-scroll')
           .classList.toggle('is-finishing', !!(pending.ended || pending.stopRequested));
@@ -307,15 +324,19 @@
         miniTimer.textContent = time;
         const label = pending.ended
           ? '电脑处理中'
-          : !connected.length
+          : !connected.some((device) => device.id === pending.owner)
             ? '连接中断 · 等待补传'
             : ['paused', 'interrupted'].includes(pending.state)
               ? '手机已暂停'
-              : '手机录音中';
+              : pending.state === 'starting'
+                ? '等待手机开始录音'
+                : '手机录音中';
         for (const el of document.querySelectorAll(
           '#live-recording-state, #mini-meeting .mini-recording',
         ))
           el.textContent = t(label);
+        if (pending.error)
+          document.getElementById('live-recording-state').textContent = t(pending.error);
       }
     }
   }

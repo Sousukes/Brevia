@@ -559,15 +559,6 @@ function showWorkspaceAssignMenu(meetingIndex, anchorRect) {
     }
   });
 
-  // 点击外部关闭
-  const closeMenu = (e) => {
-    if (!menu.contains(e.target)) {
-      menu.remove();
-      document.removeEventListener('click', closeMenu);
-    }
-  };
-  setTimeout(() => document.addEventListener('click', closeMenu), 0);
-
   return menu;
 }
 

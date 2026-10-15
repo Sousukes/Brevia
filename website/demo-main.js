@@ -167,9 +167,8 @@
     const designWidth = 1200;
     const designHeight = 750;
 
-    const viewportRect = viewport.getBoundingClientRect();
-    const scaleX = viewportRect.width / designWidth;
-    const scaleY = viewportRect.height / designHeight;
+    const scaleX = viewport.clientWidth / designWidth;
+    const scaleY = viewport.clientHeight / designHeight;
 
     // Use the smaller scale to fit both dimensions
     return Math.min(scaleX, scaleY, 1);

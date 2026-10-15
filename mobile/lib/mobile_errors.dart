@@ -1,3 +1,4 @@
+import 'design_icons.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -98,7 +99,7 @@ class MobileRecoveryPage extends StatelessWidget {
                       color: colors.error.withValues(alpha: .08),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, size: 48, color: colors.error),
+                    child: BreviaIcon(icon, size: 48, color: colors.error),
                   ),
                   SizedBox(height: 32),
                   Text(
@@ -123,7 +124,7 @@ class MobileRecoveryPage extends StatelessWidget {
                       ),
                       child: ListTile(
                         contentPadding: EdgeInsets.all(16),
-                        leading: Icon(Icons.description_outlined),
+                        leading: BreviaIcon(Icons.description_outlined),
                         title: Text(
                           '${tr("已保存")} ${durationText(savedSamples)}',
                         ),

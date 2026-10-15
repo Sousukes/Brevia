@@ -247,17 +247,3 @@
 }
 
 /* 工作区徽章（会议列表中） */
-.workspace-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-[data-theme="dark"] .workspace-badge {
-  background-color: rgba(255, 255, 255, 0.1);
-}

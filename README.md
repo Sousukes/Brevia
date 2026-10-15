@@ -99,6 +99,8 @@ flowchart LR
   PC -. Optional text requests .-> AI[Your chosen online AI provider]
 ```
 
+You can also start a meeting on the desktop and select a connected **Phone microphone** as its recording source. Keep Brevia open on the phone with no other recording active. The desktop controls recording and keeps the transcript and notes; the phone saves audio for recovery and upload after reconnecting. Meetings started on the phone continue to receive transcripts and notes from the computer.
+
 - **Pair on the same Wi-Fi first.** Open **Settings → Device connections → Connect new device** on desktop. Scan its QR code on the phone or enter the address and PIN, compare the verification code, then approve on the computer. Subsequent connections use the saved device identity.
 - **Local network by default.** The phone sends audio over HTTPS to the paired computer; the computer returns transcripts and notes. The computer must remain awake and reachable for live processing. The phone does not run recognition models.
 - **Save before acknowledging.** Audio is saved on the phone first. The upload position advances only after the computer confirms it has saved the audio. After a disconnection, transfer resumes from that position; a successful upload does not automatically delete the phone copy.
@@ -148,7 +150,7 @@ Confirm that the installer came from the official [release page](https://github.
 
 Found a problem or have a suggestion? [Open an issue](https://github.com/zerolovesea/Brevia/issues) with your device, app version, meeting language and steps to reproduce. Remove private content and credentials from screenshots and logs. Report security issues privately to the maintainer.
 
-For development, architecture, model details and packaging, see the [development guide](docs/DEVELOPMENT.md), [mobile guide](mobile/README.md) and [contribution guidelines](CONTRIBUTING.md).
+Browse the [documentation index](docs/README.md). For development, architecture, model details and packaging, see the [development guide](docs/DEVELOPMENT.md), [mobile guide](mobile/README.md) and [contribution guidelines](CONTRIBUTING.md).
 
 ## License and acknowledgments
 

@@ -668,6 +668,8 @@ settingsFolders.hidden = true;
 document.body.append(settingsFolders);
 /** 同一表单在设置中作为连续页面，在会议中作为受保护的配置弹层。 */
 function configureSettingsPage(kind) {
+  if (kind !== 'device-connection')
+    settingsModal.querySelector('[data-mobile-install-toggle]')?.remove();
   const page =
     activeView === 'settings' &&
     !onboardingPage &&
@@ -684,6 +686,7 @@ function configureSettingsPage(kind) {
   settingsModal.classList.toggle('settings-page', page);
   settingsModal.classList.toggle('confirmation-modal', kind === 'confirmation');
   settingsModal.classList.toggle('summary-model-modal', kind === 'summary-model');
+  settingsModal.classList.toggle('ai-assist-modal', kind === 'ai-assist');
   settingsModal.classList.toggle(
     'batch-modal',
     kind === 'batch-export' || kind === 'batch-results',
@@ -1006,7 +1009,14 @@ const desktopPrepareLayout = matchMedia('(min-width: 851px)');
 function fitPrepareLayout() {
   prepareLayout.style.removeProperty('transform');
   prepareLayout.style.removeProperty('width');
-  prepareView.classList.toggle('is-compact', !desktopPrepareLayout.matches);
+  prepareView.classList.remove('is-compact');
+  const sources = prepareForm.querySelector('fieldset');
+  const status = prepareForm.querySelector('.prepare-input-status');
+  // 长语言文案或较矮窗口只收紧右侧间距，始终给电平和开始按钮留出空间。
+  const crowded =
+    prepareView.dataset.mode !== 'import' &&
+    sources.getBoundingClientRect().bottom + 12 > status.getBoundingClientRect().top;
+  prepareView.classList.toggle('is-compact', !desktopPrepareLayout.matches || crowded);
 }
 
 new ResizeObserver(() => requestAnimationFrame(fitPrepareLayout)).observe(prepareView);
@@ -1075,7 +1085,7 @@ function renderPrepareSelects() {
     });
   }
   prepareForm.querySelector('.prepare-processing').hidden = prepareView.dataset.mode !== 'import';
-  renderCaptureMode(values['capture-mode'] || savedCaptureMode());
+  renderCaptureMode();
   const importing = prepareView.dataset.mode === 'import';
   prepareView.querySelector('h1').textContent = t(importing ? '导入本地音频' : '新建会议');
   prepareView.querySelector('[data-prepare-description]').textContent = t(
@@ -1094,54 +1104,138 @@ function renderPrepareSelects() {
     crumb.textContent = importing ? t('导入录音') : catalog[locale].views.prepare;
   requestAnimationFrame(fitPrepareLayout);
 }
-const CAPTURE_MODE_KEY = 'brevia-capture-mode';
-const LAST_CAPTURE_MODE_KEY = 'brevia-last-capture-mode';
-const CAPTURE_MODES = new Set(['auto', 'mic', 'system', 'both']);
-function savedCaptureMode() {
-  try {
-    const value = localStorage.getItem(CAPTURE_MODE_KEY);
-    return CAPTURE_MODES.has(value) ? value : 'both';
-  } catch {
-    return 'both';
+const CAPTURE_MODES = new Set(['mic', 'system', 'both', 'phone']);
+let currentCaptureMode = 'both';
+let selectedPhoneDeviceId = '';
+let capturePhones = [];
+let phonePreviewDeviceId = null;
+let phonePreviewLevel = null;
+let phonePreviewTimer;
+let phonePreviewPolling = false;
+function syncPhonePreview() {
+  const deviceId =
+    activeView === 'prepare' &&
+    prepareView.dataset.mode !== 'import' &&
+    currentCaptureMode === 'phone' &&
+    selectedPhoneDevice()?.captureReady &&
+    !prepareForm.querySelector('.primary-action').classList.contains('is-pending')
+      ? selectedPhoneDeviceId
+      : null;
+  if (deviceId === phonePreviewDeviceId) return;
+  phonePreviewDeviceId = deviceId;
+  phonePreviewLevel = null;
+  clearInterval(phonePreviewTimer);
+  if (!window.brevia?.mobile?.previewCapture) return;
+  if (!deviceId) {
+    void window.brevia.mobile.previewCapture({ device_id: null }).catch(() => {});
+    return;
   }
+  const poll = async () => {
+    if (phonePreviewPolling) return;
+    phonePreviewPolling = true;
+    try {
+      const meter = await window.brevia.mobile.previewCapture({ device_id: deviceId });
+      if (phonePreviewDeviceId !== deviceId) return;
+      phonePreviewLevel = meter.level;
+    } catch (_) {
+      if (phonePreviewDeviceId === deviceId) phonePreviewLevel = null;
+    } finally {
+      phonePreviewPolling = false;
+    }
+    if (phonePreviewDeviceId === deviceId) renderPrepareAudioSources();
+  };
+  phonePreviewTimer = setInterval(() => void poll(), 250);
+  void poll();
 }
-function lastCaptureMode() {
-  try {
-    const value = localStorage.getItem(LAST_CAPTURE_MODE_KEY);
-    return ['mic', 'system', 'both'].includes(value) ? value : 'both';
-  } catch {
-    return 'both';
-  }
+function selectedPhoneDevice() {
+  return capturePhones.find((device) => device.id === selectedPhoneDeviceId);
 }
-function captureModeInputs(mode = savedCaptureMode()) {
-  const effective = mode === 'auto' ? lastCaptureMode() : mode;
+function updateCapturePhones(devices) {
+  const phones = devices
+    .filter((device) => device.connected)
+    .map(({ id, name, captureReady }) => ({ id, name, captureReady }));
+  if (JSON.stringify(phones) === JSON.stringify(capturePhones)) return;
+  capturePhones = phones;
+  if (!selectedPhoneDeviceId)
+    selectedPhoneDeviceId = (phones.find((device) => device.captureReady) || phones[0])?.id || '';
+  renderCaptureMode();
+}
+function captureModeInputs(mode = currentCaptureMode) {
   return {
-    mic: effective === 'mic' || effective === 'both',
-    system: effective === 'system' || effective === 'both',
+    mic: mode === 'mic' || mode === 'both',
+    system: mode === 'system' || mode === 'both',
+    ...(mode === 'phone' ? { phone: selectedPhoneDeviceId } : {}),
   };
 }
 function captureModeSelect(value) {
   const options = [
-    ['auto', t('自动（记住上次）'), t('沿用上次成功录制的方式')],
-    ['mic', t('仅麦克风'), t('适合线下会议场景')],
-    ['system', t('仅系统音频'), t('适合网课、视频场景')],
-    ['both', t('麦克风 + 系统音频'), t('适合线上会议场景')],
+    ['mic', t('仅麦克风'), t('适合面对面交流、个人口述')],
+    ['system', t('仅系统音频'), t('适合网课、视频和电脑播放的音频')],
+    ['both', t('麦克风 + 系统音频'), t('适合线上会议，同时收录双方声音')],
+    ['phone', t('手机麦克风'), t('适合线下会议，用手机近距离收音')],
   ];
-  const selected = options.find(([mode]) => mode === value) || options[0];
-  return `<div class="flow-select capture-mode-select capture-source-list"><button class="flow-select-toggle" data-flow-select-toggle type="button" aria-expanded="false" hidden>${escapeHtml(selected[1])}<span class="select-chevron">${interfaceIcon('chevron-down')}</span></button><input type="hidden" name="capture-mode" value="${escapeHtml(selected[0])}" /><div class="flow-select-options" role="radiogroup" aria-label="${escapeHtml(t('录制来源'))}">${options.map(([mode, label, scene]) => `<button type="button" role="radio" aria-checked="${mode === value}" data-flow-select-choice="capture-mode" data-value="${mode}" data-label="${escapeHtml(label)}">${interfaceIcon(mode === 'mic' ? 'microphone' : mode === 'system' ? 'appearance' : mode === 'both' ? 'waveform' : 'refresh')}<span><b>${escapeHtml(label)}</b><small>${escapeHtml(scene)}</small></span><i></i></button>`).join('')}</div><button type="button" class="capture-phone" data-capture-phone>${interfaceIcon('phone')}<span>${escapeHtml(t('设备连接'))}</span></button></div>`;
+  const selected = options.find(([mode]) => mode === value) || options[2];
+  const count = capturePhones.length
+    ? t('{count} 台手机已连接').replace(
+        '{count}',
+        new Intl.NumberFormat(BreviaI18n.localeTag(locale)).format(capturePhones.length),
+      )
+    : '';
+  return `<div class="flow-select capture-mode-select capture-source-list"><button class="flow-select-toggle" data-flow-select-toggle type="button" aria-expanded="false" hidden>${escapeHtml(selected[1])}<span class="select-chevron">${interfaceIcon('chevron-down')}</span></button><input type="hidden" name="capture-mode" value="${escapeHtml(selected[0])}" /><div class="flow-select-options" role="radiogroup" aria-label="${escapeHtml(t('录制来源'))}">${options.map(([mode, label, scene]) => `<button type="button" role="radio" aria-checked="${mode === selected[0]}" data-flow-select-choice="capture-mode" data-value="${mode}" data-label="${escapeHtml(label)}">${interfaceIcon(mode === 'phone' ? 'phone' : mode === 'mic' ? 'microphone' : mode === 'system' ? 'appearance' : 'waveform')}<span><b>${escapeHtml(label)}${mode === 'phone' && count ? `<em class="capture-phone-count">${escapeHtml(count)}</em>` : ''}</b><small>${escapeHtml(scene)}</small></span><i></i></button>`).join('')}</div></div>`;
 }
-function renderCaptureMode(value = savedCaptureMode()) {
+function renderPhoneDeviceOptions() {
+  const mount = prepareForm.querySelector('#phone-device-mount');
+  const options = capturePhones.map((device) => [
+    device.id,
+    device.name,
+    t(device.captureReady ? '已连接' : '未就绪'),
+  ]);
+  if (selectedPhoneDeviceId && !selectedPhoneDevice())
+    options.unshift([selectedPhoneDeviceId, t('设备已断开'), t('未就绪')]);
+  if (!options.length) options.push(['', t('尚未连接设备')]);
+  mount.innerHTML = flowSelect(
+    'phone-device',
+    selectedPhoneDeviceId,
+    options,
+    false,
+    !capturePhones.length,
+  );
+  mount.querySelectorAll('[data-flow-select-choice]').forEach((option) => {
+    option.disabled = !capturePhones.find((device) => device.id === option.dataset.value)
+      ?.captureReady;
+  });
+}
+function renderCaptureMode(value = currentCaptureMode) {
   const mount = prepareForm.querySelector('#capture-mode-mount');
   if (!mount) return;
-  mount.innerHTML = captureModeSelect(value);
-  const inputs = captureModeInputs(value);
+  currentCaptureMode = CAPTURE_MODES.has(value) ? value : 'both';
+  mount.innerHTML = captureModeSelect(currentCaptureMode);
+  const inputs = captureModeInputs();
   const micSetting = prepareForm.querySelector('#mic-device-setting');
   if (micSetting) micSetting.hidden = !inputs.mic;
+  prepareForm.querySelector('#phone-device-setting').hidden = currentCaptureMode !== 'phone';
+  renderPhoneDeviceOptions();
+  const phoneReady = selectedPhoneDevice()?.captureReady;
   const hint = prepareForm.querySelector('#capture-mode-hint');
-  if (hint) hint.textContent = '';
+  hint.hidden = currentCaptureMode !== 'phone' || phoneReady;
+  hint.textContent = hint.hidden
+    ? ''
+    : t(
+        selectedPhoneDeviceId && !selectedPhoneDevice()
+          ? '设备已断开'
+          : capturePhones.length
+            ? '手机端未就绪，请打开或更新 Brevia'
+            : '尚未连接设备',
+      );
+  const submit = prepareForm.querySelector('.primary-action');
+  submit.disabled =
+    submit.classList.contains('is-pending') ||
+    (prepareView.dataset.mode !== 'import' && currentCaptureMode === 'phone' && !phoneReady);
+  syncPhonePreview();
   renderPrepareAudioSources();
-  // 仅在准备页内预览麦克风；启动或首页重绘（applyLanguage 会调用本函数）不应采集声音。
+  // 仅在准备页内预览麦克风；启动或首页重绘不应采集声音。
   if (activeView !== 'prepare' || prepareView.dataset.mode === 'import') return;
+  fitPrepareLayout();
   if (inputs.mic) {
     void refreshMicDevices();
     void previewMicrophone();
@@ -1153,6 +1247,7 @@ function selectCurrentWorkspaceForMeeting() {
   renderPrepareSelects();
 }
 function setPrepareMode(mode) {
+  currentCaptureMode = 'both';
   prepareView.dataset.mode = mode;
   prepareForm.querySelector('.audio-import').hidden = mode !== 'import';
   if (mode === 'import') void breviaClient?.stopPreview();
@@ -1262,14 +1357,17 @@ if (breviaClient) {
     if (track !== 'mic') return;
     document
       .querySelectorAll('#mic-level, [data-onboarding-mic-level], [data-live-mic-level]')
-      .forEach((meter) => meter.style.setProperty('--level', Math.max(0, Math.min(1, level))));
+      .forEach((meter) => {
+        if (meter.id === 'mic-level' && currentCaptureMode === 'phone') return;
+        meter.style.setProperty('--level', Math.max(0, Math.min(1, level)));
+      });
   };
   // 恢复用户上次选择的麦克风设备(若有)。
   if (savedMicDeviceId()) breviaClient.setMicDevice(savedMicDeviceId());
 }
 function setSourceBadge(labelEl, hintEl, { ok, text, hint }) {
   if (labelEl) {
-    labelEl.textContent = text;
+    if (labelEl.textContent !== text) labelEl.textContent = text;
     labelEl.dataset.tone = ok ? 'ok' : 'warn';
   }
   if (hintEl) {
@@ -1283,15 +1381,35 @@ function renderPrepareAudioSources() {
   const inputs = captureModeInputs();
   const micReady = status.microphone === 'granted';
   const systemReady = status.systemAudioSupported !== false && status.screen === 'granted';
+  const phone = currentCaptureMode === 'phone';
+  const sourceLabel = document.querySelector('#mic-input-state > b');
+  const sourceText = t(phone ? '手机麦克风' : '麦克风');
+  if (sourceLabel.textContent !== sourceText) sourceLabel.textContent = sourceText;
+  document.querySelector('#system-input-state').hidden = phone;
+  const meter = document.querySelector('#mic-level');
+  meter.setAttribute('aria-label', `${t(phone ? '手机麦克风' : '麦克风')} ${t('音量')}`);
+  if (phone) meter.style.setProperty('--level', phonePreviewLevel ?? 0);
   setSourceBadge(document.querySelector('#mic-input-label'), null, {
-    ok: micReady && inputs.mic,
-    text: inputs.mic ? (micReady ? t('输入良好') : t('未就绪')) : t('未启用'),
+    ok: phone ? phonePreviewLevel != null : micReady && inputs.mic,
+    text: phone
+      ? t(
+          phonePreviewLevel != null
+            ? '输入良好'
+            : selectedPhoneDevice()?.captureReady
+              ? '未检测'
+              : '未就绪',
+        )
+      : inputs.mic
+        ? micReady
+          ? t('输入良好')
+          : t('未就绪')
+        : t('未启用'),
   });
   setSourceBadge(document.querySelector('#system-input-label'), null, {
     ok: systemReady && inputs.system,
     text: inputs.system ? (systemReady ? t('已连接') : t('未就绪')) : t('未启用'),
   });
-  renderMicDeviceOptions();
+  if (!phone) renderMicDeviceOptions();
 }
 /** 拉取最新权限状态并刷新录音前页的录音源显示。@returns {Promise<void>} */
 async function refreshPrepareAudioSources() {
@@ -1314,7 +1432,10 @@ async function previewMicrophone() {
     }
   } catch (error) {
     const hint = prepareForm.querySelector('#capture-mode-hint');
-    if (hint) hint.textContent = userFacingError(error.message);
+    if (hint) {
+      hint.textContent = userFacingError(error.message);
+      hint.hidden = false;
+    }
   }
 }
 const MIC_DEVICE_KEY = 'brevia-mic-device';
@@ -2089,7 +2210,7 @@ prepareForm.addEventListener('click', (event) => {
     return;
   }
   const choice = event.target.closest('[data-flow-select-choice]');
-  if (!choice) return;
+  if (!choice || choice.disabled) return;
   const select = choice.closest('.flow-select');
   if (
     choice.dataset.flowSelectChoice === 'meeting-workspace' &&
@@ -2117,13 +2238,10 @@ prepareForm.addEventListener('click', (event) => {
     // 与 OpenWhispr #1288「浏览 picker 改掉了选择」同源）。见设计文档 §5.1。
     rememberPreferredModel(choice.dataset.value);
   }
-  if (choice.dataset.flowSelectChoice === 'capture-mode') {
-    try {
-      localStorage.setItem(CAPTURE_MODE_KEY, choice.dataset.value);
-    } catch {
-      /* 忽略存储失败。 */
-    }
-    renderCaptureMode(choice.dataset.value);
+  if (choice.dataset.flowSelectChoice === 'capture-mode') renderCaptureMode(choice.dataset.value);
+  if (choice.dataset.flowSelectChoice === 'phone-device') {
+    selectedPhoneDeviceId = choice.dataset.value;
+    renderCaptureMode();
   }
   if (choice.dataset.flowSelectChoice === 'mic-device') void onMicDeviceChange();
 });
@@ -5418,8 +5536,6 @@ function selectLibraryNav(id) {
     .forEach((item) => item.classList.toggle('active', item.id === id));
   crumb.textContent = id === 'recently-deleted' ? t('最近删除') : catalog[locale].views.home;
   const deleted = id === 'recently-deleted';
-  homeEyebrow.className = deleted ? 'back' : 'eyebrow';
-  homeEyebrow.disabled = !deleted;
   homeEyebrow.textContent = deleted ? t('最近删除') : t('会议库');
   homeEyebrow.disabled = true;
   homeEyebrow.className = 'eyebrow';
@@ -5452,6 +5568,7 @@ async function transitionPage(current, next, swap = () => {}) {
     await new Promise((resolve) => window.setTimeout(resolve, duration));
     const previousView = activeView;
     activeView = next.id.slice(0, -'-view'.length);
+    syncPhonePreview();
     try {
       if (previousView === 'prepare' && activeView !== 'prepare') await breviaClient?.stopPreview();
       document
@@ -5794,11 +5911,13 @@ function adoptMobileMeeting(meeting) {
   breviaClient.state.inputs = { mic: false, system: false };
   activateMeeting(meeting, meeting);
   clearInterval(timer);
-  document.querySelector('#pause').disabled = true;
+  document.querySelector('#pause').disabled = !meeting.tags?.includes('手机麦克风');
   document.querySelector('#end-meeting').disabled = false;
-  document.querySelector('#pause').textContent = t('在手机控制录音');
+  if (!meeting.tags?.includes('手机麦克风'))
+    document.querySelector('#pause').textContent = t('在手机控制录音');
   const transcript = document.querySelector('#transcript-scroll');
-  transcript.innerHTML = (meeting.segments || [])
+  const segments = (meeting.segments || []).slice(-maxLiveSegments);
+  transcript.innerHTML = segments
     .map((segment) =>
       renderTranscriptSegment({
         ...renderSegmentData(segment, false, new Map()),
@@ -5806,6 +5925,16 @@ function adoptMobileMeeting(meeting) {
       }),
     )
     .join('');
+  segments.forEach((segment, index) => {
+    liveSegments.set(segment.id, transcript.children[index]);
+    liveSegmentData.set(segment.id, {
+      revision: Number(segment.revision) || 0,
+      text: segment.text,
+      start_ms: segment.start_ms,
+      speaker: segment.speaker_name || segment.speaker,
+    });
+    latestLiveSegmentId = segment.id;
+  });
   if (liveNotesEditor) liveNotesEditor.setMarkdown(meeting.notes || '');
   renderAiAssistEmptyState();
 }
@@ -5873,6 +6002,7 @@ document.querySelector('#meeting-form').addEventListener('submit', async (event)
   const submitLabel = submit.innerHTML;
   submit.disabled = true;
   submit.classList.add('is-pending');
+  syncPhonePreview();
   submit.setAttribute('aria-busy', 'true');
   submit.innerHTML = `<i class="button-spinner" aria-hidden="true"></i>${t('准备中')}`;
   const form = new FormData(event.currentTarget);
@@ -5882,7 +6012,7 @@ document.querySelector('#meeting-form').addEventListener('submit', async (event)
   const refinedModelId = form.get('refined-model') || defaultRefinedModelId(language);
   const targetLanguage = form.get('translation-target') || null;
   const segmentationModelId = prepareForm.dataset.segmentationModel || defaults.segmentation;
-  const captureMode = form.get('capture-mode') || savedCaptureMode();
+  const captureMode = form.get('capture-mode') || currentCaptureMode;
   const inputs = captureModeInputs(captureMode);
   const payload = {
     title,
@@ -5912,6 +6042,8 @@ document.querySelector('#meeting-form').addEventListener('submit', async (event)
       startRefinement();
       return;
     }
+    if (captureMode === 'phone' && !selectedPhoneDevice()?.captureReady)
+      throw new Error(t('手机端未就绪，请打开或更新 Brevia'));
     const meeting = breviaClient
       ? await breviaClient.start(payload, inputs, selectedMicDeviceId())
       : { id: null };
@@ -5922,14 +6054,6 @@ document.querySelector('#meeting-form').addEventListener('submit', async (event)
       showToast(t('正在下载会议所需模型，完成后会自动开始录制'));
       return;
     }
-    try {
-      localStorage.setItem(
-        LAST_CAPTURE_MODE_KEY,
-        inputs.mic && inputs.system ? 'both' : inputs.mic ? 'mic' : 'system',
-      );
-    } catch {
-      /* 忽略存储失败。 */
-    }
     activateMeeting(meeting, payload);
   } catch (error) {
     const inlineError = document.querySelector('[data-prepare-error]');
@@ -5937,8 +6061,12 @@ document.querySelector('#meeting-form').addEventListener('submit', async (event)
     inlineError.hidden = false;
     showToast(error.message, undefined, 'error');
   } finally {
-    submit.disabled = false;
+    submit.disabled =
+      prepareView.dataset.mode !== 'import' &&
+      currentCaptureMode === 'phone' &&
+      !selectedPhoneDevice()?.captureReady;
     submit.classList.remove('is-pending');
+    syncPhonePreview();
     submit.removeAttribute('aria-busy');
     submit.innerHTML = submitLabel;
   }
@@ -5969,7 +6097,9 @@ function renderLiveInputStatus() {
   const phone = breviaClient?.state.meeting?.tags?.includes('手机录音');
   const inputs = breviaClient?.state.inputs || captureModeInputs();
   const label = phone
-    ? '手机录音'
+    ? breviaClient.state.meeting.tags.includes('手机麦克风')
+      ? '手机麦克风'
+      : '手机录音'
     : inputs.mic && inputs.system
       ? '麦克风 + 系统音频'
       : inputs.mic
@@ -6178,7 +6308,7 @@ const liveNotesEditor = createNotesEditor(liveNotesRoot, {
       currentNotesMarkdown,
       () => breviaClient?.state.meeting?.id,
     );
-    hideAiAssistEmptyState();
+    renderAiAssistEmptyState();
     // 程序化写入（AI 落笔/插入字幕）不算用户打字，避免触发 4 秒静默窗口。
     if (opts?.programmatic) return;
     signalAiNoteTyping(true);
@@ -6195,6 +6325,7 @@ document.querySelector('[data-toggle-notes-toolbar]').addEventListener('click', 
   const expanded = button.getAttribute('aria-expanded') !== 'true';
   button.setAttribute('aria-expanded', String(expanded));
   liveNotesToolbar.hidden = !expanded;
+  renderAiAssistEmptyState();
 });
 
 // —— AI 辅助：header 开关、空态引导、未启用 Popover ——
@@ -6226,11 +6357,16 @@ function renderAiAssistEmptyState() {
   if (!root) return;
   const copy = aiAssistCopy[locale] || aiAssistCopy.en;
   const hasNotes = Boolean(currentNotesMarkdown().trim());
-  if (hasNotes || !meetingActive) {
+  if (hasNotes || !meetingActive || aiSuggestionHost?.hidden === false) {
     root.hidden = true;
     root.innerHTML = '';
     return;
   }
+  // 随真实编辑面定位，展开工具栏或切换Markdown时不会挡住控件。
+  const surface = liveNotesRoot.querySelector(
+    '.notes-editor:not([hidden]), .notes-input:not([hidden])',
+  );
+  if (surface?.offsetParent) root.style.top = `${surface.offsetTop}px`;
   const hasAi = aiAssistEnabled();
   const disabledActions = ['insert-latest'];
   const tags = hasAi
@@ -6245,6 +6381,7 @@ function renderAiAssistEmptyState() {
   root.innerHTML = `<div class="ai-assist-empty-inner"><strong>${escapeHtml(hasAi ? copy.emptyEnabledTitle : copy.emptyDisabledTitle)}</strong><p>${escapeHtml(hasAi ? copy.emptyEnabledBody : copy.emptyDisabledBody)}</p><div class="ai-assist-empty-tags">${tags}</div></div>`;
   root.hidden = false;
 }
+window.addEventListener('resize', renderAiAssistEmptyState);
 function hideAiAssistEmptyState() {
   const root = aiAssistEmptyRoot();
   if (root) {
@@ -6271,13 +6408,6 @@ function openAiAssistPopover(anchor) {
       pop.remove();
     }
   });
-  const close = (event) => {
-    if (!pop.contains(event.target) && !anchor.contains(event.target)) {
-      pop.remove();
-      document.removeEventListener('click', close);
-    }
-  };
-  setTimeout(() => document.addEventListener('click', close), 0);
 }
 document.querySelector('[data-ai-assist-toggle]')?.addEventListener('click', () => {
   const button = aiAssistToggleButton();
@@ -6290,6 +6420,9 @@ document.querySelector('[data-ai-assist-toggle]')?.addEventListener('click', () 
 });
 // 空态引导中的快捷操作（无需 AI）：插入当前字幕。
 document.addEventListener('click', (event) => {
+  const pop = document.querySelector('[data-ai-assist-popover]');
+  if (pop && !event.target.closest('[data-ai-assist-popover], [data-ai-assist-toggle]'))
+    pop.remove();
   const action = event.target.closest('[data-ai-empty-action]');
   if (!action || !meetingActive) return;
   if (action.dataset.aiEmptyAction === 'insert-latest') {
@@ -6771,6 +6904,7 @@ function highlightSearchMatch(text, query) {
 }
 /** 搜索输入变化后（带防抖）刷新结果浮窗。@returns {void} */
 function scheduleMeetingSearch() {
+  searchRequestId++;
   const query = meetingSearch.value;
   meetingSearchClear.hidden = !query.trim();
   window.clearTimeout(searchDebounceTimer);
@@ -6788,6 +6922,7 @@ async function updateSearchPopup() {
   try {
     meetings = window.brevia ? await window.brevia.meeting.search({ query }) : [];
   } catch (error) {
+    if (requestId !== searchRequestId) return;
     closeSearchPopup();
     showToast(error.message, undefined, 'error');
     return;
@@ -6818,6 +6953,8 @@ async function updateSearchPopup() {
   searchResultsPanel.hidden = false;
 }
 function closeSearchPopup() {
+  searchRequestId++;
+  window.clearTimeout(searchDebounceTimer);
   searchResultsPanel.hidden = true;
   searchResultsPanel.innerHTML = '';
 }
@@ -8750,7 +8887,8 @@ if (window.brevia) {
     window.brevia.on(type, ({ meeting }) => syncBackendMeeting(meeting));
   }
   window.brevia.on('meeting.started', ({ meeting }) => {
-    if (meeting?.tags?.includes('手机录音')) adoptMobileMeeting(meeting);
+    if (meeting?.tags?.includes('手机录音') && !meeting.tags.includes('手机麦克风'))
+      adoptMobileMeeting(meeting);
   });
   window.brevia.on('meeting.reconfigured', ({ meeting }) => {
     syncBackendMeeting(meeting);

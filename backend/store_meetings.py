@@ -9,6 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from .config import SETTINGS, validate_num_speakers
+from .markdown import normalize_summary_markdown
 from .store_base import utc_now
 from .transcript import latest_segments
 
@@ -421,6 +422,9 @@ class MeetingStoreMixin:
             else None
         )
         result["audio"] = self.audio_files(meeting_id)
+        summary_data = result["summary"].get("data") if result["summary"] else None
+        if summary_data and isinstance(summary_data.get("markdown"), str):
+            summary_data["markdown"] = normalize_summary_markdown(summary_data["markdown"])
         return result
 
     def update_meeting(self, meeting_id, updates):
