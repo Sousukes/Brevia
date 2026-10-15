@@ -2,9 +2,200 @@
 (() => {
   const releases = [
     {
+      'version': '1.4.0',
+      'date': '2026-10-15',
+      'current': true,
+      'previousVersion': '1.3.1',
+      'contributors': [],
+      'zh': {
+        'summary': '全新桌面与手机界面，新增手机麦克风联动，完善跨平台录音、设备连接与断线补传。',
+        'what': [
+          {
+            'text':
+              '重构桌面主界面与首次使用引导，统一工作区、会议列表、实时字幕、笔记、播放器和设置的操作体验。',
+            'commit': 'debcfcb750e677211a8add885e35e7b8ebd8edf8',
+          },
+          {
+            'text':
+              '桌面可选择已连接的手机作为麦克风，支持试音及从电脑开始、暂停、继续和结束录音。',
+            'commit': '8dc8fe4540fcfdd117adc933de692e21caf7873e',
+          },
+        ],
+        'improved': [
+          {
+            'text':
+              '统一明暗主题、多语言文案、键盘焦点和减少动态效果体验，完善不同窗口尺寸下的布局。',
+            'commit': 'debcfcb750e677211a8add885e35e7b8ebd8edf8',
+          },
+          {
+            'text':
+              '重新整理会议详情中的逐字稿、笔记、纪要编辑与导出入口，保留保存失败时的草稿并支持重试。',
+            'commit': 'debcfcb750e677211a8add885e35e7b8ebd8edf8',
+          },
+          {
+            'text': '手机端与桌面采用统一界面风格，完善配对、录音状态、连接错误及权限提示。',
+            'commit': '8dc8fe4540fcfdd117adc933de692e21caf7873e',
+          },
+          {
+            'text':
+              'Android 更新下载交由系统后台管理，离开页面后仍可继续；iOS 可检查 App Store 中的新版本。',
+            'commit': '0c8804462f68c4b0259a6727cbf156c82a58b958',
+          },
+        ],
+        'fixed': [
+          {
+            'text':
+              '修复手机实时转写恢复后的字幕缺失、电脑重启后的控制状态恢复及断线补传边界问题，避免已确认音频被重复写入。',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+          {
+            'text':
+              '修复设置页切换时过期请求覆盖当前页面的问题；清理录音失败时保留索引，避免残留文件失去访问入口。',
+            'commit': '6fafb4924937093d230c629e171fdabcecf65f0d',
+          },
+          {
+            'text':
+              '修复部分 OpenAI 兼容服务的纪要与 AI 笔记请求，补齐接口路径并兼容模型名大小写；修复暗色主题开关图标（感谢 @Sousukes，PR #9）。',
+            'commit': 'e64f7d94da3318872a00d0078dc526883e97831e',
+          },
+          {
+            'text':
+              'Windows 本地 AI 运行库固定使用 AVX2 并禁用 AVX512；模型加载或推理失败后回收独立进程，减少异常重试残留的内存。',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+          {
+            'text':
+              '修复搜索结果异步覆盖、纪要标题与列表粘连、批量导出结果反馈，以及弹出菜单重复监听等问题。',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+          {
+            'text': '修复英文设备连接页在默认窗口尺寸下的溢出，清理连接卡片的重复间距。',
+            'commit': '3aa23a955175776aa42622b3eb25255c45316dd1',
+          },
+        ],
+        'security': [
+          {
+            'text': '加强 Markdown 图片地址的属性转义，阻止恶意内容注入页面事件属性。',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+        ],
+        'changes': [
+          {
+            'text':
+              'v1.4.0 是桌面版本号；手机端功能随配套移动构建分发，iOS 正式上架与更新仍取决于 Apple 审核。',
+            'commit': '8dc8fe4540fcfdd117adc933de692e21caf7873e',
+          },
+          {
+            'text':
+              '手机麦克风联动需要已配对、已连接且在前台就绪的配套手机应用；实时转写与 AI 处理仍由电脑完成。',
+            'commit': '8dc8fe4540fcfdd117adc933de692e21caf7873e',
+          },
+          {
+            'text':
+              '断线期间音频继续保存在手机，恢复连接后续传已授权的录音；来电、强制退出和系统限制仍可能中断录音，结束后的补传可能需要保持手机应用在前台。',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+        ],
+      },
+      'en': {
+        'summary':
+          'Redesigned desktop and phone interfaces, phone microphone control, and more reliable cross-platform recording, device connections and upload recovery.',
+        'what': [
+          {
+            'text':
+              'A redesigned desktop interface and onboarding bring a consistent experience to workspaces, meeting lists, live captions, notes, playback and settings.',
+            'commit': 'debcfcb750e677211a8add885e35e7b8ebd8edf8',
+          },
+          {
+            'text':
+              'Use a connected phone as the desktop microphone, preview its input level, and start, pause, resume or stop recording from the computer.',
+            'commit': '8dc8fe4540fcfdd117adc933de692e21caf7873e',
+          },
+        ],
+        'improved': [
+          {
+            'text':
+              'More consistent light and dark themes, translations, keyboard focus and reduced-motion behavior, with layouts adapted to different window sizes.',
+            'commit': 'debcfcb750e677211a8add885e35e7b8ebd8edf8',
+          },
+          {
+            'text':
+              'Reorganized transcript, note, summary editing and export controls in meeting details; drafts survive failed saves and can be retried.',
+            'commit': 'debcfcb750e677211a8add885e35e7b8ebd8edf8',
+          },
+          {
+            'text':
+              'A shared visual style across phone and desktop, with clearer pairing, recording status, connection errors and permission guidance.',
+            'commit': '8dc8fe4540fcfdd117adc933de692e21caf7873e',
+          },
+          {
+            'text':
+              'Android update downloads continue through the system download manager after leaving the page; iOS can check for newer App Store versions.',
+            'commit': '0c8804462f68c4b0259a6727cbf156c82a58b958',
+          },
+        ],
+        'fixed': [
+          {
+            'text':
+              'Fixed missing captions after restoring a phone session, recording control state after a desktop restart, and upload recovery edge cases, without rewriting acknowledged audio.',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+          {
+            'text':
+              'Stale settings requests no longer replace the current page; failed recording cleanup preserves the index so remaining files stay accessible.',
+            'commit': '6fafb4924937093d230c629e171fdabcecf65f0d',
+          },
+          {
+            'text':
+              'Fixed summary and AI note requests to stricter OpenAI-compatible services, including endpoint paths and model-name casing, plus the dark-theme switch icon (thanks to @Sousukes, PR #9).',
+            'commit': 'e64f7d94da3318872a00d0078dc526883e97831e',
+          },
+          {
+            'text':
+              'Windows local AI builds use AVX2 with AVX512 disabled; failed model loads or inference release the sidecar process to reduce memory retained across retries.',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+          {
+            'text':
+              'Fixed stale search results, joined summary headings and list items, batch export result reporting, and duplicate popover listeners.',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+          {
+            'text':
+              'Fixed overflow on the English device connection page at the default window size by removing duplicate card spacing.',
+            'commit': '3aa23a955175776aa42622b3eb25255c45316dd1',
+          },
+        ],
+        'security': [
+          {
+            'text':
+              'Hardened attribute escaping for Markdown image URLs to prevent malicious content from injecting page event handlers.',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+        ],
+        'changes': [
+          {
+            'text':
+              'v1.4.0 is the desktop version; phone features ship through companion mobile builds, and iOS availability and updates remain subject to Apple review.',
+            'commit': '8dc8fe4540fcfdd117adc933de692e21caf7873e',
+          },
+          {
+            'text':
+              'Phone microphone control requires the companion app to be paired, connected and ready in the foreground; live transcription and AI processing still run on the computer.',
+            'commit': '8dc8fe4540fcfdd117adc933de692e21caf7873e',
+          },
+          {
+            'text':
+              'Audio remains on the phone during a disconnection and authorized uploads resume after reconnection. Calls, force-stop and system limits can still interrupt recording; uploads after recording may require keeping the phone app in the foreground.',
+            'commit': 'f4db152077903971fa220badc2b17bbf6ebe17a5',
+          },
+        ],
+      },
+    },
+    {
       'version': '1.3.1',
       'date': '2026-10-10',
-      'current': true,
+      'current': false,
       'previousVersion': '1.3.0',
       'contributors': [],
       'zh': {
