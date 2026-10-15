@@ -6,7 +6,7 @@
     <title>Brevia — Local-first AI Meeting Assistant</title>
     <meta
       name="description"
-      content="Brevia is a desktop AI meeting assistant. Live transcription, multilingual notes, and speaker identification — no audio leaves your device."
+      content="Brevia is a desktop AI meeting assistant. Record on your computer or phone. Transcribe, translate, and organize with AI on your own computer."
     />
     <link rel="icon" href="../docs/assets/brevia-mark.svg" />
     <style>
@@ -43,23 +43,7 @@
         text-decoration: underline;
       }
     </style>
-    <script>
-      (function () {
-        // Check if user has already selected a language this session
-        const selected = sessionStorage.getItem('lang-selected');
-        if (selected) {
-          window.location.href = selected === 'zh' ? './index-zh.html' : './index-en.html';
-          return;
-        }
-
-        // Detect browser language
-        const userLang = navigator.language || navigator.userLanguage || 'en';
-        const isZh = userLang.toLowerCase().startsWith('zh');
-
-        // Redirect to appropriate language version
-        window.location.href = isZh ? './index-zh.html' : './index-en.html';
-      })();
-    </script>
+    <script src="./language.js"></script>
   </head>
   <body>
     <div class="loader">
