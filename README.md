@@ -186,8 +186,8 @@ flowchart LR
 
 遇到问题或有建议？欢迎[提交 Issue](https://github.com/zerolovesea/Brevia/issues)，附上设备、应用版本、会议语言和复现步骤。截图与日志请去掉会议隐私及凭据；安全问题请私下联系维护者。
 
-开发、架构、模型细节和打包说明见[开发指南](docs/DEVELOPMENT.zh-CN.md)、[手机开发指南](mobile/README.md)及[贡献规范](CONTRIBUTING.md)。
+修改与检查见[贡献规范](CONTRIBUTING.md)，手机开发与发布见[手机指南](mobile/README.md)。开发与设计资料保存在 `dev` 分支。
 
 ## 许可与致谢
 
-言录使用 [ISC 许可证](LICENSE)，模型和第三方依赖遵循各自许可。感谢 [mlx-audio](https://github.com/Blaizzy/mlx-audio)、[sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)、Electron，以及 Qwen、FunASR、Parakeet、Pyannote、3D-Speaker、Silero、Tencent Hy-MT2 的作者与维护者。模型详情见[开发指南](docs/DEVELOPMENT.zh-CN.md#支持的模型)。
+言录使用 [ISC 许可证](LICENSE)，模型和第三方依赖遵循各自许可。感谢 [mlx-audio](https://github.com/Blaizzy/mlx-audio)、[sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)、Electron，以及 Qwen、FunASR、Parakeet、Pyannote、3D-Speaker、Silero、Tencent Hy-MT2 的作者与维护者。模型详情见[模型清单](backend/models.json)。

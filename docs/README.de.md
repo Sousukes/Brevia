@@ -157,7 +157,7 @@ Beginnen Sie mit dem empfohlenen Sprachmodell für Ihre Sprache. Lokale KI- und 
 
 [GitHub Issues](https://github.com/zerolovesea/Brevia/issues) — Probleme bitte mit App-Version, Gerät und Schritten zur Reproduktion melden. Private Inhalte und Zugangsdaten aus Bildern und Protokollen entfernen.
 
-[Entwicklung (Englisch)](DEVELOPMENT.md) · [Mobile Entwicklung (Chinesisch)](../mobile/README.md) · [CONTRIBUTING](../CONTRIBUTING.md).
+[Mobile Entwicklung (Chinesisch)](../mobile/README.md) · [CONTRIBUTING](../CONTRIBUTING.md).
 
 ## Lizenz
 

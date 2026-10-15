@@ -21,7 +21,7 @@ from .asr import ModelManager, OfflineDiarizer, OfflineVAD, RefinedASR, SpeakerT
 from .audio_io import read_mono_wav, read_mono_wav_window
 from .config import SETTINGS
 
-DEFAULT_WAV = Path(__file__).with_name("benchmarks") / "baseline-zh.wav"
+DEFAULT_WAV = Path(__file__).with_name("fixtures") / "example-zh.wav"
 
 
 def wav_duration_seconds(path):

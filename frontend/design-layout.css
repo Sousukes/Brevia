@@ -5644,10 +5644,7 @@ textarea,
 .onboarding-setup-content .onboarding-model-card {
   padding: 10px 16px;
 }
-.onboarding-model-card .asr-meter :is(small, b) {
-  font-size: 14px;
-  font-weight: 400;
-}
+
 .onboarding-page .onboarding-bundled-section {
   padding: 12px 18px;
   background: var(--color-navigation);

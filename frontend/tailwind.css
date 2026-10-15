@@ -936,7 +936,6 @@
     height: 12px;
     vertical-align: -1px;
   }
-  .onboarding-permission-state .check-icon,
   .permission-setting-state .check-icon {
     width: 13px;
     height: 13px;
@@ -1356,9 +1355,7 @@
     opacity: 0.35;
     cursor: default;
   }
-  #live-notes-input {
-    @apply min-h-0 w-full flex-1 resize-none border border-(--color-line) bg-white px-4 py-3 text-[14px] leading-7 text-[#222222] outline-none transition-colors duration-300 focus:border-black;
-  }
+
   .notes-input {
     min-height: 0;
     width: 100%;
@@ -3027,40 +3024,14 @@
     line-height: 1.7;
     color: #444444;
   }
-  .onboarding-ai-feature .onboarding-ai-way-title {
-    display: block;
-    margin: 22px 0 10px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #222222;
-  }
+
   .onboarding-ai-feature-hint {
     display: block;
     margin-top: 12px;
     line-height: 1.6;
     text-align: left;
   }
-  .onboarding-brand-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 28px;
-    color: #000;
-  }
-  .onboarding-brand-name span {
-    display: grid;
-    place-items: center;
-    width: 25px;
-    height: 25px;
-    background: #222222;
-    color: #fff;
-    font-size: 16px;
-    line-height: 1;
-  }
-  .onboarding-brand-name b {
-    font-size: 19px;
-    line-height: 1;
-  }
+
   .onboarding-ai-ways {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3380,30 +3351,18 @@
   .onboarding-permission {
     @apply grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-5 border-b border-(--color-line) py-5 text-left;
   }
-  .onboarding-permission-state {
-    @apply grid size-7 place-items-center border border-black text-[12px] text-black;
-  }
-  .onboarding-permission.is-granted .onboarding-permission-state {
-    @apply border-(--color-success-border) text-(--color-success);
-  }
+
   .onboarding-permission b {
     @apply block text-[14px] font-medium text-black;
   }
   .onboarding-permission small {
     @apply mt-1 block text-[12px] text-[#666666];
   }
-  .onboarding-permission-complete {
-    @apply pt-5 text-[13px] text-(--color-success);
-  }
-  .onboarding-permission-placeholder {
-    visibility: hidden;
-  }
+
   .onboarding-page .onboarding-permission-action {
     @apply px-3 py-2 text-[12px];
   }
-  .onboarding-permission-granted {
-    @apply border border-(--color-success-border) px-3 py-2 text-[12px] text-(--color-success) opacity-100;
-  }
+
   .onboarding-permission-title {
     @apply flex items-center gap-3;
   }
@@ -4105,7 +4064,6 @@
 .icon-button,
 .onboarding-back,
 .brand-mark,
-.onboarding-permission-state,
 .task-card-close {
   border-radius: 8px;
 }
@@ -4617,8 +4575,7 @@ html[data-theme="dark"] .onboarding-ai-feature {
   border-color: var(--color-line);
 }
 html[data-theme="dark"] .onboarding-ai-feature h2,
-html[data-theme="dark"] .onboarding-ai-feature .onboarding-ai-feature-desc,
-html[data-theme="dark"] .onboarding-ai-way-title {
+html[data-theme="dark"] .onboarding-ai-feature .onboarding-ai-feature-desc {
   color: #fff;
 }
 html[data-theme="dark"] .app-demo-summary-body .eyebrow {
@@ -4743,13 +4700,7 @@ html[data-theme="dark"] .brand img,
 html[data-theme="dark"] .onboarding-brand {
   filter: invert(1);
 }
-html[data-theme="dark"] .onboarding-brand-name {
-  color: #fff;
-}
-html[data-theme="dark"] .onboarding-brand-name span {
-  background: #fff;
-  color: #000;
-}
+
 html[data-theme="dark"] .markdown-content {
   color: #b0b0b0;
 }
@@ -4781,14 +4732,7 @@ html[data-theme="dark"] .onboarding-permission b {
 html[data-theme="dark"] .onboarding-permission {
   border-color: var(--color-line);
 }
-html[data-theme="dark"] .onboarding-permission-state {
-  border-color: #666666;
-  color: #fff;
-}
-html[data-theme="dark"] .onboarding-permission.is-granted .onboarding-permission-state,
-html[data-theme="dark"] .onboarding-permission-granted {
-  color: #80c99a;
-}
+
 html[data-theme="dark"] .nav-item,
 html[data-theme="dark"] .back,
 html[data-theme="dark"] .eyebrow,
@@ -5424,11 +5368,7 @@ html[data-theme="dark"] .segment.is-draft {
 .mobile-sidebar-card.is-connected #mobile-nav-dot {
   visibility: visible;
 }
-#mobile-status {
-  margin: 0 0 24px;
-  font-size: 13px;
-  line-height: 1.7;
-}
+
 .mobile-device + .mobile-device {
   border-top: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
 }
@@ -5568,7 +5508,6 @@ html[data-theme="dark"] .segment.is-draft {
 #mobile-dialog .modal-form-actions {
   flex-wrap: wrap;
 }
-#mobile-status:empty,
 #mobile-dialog-status:empty {
   display: none;
 }

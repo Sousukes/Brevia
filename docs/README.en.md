@@ -184,8 +184,8 @@ Confirm that the installer came from the official [release page](https://github.
 
 Found a problem or have a suggestion? [Open an issue](https://github.com/zerolovesea/Brevia/issues) with your device, app version, meeting language and steps to reproduce. Remove private content and credentials from screenshots and logs. Report security issues privately to the maintainer.
 
-Browse the [documentation index](README.md). For development, architecture, model details and packaging, see the [development guide](DEVELOPMENT.md), [mobile guide](../mobile/README.md) and [contribution guidelines](../CONTRIBUTING.md).
+Browse the [documentation index](README.md), [mobile guide](../mobile/README.md) and [contribution guidelines](../CONTRIBUTING.md). Development and design materials are maintained on the `dev` branch.
 
 ## License and acknowledgments
 
-Brevia uses the [ISC License](../LICENSE). Model files and third-party packages retain their own licenses. Thanks to [mlx-audio](https://github.com/Blaizzy/mlx-audio), [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), Electron, and the authors of Qwen, FunASR, Parakeet, Pyannote, 3D-Speaker, Silero and Tencent Hy-MT2. Model details are listed in the [development guide](DEVELOPMENT.md#supported-models).
+Brevia uses the [ISC License](../LICENSE). Model files and third-party packages retain their own licenses. Thanks to [mlx-audio](https://github.com/Blaizzy/mlx-audio), [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), Electron, and the authors of Qwen, FunASR, Parakeet, Pyannote, 3D-Speaker, Silero and Tencent Hy-MT2. Model details are listed in the [model manifest](../backend/models.json).

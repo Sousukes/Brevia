@@ -8,6 +8,8 @@ prompts/
 docs/ui-*.md
 docs/redesign-*/
 docs/*.local.md
+docs/DEVELOPMENT*.md
+docs/releases/*-review.md
 dist/
 build/
 backend/build/

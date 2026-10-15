@@ -37,4 +37,4 @@ python backend/bench_live.py --language zh --output /tmp/brevia-vad.json
 python backend/bench_live.py --language en --gaps
 ```
 
-[本次架构基准](benchmarks/vad-2026-09-05/REPORT.md)
+历史 VAD 基准结果保存在 `dev` 分支。

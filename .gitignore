@@ -22,6 +22,13 @@ design.md
 /docs/redesign-*/
 .research/
 
+# 开发指南、设计源文件与历史验收资料在 dev 分支管理。
+/docs/DEVELOPMENT*.md
+/docs/releases/*-review.md
+/osg/
+/backend/benchmarks/vad-*/
+/website/DESIGN.md
+
 # 基准测试临时区：会议音频副本、模型软链、Whisper 下载、benchmark JSON
 .bench-tmp/
 

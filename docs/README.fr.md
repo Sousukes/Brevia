@@ -157,7 +157,7 @@ Commencez par le modèle vocal recommandé pour votre langue. Ajoutez les modèl
 
 [GitHub Issues](https://github.com/zerolovesea/Brevia/issues) — Signalez les problèmes avec la version, l’appareil et les étapes de reproduction ; retirez les informations privées et identifiants des captures et journaux.
 
-[Développement (anglais)](DEVELOPMENT.md) · [Développement mobile (chinois)](../mobile/README.md) · [CONTRIBUTING](../CONTRIBUTING.md).
+[Développement mobile (chinois)](../mobile/README.md) · [CONTRIBUTING](../CONTRIBUTING.md).
 
 ## Licence
 
