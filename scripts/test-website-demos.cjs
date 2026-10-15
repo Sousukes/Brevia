@@ -438,13 +438,13 @@ app
             const prepareCapture = join(root, 'output/playwright/affine-implementation');
             mkdirSync(prepareCapture, { recursive: true });
             await capture(join(prepareCapture, `prepare-${locale}.png`));
-            assert.ok(flow.states[3].notes >= 3, 'Tour accepts AI notes during recording');
+            assert.equal(flow.states[3].notes, 1, 'Tour demonstrates note acceptance once');
             assert.ok(flow.states[4].summary.includes(locale === 'zh' ? '行动项' : 'Action items'));
             assert.equal(flow.states[5].notes, 0, 'Tour resets notes when the next meeting starts');
           }
           if (scene === 'live') {
             assert.equal(states[2].segments, 5);
-            assert.equal(states[2].notes, 4);
+            assert.equal(states[2].notes, 1);
             const ordering = await win.webContents.executeJavaScript(`(() => {
               productMotion.seek(3500);
               const source = document.querySelector('#transcript-scroll').innerText;
@@ -461,14 +461,30 @@ app
             assert.equal(ordering.sourceUnchanged, true, 'AI reviews completed source text');
             assert.equal(ordering.suggestion, true);
             const acceptance = await win.webContents.executeJavaScript(
-              `(()=>{productMotion.seek(6400);const before=document.querySelector('.notes-editor').innerText;const label=document.querySelector('.ai-suggestion-type').textContent;productMotion.seek(6600);return {before,after:document.querySelector('.notes-editor').innerText,label,checkboxes:document.querySelectorAll('.notes-editor input[type=checkbox]').length,headings:document.querySelectorAll('.notes-editor h2').length,flying:document.querySelectorAll('.motion-accepted-note').length}})()`,
+              `(()=>{productMotion.seek(5000);const before=document.querySelector('.notes-editor').innerText;const label=document.querySelector('.ai-suggestion-type').textContent;productMotion.seek(5200);return {before,after:document.querySelector('.notes-editor').innerText,label,checkboxes:document.querySelectorAll('.notes-editor input[type=checkbox]').length,headings:document.querySelectorAll('.notes-editor h2').length,flying:document.querySelectorAll('.motion-accepted-note').length}})()`,
             );
-            assert.equal(acceptance.before.includes(locale === 'zh' ? '周四' : 'Thursday'), false);
-            assert.ok(acceptance.after.includes(locale === 'zh' ? '周四' : 'Thursday'));
-            assert.equal(acceptance.label, locale === 'zh' ? '可能的待办' : 'Possible action item');
+            assert.equal(
+              acceptance.before.includes(locale === 'zh' ? '既定范围' : 'agreed'),
+              false,
+            );
+            assert.ok(acceptance.after.includes(locale === 'zh' ? '既定范围' : 'agreed'));
+            assert.equal(acceptance.label, locale === 'zh' ? '可能的决策' : 'Possible decision');
             assert.equal(acceptance.checkboxes, 0);
             assert.equal(acceptance.headings, 0);
             assert.equal(acceptance.flying, 0);
+            const repeatedAccepts = await win.webContents.executeJavaScript(`(() => {
+              return [6300,7700,9100,11000].map(time => {
+                productMotion.seek(time);
+                return {suggestion:!document.querySelector('[data-ai-suggestion]').hidden,
+                  cursor:!document.querySelector('.motion-cursor').hidden,
+                  notes:document.querySelectorAll('.notes-editor li').length};
+              });
+            })()`);
+            repeatedAccepts.forEach((state) => {
+              assert.equal(state.suggestion, false, 'No repeated suggestion after acceptance');
+              assert.equal(state.cursor, false, 'No repeated confirmation click');
+              assert.equal(state.notes, 1, 'Keep the accepted note visible');
+            });
             const acceptedUI = await win.webContents.executeJavaScript(`(() => {
               productMotion.seek(6600);
               const root=document.querySelector('[data-live-notes-root]');
@@ -673,7 +689,12 @@ app
         assert.equal(shots.notes[1].notes, 0, 'A suggestion is not a saved note');
         assert.equal(shots.notes[1].suggestion, true);
         assert.equal(shots.notes[2].notes, 1, 'Only accepting a suggestion adds it to the notes');
-        assert.equal(shots.notes[3].notes, 4);
+        assert.equal(shots.notes[3].notes, 1);
+        assert.equal(
+          shots.notes[3].suggestion,
+          false,
+          'AI notes demo accepts only one suggestion per cycle',
+        );
         assert.equal(shots.notes[3].captionMode, false);
         console.log(`PASS differentiated transcription and AI review ${locale}`);
       }
@@ -878,12 +899,12 @@ app
             }
             if (target === 'notes') {
               const effect = await win.webContents.executeJavaScript(
-                `(() => {const frame=document.querySelector('#notes iframe');frame.contentWindow.productMotion.seek(2700);const d=frame.contentDocument;return {cursor:!d.querySelector('.motion-cursor').hidden,suggestion:d.querySelector('.ai-suggestion-text').textContent};})()`,
+                `(() => {const frame=document.querySelector('#notes iframe');frame.contentWindow.productMotion.seek(1650);const d=frame.contentDocument;return {cursor:!d.querySelector('.motion-cursor').hidden,suggestion:d.querySelector('.ai-suggestion-text').textContent};})()`,
               );
               assert.equal(effect.cursor, true);
-              assert.ok(effect.suggestion.includes(locale === 'zh' ? '周四' : 'Thursday'));
+              assert.ok(effect.suggestion.includes(locale === 'zh' ? '既定范围' : 'agreed'));
               await win.webContents.executeJavaScript(
-                "document.querySelector('#notes iframe').contentWindow.productMotion.seek(3000)",
+                "document.querySelector('#notes iframe').contentWindow.productMotion.seek(1900)",
               );
             }
             if ([390, 1440].includes(width)) {

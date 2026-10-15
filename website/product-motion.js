@@ -288,12 +288,14 @@ window.detailActiveTab = 'summary';
     // 先完成字幕，再分析已有内容；笔记区直接使用已完成的字幕作为审核依据。
     const events = transcription
       ? []
-      : noteItems.map((text, index) => ({
-          text,
-          start: (reviewing ? 0.9 : 4.2) + index * 1.4,
-          accept: (reviewing ? 1.8 : 5.1) + index * 1.4,
-          type: index === 0 ? 'decision' : 'action',
-        }));
+      : [
+          {
+            text: noteItems[0],
+            start: reviewing ? 0.9 : 4.2,
+            accept: reviewing ? 1.8 : 5.1,
+            type: 'decision',
+          },
+        ];
     const acceptedEvents = events.filter((event) => seconds >= event.accept);
     if (acceptedCount < 0 || acceptedEvents.length < acceptedCount) {
       liveNotesEditor.setMarkdown('');

@@ -36,7 +36,7 @@
     state.ready = false;
     state.command = '';
     element.classList.remove('is-ready');
-    const source = new URL('./product-motion.html?v=20261015-tasks', location.href);
+    const source = new URL('./product-motion.html?v=20261015-once', location.href);
     source.searchParams.set('scene', element.dataset.motionScene);
     source.searchParams.set('shot', element.dataset.motionShot || 'overview');
     source.searchParams.set('lang', zh ? 'zh' : 'en');
