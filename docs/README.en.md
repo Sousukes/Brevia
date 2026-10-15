@@ -111,16 +111,17 @@ Audio saves on the phone first. During a network outage, authorized uploads resu
 
 Download speech, AI-note and translation models from **Settings → Model Library** as needed. Voice activity detection and speaker models are included with the app. All models below run on the computer; mobile recording does not require downloading them to your phone. Available variants and sizes are shown in the Model Library.
 
-| Use                        | Model                     | Languages / purpose                                           |
-| -------------------------- | ------------------------- | ------------------------------------------------------------- |
-| Transcription / refinement | FunASR Nano               | Chinese, Cantonese, English                                   |
-| Transcription / refinement | Qwen3-ASR 0.6B            | 30 languages, including Chinese, English, Japanese and Korean |
-| Transcription / refinement | Parakeet TDT 0.6B v3      | 25 European languages                                         |
-| AI notes / summaries       | Qwen 3.5 2B / 4B          | Chinese / English                                             |
-| Caption translation        | Tencent Hy-MT2 1.8B       | Multilingual translation                                      |
-| Voice activity detection   | Silero VAD                | Detect speech and pauses                                      |
-| Speaker separation         | Pyannote Segmentation 3.0 | Separate speakers after a meeting                             |
-| Voiceprint matching        | 3D-Speaker ERes2Net Base  | Match saved speaker profiles                                  |
+| Use                        | Model                                   | Languages / purpose                                           |
+| -------------------------- | --------------------------------------- | ------------------------------------------------------------- |
+| Transcription / refinement | FunASR Nano                             | Chinese, Cantonese, English                                   |
+| Transcription / refinement | Qwen3-ASR 0.6B                          | 30 languages, including Chinese, English, Japanese and Korean |
+| Refinement (optional)      | Qwen3-ASR 1.7B / Whisper Large v3 Turbo | Multilingual; Apple Silicon Macs only                         |
+| Transcription / refinement | Parakeet TDT 0.6B v3                    | 25 European languages                                         |
+| AI notes / summaries       | Qwen 3.5 2B / 4B                        | Chinese / English                                             |
+| Caption translation        | Tencent Hy-MT2 1.8B                     | Multilingual translation                                      |
+| Voice activity detection   | Silero VAD                              | Detect speech and pauses                                      |
+| Speaker separation         | Pyannote Segmentation 3.0               | Separate speakers after a meeting                             |
+| Voiceprint matching        | 3D-Speaker ERes2Net Base                | Match saved speaker profiles                                  |
 
 ![Model Library: speech, AI and translation models](assets/screenshots/desktop/en/models.png)
 

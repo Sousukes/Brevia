@@ -77,16 +77,17 @@ Angetrieben von Pyannote-Segmentierung plus Sprecher-Embedding-Modellen, alles a
 
 Sprach-, KI-Notiz- und Übersetzungsmodelle bei Bedarf unter **Einstellungen → Modellbibliothek** herunterladen. Modelle für Sprachaktivität und Sprecher sind enthalten. Alle Modelle laufen auf dem Computer; auf dem Smartphone müssen keine Modelle installiert werden. Varianten und Größen stehen in der App.
 
-| Zweck                           | Modell                    | Sprachen / Funktion                                                  |
-| ------------------------------- | ------------------------- | -------------------------------------------------------------------- |
-| Transkription / Nachbearbeitung | FunASR Nano               | Chinesisch, Kantonesisch, Englisch                                   |
-| Transkription / Nachbearbeitung | Qwen3-ASR 0.6B            | 30 Sprachen, darunter Chinesisch, Englisch, Japanisch und Koreanisch |
-| Transkription / Nachbearbeitung | Parakeet TDT 0.6B v3      | 25 europäische Sprachen                                              |
-| KI-Notizen / Zusammenfassungen  | Qwen 3.5 2B / 4B          | Chinesisch / Englisch                                                |
-| Untertitelübersetzung           | Tencent Hy-MT2 1.8B       | Mehrsprachige Übersetzung                                            |
-| Sprachaktivität                 | Silero VAD                | Sprache und Pausen erkennen                                          |
-| Sprechertrennung                | Pyannote Segmentation 3.0 | Sprecher nach der Besprechung trennen                                |
-| Stimmprofile                    | 3D-Speaker ERes2Net Base  | Gespeicherte Profile abgleichen                                      |
+| Zweck                           | Modell                                  | Sprachen / Funktion                                                  |
+| ------------------------------- | --------------------------------------- | -------------------------------------------------------------------- |
+| Transkription / Nachbearbeitung | FunASR Nano                             | Chinesisch, Kantonesisch, Englisch                                   |
+| Transkription / Nachbearbeitung | Qwen3-ASR 0.6B                          | 30 Sprachen, darunter Chinesisch, Englisch, Japanisch und Koreanisch |
+| Nachbearbeitung (optional)      | Qwen3-ASR 1.7B / Whisper Large v3 Turbo | Mehrsprachig; nur Macs mit Apple Silicon                             |
+| Transkription / Nachbearbeitung | Parakeet TDT 0.6B v3                    | 25 europäische Sprachen                                              |
+| KI-Notizen / Zusammenfassungen  | Qwen 3.5 2B / 4B                        | Chinesisch / Englisch                                                |
+| Untertitelübersetzung           | Tencent Hy-MT2 1.8B                     | Mehrsprachige Übersetzung                                            |
+| Sprachaktivität                 | Silero VAD                              | Sprache und Pausen erkennen                                          |
+| Sprechertrennung                | Pyannote Segmentation 3.0               | Sprecher nach der Besprechung trennen                                |
+| Stimmprofile                    | 3D-Speaker ERes2Net Base                | Gespeicherte Profile abgleichen                                      |
 
 ## Mit dem Smartphone aufnehmen
 

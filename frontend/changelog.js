@@ -2,9 +2,149 @@
 (() => {
   const releases = [
     {
-      'version': '1.4.0',
+      'version': '1.4.1',
       'date': '2026-10-15',
       'current': true,
+      'previousVersion': '1.4.0',
+      'contributors': [],
+      'zh': {
+        'summary':
+          '新增 Apple Silicon 可选识别模型，精简首次使用引导，并修复声纹保留、PDF 导出和纪要生成的边界问题。',
+        'what': [
+          {
+            'text':
+              'Apple Silicon Mac 的模型库新增 Qwen3-ASR 1.7B 8bit 和 Whisper Large v3 Turbo，支持按需下载用于转写与会后精修。',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+        ],
+        'improved': [
+          {
+            'text':
+              '首次使用引导只展示各语言推荐的识别模型，其他模型可在设置中按需下载；默认窗口与界面同步放大，提升可读性。',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text': '更新中英文官网及完整会议演示，展示转写、AI 笔记采纳和纪要生成的实际操作流程。',
+            'commit': 'b13e8a6702d2ed50886af3f7539eaea3550a7144',
+          },
+          {
+            'text': '清理未使用的样式、脚本与重复音频，开发和设计资料归档至 dev 分支。',
+            'commit': '14b3b4d87c8a658fe5d5b9142fdfafbe02b76698',
+          },
+        ],
+        'fixed': [
+          {
+            'text':
+              '修复启动清理可能误删默认名称的用户声纹或新下载的 Qwen3-ASR 模型；旧演示声纹清理保留后续添加的用户样本。',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text': '修复含制表符列表或空标题的 Markdown 导出 PDF 时可能卡住的问题。',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text':
+              '修复详细纪要被冲突的篇幅要求压缩，以及长会议分段纪要可能偏离指定输出语言的问题。',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text': '麦克风设备失效时仅针对设备选择约束重试，避免掩盖其他采集约束错误。',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text':
+              '修复无效缓存语言导致界面加载失败，以及切换语言后部分辅助功能标签未更新的问题。',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+        ],
+        'security': [
+          {
+            'text': '更新构建链中的缓存与 source map 依赖，修复对应的已知依赖安全问题。',
+            'commit': '7717600d276b35e188074606266277c398265451',
+          },
+        ],
+        'changes': [
+          {
+            'text':
+              'v1.4.1 为桌面版本；两个新增模型仅适用于 Apple Silicon Mac，需在模型库手动下载，不改变已有模型选择。',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+        ],
+      },
+      'en': {
+        'summary':
+          'Optional Apple Silicon speech models, simpler onboarding, and fixes for voiceprint preservation, PDF export and summary generation.',
+        'what': [
+          {
+            'text':
+              'The Model Library on Apple Silicon Macs now offers Qwen3-ASR 1.7B 8bit and Whisper Large v3 Turbo as optional downloads for transcription and post-meeting refinement.',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+        ],
+        'improved': [
+          {
+            'text':
+              'Onboarding shows the recommended speech models for each language; additional models remain available in Settings. A larger default window and interface improve readability.',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text':
+              'Updated the bilingual website and meeting walkthrough to show transcription, accepting AI notes and generating summaries.',
+            'commit': 'b13e8a6702d2ed50886af3f7539eaea3550a7144',
+          },
+          {
+            'text':
+              'Removed unused styles, scripts and duplicate audio, and archived development and design materials on the dev branch.',
+            'commit': '14b3b4d87c8a658fe5d5b9142fdfafbe02b76698',
+          },
+        ],
+        'fixed': [
+          {
+            'text':
+              'Startup cleanup preserves user voiceprints with default names and newly downloaded Qwen3-ASR models; removing legacy demo samples preserves user samples added later.',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text':
+              'Fixed PDF export hanging on Markdown containing tab-separated list markers or empty headings.',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text':
+              'Removed conflicting length instructions that shortened detailed summaries, and kept chunked summaries of long meetings in the selected output language.',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text':
+              'Microphone fallback retries device-selection failures without masking other capture constraint errors.',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+          {
+            'text':
+              'Fixed startup failures caused by an invalid saved language and accessibility labels that did not update after changing languages.',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+        ],
+        'security': [
+          {
+            'text':
+              'Updated cache and source-map dependencies in the build toolchain to address their known security issues.',
+            'commit': '7717600d276b35e188074606266277c398265451',
+          },
+        ],
+        'changes': [
+          {
+            'text':
+              'v1.4.1 is a desktop release. Both new models require an Apple Silicon Mac and a manual Model Library download; existing model selections are preserved.',
+            'commit': '2ca84f46f7f2c5f42e65139c64ac8c0dcd3b2d3e',
+          },
+        ],
+      },
+    },
+    {
+      'version': '1.4.0',
+      'date': '2026-10-15',
+      'current': false,
       'previousVersion': '1.3.1',
       'contributors': [],
       'zh': {

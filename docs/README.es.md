@@ -77,16 +77,17 @@ Con segmentación Pyannote más modelos de embeddings de voz, todo ejecutándose
 
 Descarga modelos de voz, notas IA y traducción desde **Ajustes → Biblioteca de modelos** según tus necesidades. Los modelos de actividad de voz y hablantes vienen incluidos. Todos se ejecutan en el ordenador; el móvil no necesita descargarlos. Consulta variantes y tamaños en la aplicación.
 
-| Uso                      | Modelo                    | Idiomas / función                                      |
-| ------------------------ | ------------------------- | ------------------------------------------------------ |
-| Transcripción / revisión | FunASR Nano               | Chino, cantonés, inglés                                |
-| Transcripción / revisión | Qwen3-ASR 0.6B            | 30 idiomas, incluidos chino, inglés, japonés y coreano |
-| Transcripción / revisión | Parakeet TDT 0.6B v3      | 25 idiomas europeos                                    |
-| Notas IA / resúmenes     | Qwen 3.5 2B / 4B          | Chino / inglés                                         |
-| Traducción de subtítulos | Tencent Hy-MT2 1.8B       | Traducción multilingüe                                 |
-| Actividad de voz         | Silero VAD                | Detectar voz y pausas                                  |
-| Separación de hablantes  | Pyannote Segmentation 3.0 | Separar hablantes después de la reunión                |
-| Perfiles de voz          | 3D-Speaker ERes2Net Base  | Comparar perfiles guardados                            |
+| Uso                      | Modelo                                  | Idiomas / función                                      |
+| ------------------------ | --------------------------------------- | ------------------------------------------------------ |
+| Transcripción / revisión | FunASR Nano                             | Chino, cantonés, inglés                                |
+| Transcripción / revisión | Qwen3-ASR 0.6B                          | 30 idiomas, incluidos chino, inglés, japonés y coreano |
+| Revisión (opcional)      | Qwen3-ASR 1.7B / Whisper Large v3 Turbo | Varios idiomas; solo Mac con Apple Silicon             |
+| Transcripción / revisión | Parakeet TDT 0.6B v3                    | 25 idiomas europeos                                    |
+| Notas IA / resúmenes     | Qwen 3.5 2B / 4B                        | Chino / inglés                                         |
+| Traducción de subtítulos | Tencent Hy-MT2 1.8B                     | Traducción multilingüe                                 |
+| Actividad de voz         | Silero VAD                              | Detectar voz y pausas                                  |
+| Separación de hablantes  | Pyannote Segmentation 3.0               | Separar hablantes después de la reunión                |
+| Perfiles de voz          | 3D-Speaker ERes2Net Base                | Comparar perfiles guardados                            |
 
 ## Graba con el móvil
 
