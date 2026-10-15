@@ -5,8 +5,8 @@ certifi>=2024.2.2
 # （access violation reading 0x0），故先封顶在该版本以下。
 llama-cpp-python>=0.3.2,<0.3.35
 
-# Pin the inspected streaming/VAD interfaces; no server or MLX LLM dependency.
-mlx-audio[stt] @ git+https://github.com/Blaizzy/mlx-audio.git@94c7716212b2228f178d2f9c7619a591fd1b0b78 ; sys_platform == "darwin" and platform_machine == "arm64"
+# 固定已验证的离线识别与 VAD 接口，不安装服务端或 MLX LLM 依赖。
+mlx-audio[stt]==0.5.9 ; sys_platform == "darwin" and platform_machine == "arm64"
 
 # Use the macOS 14 Metal wheel even on newer build hosts. The auto-selected
 # macOS 26 wheel cannot run on older supported Macs.

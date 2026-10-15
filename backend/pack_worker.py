@@ -118,6 +118,7 @@ if sys.platform == "darwin":
         "mlx_audio.stt.models.fun_asr_nano",
         "mlx_audio.stt.models.fireredasr2",
         "mlx_audio.stt.models.parakeet",
+        "mlx_audio.stt.models.whisper",
         "mlx_audio.vad.models.silero_vad",
     ):
         mlx_options.extend(["--collect-all", package])

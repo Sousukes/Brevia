@@ -300,9 +300,6 @@ class WorkerCore:
     def _startup_maintenance(self):
         """完成不影响首屏的清理与磁盘统计。"""
         purged = self.store.purge_expired()
-        for profile in self.store.list_speaker_profiles():
-            if self._is_default_speaker_name(profile["name"]):
-                self.store.delete_speaker_profile(profile["id"])
         # 旧版本曾内置「内置男声/内置女声」演示说话人；删除其种子遗留。
         self.store.delete_legacy_builtin_profiles()
         self.emit(

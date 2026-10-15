@@ -31,6 +31,8 @@ const timestampAlignedRefinedModels = new Set([
   'funasr-nano-int8',
   'parakeet-tdt-0.6b-v3-int8',
   'qwen3-asr-0.6b-mlx',
+  'qwen3-asr-1.7b-mlx',
+  'whisper-large-v3-turbo-mlx',
   'funasr-nano-mlx',
   'parakeet-tdt-0.6b-v3-mlx',
 ]);

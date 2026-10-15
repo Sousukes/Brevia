@@ -1,3 +1,6 @@
+// 缓存语言在应用入口校验；共用的翻译运行时不能提前读取官网演示的 locale。
+if (!Object.hasOwn(catalog, locale)) locale = 'zh';
+
 const views = [...document.querySelectorAll('.view')];
 const crumb = document.querySelector('#crumb');
 const toast = document.querySelector('#toast');
@@ -3678,9 +3681,12 @@ function dismissOnboardingPage(next) {
 // 识别模型文案（8 语种）由 asr-copy.js 提供；这里只做取值与回退。
 const asrText = (group, fallback = 'en') =>
   (asrCopy[group] || {})[locale] || (asrCopy[group] || {})[fallback] || {};
-/** 首启第 ③ 步的可选识别模型：清单里仍未退役的整句识别模型。@returns {object[]} */
+/** 首启只列出承担默认语言的模型，其余模型在设置中按需下载。@returns {object[]} */
 function onboardingAsrModels() {
-  return refinedModels().filter((model) => !model.bundled);
+  const defaults = new Set(
+    asrCopy.LOCALES.map((language) => manifestDefaultRefinedModelId(language)),
+  );
+  return refinedModels().filter((model) => !model.bundled && defaults.has(model.id));
 }
 /** 首启默认勾选：按界面语言推导的推荐模型。
  *
@@ -5297,7 +5303,10 @@ function applyLanguage(nextLocale, animate = false) {
         return;
       }
       const target = element?.deref();
-      if (target) target[attribute] = value;
+      if (target) {
+        if (attribute === 'aria-label') target.setAttribute(attribute, value);
+        else target[attribute] = value;
+      }
     });
     renderPrepareSelects();
     renderPrepareAudioSources();

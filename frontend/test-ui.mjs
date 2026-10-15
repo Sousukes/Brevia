@@ -806,9 +806,11 @@ await systemCapture.stop();
 let micConstraints;
 mediaContext.navigator.mediaDevices.getUserMedia = async (constraints) => {
   micConstraints = constraints;
-  if (constraints.audio?.deviceId?.exact === 'dead-device') {
+  if (['dead-device', 'missing-constraint'].includes(constraints.audio?.deviceId?.exact)) {
     const err = new Error('gone');
-    err.name = 'NotFoundError';
+    err.name =
+      constraints.audio.deviceId.exact === 'dead-device' ? 'NotFoundError' : 'OverconstrainedError';
+    err.constraint = 'deviceId';
     throw err;
   }
   return { getVideoTracks: () => [], getAudioTracks: () => [{ readyState: 'live', stop() {} }] };
@@ -830,6 +832,9 @@ await micCapture.requestTrack('mic');
 assert.equal(micCapture.micDeviceId, '', 'falls back to default device');
 assert.equal(micConstraints.audio.deviceId, undefined, 'fallback uses no deviceId');
 assert.equal(micCapture.micFellBack, true, 'records the fallback');
+micCapture.micDeviceId = 'missing-constraint';
+await micCapture.requestTrack('mic');
+assert.equal(micCapture.micDeviceId, '', 'an unavailable exact device constraint also falls back');
 // previewMic reports a fallback so the UI can resync the picker.
 const mockNode = () => ({ connect() {}, disconnect() {}, port: { onmessage: null, close() {} } });
 mediaContext.AudioContext = class {
@@ -986,6 +991,15 @@ await assert.rejects(
 );
 const localeContext = { window: {} };
 runInNewContext(text(i18nData), localeContext);
+const i18nRuntimeSource = await readFile('i18n-runtime.js', 'utf8');
+assert.doesNotThrow(() => runInNewContext(i18nRuntimeSource, { window: localeContext.window }));
+for (const stored of ['zh', 'en', 'de', 'fr-CA', '__proto__', '']) {
+  const context = { window: localeContext.window, locale: stored };
+  runInNewContext(i18nRuntimeSource, context);
+  runInNewContext(text(app).slice(0, text(app).indexOf('const views')), context);
+  assert.equal(context.locale, ['zh', 'en', 'de'].includes(stored) ? stored : 'zh');
+  assert.ok(runInNewContext("t('转写中')", context));
+}
 for (const code of asrCopyLocales) {
   const storage = localeContext.window.BreviaLocaleData.onboardingStorageCopy;
   assert.deepEqual(
@@ -2805,11 +2819,31 @@ assert.equal(reversedCatalog[0].id, 'vad', '显示排序不得改写原清单');
 const macModels = modelManifest.filter(
   (model) => !model.platforms || model.platforms.includes('darwin'),
 );
+const onboardingModelContext = {
+  refinedModels: () => MS.selectableRefinedModels(macModels),
+  asrCopy: asrCopyData,
+  manifestDefaultRefinedModelId: (language) => MS.declaredDefaultModelId(macModels, language),
+};
+runInNewContext(
+  text(app).match(/function onboardingAsrModels\(\) \{[\s\S]*?\n\}/)[0],
+  onboardingModelContext,
+);
+assert.deepEqual(
+  Array.from(onboardingModelContext.onboardingAsrModels(), (model) => model.id),
+  ['funasr-nano-mlx', 'qwen3-asr-0.6b-mlx', 'parakeet-tdt-0.6b-v3-mlx'],
+  '首启仅提供三个默认模型，其他模型留在设置的模型库中',
+);
 assert.deepEqual(
   MS.visibleModels(macModels, 'zh')
     .filter((model) => model.stages.includes('refined'))
     .map((model) => model.id),
-  ['funasr-nano-mlx', 'qwen3-asr-0.6b-mlx', 'parakeet-tdt-0.6b-v3-mlx'],
+  [
+    'funasr-nano-mlx',
+    'qwen3-asr-0.6b-mlx',
+    'parakeet-tdt-0.6b-v3-mlx',
+    'qwen3-asr-1.7b-mlx',
+    'whisper-large-v3-turbo-mlx',
+  ],
 );
 
 // 分组映射必须显式：按前缀匹配会把 speaker-segmentation 同时归进声纹组。
@@ -2878,7 +2912,9 @@ const parallelListOffenders = [];
 for (const name of MODEL_ID_SOURCES) {
   const source = await readFile(name, 'utf8');
   for (const line of source.split('\n')) {
-    const hits = [...manifestIds].filter((id) => line.includes(id));
+    const hits = [...manifestIds].filter(
+      (id) => line.includes(`'${id}'`) || line.includes(`"${id}"`),
+    );
     // 同一个翻译表内的别名赋值不是第二份模型清单。
     const translationAlias =
       name === 'i18n-data.js' &&

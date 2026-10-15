@@ -28,6 +28,7 @@ if (typeof WebSocket === 'undefined') {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
+const defaultWindowScale = (2 / 3) * 1.15 * 1.1;
 const captureStartedAt = Date.now();
 const captureSources = process.env.BREVIA_DESIGN_CAPTURE_DIR
   ? (() => {
@@ -375,9 +376,9 @@ try {
   check(
     Math.abs(compactWindow.result?.value?.viewportWidth - 1280) <= 2 &&
       Math.abs(compactWindow.result.value.viewportHeight - 800) <= 2 &&
-      Math.abs(compactWindow.result.value.scale - (2 / 3) * 1.15) < 0.02 &&
+      Math.abs(compactWindow.result.value.scale - defaultWindowScale) < 0.02 &&
       !compactWindow.result.value.overflow,
-    `旧缩放配置启动并重载后，窗口与内容应同步放大15%至23/30，保留 1280×800 排版：${JSON.stringify(compactWindow.result?.value)}`,
+    `旧缩放配置启动并重载后，应保留 1280×800 布局并将界面整体放大 10%：${JSON.stringify(compactWindow.result?.value)}`,
   );
 
   const probe = `(() => {
@@ -511,6 +512,11 @@ try {
       !importUi.result?.value?.clipped,
     `导入界面法语文案不完整：${JSON.stringify(importUi.result?.value)}`,
   );
+  const accessibleLabels = await client.send('Runtime.evaluate', {
+    expression: `[['.sidebar', '主导航'], ['.brand', 'Brevia 首页'], ['#import-recording', '导入本地音频'], ['.audio-dropzone', '选择音频文件']].every(([selector, key]) => document.querySelector(selector).getAttribute('aria-label') === t(key))`,
+    returnByValue: true,
+  });
+  check(accessibleLabels.result?.value, '切换语言必须更新真实的 aria-label 属性');
   const storageMove = await client.send('Runtime.evaluate', {
     expression: `(async () => {
     let finish;
@@ -960,12 +966,12 @@ try {
     returnByValue: true,
   });
   check(
-    Math.abs(scaleAfterCaption.result?.value - (2 / 3) * 1.15) < 0.02,
+    Math.abs(scaleAfterCaption.result?.value - defaultWindowScale) < 0.02,
     '打开及关闭独立字幕窗口后，主应用仍保持默认缩放',
   );
   await client.send('Emulation.setDeviceMetricsOverride', {
-    width: Math.round(880 * (2 / 3) * 1.15),
-    height: Math.round(720 * (2 / 3) * 1.15),
+    width: Math.round(880 * defaultWindowScale),
+    height: Math.round(720 * defaultWindowScale),
     deviceScaleFactor: 1,
     mobile: false,
   });
@@ -1528,7 +1534,7 @@ try {
       await client.send('Emulation.setDeviceMetricsOverride', {
         width: 0,
         height: 0,
-        deviceScaleFactor: 30 / 23,
+        deviceScaleFactor: 1 / defaultWindowScale,
         mobile: false,
       });
       const shot = await client.send('Page.captureScreenshot', {
@@ -2193,8 +2199,8 @@ try {
     returnByValue: true,
   });
   await client.send('Emulation.setDeviceMetricsOverride', {
-    width: 675,
-    height: 491,
+    width: Math.round(880 * defaultWindowScale),
+    height: Math.round(640 * defaultWindowScale),
     deviceScaleFactor: 1,
     mobile: false,
   });
@@ -2253,7 +2259,7 @@ try {
   await client.send('Emulation.setDeviceMetricsOverride', {
     width: 0,
     height: 0,
-    deviceScaleFactor: 30 / 23,
+    deviceScaleFactor: 1 / defaultWindowScale,
     mobile: false,
   });
   await client.send('Runtime.evaluate', {
@@ -2417,7 +2423,7 @@ try {
     await client.send('Emulation.setDeviceMetricsOverride', {
       width: 0,
       height: 0,
-      deviceScaleFactor: 30 / 23,
+      deviceScaleFactor: 1 / defaultWindowScale,
       mobile: false,
     });
     const evaluate = async (expression) => {
@@ -3131,7 +3137,7 @@ try {
         await client.send('Emulation.setDeviceMetricsOverride', {
           width: 0,
           height: 0,
-          deviceScaleFactor: 30 / 23,
+          deviceScaleFactor: 1 / defaultWindowScale,
           mobile: false,
         });
       }
@@ -3163,7 +3169,10 @@ try {
         await evaluate(
           `(async()=>{document.querySelector('#mobile-close-pairing').click();await new Promise(resolve=>setTimeout(resolve,300));closeModal();})()`,
         );
-        await resizeNativeWindow(675, 491);
+        await resizeNativeWindow(
+          Math.round(880 * defaultWindowScale),
+          Math.round(640 * defaultWindowScale),
+        );
         const nativeScenes = [
           [
             'desktop-sidebar-tasks-small-window',
@@ -3209,13 +3218,16 @@ try {
             imageWidth: png.readUInt32BE(16),
             imageHeight: png.readUInt32BE(20),
             capturedAt: new Date().toISOString(),
-            nativeContent: { width: 675, height: 491 },
+            nativeContent: {
+              width: Math.round(880 * defaultWindowScale),
+              height: Math.round(640 * defaultWindowScale),
+            },
             ...geometry,
           });
         }
         await evaluate(`document.querySelector('[data-transcript-cancel]').click()`);
       } finally {
-        await resizeNativeWindow(981, 613);
+        await resizeNativeWindow(1079, 675);
         inspector.close();
       }
     }
@@ -3248,8 +3260,8 @@ try {
       startedAt: new Date(captureStartedAt).toISOString(),
       completedAt: new Date().toISOString(),
       checksPassed: failures.length === 0 && pageErrors.length === 0,
-      nativeContent: { width: 981, height: 613 },
-      zoom: 23 / 30,
+      nativeContent: { width: 1079, height: 675 },
+      zoom: defaultWindowScale,
       sources: captureSources,
       files: readdirSync(output).filter(
         (name) =>

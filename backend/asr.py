@@ -166,8 +166,20 @@ class ModelManager:
         ``refined_model_id`` 可能指向它，``get()`` 必须还能解析），但界面已经不显示、
         也不再提供删除入口。留着本地副本只会变成用户看不见也删不掉的几 GB 占用。
         """
+        # 新上架的 MLX 模型可能沿用旧 ONNX 模型的前缀，当前版本目录必须保留。
+        active_names = {
+            model_directory_name(model['id'], model['revision'])
+            for model in json.loads(
+                Path(__file__).with_name('models.json').read_text(encoding='utf-8')
+            )
+            if not model.get('retired')
+        }
         for path in self.root.iterdir():
-            if path.is_dir() and path.name.startswith(DEPRECATED_MODEL_PREFIXES):
+            if (
+                path.is_dir()
+                and path.name.startswith(DEPRECATED_MODEL_PREFIXES)
+                and path.name not in active_names
+            ):
                 shutil.rmtree(path, ignore_errors=True)
         for model in self.catalog.values():
             if model.get("retired"):

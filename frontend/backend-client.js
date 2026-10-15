@@ -80,7 +80,9 @@ class AudioCapture {
     } catch (error) {
       if (
         this.micDeviceId &&
-        (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError')
+        (error?.name === 'NotFoundError' ||
+          error?.name === 'DevicesNotFoundError' ||
+          (error?.name === 'OverconstrainedError' && error.constraint === 'deviceId'))
       ) {
         this.micDeviceId = '';
         this.micFellBack = true;

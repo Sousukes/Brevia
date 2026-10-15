@@ -10926,7 +10926,43 @@
         'Модель по умолчанию для встреч на путунхуа и кантонском. Также поддерживает английский и японский.',
       ],
     };
+    const offlineMlxDescriptions = {
+      zh: [
+        '阿里云 Qwen 团队推出的 Qwen3-ASR 1.7B，约 17 亿参数，采用 8bit 本地量化版本。支持 30 种语言和 22 种中文方言，可自动检测语种并生成标点。按完整语音段离线转写，模型体积与内存需求高于 0.6B 版本，适合资源充足的 Apple 芯片 Mac。',
+        'OpenAI 推出的 Whisper Large v3 Turbo，约 8 亿参数，将 Large v3 的解码器精简为 4 层，支持 100 种语言及自动语种检测。采用 FP16 本地版本，按完整语音段离线转写，可用于多语种会议、访谈和录音整理。',
+      ],
+      en: [
+        'Qwen3-ASR 1.7B by Alibaba Cloud’s Qwen team, with 1.7 billion parameters and local 8-bit quantization. Supports 30 languages and 22 Chinese dialects, automatic language detection and punctuation. Transcribes complete audio segments offline; requires more storage and memory than the 0.6B version.',
+        'OpenAI’s Whisper Large v3 Turbo has about 800 million parameters and reduces the Large v3 decoder to four layers. Supports 100 languages and automatic language detection. This local FP16 version transcribes complete audio segments offline for multilingual meetings, interviews and recordings.',
+      ],
+      es: [
+        'Qwen3-ASR 1.7B del equipo Qwen de Alibaba Cloud, con 1.700 millones de parámetros y cuantización local de 8 bits. Admite 30 idiomas, 22 dialectos chinos, detección de idioma y puntuación automáticas. Transcribe segmentos completos sin conexión; requiere más espacio y memoria que la versión 0.6B.',
+        'Whisper Large v3 Turbo de OpenAI tiene unos 800 millones de parámetros y reduce el decodificador de Large v3 a cuatro capas. Admite 100 idiomas y detección automática. Esta versión local FP16 transcribe segmentos completos sin conexión para reuniones, entrevistas y grabaciones multilingües.',
+      ],
+      ja: [
+        'Alibaba Cloud の Qwen チームによる Qwen3-ASR 1.7B。約17億パラメータのローカル8bit量子化版です。30言語と22の中国語方言、言語の自動検出、句読点に対応。音声区間全体をオフラインで文字起こしし、0.6B版より多くの保存容量とメモリを必要とします。',
+        'OpenAI の Whisper Large v3 Turbo。約8億パラメータで、Large v3 のデコーダーを4層に削減しています。100言語と言語の自動検出に対応。ローカルFP16版で音声区間全体をオフライン処理し、多言語の会議やインタビュー、録音を文字起こしします。',
+      ],
+      ko: [
+        'Alibaba Cloud Qwen 팀의 Qwen3-ASR 1.7B로, 약 17억 매개변수의 로컬 8비트 양자화 버전입니다. 30개 언어와 22개 중국어 방언, 자동 언어 감지 및 문장 부호를 지원합니다. 완성된 음성 구간을 오프라인으로 전사하며 0.6B 버전보다 저장 공간과 메모리가 더 필요합니다.',
+        'OpenAI의 Whisper Large v3 Turbo는 약 8억 매개변수로, Large v3 디코더를 4개 층으로 줄였습니다. 100개 언어와 자동 언어 감지를 지원합니다. 로컬 FP16 버전으로 완성된 음성 구간을 오프라인 전사하여 다국어 회의, 인터뷰와 녹음을 정리합니다.',
+      ],
+      fr: [
+        'Qwen3-ASR 1.7B de l’équipe Qwen d’Alibaba Cloud, avec 1,7 milliard de paramètres et une quantification locale sur 8 bits. Prend en charge 30 langues, 22 dialectes chinois, la détection de langue et la ponctuation automatiques. Transcrit des segments complets hors ligne ; demande plus de stockage et de mémoire que la version 0.6B.',
+        'Whisper Large v3 Turbo d’OpenAI compte environ 800 millions de paramètres et réduit le décodeur de Large v3 à quatre couches. Prend en charge 100 langues et leur détection automatique. Cette version locale FP16 transcrit des segments complets hors ligne pour les réunions, entretiens et enregistrements multilingues.',
+      ],
+      de: [
+        'Qwen3-ASR 1.7B vom Qwen-Team von Alibaba Cloud mit 1,7 Milliarden Parametern und lokaler 8-Bit-Quantisierung. Unterstützt 30 Sprachen, 22 chinesische Dialekte, automatische Spracherkennung und Zeichensetzung. Transkribiert vollständige Audioabschnitte offline; benötigt mehr Speicherplatz und Arbeitsspeicher als die 0.6B-Version.',
+        'Whisper Large v3 Turbo von OpenAI hat rund 800 Millionen Parameter und verkleinert den Decoder von Large v3 auf vier Schichten. Unterstützt 100 Sprachen und automatische Spracherkennung. Diese lokale FP16-Version transkribiert vollständige Audioabschnitte offline für mehrsprachige Besprechungen, Interviews und Aufnahmen.',
+      ],
+      ru: [
+        'Qwen3-ASR 1.7B от команды Qwen Alibaba Cloud: 1,7 млрд параметров и локальное 8-битное квантование. Поддерживает 30 языков, 22 китайских диалекта, автоматическое определение языка и пунктуацию. Распознаёт целые звуковые фрагменты офлайн; требует больше места и памяти, чем версия 0.6B.',
+        'Whisper Large v3 Turbo от OpenAI содержит около 800 млн параметров; декодер Large v3 сокращён до четырёх слоёв. Поддерживает 100 языков и автоматическое определение языка. Локальная версия FP16 распознаёт целые фрагменты офлайн для многоязычных встреч, интервью и записей.',
+      ],
+    };
     for (const locale of LOCALES) {
+      model[locale]['qwen3-asr-1.7b-mlx'] = { tagline: offlineMlxDescriptions[locale][0] };
+      model[locale]['whisper-large-v3-turbo-mlx'] = { tagline: offlineMlxDescriptions[locale][1] };
       model[locale]['funasr-nano-mlx'] = { tagline: mlxDescriptions[locale][2] };
       model[locale]['qwen3-asr-0.6b-mlx'] = { tagline: mlxDescriptions[locale][0] };
       model[locale]['fireredasr2-aed-mlx'] = { tagline: mlxDescriptions[locale][1] };

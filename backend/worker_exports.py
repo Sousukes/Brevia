@@ -310,10 +310,10 @@ class ExportWorkerMixin:
                 html.append(f"<h{level}>{inline(heading.group(2))}</h{level}>")
                 index += 1
                 continue
-            if line.startswith(("- ", "* ")):
+            if re.match(r"^[-*]\s+", line):
                 items = []
-                while index < len(lines) and lines[index].startswith(("- ", "* ")):
-                    items.append(f"<li>{inline(lines[index][2:])}</li>")
+                while index < len(lines) and re.match(r"^[-*]\s+", lines[index]):
+                    items.append(f"<li>{inline(re.sub(r'^[-*]\s+', '', lines[index]))}</li>")
                     index += 1
                 html.append(f"<ul>{''.join(items)}</ul>")
                 continue
@@ -337,7 +337,9 @@ class ExportWorkerMixin:
                         + "</tbody></table>"
                     )
                 continue
-            paragraph = []
+            # 不完整标题等未被上方分支接收的输入也必须消费，避免循环停在同一行。
+            paragraph = [lines[index]]
+            index += 1
             while (
                 index < len(lines)
                 and lines[index].strip()

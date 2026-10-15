@@ -74,6 +74,13 @@ class MLXASR:
             )
         if self.model_kind == 'fireredasr2':
             return dict(beam_size=3, max_len=512)
+        if self.model_kind == 'whisper':
+            return dict(
+                language=None if self.language == 'auto' else self.language,
+                task='transcribe',
+                stream=False,
+                verbose=None,
+            )
         return dict(chunk_duration=20.0, overlap_duration=2.0, verbose=False)
 
     def _audio(self, samples, sample_rate):

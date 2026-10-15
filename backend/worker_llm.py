@@ -159,17 +159,7 @@ def summary_prompt(transcript, title, language):
 - 列出重要日期、金额、数量、版本号、项目编号或技术参数。""".format(title=title)
     else:
         instructions = SUMMARY_PROMPTS.get(language, SUMMARY_PROMPTS["en"]).format(title=title)
-    length_note = {
-        "zh": "请聚焦重点、突出结论与行动项，控制纪要总长度（中文约 600~900 字），避免逐句复述全部讨论细节。",
-        "en": "Keep the notes focused: emphasize conclusions and action items, and keep the total output concise (roughly 400~700 words). Do not paraphrase every line of the transcript.",
-        "es": "Mantén las notas enfocadas: prioriza conclusiones y tareas, y mantén el resultado conciso.",
-        "ja": "要点を絞り、結論と行動項目を優先し、出力を簡潔に保ってください。",
-        "ko": "핵심에 집중해 결론과 실행 항목을 우선하고 출력을 간결하게 유지하세요.",
-        "fr": "Restez concis et priorisez conclusions et actions dans vos notes.",
-        "de": "Halten Sie die Notizen fokussiert und knapp; priorisieren Sie Schlussfolgerungen und Aufgaben.",
-        "ru": "Делайте заметки сфокусированными и краткими, выделяя выводы и задачи.",
-    }.get(language, "Keep the notes focused and concise, emphasizing conclusions and action items.")
-    return f"{instructions}\n\n{length_note}\n\nDo not reveal reasoning or a thinking process. Begin directly with the requested Markdown.\n\n<transcript>\n{transcript}\n</transcript>"
+    return f"{instructions}\n\nDo not reveal reasoning or a thinking process. Begin directly with the requested Markdown.\n\n<transcript>\n{transcript}\n</transcript>"
 
 
 def _split_transcript(transcript, chunk_chars):
@@ -221,6 +211,7 @@ def chunk_summary_prompt(transcript, title, language):
             "(task | owner | due | status), ## **Open questions**, ## **Key data** (omit empty "
             "sections). Output only Markdown."
         )
+        instructions += f" Write all notes in {LANGUAGE_NAMES.get(language, 'English')}."
     return f"{instructions}\n\n<transcript>\n{transcript}\n</transcript>"
 
 
@@ -251,6 +242,7 @@ def merge_summary_prompt(chunk_summaries, title, language):
             "## **Confirmed decisions**; ## **Action items** (table); ## **Open questions**; "
             "## **Key data**. Output only Markdown."
         ).format(title=title)
+        instructions += f" Write all notes in {LANGUAGE_NAMES.get(language, 'English')}."
     return f"{instructions}\n\n<partial summaries>\n{blocks}\n</partial summaries>"
 
 
@@ -502,12 +494,6 @@ class LLMWorkerMixin:
                     **payload["segment"],
                 }
             )
-            meeting = self.store.get_meeting(meeting["id"])
-            if not segment:
-                segment = next(
-                    (item for item in meeting["segments"] if item["id"] == payload["segment_id"]),
-                    None,
-                )
         if not segment:
             raise UserFacingError("error.segment_not_found", "Transcript segment not found")
         target = LANGUAGE_NAMES.get(payload["target_language"], payload["target_language"])

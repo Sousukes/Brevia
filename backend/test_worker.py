@@ -2,6 +2,7 @@ import base64
 import hashlib
 import io
 import json
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -2558,6 +2559,26 @@ class WorkerTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "会议中没有记录笔记"):
             self.worker.export({"meeting_id": meeting["id"], "content": "mynotes", "format": "md"})
 
+    def test_pdf_markdown_always_consumes_malformed_blocks(self):
+        # 子进程期限让解析器退回死循环时明确失败，不挂住整个测试进程。
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from backend.worker_exports import ExportWorkerMixin as E; "
+                "print(E._markdown_html('# \\n##\\t\\n-\\titem\\n*\\u2003<script>'))",
+            ],
+            cwd=Path(__file__).resolve().parent.parent,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+        self.assertIn("<p># </p>", result.stdout)
+        self.assertIn("<p>##\t</p>", result.stdout)
+        self.assertIn("<li>item</li>", result.stdout)
+        self.assertIn("<li>&lt;script&gt;</li>", result.stdout)
+
     def test_llm_client_supports_openai_and_anthropic_shapes(self):
         class Response:
             def __init__(self, data):
@@ -2865,6 +2886,26 @@ class WorkerTest(unittest.TestCase):
         self.assertIn(
             "do not omit any action item", merge_summary_prompt(["Action items"], "Meeting", "en")
         )
+
+    def test_summary_prompt_keeps_detail_and_chunk_output_language(self):
+        from .worker_llm import (
+            LANGUAGE_NAMES,
+            chunk_summary_prompt,
+            merge_summary_prompt,
+            summary_prompt,
+        )
+
+        self.assertNotIn("600~900", summary_prompt("逐条行动项", "会议", "zh"))
+        self.assertNotIn("400~700", summary_prompt("Actions", "Meeting", "en"))
+        for language, name in LANGUAGE_NAMES.items():
+            if language == "zh":
+                continue
+            for prompt in (
+                chunk_summary_prompt("Actions", "Meeting", language),
+                merge_summary_prompt(["Actions"], "Meeting", language),
+            ):
+                with self.subTest(language=language):
+                    self.assertIn(f"Write all notes in {name}.", prompt)
 
     def test_live_text_removes_qwen3_hallucinated_artifacts(self):
         # Qwen3-ASR 在静音/低信噪窗口会幻听出代码围栏、"language <语言>" 标签等。
@@ -6819,6 +6860,26 @@ class WorkerTest(unittest.TestCase):
         self.assertEqual(
             self.worker.store.get_meeting(meeting["id"])["transcript_model_id"], "retired-origin"
         )
+
+    def test_startup_maintenance_preserves_user_voiceprints(self):
+        store = self.worker.store
+        empty = store.ensure_speaker_profile("Speaker 1")
+        named = store.save_speaker_profile_sample("说话人 2", [1, 0], "file:user")
+        mixed = store.save_speaker_profile_sample("用户改名", [1, 0], "builtin:old")
+        store.save_speaker_profile_sample("用户改名", [0, 1], "file:new", mixed["id"])
+        legacy = store.save_speaker_profile_sample("旧演示", [1, 0], "builtin:only")
+        self.worker._startup_maintenance()
+        self.assertEqual(store.speaker_profile(empty["id"])["name"], "Speaker 1")
+        self.assertEqual(store.speaker_profile(named["id"])["sample_count"], 1)
+        self.assertEqual(json.loads(store.speaker_profile(mixed["id"])["embedding"]), [0, 1])
+        self.assertEqual(
+            [sample["source_key"] for sample in store.list_speaker_profile_samples(mixed["id"])],
+            ["file:new"],
+        )
+        with self.assertRaisesRegex(ValueError, "Speaker profile not found"):
+            store.speaker_profile(legacy["id"])
+        self.worker._startup_maintenance()
+        self.assertEqual(len(store.list_speaker_profiles()), 3)
 
     def test_legacy_segments_without_word_timestamps_migrate_without_data_loss(self):
         meeting = self.worker.store.create_meeting(

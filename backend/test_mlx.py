@@ -8,6 +8,7 @@ import unittest
 import weakref
 import wave
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -40,6 +41,11 @@ class CatalogTest(unittest.TestCase):
             default_refined_model_for_language(list(mac.values()), 'en'), 'parakeet-tdt-0.6b-v3-mlx'
         )
         self.assertFalse(any(m['runtime'] == 'mlx-audio' for m in windows.values()))
+        for ident in ('qwen3-asr-1.7b-mlx', 'whisper-large-v3-turbo-mlx'):
+            self.assertIn(ident, mac)
+            self.assertNotIn(ident, windows)
+            self.assertEqual(mac[ident]['stages'], ['refined'])
+            self.assertEqual(mac[ident]['default_for_languages'], [])
         for m in mac.values():
             if m['runtime'] == 'mlx-audio':
                 self.assertEqual(len(m['revision']), 40)
@@ -82,6 +88,22 @@ print(json.dumps({'ok': True}), file=out, flush=True)
             (folder / '.brevia.json').write_text(json.dumps(dict(id='funasr-nano-int8')))
             self.assertEqual(manager.cleanup_unlisted()['removed'], [])
             self.assertTrue(folder.exists())
+
+    def test_deprecated_prefix_preserves_current_qwen_mlx_weights(self):
+        for system in ('Darwin', 'Windows'):
+            with self.subTest(system=system), tempfile.TemporaryDirectory() as root:
+                with patch('backend.asr.platform.system', return_value='Darwin'):
+                    manager = ModelManager(root, cleanup=False)
+                current = manager.local_path('qwen3-asr-1.7b-mlx')
+                current.mkdir()
+                weights = current / 'model.safetensors'
+                weights.write_bytes(b'current weights')
+                legacy = Path(root) / 'qwen3-asr-1.7b-int8-old'
+                legacy.mkdir()
+                with patch('backend.asr.platform.system', return_value=system):
+                    ModelManager(root)
+                self.assertEqual(weights.read_bytes(), b'current weights')
+                self.assertFalse(legacy.exists())
 
 
 @unittest.skipUnless(sys.platform == 'darwin', 'MLX requires Apple Silicon')
@@ -440,6 +462,45 @@ assert tokenizer_class_from_name('Qwen2Tokenizer') is Qwen2Tokenizer
             with self.assertRaises(ModelNotInstalled):
                 RefinedASR(self.manager, 'qwen3-asr-0.6b-mlx', 'zh')
             load.assert_not_called()
+
+    def test_new_offline_models_use_family_options_and_completed_audio(self):
+        from .mlx_asr import MLXASR
+
+        for ident, language, options in [
+            (
+                'qwen3-asr-1.7b-mlx',
+                'zh',
+                dict(language='Chinese', max_tokens=512, temperature=0.0, verbose=False),
+            ),
+            (
+                'whisper-large-v3-turbo-mlx',
+                'zh',
+                dict(language='zh', task='transcribe', stream=False, verbose=None),
+            ),
+            (
+                'whisper-large-v3-turbo-mlx',
+                'auto',
+                dict(language=None, task='transcribe', stream=False, verbose=None),
+            ),
+        ]:
+            with (
+                self.subTest(model=ident, language=language),
+                patch('backend.mlx_asr.local_model_path', return_value=Path('.')),
+                patch('mlx_audio.stt.utils.load_model') as load,
+            ):
+                load.return_value.generate.return_value = SimpleNamespace(text='  转写完成  ')
+                asr = RefinedASR(self.manager, ident, language)
+                self.assertIsInstance(asr, MLXASR)
+                audio = np.zeros(1600, np.float32)
+                self.assertEqual(asr.decode_words(audio), ('转写完成', []))
+                call = load.return_value.generate.call_args
+                np.testing.assert_array_equal(np.array(call.args[0]), audio)
+                self.assertEqual(call.kwargs, options)
+                if asr.model_kind == 'whisper':
+                    partial = Mock()
+                    self.assertEqual(asr.decode_stream(audio, partial=partial), '转写完成')
+                    partial.assert_not_called()
+                    load.return_value.stream_generate.assert_not_called()
 
     def test_token_stream_preserves_split_unicode_and_hides_language_prefix(self):
         from .mlx_asr import MLXASR

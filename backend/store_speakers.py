@@ -280,16 +280,19 @@ class SpeakerProfileStoreMixin:
             db.execute("DELETE FROM speaker_profiles WHERE id=?", (profile_id,))
         shutil.rmtree(directory, ignore_errors=True)
 
+    @synchronized_storage_files
     def delete_legacy_builtin_profiles(self):
-        """删除旧版本内置演示说话人（样本 source_key 以 ``builtin:`` 开头）。"""
+        """删除旧演示样本；同一档案里的用户录音与命名必须保留。"""
         with self.connect() as db:
             rows = db.execute(
-                "SELECT DISTINCT profile_id FROM speaker_profile_samples "
+                "SELECT id,profile_id FROM speaker_profile_samples "
                 "WHERE source_key LIKE 'builtin:%'"
             ).fetchall()
         for row in rows:
-            self.delete_speaker_profile(row["profile_id"])
-        return len(rows)
+            profile = self.delete_speaker_profile_sample(row["profile_id"], row["id"])
+            if not profile["sample_count"]:
+                self.delete_speaker_profile(profile["id"])
+        return len({row["profile_id"] for row in rows})
 
     def set_segment_speaker(self, meeting_id, segment_id, speaker, profile_id=None, name=None):
         """设置段落的说话人并标记为用户编辑。"""
