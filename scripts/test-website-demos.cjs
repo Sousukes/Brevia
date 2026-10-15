@@ -611,6 +611,18 @@ app
           assert.equal(page.sticky, 'sticky');
           if (width < 640) assert.equal(page.mobileFirst, '-1');
           await waitForPlayer('.hero-visual');
+          const assetVersions = await win.webContents.executeJavaScript(`(() => {
+            const frame = document.querySelector('.hero-visual iframe');
+            const urls = [...document.querySelectorAll('link[href*="landing.css"],script[src*="landing.js"]')].map(element => element.href || element.src);
+            urls.push(frame.src, ...[...frame.contentDocument.querySelectorAll('link[href*="-motion.css"],script[src*="-motion.js"]')].map(element => element.href || element.src));
+            return {count:urls.length, versioned:urls.every(url => new URL(url).searchParams.has('v'))};
+          })()`);
+          assert.equal(assetVersions.count, 7);
+          assert.equal(
+            assetVersions.versioned,
+            true,
+            'Returning visitors must receive the matching styles and scripts',
+          );
           const beforeMotion = await win.webContents.executeJavaScript(
             "document.querySelector('.hero-visual iframe').contentWindow.productMotion.elapsed",
           );
