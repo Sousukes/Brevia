@@ -5,11 +5,10 @@
   const motions = new Map();
   const zh = document.documentElement.lang.startsWith('zh');
   let scheduled = false;
-  const clamp = (value) => Math.max(0, Math.min(1, value));
 
   function syncMotions() {
     motions.forEach((state, element) => {
-      const running = state.inView && !document.hidden && !state.finished;
+      const running = state.inView && !document.hidden;
       if (!state.ready) return;
       const command = JSON.stringify({
         type: 'brevia-motion-state',
@@ -24,20 +23,17 @@
 
   function configureMotion(element, state) {
     const phone = element.dataset.motionScene.startsWith('phone-');
-    const hero = element.hasAttribute('data-hero-demo');
-    const isCompact = compact.matches && !phone && !hero;
-    const focus = element.dataset.focus || (isCompact ? element.dataset.mobileFocus : '') || '';
-    const width = phone ? 390 : isCompact ? 520 : focus ? 900 : 1280;
-    const height = phone ? 844 : hero ? 889 : isCompact ? 620 : focus ? 620 : 800;
+    const pairing = element.dataset.motionScene.startsWith('pair-');
+    const width = pairing ? (compact.matches ? 420 : 1000) : phone ? 390 : 1280;
+    const height = pairing ? (compact.matches ? 780 : 600) : phone ? 844 : 800;
     state.frame.style.width = `${width}px`;
     state.frame.style.height = `${height}px`;
     const scale = Math.min(element.clientWidth / width, element.clientHeight / height);
     state.frame.style.transform = `scale(${scale})`;
-    const mode = `${isCompact}/${focus}`;
+    const mode = `${pairing && compact.matches}`;
     if (state.mode === mode) return;
     state.mode = mode;
     state.ready = false;
-    state.finished = false;
     state.command = '';
     element.classList.remove('is-ready');
     const source = new URL('./product-motion.html', location.href);
@@ -47,9 +43,6 @@
       'version',
       document.querySelector('[data-release-version]').textContent,
     );
-    source.searchParams.set('once', '1');
-    if (focus) source.searchParams.set('focus', focus);
-    if (isCompact) source.searchParams.set('compact', '1');
     state.frame.src = source.href;
   }
 
@@ -59,7 +52,7 @@
     frame.title = element.getAttribute('aria-label');
     frame.tabIndex = -1;
     frame.setAttribute('aria-hidden', 'true');
-    const state = { frame, ready: false, inView: false, finished: false };
+    const state = { frame, ready: false, inView: false };
     motions.set(element, state);
     element.append(frame);
     new ResizeObserver(() => configureMotion(element, state)).observe(element);
@@ -82,31 +75,23 @@
     .forEach((element) => motionObserver.observe(element));
 
   addEventListener('message', (event) => {
-    if (
-      event.origin !== location.origin ||
-      !['brevia-motion-ready', 'brevia-motion-ended'].includes(event.data?.type)
-    )
-      return;
+    if (event.origin !== location.origin || event.data?.type !== 'brevia-motion-ready') return;
     motions.forEach((state, element) => {
       if (event.source !== state.frame.contentWindow) return;
-      if (event.data.type === 'brevia-motion-ended') {
-        state.finished = true;
-      } else {
-        state.ready = true;
-        state.command = '';
-        configureMotion(element, state);
-        const initial = Number(element.dataset.start || 1800);
-        state.frame.contentWindow.postMessage(
-          {
-            type: 'brevia-motion-state',
-            running: false,
-            reduced: reducedMotion.matches,
-            seek: initial,
-          },
-          location.origin,
-        );
-        element.classList.add('is-ready');
-      }
+      state.ready = true;
+      state.command = '';
+      configureMotion(element, state);
+      const initial = Number(element.dataset.start || 1800);
+      state.frame.contentWindow.postMessage(
+        {
+          type: 'brevia-motion-state',
+          running: false,
+          reduced: reducedMotion.matches,
+          seek: initial,
+        },
+        location.origin,
+      );
+      element.classList.add('is-ready');
     });
     syncMotions();
   });
@@ -114,30 +99,6 @@
   function updateScroll() {
     scheduled = false;
     header.classList.toggle('is-scrolled', scrollY > 8);
-    const hero = document.querySelector('.hero-visual');
-    const progress = clamp(
-      (innerHeight * 0.85 - hero.getBoundingClientRect().top) / (innerHeight * 0.8),
-    );
-    hero.style.setProperty('--hero-progress', progress);
-    const window = hero.querySelector('.hero-window');
-    window.style.transform =
-      compact.matches || reducedMotion.matches
-        ? 'none'
-        : `rotateX(${(1 - progress) * 2}deg) scale(${0.98 + progress * 0.02})`;
-    document.querySelectorAll('.scene-visual').forEach((visual) => {
-      const enter = clamp(
-        (innerHeight - visual.getBoundingClientRect().top) / (innerHeight * 0.65),
-      );
-      visual.style.setProperty('--stage-enter', reducedMotion.matches ? 1 : enter);
-    });
-    const phones = document.querySelector('.phone-stage');
-    const phoneProgress = clamp(
-      (innerHeight - phones.getBoundingClientRect().top) / (innerHeight + phones.offsetHeight),
-    );
-    phones.style.setProperty(
-      '--phone-shift',
-      compact.matches || reducedMotion.matches ? '0px' : `${(phoneProgress - 0.5) * 40}px`,
-    );
     const sections = [...document.querySelectorAll('[data-nav-section]')];
     let active = '';
     sections.forEach((section) => {
@@ -169,6 +130,12 @@
   updateScroll();
 
   const software = document.querySelector('.software-section');
+  software.querySelectorAll('.software-group').forEach((group) => {
+    const duplicate = group.cloneNode(true);
+    duplicate.setAttribute('aria-hidden', 'true');
+    duplicate.inert = true;
+    group.after(duplicate);
+  });
   let softwareVisible = false;
   function syncSoftware() {
     software.classList.toggle(
@@ -185,18 +152,6 @@
   ).observe(software);
   document.addEventListener('visibilitychange', syncSoftware);
   reducedMotion.addEventListener('change', syncSoftware);
-  syncSoftware();
-
-  const flowObserver = new IntersectionObserver(
-    (entries) =>
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        if (!reducedMotion.matches) entry.target.classList.add('is-flow-entering');
-        flowObserver.unobserve(entry.target);
-      }),
-    { threshold: 0.35 },
-  );
-  flowObserver.observe(document.querySelector('[data-flow-reveal]'));
 
   document.documentElement.classList.add('has-motion');
 

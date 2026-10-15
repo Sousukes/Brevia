@@ -170,10 +170,29 @@ git push -u origin feature/mobile-transcript-layout
 
 ### 正式发布
 
-1. 在 TestFlight 验收指定版本和构建号。在 App Store Connect 完成描述、截屏、隐私政策与问卷、年龄分级、审核联系信息、局域网电脑配套使用说明和适用地区的合规信息。
-2. 在 GitHub 创建 `mobile-production` Environment，限制为 `main` 并配置 Required reviewers。仅写 `environment:` 不会自动开启审批规则。
-3. 手动运行工作流，选择 `appstore`，填写已验收版本（如 `1.0.0`）和构建号。复用该构建提交审核，不重新编译、不自动上线；通过审核后在 App Store Connect 手动发布。
-4. 安卓使用同次 CI 的 AAB，在 Google Play Console 配置 Play App Signing、应用资料及审核后提交；Google Play 自动发布尚未接入，需要先确定账号与渠道。
+**每次 iOS 送审前，执行者必须重新阅读本节和根目录 `AGENTS.md`，不能只沿用上一轮检查结论。优先通过 App Store Connect API 提交，默认入口为现有 GitHub Actions 的 `appstore` 通道；浏览器用于补齐 API 未覆盖的资料或诊断实际失败。**
+
+送审前逐项核对：
+
+- 明确目标版本、构建号和候选提交；在 TestFlight 完成该构建的真机验收及公开电脑端配对、转写兼容性检查。不能用旧录像代替当前候选包验收。
+- 读取当前正式版本和审核提交状态，优先使用 API；已等待审核、正在审核或审核通过时，报告现状，不重复提交。TestFlight 上传成功、内部测试分发及“准备提交”均不代表已送审。
+- 确认所有已启用商店语言的介绍、更新说明、截图及适用的创意素材已保存且处理成功；核对支持与隐私网址、年龄分级、内容版权、审核联系资料和无需登录声明。需要电脑时提供可公开下载的配套版本与操作步骤；复用录像须注明录像版本及与当前版本的差异。
+- 按实际数据流复核隐私标签、可选在线 AI 和用户自配服务；按加密实现及供应地区复核加密申报和 `IOS_USES_NON_EXEMPT_ENCRYPTION`。历史结论不自动适用于更改后的服务或地区。
+- 确认开发者协议、适用地区合规及发布设置；保持手动发布，除非用户明确要求变更。协议需要接受时交由账户持有人处理。网页提示异常时核对账户与 API 实际结果，不据此直接断言 API 也失败，不绕过协议要求。
+- 确认用户已授权本次送审，并核对 `mobile-production` Environment 仍限制为 `main`、已配置 Required reviewers。仅写 `environment:` 不会自动开启审批规则；沿用现有审批，不提取或输出 API 私钥，也不从本机绕过审批。
+
+检查通过后，在仓库根目录通过 GitHub CLI 触发既有工作流。先将 `RELEASE_VERSION`、`RELEASE_BUILD` 设置为本次已验收的实际值：
+
+```sh
+gh workflow run mobile.yml --repo zerolovesea/Brevia --ref main \
+  -f channel=appstore -f version="$RELEASE_VERSION" -f build="$RELEASE_BUILD"
+```
+
+此入口运行 `mobile/fastlane/Fastfile` 的 `promote` lane，使用 App Store Connect API Key 复用指定构建送审。它跳过二进制、商店文案和截图上传，不重新编译、不自动上线；资料必须事先保存。通过审核后再手动发布。
+
+触发后跟踪对应 Actions 运行及环境审批。任务结束后回读 App Store Connect 的正式审核提交记录，确认目标版本和构建、提交时间及“等待审核”或后续审核状态，再报告成功。记录工作流链接、实际提交方式及状态依据；不能仅凭任务触发成功或提交者显示名称判断送审成功或操作来源。API 实际失败时记录错误与阻塞，只有需要网页补查或备用提交时才切换并说明原因；切换前先确认没有已经成功的提交。
+
+安卓使用同次 CI 的 AAB，在 Google Play Console 配置 Play App Signing、应用资料及审核后提交；Google Play 自动发布尚未接入，需要先确定账号与渠道。
 
 缺少签名 Secrets 时发布任务明确失败，CI 检查仍可运行。本机开发使用 `flutter build apk --debug`；release 需设置 `ANDROID_KEYSTORE_PATH`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`。
 

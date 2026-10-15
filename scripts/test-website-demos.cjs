@@ -308,7 +308,15 @@ app
       console.log('PASS reduced motion');
       win.webContents.debugger.detach();
       for (const locale of ['zh', 'en']) {
-        for (const scene of ['live', 'summary', 'library', 'phone-live', 'phone-offline']) {
+        for (const scene of [
+          'live',
+          'summary',
+          'library',
+          'phone-live',
+          'phone-offline',
+          'pair-microphone',
+          'pair-field',
+        ]) {
           const phone = scene.startsWith('phone-');
           win.setContentSize(phone ? 390 : 1280, phone ? 844 : 800);
           await win.loadURL(
@@ -316,7 +324,9 @@ app
           );
           await waitForMotion();
           const states = [];
-          for (const time of [2000, 8000, 17000]) {
+          for (const time of scene === 'pair-microphone'
+            ? [2000, 8000, 26000]
+            : [2000, 8000, 17000]) {
             states.push(
               await win.webContents.executeJavaScript(`(() => {
               productMotion.seek(${time});
@@ -328,6 +338,10 @@ app
                 rows: document.querySelectorAll('.meeting-row').length,
                 search: document.querySelector('#meeting-search')?.value,
                 summary: document.querySelector('.summary-body')?.innerText,
+                collaborationPhase: document.querySelector('.collab-scene')?.dataset.phase,
+                appShell: document.querySelector('.collab-desktop iframe')?.contentDocument.querySelectorAll('.app-shell #live-view').length,
+                phoneText: document.querySelector('.collab-phone')?.innerText,
+                computerText: document.querySelector('.collab-desktop iframe')?.contentDocument.body.innerText,
                 summaryWide: !document.querySelector('.detail-layout') || document.querySelector('.final-transcript').getBoundingClientRect().width >= document.querySelector('.detail-layout').getBoundingClientRect().width - 1,
               };
             })()`),
@@ -350,6 +364,15 @@ app
           if (scene === 'live') {
             assert.equal(states[2].segments, 5);
             assert.equal(states[2].notes, 3);
+            const acceptance = await win.webContents.executeJavaScript(
+              `(()=>{productMotion.seek(9400);const before=document.querySelector('.notes-editor').innerText;const label=document.querySelector('.ai-suggestion-type').textContent;productMotion.seek(9700);return {before,after:document.querySelector('.notes-editor').innerText,label,checkboxes:document.querySelectorAll('.notes-editor input[type=checkbox]').length,headings:document.querySelectorAll('.notes-editor h2').length,flying:document.querySelectorAll('.motion-accepted-note').length}})()`,
+            );
+            assert.equal(acceptance.before.includes(locale === 'zh' ? '周四' : 'Thursday'), false);
+            assert.ok(acceptance.after.includes(locale === 'zh' ? '周四' : 'Thursday'));
+            assert.equal(acceptance.label, locale === 'zh' ? '可能的待办' : 'Possible action item');
+            assert.equal(acceptance.checkboxes, 0);
+            assert.equal(acceptance.headings, 0);
+            assert.equal(acceptance.flying, 0);
           }
           if (scene === 'summary') {
             assert.ok(states[2].summary.length > states[0].summary.length);
@@ -359,6 +382,43 @@ app
             assert.equal(states[1].rows, 1);
             assert.equal(states[2].rows, 4);
             assert.equal(states[1].search, locale === 'zh' ? '产品' : 'Product');
+          }
+          if (scene.startsWith('pair-')) {
+            assert.equal(states[2].appShell, 1, 'Desktop screen must use the actual app shell');
+            const word = locale === 'zh' ? '周四' : 'Thursday';
+            assert.ok(states[2].computerText.includes(word));
+            if (scene === 'pair-microphone') {
+              assert.equal(states[0].collaborationPhase, 'scan');
+              assert.equal(
+                states[2].phoneText.includes(word),
+                false,
+                'Computer-initiated microphone sessions keep text on desktop',
+              );
+              const confirmation = await win.webContents.executeJavaScript(
+                "productMotion.seek(4200);!document.querySelector('.collab-approval').hidden&&!document.querySelector('.collab-desktop iframe').contentDocument.querySelector('#mobile-approval').hidden",
+              );
+              assert.equal(confirmation, true, 'Scanning must lead to desktop approval');
+              const actions = await win.webContents.executeJavaScript(
+                `(()=>{const child=document.querySelector('.collab-desktop iframe').contentDocument;productMotion.seek(500);const tap=!document.querySelector('.collab-connect').hidden;productMotion.seek(2200);const aligning=document.querySelector('.collab-scene').dataset.scanAction;productMotion.seek(3500);const locked=document.querySelector('.collab-scene').dataset.scanAction;productMotion.seek(5000);const phoneCode=document.querySelector('.collab-verification').textContent,computerCode=child.querySelector('.mobile-verification').textContent;productMotion.seek(9000);const expanded=child.querySelector('#phone-device-mount .flow-select-toggle').getAttribute('aria-expanded');const choice=child.querySelector('#phone-device-mount [data-flow-select-choice]').textContent;productMotion.seek(10500);return {tap,aligning,locked,phoneCode,computerCode,expanded,choice,selected:child.querySelector('.capture-source-list [data-value=phone]').getAttribute('aria-checked'),closed:child.querySelector('#phone-device-mount .flow-select-options').hidden}})()`,
+              );
+              assert.equal(actions.tap, true);
+              assert.equal(actions.aligning, 'align');
+              assert.equal(actions.locked, 'locked');
+              assert.match(actions.phoneCode, /^[A-F0-9]{8}$/);
+              assert.equal(actions.phoneCode, actions.computerCode);
+              assert.equal(actions.expanded, 'true');
+              assert.ok(actions.choice.includes('iPhone'));
+              assert.equal(actions.selected, 'true');
+              assert.equal(actions.closed, true);
+            } else {
+              assert.equal(states[0].collaborationPhase, 'ready');
+              assert.equal(states[1].collaborationPhase, 'recording');
+              assert.equal(states[2].collaborationPhase, 'return');
+              assert.ok(
+                states[2].phoneText.includes(word),
+                'Phone-initiated sessions return computed text to phone',
+              );
+            }
           }
           const repeated = await win.webContents.executeJavaScript(
             `(() => { productMotion.seek(productMotion.duration + 2000); return document.querySelector('#motion-stage').innerText; })()`,
@@ -386,7 +446,7 @@ app
         throw Error(`Player did not load: ${selector}`);
       }
       for (const locale of ['zh', 'en']) {
-        for (const width of [320, 390, 768, 1024, 1440]) {
+        for (const width of [320, 390, 696, 768, 1024, 1440]) {
           win.setContentSize(width, 900);
           await loadHome(locale);
           await win.webContents.executeJavaScript(`(async () => {
@@ -406,15 +466,70 @@ app
             featureSections: [...document.querySelectorAll('[data-story-panel]')].every(panel => panel.getBoundingClientRect().height > 0 && !panel.hasAttribute('aria-hidden')),
             softwareBrands: document.querySelectorAll('.software-group:not([aria-hidden]) .software-brand').length,
             icons: [...document.querySelectorAll('use')].every(use => use.getAttribute('href').startsWith('./icons.svg#')),
+            qrWidths: [...document.querySelectorAll('.qr-link img')].map(img=>img.getBoundingClientRect().width),
             mobileFirst: getComputedStyle(document.querySelector('#mobile-download')).order,
           })`);
           assert.equal(page.overflow, false, `${locale}/${width}: horizontal overflow`);
           assert.equal(page.headerFits, true, `${locale}/${width}: header clipped`);
           assert.equal(page.headings, 1);
+          assert.deepEqual(
+            page.qrWidths,
+            width < 640 ? [0, 0] : [128, 128],
+            'Desktop QR codes stay secondary; phones use direct download buttons',
+          );
+          const downloadLayout = await win.webContents.executeJavaScript(`(() => {
+            const rows = [...document.querySelectorAll('.platform-row')];
+            return {
+              readable: [...document.querySelectorAll('.platform-name')].every(name => name.getBoundingClientRect().width >= 140),
+              linksFit: rows.every(row => [...row.querySelectorAll('a')].filter(link => link.getClientRects().length).every(link => {const a = link.getBoundingClientRect(), r = row.getBoundingClientRect();return a.left >= r.left && a.right <= r.right + 1 && link.scrollWidth <= link.clientWidth + 1})),
+              mobileActions: document.querySelectorAll('#mobile-download .platform-name > .button').length,
+              heights: rows.map(row => row.getBoundingClientRect().height),
+              stacked: document.querySelector('#mobile-download').getBoundingClientRect().top > document.querySelector('.download-column').getBoundingClientRect().bottom,
+            };
+          })()`);
+          assert.equal(downloadLayout.readable, true, `${locale}/${width}: platform text squeezed`);
+          assert.equal(
+            downloadLayout.linksFit,
+            true,
+            `${locale}/${width}: download button clipped`,
+          );
+          assert.equal(downloadLayout.mobileActions, 2);
+          if (width >= 640)
+            assert.ok(
+              Math.max(...downloadLayout.heights) - Math.min(...downloadLayout.heights) < 1,
+              `${locale}/${width}: download row proportions differ`,
+            );
+          if (width >= 640 && width < 1000)
+            assert.equal(
+              downloadLayout.stacked,
+              true,
+              'Tablet download groups stack before text gets cramped',
+            );
           assert.equal(page.motions, 7);
-          assert.equal(page.staticApplicationImages, 0);
+          assert.equal(
+            page.staticApplicationImages,
+            1,
+            'Privacy section includes the real model library',
+          );
           assert.equal(page.featureSections, true);
-          assert.equal(page.softwareBrands, 8);
+          const artwork = await win.webContents.executeJavaScript(`(() => {
+            const image = document.querySelector('.privacy-app');
+            const parent = image.closest('.privacy-local').getBoundingClientRect();
+            const box = image.getBoundingClientRect();
+            return {transform:getComputedStyle(image).transform, fits:box.left >= parent.left && box.right <= parent.right + 1,
+              connections:document.querySelectorAll('.connected-art,.connection-arm').length,
+              note:!!document.querySelector('.note-paper h4')};
+          })()`);
+          assert.equal(artwork.transform, 'none', 'Model library stays upright');
+          assert.equal(artwork.fits, true, `${locale}/${width}: model library clipped`);
+          assert.equal(
+            artwork.connections,
+            0,
+            'Workflow uses readable notes instead of diagram chrome',
+          );
+          assert.equal(artwork.note, true);
+
+          assert.equal(page.softwareBrands, 12);
           assert.equal(page.icons, true);
           assert.deepEqual(page.missingAnchors, []);
           assert.ok(page.downloads.some((url) => url.endsWith('.dmg')));
@@ -467,7 +582,7 @@ app
               const panel = document.querySelector('#${target}');const demo = panel.querySelector('[data-motion-scene]');
               const frame = demo.querySelector('iframe');const bounds=frame.getBoundingClientRect();
               return {visible:getComputedStyle(panel).visibility, running:frame.contentWindow.productMotion.running, noCrop:bounds.width <= demo.clientWidth + 1 && bounds.height <= demo.clientHeight + 1,
-                focus: frame.contentDocument.body.dataset.focus, text:frame.contentDocument.querySelector('#motion-stage').innerText};
+                focus: frame.contentDocument.body.dataset.focus, sidebar: getComputedStyle(frame.contentDocument.querySelector('.sidebar')).display, text:frame.contentDocument.querySelector('#motion-stage').innerText};
             })()`);
             assert.equal(
               state.visible,
@@ -476,6 +591,12 @@ app
             );
             assert.equal(state.running, true);
             assert.equal(state.noCrop, true);
+            assert.equal(state.focus, '', 'Product scenes must keep the complete application');
+            assert.notEqual(
+              state.sidebar,
+              'none',
+              'Product scenes include the application sidebar',
+            );
             assert.ok(state.text.includes(locale === 'zh' ? '产品周会' : 'Product sync'));
             if (target === 'notes') {
               const effect = await win.webContents.executeJavaScript(
@@ -494,43 +615,93 @@ app
             "document.querySelector('.software-section').scrollIntoView({behavior:'instant',block:'center'})",
           );
           await wait(100);
+          const software = await win.webContents.executeJavaScript(`(() => {
+            const brands = [...document.querySelectorAll('.software-brand')];
+            const boxes = brands.map(brand => brand.getBoundingClientRect());
+            return {
+              duplicates: document.querySelectorAll('.software-group[aria-hidden]').length,
+              overlap: boxes.some((box, i) => boxes.some((other, j) => i !== j && box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top)),
+              labelsFit: brands.every(brand => brand.scrollWidth <= brand.clientWidth),
+              animation: getComputedStyle(document.querySelector('.software-group')).animationName,
+            };
+          })()`);
+          assert.equal(software.duplicates, 2, 'Each row has one hidden seamless-loop copy');
+          assert.equal(software.overlap, false, `${locale}/${width}: software logos overlap`);
+          assert.equal(software.labelsFit, true, `${locale}/${width}: software labels clipped`);
+          assert.equal(software.animation, 'software-travel');
+          const wallSelector = "document.querySelector('.software-group')";
+          const beforeScroll = await win.webContents.executeJavaScript(
+            `getComputedStyle(${wallSelector}).transform`,
+          );
+          await wait(100);
+          assert.notEqual(
+            await win.webContents.executeJavaScript(`getComputedStyle(${wallSelector}).transform`),
+            beforeScroll,
+            'Visible software rows scroll',
+          );
+          const overlapsAtLoop = await win.webContents.executeJavaScript(`(() => {
+            const groups = [...document.querySelectorAll('.software-group')];
+            return [0, 0.5, 0.9999].some(progress => {
+              groups.forEach(group => group.getAnimations().forEach(animation => animation.currentTime = animation.effect.getTiming().duration * progress));
+              const boxes = [...document.querySelectorAll('.software-brand')].map(brand => brand.getBoundingClientRect());
+              return boxes.some((box, i) => boxes.some((other, j) => i !== j && box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top));
+            });
+          })()`);
           assert.equal(
-            await win.webContents.executeJavaScript(
-              "getComputedStyle(document.querySelector('.software-group')).animationPlayState",
-            ),
-            'running',
+            overlapsAtLoop,
+            false,
+            `${locale}/${width}: logos overlap around loop boundary`,
           );
           await win.webContents.executeJavaScript(
-            "Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))",
+            "document.querySelector('.software-wall').focus({preventScroll:true})",
           );
-          await wait(60);
-          const wallPaused = await win.webContents.executeJavaScript(
-            "getComputedStyle(document.querySelector('.software-group')).transform",
-          );
-          await wait(120);
           assert.equal(
             await win.webContents.executeJavaScript(
-              "getComputedStyle(document.querySelector('.software-group')).transform",
+              `getComputedStyle(${wallSelector}).animationPlayState`,
             ),
-            wallPaused,
-            'Background software wall must stop motion',
+            'paused',
+            'Keyboard focus pauses logos',
+          );
+          await win.webContents.executeJavaScript(
+            "document.activeElement.blur();Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))",
+          );
+          await wait(60);
+          const hiddenScroll = await win.webContents.executeJavaScript(
+            `getComputedStyle(${wallSelector}).transform`,
+          );
+          await wait(100);
+          assert.equal(
+            await win.webContents.executeJavaScript(`getComputedStyle(${wallSelector}).transform`),
+            hiddenScroll,
+            'Background logos stay still',
           );
           await win.webContents.executeJavaScript(
             "delete document.hidden;document.dispatchEvent(new Event('visibilitychange'))",
           );
-          await wait(100);
-          assert.notEqual(
-            await win.webContents.executeJavaScript(
-              "getComputedStyle(document.querySelector('.software-group')).transform",
-            ),
-            wallPaused,
-            'Visible software wall must resume motion',
-          );
-          for (const target of ['mobile', 'library', 'privacy', 'download']) {
+          for (const target of [
+            'mobile',
+            'mobile-microphone',
+            'mobile-field',
+            'library',
+            'privacy',
+            'download',
+          ]) {
             await win.webContents.executeJavaScript(
               `document.querySelector('#${target}').scrollIntoView({behavior:'instant'})`,
             );
             await wait(200);
+            if (target.startsWith('mobile-')) {
+              await waitForPlayer(`#${target}`);
+              const pairing = await win.webContents.executeJavaScript(
+                `(()=>{const el=document.querySelector('#${target} .motion-demo'),f=el.querySelector('iframe'),r=f.getBoundingClientRect();return {scene:f.contentWindow.productMotion.scene,running:f.contentWindow.productMotion.running,fits:r.width<=el.clientWidth+1&&r.height<=el.clientHeight+1}})()`,
+              );
+              assert.equal(
+                pairing.scene,
+                target === 'mobile-field' ? 'pair-field' : 'pair-microphone',
+              );
+              assert.equal(pairing.running, true);
+              assert.equal(pairing.fits, true);
+            }
             if ([390, 1440].includes(width))
               writeFileSync(
                 join(captures, `${locale}-${width}-${target}.png`),
@@ -596,20 +767,19 @@ app
           console.log(`PASS homepage ${locale}/${width}: autoplay, sections, layout, downloads`);
         }
       }
-      // 自动演示到达结果后停止，离屏与后台仍暂停。
+      // 结果过后进入下一轮；离屏、后台和减少动态效果仍暂停。
       win.setContentSize(1440, 900);
       await loadHome('zh');
       await waitForPlayer('.hero-visual');
       await win.webContents.executeJavaScript(
         "const player=document.querySelector('.hero-visual iframe').contentWindow.productMotion;player.seek(player.duration-600)",
       );
-      await wait(300);
-      assert.equal(
-        await win.webContents.executeJavaScript(
-          "document.querySelector('.hero-visual iframe').contentWindow.productMotion.running",
-        ),
-        false,
+      await wait(900);
+      const loop = await win.webContents.executeJavaScript(
+        "(()=>{const f=document.querySelector('.hero-visual iframe');return {running:f.contentWindow.productMotion.running,cycle:Number(f.contentDocument.querySelector('#motion-stage').dataset.cycle)}})()",
       );
+      assert.equal(loop.running, true);
+      assert.ok(loop.cycle >= 1, 'Homepage demos must loop');
       await loadHome('zh');
       await waitForPlayer('.hero-visual');
       await wait(80);
@@ -646,7 +816,7 @@ app
       assert.equal(reduced.software, 'none');
       assert.equal(reduced.stage, 'none');
       win.webContents.debugger.detach();
-      console.log('PASS result hold, background pause, and reduced motion');
+      console.log('PASS continuous loop, background pause, and reduced motion');
 
       const noScript = new BrowserWindow({
         show: false,

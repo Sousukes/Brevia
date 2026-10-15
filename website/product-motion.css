@@ -7,6 +7,10 @@ body {
   background: #fff;
   color-scheme: light;
 }
+html.is-collaboration,
+html.is-collaboration body {
+  background: transparent;
+}
 #motion-stage {
   width: 100vw;
   height: 100vh;
@@ -364,19 +368,7 @@ body[data-focus]:not([data-focus=""]) #home-view .meeting-row-title {
   filter: drop-shadow(1px 3px 2px #211b3240);
   pointer-events: none;
 }
-.motion-accepted-note {
-  position: absolute;
-  z-index: 7;
-  background: #e2effa;
-  color: #235e8e;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 16px;
-  line-height: 1.7;
-  pointer-events: none;
-}
-[data-reduced="true"] .motion-cursor,
-[data-reduced="true"] .motion-accepted-note {
+[data-reduced="true"] .motion-cursor {
   display: none;
 }
 body.is-compact #motion-stage .window-bar {

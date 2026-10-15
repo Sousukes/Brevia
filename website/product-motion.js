@@ -8,15 +8,31 @@ window.detailActiveTab = 'summary';
 
 (async () => {
   const pick = (zh, en) => (locale === 'en' ? en : zh);
-  const scene = ['live', 'summary', 'library', 'phone-live', 'phone-offline'].includes(
-    motionParams.get('scene'),
-  )
+  const scene = [
+    'live',
+    'summary',
+    'library',
+    'phone-live',
+    'phone-offline',
+    'pair-microphone',
+    'pair-field',
+  ].includes(motionParams.get('scene'))
     ? motionParams.get('scene')
     : 'live';
   const phone = scene.startsWith('phone-');
+  const collaboration = scene.startsWith('pair-');
+  let renderCollaboration;
+  let renderCapture;
+  let liveNotesEditor;
+  let acceptedCount = -1;
   const stage = document.querySelector('#motion-stage');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const duration = scene === 'summary' ? 22000 : 20000;
+  const duration =
+    collaboration || motionParams.has('capture')
+      ? pairingTimes.duration
+      : scene === 'summary'
+        ? 22000
+        : 20000;
   let elapsed = 0;
   let previous = 0;
   let frame = 0;
@@ -70,6 +86,7 @@ window.detailActiveTab = 'summary';
     `## ${pick('行动项', 'Action items')}\n\n| ${pick('任务 | 负责人 | 截止时间 | 状态', 'Task | Owner | Due | Status')} |\n| --- | --- | --- | --- |\n| ${pick('交付测试版本 | 开发团队 | 周四 | 待开始', 'Deliver test build | Engineering | Thursday | Planned')} |\n| ${pick('完成内部验收 | 产品团队 | 周五 | 待开始', 'Internal acceptance | Product | Friday | Planned')} |`,
   ];
   document.documentElement.lang = locale === 'en' ? 'en' : 'zh-CN';
+  document.documentElement.classList.toggle('is-collaboration', collaboration);
   document.body.classList.toggle('is-phone', phone);
   document.body.classList.toggle('is-compact', motionParams.has('compact'));
   const focus = ['captions', 'notes', 'full'].includes(motionParams.get('focus'))
@@ -77,7 +94,9 @@ window.detailActiveTab = 'summary';
     : '';
   document.body.dataset.focus = focus;
 
-  if (!phone) {
+  if (collaboration) {
+    renderCollaboration = await createCollaborationScene(stage, scene, locale);
+  } else if (!phone) {
     const templateURL = new URL('index.html', document.querySelector('[data-app-style]').href);
     const response = await fetch(templateURL);
     if (!response.ok) throw Error(`Application template: ${response.status}`);
@@ -90,7 +109,8 @@ window.detailActiveTab = 'summary';
     const viewId =
       scene === 'live' ? 'live-view' : scene === 'summary' ? 'detail-view' : 'home-view';
     shell.querySelectorAll('.workspace > .view').forEach((view) => {
-      if (view.id !== viewId) view.remove();
+      if (view.id !== viewId && !(motionParams.has('capture') && view.id === 'prepare-view'))
+        view.remove();
       else view.classList.add('active');
     });
     shell.classList.toggle('is-live-meeting', scene === 'live');
@@ -113,14 +133,17 @@ window.detailActiveTab = 'summary';
     shell.querySelector('#theme-toggle').innerHTML = interfaceIcon('sun');
     shell.querySelector('.workspace-container').innerHTML =
       `<div class="workspace-subnav-content"><div class="workspace-heading"><h3>${t('工作区')}</h3><button class="new-workspace">${interfaceIcon('plus')}</button></div><button class="workspace-item workspace-selector">${interfaceIcon('folder')}<span class="workspace-label">${pick('产品', 'Product')}</span>${interfaceIcon('chevron-down')}</button></div>`;
+    if (motionParams.has('capture'))
+      renderCapture = createCaptureDemo(stage, shell, template, locale, renderLive);
     if (scene === 'live') {
       shell.querySelector('#live-name').textContent = meeting;
-      shell.querySelector('#live-input-label').textContent = pick(
-        '麦克风 + 系统音频',
-        'Microphone + system audio',
-      );
-      shell.querySelector('[data-live-notes-root]').innerHTML =
-        '<div class="notes-editor" contenteditable="false"></div>';
+      shell.querySelector('#live-input-label').textContent = motionParams.has('capture')
+        ? pick('手机麦克风', 'Phone microphone')
+        : pick('麦克风 + 系统音频', 'Microphone + system audio');
+      const notesRoot = shell.querySelector('[data-live-notes-root]');
+      notesRoot.replaceChildren();
+      liveNotesEditor = createNotesEditor(notesRoot);
+      notesRoot.querySelector('.notes-editor').contentEditable = 'false';
     } else if (scene === 'summary') {
       const detail = shell.querySelector('#detail-view');
       detail.querySelector('h1').textContent = meeting;
@@ -147,11 +170,7 @@ window.detailActiveTab = 'summary';
   const cursor = document.createElement('div');
   cursor.className = 'motion-cursor';
   cursor.hidden = true;
-  const accepted = document.createElement('div');
-  accepted.className = 'motion-accepted-note';
-  accepted.hidden = true;
-  stage.append(cursor, accepted);
-  let suggestionBox;
+  stage.append(cursor);
 
   function renderLive(time) {
     const seconds = time / 1000;
@@ -170,51 +189,44 @@ window.detailActiveTab = 'summary';
       })
       .join('');
     write('#transcript-scroll', lines);
-    const noteCount = Math.min(noteItems.length, Math.max(0, Math.floor((seconds - 3) / 3)));
-    const notes = `## ${pick('本周决定', 'Decisions this week')}\n\n${noteCount ? noteItems[0] : ''}\n\n## ${pick('下一步', 'Next steps')}\n\n${noteItems
-      .slice(1, noteCount)
-      .map((item) => `- [ ] ${item}`)
-      .join('\n')}`;
-    write('.notes-editor', renderMarkdown(notes));
-    const suggestionIndex = Math.min(3, Math.max(0, Math.floor((seconds - 3) / 3)));
-    const suggesting = seconds >= 3 && seconds < 15 && (seconds - 3) % 3 < 2.3;
+    // 与正式应用一致：建议先等待采纳，再通过编辑器追加普通列表项。
+    const events = noteItems.map((text, index) => ({
+      text,
+      start: 3 + index * 4,
+      accept: 5.6 + index * 4,
+      type: index === 0 ? 'decision' : 'action',
+    }));
+    const acceptedEvents = events.filter((event) => seconds >= event.accept);
+    if (acceptedEvents.length !== acceptedCount) {
+      liveNotesEditor.setMarkdown('');
+      acceptedEvents.forEach((event) => liveNotesEditor.appendMarkdown(`- ${event.text}`));
+      acceptedCount = acceptedEvents.length;
+    }
+    const current = events.find((event) => seconds >= event.start && seconds < event.accept);
     const suggestion = stage.querySelector('[data-ai-suggestion]');
-    suggestion.hidden = !suggesting;
-    if (suggesting)
+    suggestion.hidden = !current;
+    stage.querySelector('[data-ai-assist-toggle]').classList.toggle(
+      'is-analyzing',
+      events.some((event) => seconds >= event.start - 1 && seconds < event.start),
+    );
+    cursor.hidden = !current || seconds < current.start + 0.6 || focus === 'captions';
+    if (current) {
+      const phase = seconds - current.start;
       write(
         '[data-ai-suggestion]',
-        `<div class="ai-suggestion-card"><div class="ai-suggestion-head"><span class="ai-suggestion-star">${interfaceIcon('ai')}</span><span class="ai-suggestion-type">${pick('行动项', 'Action item')}</span></div><p class="ai-suggestion-text">${escapeHtml(noteItems[suggestionIndex])}</p><div class="ai-suggestion-actions"><button class="ai-suggestion-accept${(seconds - 3) % 3 > 1.9 ? ' motion-pressed' : ''}">${interfaceIcon('plus')} ${pick('加入笔记', 'Add to notes')}</button><button class="ai-suggestion-ignore">${t('忽略')}</button></div></div>`,
+        `<div class="ai-suggestion-card"><div class="ai-suggestion-head"><span class="ai-suggestion-star">${interfaceIcon('ai')}</span><span class="ai-suggestion-type">${t(current.type === 'decision' ? '可能的决策' : '可能的待办')}</span><span class="ai-suggestion-evidence">${t('依据 {count} 段字幕').replace('{count}', '1')}</span></div><p class="ai-suggestion-text">${escapeHtml(current.text)}</p><div class="ai-suggestion-actions"><button class="ai-suggestion-accept${phase > 2.35 ? ' motion-pressed' : ''}" data-ai-accept>${interfaceIcon('plus')} ${t('加入笔记')}</button><button class="ai-suggestion-ignore" data-ai-ignore>${t('忽略')}</button></div></div>`,
       );
-    const phase = (seconds - 3) % 3;
-    const acceptButton = suggestion.querySelector('.ai-suggestion-accept');
-    cursor.hidden = !suggesting || phase < 0.6 || focus === 'captions';
-    if (suggesting && acceptButton) {
-      const box = acceptButton.getBoundingClientRect();
-      suggestionBox = suggestion.getBoundingClientRect();
-      const approach = 1 - (1 - clamp((phase - 0.6) / 1.2)) ** 3;
-      cursor.style.transform = `translate(${box.left + box.width * 0.65 + (1 - approach) * 55}px, ${box.top + box.height * 0.65 - (1 - approach) * 45}px) scale(${phase > 1.9 ? 0.88 : 1})`;
-    }
-    // 采纳动作结束后，沿同一位置移动到笔记；内容始终来自上方对应建议。
-    accepted.hidden =
-      seconds < 3 || seconds >= 15 || phase < 2.3 || !suggestionBox || focus === 'captions';
-    if (!accepted.hidden) {
-      const editor = stage.querySelector('.notes-editor');
-      const destination =
-        suggestionIndex === 0
-          ? editor.querySelector('h2')
-          : editor.querySelector('li:last-child') || editor.querySelector('h2:last-of-type');
-      const targetTop = destination.getBoundingClientRect().bottom + 12;
-      const progress = clamp((phase - 2.3) / 0.7);
-      accepted.textContent = noteItems[suggestionIndex];
-      accepted.style.left = `${suggestionBox.left + 12}px`;
-      accepted.style.top = `${suggestionBox.top + 35}px`;
-      accepted.style.width = `${suggestionBox.width - 24}px`;
-      accepted.style.transform = `translateY(${(targetTop - suggestionBox.top - 35) * progress}px)`;
-      accepted.style.opacity = String(1 - clamp((progress - 0.4) / 0.6));
+      const box = suggestion.querySelector('[data-ai-accept]').getBoundingClientRect();
+      const approach = (1 - clamp((phase - 0.6) / 1.5)) ** 4;
+      cursor.style.transform = `translate(${box.left + box.width * 0.65 + approach * 55}px,${box.top + box.height * 0.65 - approach * 45}px) scale(${phase > 2.35 ? 0.9 : 1})`;
     }
     stage.querySelector('#timer').textContent = `00:${timeText(12 + seconds)}`;
-    stage.querySelector('#transcript-scroll').scrollTop =
-      stage.querySelector('#transcript-scroll').scrollHeight;
+    const transcript = stage.querySelector('#transcript-scroll');
+    const target = transcript.scrollHeight - transcript.clientHeight;
+    transcript.scrollTop =
+      stage.dataset.running === 'true'
+        ? transcript.scrollTop + (target - transcript.scrollTop) * 0.2
+        : target;
   }
   function renderSummary(time) {
     const seconds = time / 1000;
@@ -350,9 +362,10 @@ window.detailActiveTab = 'summary';
         `<span>${interfaceIcon('phone')}<b>${pick('录音保存在本机', 'Audio saved locally')}</b><small>${elapsedLabel}</small></span><span>${interfaceIcon('laptop')}<b>${pick('已传到电脑', 'Sent to computer')}</b><small>${elapsedLabel}</small></span>`,
       );
   }
-  const paint =
-    scene === 'live'
-      ? renderLive
+  const paint = collaboration
+    ? renderCollaboration
+    : scene === 'live'
+      ? renderCapture || renderLive
       : scene === 'summary'
         ? renderSummary
         : scene === 'library'
@@ -370,15 +383,7 @@ window.detailActiveTab = 'summary';
   function tick(now) {
     if (previous) elapsed += Math.min(100, now - previous);
     previous = now;
-    if (motionParams.has('once') && elapsed >= duration - 500) {
-      elapsed = duration - 500;
-      renderAt(elapsed);
-      running = false;
-      stage.dataset.running = 'false';
-      parent.postMessage({ type: 'brevia-motion-ended' }, location.origin);
-      return;
-    }
-    if (now - lastPaint >= 50) {
+    if (collaboration || now - lastPaint >= 16) {
       renderAt(elapsed);
       lastPaint = now;
     }
