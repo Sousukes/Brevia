@@ -30,11 +30,11 @@ window.detailActiveTab = 'summary';
   const stage = document.querySelector('#motion-stage');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = tour
-    ? 60000
+    ? 28000
     : collaboration || motionParams.has('capture')
       ? pairingTimes.duration
-      : scene === 'summary'
-        ? 22000
+      : ['live', 'summary', 'library'].includes(scene)
+        ? 12000
         : 20000;
   let elapsed = 0;
   let previous = 0;
@@ -149,6 +149,12 @@ window.detailActiveTab = 'summary';
       notesRoot.replaceChildren();
       liveNotesEditor = createNotesEditor(notesRoot);
       notesRoot.querySelector('.notes-editor').contentEditable = 'false';
+      shell.querySelector('#translation-options').innerHTML = BreviaI18n.languageOptions(locale, t)
+        .map(
+          ([value, label]) =>
+            `<button type="button" data-live-translation="${escapeHtml(value)}">${escapeHtml(label)}</button>`,
+        )
+        .join('');
     }
     if (scene === 'summary' || tour) {
       const detail = shell.querySelector('#detail-view');
@@ -219,28 +225,49 @@ window.detailActiveTab = 'summary';
 
   function renderLive(time) {
     const seconds = time / 1000;
-    const visible = Math.min(captions.length, Math.floor(seconds / 3) + 1);
+    const transcription = shot === 'captions';
+    const reviewing = shot === 'notes';
+    const captionClock = reviewing ? 4 : seconds;
+    const translated = transcription && seconds >= 6.75;
+    const visible = Math.min(
+      captions.length,
+      Math.max(0, Math.floor((captionClock - 0.25) / 0.7) + 1),
+    );
     const lines = captions
       .slice(0, visible)
       .map((pair, index) => {
-        const progress = (seconds - index * 3) / 1.8;
+        const progress = (captionClock - 0.25 - index * 0.7) / 0.35;
         return renderTranscriptSegment({
-          time: timeText(index * 5),
+          time: timeText(index * 3),
           speaker: {},
           showSpeaker: false,
           text: reveal(pair[locale === 'en' ? 1 : 0], progress),
-          translation: progress >= 1 ? pair[locale === 'en' ? 0 : 1] : '',
+          translation: translated && progress >= 1 ? pair[locale === 'en' ? 0 : 1] : '',
         });
       })
       .join('');
     write('#transcript-scroll', lines);
-    // 与正式应用一致：建议先等待采纳，再通过编辑器追加普通列表项。
-    const events = noteItems.map((text, index) => ({
-      text,
-      start: 3 + index * 4,
-      accept: 5.6 + index * 4,
-      type: index === 0 ? 'decision' : 'action',
-    }));
+    stage
+      .querySelector('.live-layout')
+      .classList.toggle('is-caption-mode', transcription && seconds >= 1);
+    const translationToggle = stage.querySelector('#translation-toggle');
+    translationToggle.dataset.enabled = String(translated);
+    translationToggle.textContent = t(translated ? '翻译：开' : '翻译：关');
+    const menuOpen = transcription && seconds >= 5.1 && seconds < 7.2;
+    stage.querySelector('#live-more-panel').hidden = !menuOpen;
+    stage.querySelector('#live-more-toggle').setAttribute('aria-expanded', String(menuOpen));
+    const choosingLanguage = transcription && seconds >= 6.05 && seconds < 6.75;
+    stage.querySelector('#translation-options').hidden = !choosingLanguage;
+    translationToggle.setAttribute('aria-expanded', String(choosingLanguage));
+    // 先完成字幕，再分析已有内容；笔记区直接使用已完成的字幕作为审核依据。
+    const events = transcription
+      ? []
+      : noteItems.map((text, index) => ({
+          text,
+          start: (reviewing ? 0.9 : 4.2) + index * 1.4,
+          accept: (reviewing ? 1.8 : 5.1) + index * 1.4,
+          type: index === 0 ? 'decision' : 'action',
+        }));
     const acceptedEvents = events.filter((event) => seconds >= event.accept);
     if (acceptedEvents.length !== acceptedCount) {
       liveNotesEditor.setMarkdown('');
@@ -250,29 +277,51 @@ window.detailActiveTab = 'summary';
     const current = events.find((event) => seconds >= event.start && seconds < event.accept);
     const suggestion = stage.querySelector('[data-ai-suggestion]');
     suggestion.hidden = !current;
-    stage.querySelector('[data-ai-assist-toggle]').classList.toggle(
+    const assist = stage.querySelector('[data-ai-assist-toggle]');
+    assist.classList.toggle('is-enabled', !transcription);
+    assist.classList.toggle(
       'is-analyzing',
-      events.some((event) => seconds >= event.start - 1 && seconds < event.start),
+      events.some((event) => seconds >= event.start - 0.35 && seconds < event.start),
     );
-    cursor.hidden = !current || seconds < current.start + 0.6 || focus === 'captions';
+    cursor.hidden = !current || seconds < current.start + 0.15 || focus === 'captions';
     if (current) {
       const phase = seconds - current.start;
       write(
         '[data-ai-suggestion]',
-        `<div class="ai-suggestion-card"><div class="ai-suggestion-head"><span class="ai-suggestion-star">${interfaceIcon('ai')}</span><span class="ai-suggestion-type">${t(current.type === 'decision' ? '可能的决策' : '可能的待办')}</span><span class="ai-suggestion-evidence">${t('依据 {count} 段字幕').replace('{count}', '1')}</span></div><p class="ai-suggestion-text">${escapeHtml(current.text)}</p><div class="ai-suggestion-actions"><button class="ai-suggestion-accept${phase > 2.35 ? ' motion-pressed' : ''}" data-ai-accept>${interfaceIcon('plus')} ${t('加入笔记')}</button><button class="ai-suggestion-ignore" data-ai-ignore>${t('忽略')}</button></div></div>`,
+        `<div class="ai-suggestion-card"><div class="ai-suggestion-head"><span class="ai-suggestion-star">${interfaceIcon('ai')}</span><span class="ai-suggestion-type">${t(current.type === 'decision' ? '可能的决策' : '可能的待办')}</span><span class="ai-suggestion-evidence">${t('依据 {count} 段字幕').replace('{count}', '1')}</span></div><p class="ai-suggestion-text">${escapeHtml(current.text)}</p><div class="ai-suggestion-actions"><button class="ai-suggestion-accept${phase > 0.65 ? ' motion-pressed' : ''}" data-ai-accept>${interfaceIcon('plus')} ${t('加入笔记')}</button><button class="ai-suggestion-ignore" data-ai-ignore>${t('忽略')}</button></div></div>`,
       );
       pointAt(
         suggestion.querySelector('[data-ai-accept]'),
-        (phase - 0.6) / 1.5,
-        phase >= 2.25 ? (phase - 2.25) / 0.45 : -1,
+        (phase - 0.15) / 0.3,
+        phase >= 0.65 ? (phase - 0.65) / 0.18 : -1,
       );
     }
-    if (shot === 'captions' && !motionParams.has('capture')) {
-      cursor.hidden = seconds < 1.5 || seconds > 16;
-      pointAt(
-        stage.querySelector('#transcript-scroll .segment:last-child p'),
-        (seconds - 1.5) / 1.2,
-      );
+    if (transcription) {
+      cursor.hidden = seconds < 0.15 || (seconds >= 1.1 && seconds < 4.5) || seconds > 7.2;
+      if (seconds < 1.1)
+        pointAt(
+          stage.querySelector('[data-toggle-live-mode="caption"]'),
+          (seconds - 0.15) / 0.3,
+          seconds >= 0.75 ? (seconds - 0.75) / 0.18 : -1,
+        );
+      else if (seconds < 5.3)
+        pointAt(
+          stage.querySelector('#live-more-toggle'),
+          (seconds - 4.5) / 0.3,
+          seconds >= 4.95 ? (seconds - 4.95) / 0.18 : -1,
+        );
+      else if (seconds < 6.2)
+        pointAt(
+          translationToggle,
+          (seconds - 5.3) / 0.3,
+          seconds >= 5.85 ? (seconds - 5.85) / 0.18 : -1,
+        );
+      else
+        pointAt(
+          stage.querySelector(`[data-live-translation="${locale === 'en' ? 'zh' : 'en'}"]`),
+          (seconds - 6.2) / 0.25,
+          seconds >= 6.55 ? (seconds - 6.55) / 0.18 : -1,
+        );
     }
     stage.querySelector('#timer').textContent = `00:${timeText(12 + seconds)}`;
     const transcript = stage.querySelector('#transcript-scroll');
@@ -283,7 +332,7 @@ window.detailActiveTab = 'summary';
         : target;
   }
   function renderSummary(time) {
-    const seconds = time / 1000;
+    const seconds = time / 500;
     const progress = clamp((seconds - 1) / 13);
     const markdown = `# ${meeting}\n\n${reveal(summaryBlocks.join('\n\n'), progress)}`;
     const html = renderMeetingSummary({ markdown, generating: progress < 1 });
@@ -308,9 +357,9 @@ window.detailActiveTab = 'summary';
           : 0;
   }
   function renderLibrary(time) {
-    const seconds = time / 1000;
+    const seconds = time / 600;
     const query =
-      seconds >= 3 && seconds < 10 ? reveal(pick('产品', 'Product'), (seconds - 3) / 1.5) : '';
+      seconds >= 3 && seconds < 10 ? reveal(pick('产品', 'Product'), (seconds - 3) / 0.4) : '';
     const search = stage.querySelector('#meeting-search');
     search.value = query;
     const titles = [
@@ -353,14 +402,14 @@ window.detailActiveTab = 'summary';
     exportAction.classList.toggle('motion-pressed', seconds >= 14);
     cursor.hidden = seconds < 2 || seconds > 15.5;
     if (seconds < 10)
-      pointAt(search, (seconds - 2) / 0.8, seconds >= 2.8 ? (seconds - 2.8) / 0.6 : -1);
+      pointAt(search, (seconds - 2) / 0.3, seconds >= 2.8 ? (seconds - 2.8) / 0.6 : -1);
     else if (seconds < 12)
       pointAt(
         stage.querySelector('[data-meeting-menu]'),
-        (seconds - 10) / 0.9,
+        (seconds - 10) / 0.3,
         seconds >= 11.5 ? (seconds - 11.5) / 0.6 : -1,
       );
-    else pointAt(exportAction, (seconds - 12) / 1.6, seconds >= 13.9 ? (seconds - 13.9) / 0.6 : -1);
+    else pointAt(exportAction, (seconds - 12) / 0.3, seconds >= 13.9 ? (seconds - 13.9) / 0.6 : -1);
     let toast = stage.querySelector('.motion-export-toast');
     if (!toast) {
       toast = document.createElement('div');
@@ -403,14 +452,14 @@ window.detailActiveTab = 'summary';
         `<div class="phone-notes markdown-content">${renderMarkdown(`## ${pick('本周重点', 'This week')}\n\n- ${noteItems[1]}\n- ${noteItems[2]}\n\n## ${pick('下一步', 'Next steps')}\n\n- [ ] ${noteItems[3]}`)}</div>`,
       );
     } else {
-      const count = Math.min(3, Math.floor(seconds / 3) + 1);
+      const count = Math.min(3, Math.floor(seconds / 0.7) + 1);
       write(
         '.motion-phone-content',
         captions
           .slice(0, count)
           .map(
             (pair, index) =>
-              `<article class="phone-caption"><time>${timeText(index * 12)}</time><p>${escapeHtml(reveal(pair[locale === 'en' ? 1 : 0], (seconds - index * 3) / 1.7))}</p></article>`,
+              `<article class="phone-caption"><time>${timeText(index * 12)}</time><p>${escapeHtml(reveal(pair[locale === 'en' ? 1 : 0], (seconds - index * 0.7) / 0.35))}</p></article>`,
           )
           .join(''),
       );
@@ -437,7 +486,7 @@ window.detailActiveTab = 'summary';
   }
   function renderTour(time) {
     const phase =
-      time < 4500 ? 'home' : time < 13500 ? 'prepare' : time < 38000 ? 'live' : 'summary';
+      time < 1600 ? 'home' : time < 4800 ? 'prepare' : time < 17000 ? 'live' : 'summary';
     const viewId = phase === 'summary' ? 'detail-view' : `${phase}-view`;
     stage
       .querySelectorAll('.workspace > .view')
@@ -447,47 +496,47 @@ window.detailActiveTab = 'summary';
     if (phase === 'home') {
       renderLive(0);
       renderLibrary(0);
-      cursor.hidden = time < 900;
+      cursor.hidden = time < 250;
       pointAt(
         stage.querySelector('.new-meeting'),
-        (time - 900) / 1500,
-        time >= 3500 ? (time - 3500) / 600 : -1,
+        (time - 250) / 350,
+        time >= 1200 ? (time - 1200) / 180 : -1,
       );
     } else if (phase === 'prepare') {
       const title = stage.querySelector('#meeting-title');
-      title.value = reveal(meeting, (time - 5600) / 1800);
+      title.value = reveal(meeting, (time - 1900) / 350);
       const toggle = stage.querySelector('#capture-mode-mount .flow-select-toggle');
       const options = stage.querySelector('#capture-mode-mount .flow-select-options');
-      const expanded = time >= 9000 && time < 10600;
+      const expanded = time >= 2700 && time < 3400;
       options.hidden = !expanded;
       toggle.setAttribute('aria-expanded', String(expanded));
       cursor.hidden = false;
-      if (time < 8400) pointAt(title, (time - 4600) / 900, time >= 5600 ? (time - 5600) / 600 : -1);
-      else if (time < 10000)
-        pointAt(toggle, (time - 8400) / 600, time >= 9000 ? (time - 9000) / 600 : -1);
-      else if (time < 10600)
+      if (time < 2400) pointAt(title, (time - 1600) / 250, time >= 1850 ? (time - 1850) / 180 : -1);
+      else if (time < 3100)
+        pointAt(toggle, (time - 2400) / 250, time >= 2650 ? (time - 2650) / 180 : -1);
+      else if (time < 3400)
         pointAt(
           options.querySelector('[data-flow-select-choice]'),
-          (time - 10000) / 200,
-          (time - 10300) / 400,
+          (time - 3100) / 100,
+          (time - 3200) / 180,
         );
       else
         pointAt(
           stage.querySelector('#meeting-form .primary-action'),
-          (time - 11000) / 1400,
-          time >= 13000 ? (time - 13000) / 500 : -1,
+          (time - 3500) / 300,
+          time >= 4400 ? (time - 4400) / 180 : -1,
         );
     } else if (phase === 'live') {
-      renderLive(time - 13500);
-      if (time >= 35000) {
+      renderLive(time - 4800);
+      if (time >= 16000) {
         cursor.hidden = false;
         pointAt(
           stage.querySelector('#end-meeting'),
-          (time - 35000) / 1500,
-          time >= 37200 ? (time - 37200) / 600 : -1,
+          (time - 16000) / 300,
+          time >= 16600 ? (time - 16600) / 180 : -1,
         );
       }
-    } else renderSummary(time - 38000);
+    } else renderSummary(time - 17000);
   }
   const paint = collaboration
     ? renderCollaboration

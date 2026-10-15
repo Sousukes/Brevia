@@ -327,7 +327,11 @@ app
           const states = [];
           for (const time of scene === 'pair-microphone'
             ? [2000, 8000, 26000]
-            : [2000, 8000, 17000]) {
+            : scene === 'library'
+              ? [1000, 4500, 10500]
+              : ['live', 'summary'].includes(scene)
+                ? [2000, 6000, 10500]
+                : [2000, 8000, 17000]) {
             states.push(
               await win.webContents.executeJavaScript(`(() => {
               productMotion.seek(${time});
@@ -364,7 +368,7 @@ app
           );
           if (scene === 'tour') {
             const flow = await win.webContents.executeJavaScript(`(() => {
-              const states = [2000, 7000, 9500, 28000, 56000, 62000].map(time => {
+              const states = [1000, 2150, 2900, 14000, 26000, 29000].map(time => {
                 productMotion.seek(time);
                 return {phase: document.querySelector('#motion-stage').dataset.tourPhase,
                   title: document.querySelector('#meeting-title').value,
@@ -374,7 +378,7 @@ app
               });
               return {duration:productMotion.duration, states};
             })()`);
-            assert.equal(flow.duration, 60000);
+            assert.equal(flow.duration, 28000);
             assert.deepEqual(
               flow.states.map((state) => state.phase),
               ['home', 'prepare', 'prepare', 'live', 'summary', 'home'],
@@ -387,9 +391,24 @@ app
           }
           if (scene === 'live') {
             assert.equal(states[2].segments, 5);
-            assert.equal(states[2].notes, 3);
+            assert.equal(states[2].notes, 4);
+            const ordering = await win.webContents.executeJavaScript(`(() => {
+              productMotion.seek(3500);
+              const source = document.querySelector('#transcript-scroll').innerText;
+              const noEarlyNotes = document.querySelectorAll('.notes-editor li').length === 0 && document.querySelector('[data-ai-suggestion]').hidden;
+              productMotion.seek(4400);
+              return {noEarlyNotes, sourceUnchanged:source === document.querySelector('#transcript-scroll').innerText,
+                suggestion:!document.querySelector('[data-ai-suggestion]').hidden};
+            })()`);
+            assert.equal(
+              ordering.noEarlyNotes,
+              true,
+              'Transcript must finish before AI extraction begins',
+            );
+            assert.equal(ordering.sourceUnchanged, true, 'AI reviews completed source text');
+            assert.equal(ordering.suggestion, true);
             const acceptance = await win.webContents.executeJavaScript(
-              `(()=>{productMotion.seek(9400);const before=document.querySelector('.notes-editor').innerText;const label=document.querySelector('.ai-suggestion-type').textContent;productMotion.seek(9700);return {before,after:document.querySelector('.notes-editor').innerText,label,checkboxes:document.querySelectorAll('.notes-editor input[type=checkbox]').length,headings:document.querySelectorAll('.notes-editor h2').length,flying:document.querySelectorAll('.motion-accepted-note').length}})()`,
+              `(()=>{productMotion.seek(6400);const before=document.querySelector('.notes-editor').innerText;const label=document.querySelector('.ai-suggestion-type').textContent;productMotion.seek(6600);return {before,after:document.querySelector('.notes-editor').innerText,label,checkboxes:document.querySelectorAll('.notes-editor input[type=checkbox]').length,headings:document.querySelectorAll('.notes-editor h2').length,flying:document.querySelectorAll('.motion-accepted-note').length}})()`,
             );
             assert.equal(acceptance.before.includes(locale === 'zh' ? '周四' : 'Thursday'), false);
             assert.ok(acceptance.after.includes(locale === 'zh' ? '周四' : 'Thursday'));
@@ -400,7 +419,7 @@ app
           }
           if (scene === 'tour') {
             const choreography = await win.webContents.executeJavaScript(`(() => {
-              const at = 18900;
+              const at = 9750;
               const cursor = document.querySelector('.motion-cursor');
               productMotion.seek(at);
               const first = cursor.style.transform;
@@ -478,7 +497,7 @@ app
             }
           }
           const repeated = await win.webContents.executeJavaScript(
-            `(() => { productMotion.seek(productMotion.duration + 2000); return document.querySelector('#motion-stage').innerText; })()`,
+            `(() => { productMotion.seek(productMotion.duration + ${scene === 'library' ? 1000 : 2000}); return document.querySelector('#motion-stage').innerText; })()`,
           );
           assert.equal(
             repeated,
@@ -487,6 +506,46 @@ app
           );
           console.log(`PASS motion ${locale}/${scene} (progress and loop)`);
         }
+        const shots = {};
+        for (const shot of ['captions', 'notes']) {
+          win.setContentSize(1280, 800);
+          await win.loadURL(
+            `${siteURL}/website/product-motion.html?scene=live&shot=${shot}&lang=${locale}&manual=1`,
+          );
+          await waitForMotion();
+          shots[shot] = await win.webContents.executeJavaScript(`(() => {
+            const sample = time => {
+              productMotion.seek(time);
+              return {source:document.querySelector('#transcript-scroll').innerText,
+                notes:document.querySelectorAll('.notes-editor li').length,
+                suggestion:!document.querySelector('[data-ai-suggestion]').hidden,
+                translations:document.querySelectorAll('#transcript-scroll .translation').length,
+                captionMode:document.querySelector('.live-layout').classList.contains('is-caption-mode')};
+            };
+            return [sample(500),sample(1100),sample(1900),sample(7000)];
+          })()`);
+        }
+        assert.ok(
+          shots.captions[3].source.length > shots.captions[0].source.length,
+          'Transcription streams new utterances',
+        );
+        assert.equal(shots.captions[0].translations, 0);
+        assert.equal(shots.captions[3].translations, 5, 'Translation follows enabling the feature');
+        assert.equal(shots.captions[3].captionMode, true);
+        assert.ok(
+          shots.captions.every((state) => state.notes === 0 && !state.suggestion),
+          'Transcription must not duplicate the AI notes demo',
+        );
+        assert.ok(
+          shots.notes.every((state) => state.source === shots.notes[0].source),
+          'AI notes use stable, completed evidence',
+        );
+        assert.equal(shots.notes[1].notes, 0, 'A suggestion is not a saved note');
+        assert.equal(shots.notes[1].suggestion, true);
+        assert.equal(shots.notes[2].notes, 1, 'Only accepting a suggestion adds it to the notes');
+        assert.equal(shots.notes[3].notes, 4);
+        assert.equal(shots.notes[3].captionMode, false);
+        console.log(`PASS differentiated transcription and AI review ${locale}`);
       }
       const captures = join(root, 'output/playwright/affine-implementation');
       mkdirSync(captures, { recursive: true });
@@ -682,21 +741,28 @@ app
               'Product scenes include the application sidebar',
             );
             assert.ok(state.text.includes(locale === 'zh' ? '产品周会' : 'Product sync'));
+            if (target === 'transcription') {
+              await win.webContents.executeJavaScript(
+                "document.querySelector('#transcription iframe').contentWindow.productMotion.seek(7500)",
+              );
+            }
             if (target === 'notes') {
               const effect = await win.webContents.executeJavaScript(
-                `(() => {const frame=document.querySelector('#notes iframe');frame.contentWindow.productMotion.seek(8100);const d=frame.contentDocument;return {cursor:!d.querySelector('.motion-cursor').hidden,suggestion:d.querySelector('.ai-suggestion-text').textContent};})()`,
+                `(() => {const frame=document.querySelector('#notes iframe');frame.contentWindow.productMotion.seek(2700);const d=frame.contentDocument;return {cursor:!d.querySelector('.motion-cursor').hidden,suggestion:d.querySelector('.ai-suggestion-text').textContent};})()`,
               );
               assert.equal(effect.cursor, true);
               assert.ok(effect.suggestion.includes(locale === 'zh' ? '周四' : 'Thursday'));
               await win.webContents.executeJavaScript(
-                "document.querySelector('#notes iframe').contentWindow.productMotion.seek(9400)",
+                "document.querySelector('#notes iframe').contentWindow.productMotion.seek(3000)",
               );
             }
-            if ([390, 1440].includes(width))
+            if ([390, 1440].includes(width)) {
+              await wait(80);
               writeFileSync(
                 join(captures, `${locale}-${width}-${target}.png`),
                 (await win.webContents.capturePage()).resize({ width }).toPNG(),
               );
+            }
           }
           await win.webContents.executeJavaScript(
             "document.querySelector('.software-section').scrollIntoView({behavior:'instant',block:'center'})",
