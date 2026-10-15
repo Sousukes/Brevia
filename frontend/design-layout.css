@@ -7619,7 +7619,6 @@ html[data-theme] .toast,
   display: flex;
   align-items: center;
   gap: 28px;
-  margin-bottom: 12px;
 }
 .mobile-device-illustration .interface-icon {
   width: 56px;
@@ -7640,7 +7639,6 @@ html[data-theme] .toast,
 }
 .mobile-connection-summary button {
   min-width: 200px;
-  margin-top: 12px;
 }
 .mobile-trusted-panel > h3 {
   margin: 0 0 8px;

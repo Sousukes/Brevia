@@ -243,7 +243,7 @@ const child = spawn(
   electronBin,
   [
     ...(packagedApp ? [] : ['.']),
-    ...(!packagedApp && process.env.BREVIA_DESIGN_CAPTURE_DIR ? ['--inspect=0'] : []),
+    '--inspect=0',
     '--no-sandbox',
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
@@ -1979,9 +1979,6 @@ try {
       document.querySelector('#player-mute').click();
       for(const code of ['zh','en','es','ja','ko','fr','de','ru']){applyLanguage(code);if(document.querySelector('#player-mute').getAttribute('aria-label')!==t('静音'))errors.push(code+': mute label');}
       applyLanguage('zh');
-      document.querySelector('#player-fullscreen').click();await new Promise(resolve=>setTimeout(resolve,400));
-      if(document.fullscreenElement?.id!=='detail-view') errors.push('fullscreen action: '+toast.textContent);
-      if(document.fullscreenElement)await document.exitFullscreen();await new Promise(resolve=>setTimeout(resolve,400));
       for(const state of ['saved','dirty','saving','failed']){
         const host=document.createElement('div');host.innerHTML=renderSaveState(state);document.body.append(host);
         const mark=host.querySelector('.save-state-mark'),style=getComputedStyle(mark);
@@ -2020,8 +2017,47 @@ try {
   });
   check(
     Array.isArray(remainingAlignment.result?.value) && !remainingAlignment.result.value.length,
-    `播放/保存状态/工作区浮窗/存储分组回归：${JSON.stringify(remainingAlignment.result?.value || remainingAlignment.exceptionDetails)}`,
+    `静音/保存状态/工作区浮窗/存储分组回归：${JSON.stringify(remainingAlignment.result?.value || remainingAlignment.exceptionDetails)}`,
   );
+
+  const debuggerUrl = mainOutput.match(/Debugger listening on (ws:\/\/[^\s]+)/)?.[1];
+  if (!debuggerUrl) throw Error('全屏回归缺少主进程调试入口');
+  const fullscreenInspector = await connect(debuggerUrl, () => {});
+  try {
+    // macOS 的 DOM 全屏事件早于原生窗口动画，必须等待两者完成后再切换。
+    const fullscreen = await fullscreenInspector.send(
+      'Runtime.evaluate',
+      {
+        expression: `(async()=>{
+        const {BrowserWindow}=process.getBuiltinModule('module').createRequire(process.cwd()+'/electron/main.js')('electron');
+        const {once}=process.getBuiltinModule('events');
+        const win=BrowserWindow.getAllWindows().find(win=>win.webContents.getURL().split(/[?#]/)[0].endsWith('/frontend/index.html'));
+        await win.webContents.executeJavaScript("showView('detail')");
+        const errors=[];
+        for(const entering of [true,false]){
+          const [,state]=await Promise.all([
+            once(win,entering?'enter-full-screen':'leave-full-screen',{signal:AbortSignal.timeout(10000)}),
+            win.webContents.executeJavaScript(
+              "(async()=>{const changed=new Promise(resolve=>document.addEventListener('fullscreenchange',resolve,{once:true}));document.querySelector('#player-fullscreen').click();await changed;return {element:document.fullscreenElement?.id||null,pressed:document.querySelector('#player-fullscreen').getAttribute('aria-pressed')};})()",
+              true,
+            ),
+          ]);
+          if(win.isFullScreen()!==entering||state.element!==(entering?'detail-view':null)||state.pressed!==String(entering)) errors.push({entering,state,native:win.isFullScreen()});
+        }
+        return errors;
+      })()`,
+        awaitPromise: true,
+        returnByValue: true,
+      },
+      25000,
+    );
+    check(
+      Array.isArray(fullscreen.result?.value) && !fullscreen.result.value.length,
+      `播放器原生全屏进入/退出回归：${JSON.stringify(fullscreen.result?.value || fullscreen.exceptionDetails)}`,
+    );
+  } finally {
+    fullscreenInspector.close();
+  }
 
   const designStates = await client.send('Runtime.evaluate', {
     expression: `(async()=>{
@@ -3110,8 +3146,6 @@ try {
       });
     }
     if (!packagedApp) {
-      const debuggerUrl = mainOutput.match(/Debugger listening on (ws:\/\/[^\s]+)/)?.[1];
-      if (!debuggerUrl) throw Error('原生窗口捕获缺少主进程调试入口');
       const inspector = await connect(debuggerUrl, () => {});
       const resizeNativeWindow = async (width, height) => {
         const result = await inspector.send('Runtime.evaluate', {
