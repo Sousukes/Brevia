@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/brevia-mark.svg" width="258" alt="Brevia 言录" /></p>
 
-<p align="center"><strong>本地优先的 AI 会议助手，电脑与手机协同使用。</strong><br />实时转写 · AI 笔记 · 字幕翻译 · 会议纪要，把处理留在自己的电脑上。</p>
+<p align="center"><strong>专注对话，留下重点。</strong><br />实时转写、随手笔记与 AI 建议，同屏协作。<br />电脑与手机随时记录，让自己的电脑完成识别与整理。</p>
 
 <p align="center">
   <a href="https://github.com/zerolovesea/Brevia/releases/latest"><img src="https://img.shields.io/github/v/release/zerolovesea/Brevia?style=flat-square" alt="桌面版本" /></a>
@@ -8,56 +8,106 @@
   <a href="https://github.com/zerolovesea/Brevia/releases"><img src="https://img.shields.io/github/downloads/zerolovesea/Brevia/total?style=flat-square" alt="下载量" /></a>
 </p>
 
-<p align="center"><a href="../README.md">English</a> · <strong>简体中文</strong> · <a href="README.es.md">Español</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
+<p align="center"><a href="README.en.md">English</a> · <strong>简体中文</strong> · <a href="README.es.md">Español</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
 
-<p align="center"><a href="https://brevia.work">官网</a> · <a href="#下载">下载</a> · <a href="#用手机录音">手机应用</a> · <a href="#常见问题">常见问题</a></p>
+<p align="center"><a href="#下载">下载</a> · <a href="#从对话到行动">功能介绍</a> · <a href="#用手机录音">手机应用</a> · <a href="#开始使用">开始使用</a> · <a href="https://brevia.work">官网</a></p>
 
-言录帮你记录、整理和回看会话。线上会议时，同时录制电脑麦克风与系统声音；采访或面谈时，用手机随手录音。会中查看字幕、审核 AI 建议，会后得到可编辑、可分享的笔记。语音识别在自己的电脑上运行，在线 AI 由你选择是否启用。
+![言录 v1.4 桌面新界面：实时转写、翻译与可编辑的 AI 辅助笔记](assets/screenshots/desktop/zh/live.png)
 
-<p align="center"><img src="assets/demo/ai-assist-zh.gif" width="820" alt="言录桌面演示：实时转写与 AI 笔记" /></p>
+<p align="center"><sub>桌面界面</sub></p>
+
+言录是一款本地优先的 AI 会议助手，适合线上会议、访谈和面对面讨论。记录声音、写下想法、审核 AI 建议，会后得到可编辑的纪要。语音识别在自己的电脑上运行；下载模型后，本地 AI 可离线使用，也能按需接入在线服务。
 
 ## 下载
 
-| 设备                      | 下载与可用状态                                                                                                                                |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| macOS 14+ · Apple Silicon | [下载最新桌面版](https://github.com/zerolovesea/Brevia/releases/latest)，选择 `Brevia-<version>-arm64.dmg`                                    |
-| Windows · x64             | [下载最新桌面版](https://github.com/zerolovesea/Brevia/releases/latest)，选择 `Brevia-<version>-x64-setup.exe`                                |
-| Android 7+                | [下载签名 APK](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)，后续可在应用「设置」中检查更新 |
-| iPhone · iOS 15+          | App Store 审核中，TestFlight 仅限受邀测试者。[查看发布动态](https://github.com/zerolovesea/Brevia/releases)                                   |
+| 设备    | 下载入口                                                                                                            | 系统要求                  |
+| ------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Mac     | [下载最新 macOS 版](https://github.com/zerolovesea/Brevia/releases/latest)，选择 `Brevia-<version>-arm64.dmg`       | Apple Silicon · macOS 14+ |
+| Windows | [下载最新 Windows 版](https://github.com/zerolovesea/Brevia/releases/latest)，选择 `Brevia-<version>-x64-setup.exe` | x64                       |
+| iPhone  | [在 App Store 下载](https://apps.apple.com/app/id6819869442)                                                        | iOS 15+                   |
+| Android | [下载签名 APK](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)       | Android 7+                |
 
-## 功能介绍
+<table align="center">
+  <tr>
+    <th><a href="https://apps.apple.com/app/id6819869442">iPhone · App Store</a></th>
+    <th><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk">Android · APK</a></th>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://apps.apple.com/app/id6819869442"><img src="assets/download/ios-qr.png" width="160" alt="扫码打开言录 App Store 下载页" /></a></td>
+    <td align="center"><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk"><img src="assets/download/android-qr.png" width="160" alt="扫码下载 Android APK" /></a></td>
+  </tr>
+</table>
 
-### 实时转写与翻译
+<p align="center"><sub>用手机扫码下载，也可直接点击对应平台链接。</sub></p>
 
-同时录制麦克风和电脑系统声音，在线会议里双方的发言都能进入同一份文字稿。言录在发言停顿后生成字幕，可按需在旁边显示翻译；也可开启悬浮字幕，在其他应用中工作时继续跟进会议。
+**发布状态：** 截至 2026 年 10 月 15 日，桌面版为 [v1.4.0](releases/v1.4.0.md)，Android 为 1.0.1，iOS 公开版为 1.0.0。下方手机截图展示重构后的 1.0.1 界面，iOS 更新尚未公开发布；下载链接以当前可用版本为准。Android 可在应用「设置」中检查更新，iPhone 通过 App Store 更新。
 
-转写支持 **30+ 种语言**，包括中文、英语、日语、韩语、西班牙语、法语、德语、俄语、阿拉伯语、泰语、越南语、印尼语等。选择会议语言后，言录会推荐适用的识别模型。已有录音也能直接导入转写。
+## 从对话到行动
 
-![实时会议和翻译](assets/tour/zh/实时会议和翻译.png)
+| 使用场景   | 言录帮你完成                                                                     |
+| ---------- | -------------------------------------------------------------------------------- |
+| 录下讨论   | 麦克风、系统声音或两者同时录制，也可导入已有音频；已配对手机还能作为电脑麦克风。 |
+| 跟上对话   | 发言停顿后显示字幕，可开启翻译与悬浮字幕；支持 30+ 种转写语言。                  |
+| 留下重点   | 富文本与 Markdown 记笔记，审核 AI 提取的决定、待办、重要数字、风险与问题。       |
+| 整理与分享 | 会后精修、区分说话人、编辑纪要，将文字、笔记与录音按需导出。                     |
 
-### 由你审核的 AI 笔记
+### 边听边记，转写与笔记并排
 
-会议进行中，AI 笔记可提示关键决定、待办、重要数字、风险和待确认问题。按需请求、轻量提示、自动整理三种方式自由选择；只采纳有用的建议，也能在电脑端用富文本或 Markdown 同时记下自己的想法。
+新版会议界面将笔记与实时字幕放在同一屏，底部集中录音控制。AI 笔记支持按需请求、轻量提示和自动整理；采纳需要的建议，也能继续写下自己的想法。
 
-会后可根据审核后的文字稿生成纪要。AI 笔记与会议纪要支持分别配置：使用本地 AI，或接入 Claude、OpenAI、OpenRouter 及兼容服务。
+AI 笔记与会议纪要可分别配置：使用本地 AI，或接入 Claude、OpenAI、OpenRouter 及兼容服务。
 
 <details>
-<summary>查看 AI 笔记与会议纪要界面</summary>
+<summary>查看深色主题</summary>
 
-![AI 笔记](assets/tour/zh/AI辅助笔记.png)
-
-![会议纪要](assets/tour/zh/多语言支持与会议纪要.png)
+![深色主题下的实时转写与 AI 笔记](assets/screenshots/desktop/zh/live-dark.png)
 
 </details>
 
-### 方便回看、查找与分享
+### 把讨论变成可执行的计划
 
-- **会后识别说话人。** 精修时区分说话人，并可匹配已保存的声纹档案；实时字幕暂不区分说话人。
-- **可搜索的会议库。** 搜索标题、逐字稿、说话人与标签，用工作区归类；桌面端最近删除的会议可在 30 天内恢复。
-- **可编辑、多格式导出。** 修改逐字稿与摘要，将文字和笔记导出为 Markdown、TXT、JSON、SRT、DOCX 或 PDF，音频导出为 WAV。
-- **适合日常使用的界面。** 电脑与手机均提供深浅色主题，以及中文、英语、西班牙语、日语、韩语、法语、德语和俄语界面。
+审核逐字稿后，生成包含讨论要点、决定与行动项的纪要。会议详情集中提供 **笔记、逐字稿、会议纪要** 三个入口，方便回听、编辑与导出。会后精修可区分说话人，并匹配已保存的声纹档案；实时字幕暂不区分说话人。
 
-## 支持的模型
+![可编辑的会议纪要：摘要、决定与行动项](assets/screenshots/desktop/zh/summary.png)
+
+### 让每次对话都能找回来
+
+用工作区归类，搜索标题、逐字稿、说话人与标签。桌面端最近删除的会议可在 30 天内恢复。文字与笔记支持导出为 **Markdown、TXT、JSON、SRT、DOCX 或 PDF**，音频可导出为 **WAV**。
+
+![新版会议库与工作区导航](assets/screenshots/desktop/zh/library.png)
+
+电脑与手机均提供深浅色主题，以及中文、英语、西班牙语、日语、韩语、法语、德语和俄语界面。
+
+## 用手机录音
+
+[**iPhone · App Store 下载**](https://apps.apple.com/app/id6819869442) · [**Android · 下载 APK**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)
+
+把言录带到采访现场、课堂和会议室，无需注册账号。按场景选择使用方式：
+
+| 使用方式       | 手机负责                                             | 电脑负责                                                                     |
+| -------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 独立离线录音   | 录音、暂停、标记重点和回听；之后选择电脑并确认上传。 | 转写前无需连接。                                                             |
+| 手机发起会议   | 录音，同时查看回传的转写与笔记。                     | 识别语音、运行已配置的 AI；需保持唤醒和网络可达。                            |
+| 作为电脑麦克风 | 保持已配对应用连接，并在前台就绪。                   | 选择「手机麦克风」，试音后开始、暂停、继续和结束录音；逐字稿与笔记留在电脑。 |
+
+<p align="center">
+  <img src="assets/screenshots/mobile/zh/library.png" width="240" alt="手机会议库" />
+  <img src="assets/screenshots/mobile/zh/live.png" width="240" alt="手机查看电脑回传的实时转写" />
+  <img src="assets/screenshots/mobile/zh/offline.png" width="240" alt="手机离线录音、笔记与重点标记" />
+</p>
+
+<p align="center"><sub>手机界面</sub></p>
+
+**桌面 v1.4 新增手机麦克风联动：** 在新建会议页面选择已连接的手机，需要配套手机版本支持。电脑发起的会议由手机收音并保存音频，逐字稿和笔记在电脑查看；从手机发起的会议则会将转写与笔记回传到手机。
+
+![电脑新建会议页面：手机麦克风录制来源](assets/screenshots/desktop/zh/phone-microphone.png)
+
+音频先保存在手机，断线后继续保存，重连时续传已授权录音；上传成功不会自动删除手机副本。支持后台录音，但来电、强制退出和系统限制仍可能中断，结束后的补传可能需要保持应用前台。手机笔记可分享为 Markdown、转写为文本、音频为 WAV；删除手机副本不会删除电脑上的会议。
+
+<details>
+<summary>本地模型与下载</summary>
+
+### 支持的模型
 
 识别、AI 笔记和翻译模型可在 **设置 → 模型库** 按需下载；语音活动检测与说话人模型随应用安装。下列模型均在电脑运行，手机录音无需在手机上下载模型。具体版本和大小以应用内模型库为准。
 
@@ -72,23 +122,9 @@
 | 说话人分离        | Pyannote Segmentation 3.0 | 会后区分不同说话人          |
 | 声纹匹配          | 3D-Speaker ERes2Net Base  | 匹配已保存的说话人档案      |
 
-## 用手机录音
+![模型库：按需下载语音识别、AI 与翻译模型](assets/screenshots/desktop/zh/models.png)
 
-[**下载 Android APK**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) · iPhone：App Store 审核中，TestFlight 仅限受邀测试者（[查看发布动态](https://github.com/zerolovesea/Brevia/releases)）
-
-把言录带到会议室、采访现场或日常讨论中。手机端无需注册账号，打开即可录音；连接自己的电脑后，还能一边录制，一边查看转写和笔记。
-
-<p align="center">
-  <img src="assets/mobile/zh/02-connect.png" width="240" alt="iPhone：扫码或输入配对码连接电脑" />
-  <img src="assets/mobile/zh/01-record.png" width="240" alt="iPhone：离线录音准备，可设置标题、语言与人数" />
-  <img src="assets/mobile/zh/03-transcript.png" width="240" alt="手机会议转写示例：时间戳、录音状态及暂停、重点、结束按钮" />
-</p>
-
-- **随时记录，不必带着电脑。** 无需配对或联网即可录音，支持暂停、继续和标记重要时刻。录音先保存在手机，需要转写时，再选择电脑并确认上传。
-- **手机收音，电脑整理。** 配对后，电脑完成语音识别，并将字幕和笔记实时回传到手机。模型和 AI 设置留在电脑上，手机无需下载大模型。
-- **会后回听，方便分享。** 在会议库查找录音、回听讨论，将音频导出为 WAV，或把笔记和转写分享为 Markdown、文本。删除手机副本不会删除电脑上的会议。
-
-网络暂时中断时，音频继续在手机保存，恢复连接后续传已授权的录音。支持后台录音，但来电、强制退出和系统限制仍可能中断；回到应用后请检查状态，结束后的补传可能需要保持应用在前台。
+</details>
 
 ## 手机与电脑如何协作
 

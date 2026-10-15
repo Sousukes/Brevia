@@ -2,18 +2,43 @@
 
 <p align="center"><strong>Restez dans la conversation. Gardez les notes.</strong><br />Enregistrez sur ordinateur ou téléphone et transformez vos échanges en transcriptions, décisions et actions avec une IA locale.</p>
 
-<p align="center"><a href="../README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.es.md">Español</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <strong>Français</strong> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
+<p align="center"><a href="README.en.md">English</a> · <a href="../README.md">简体中文</a> · <a href="README.es.md">Español</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <strong>Français</strong> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
 
-<p align="center"><img src="assets/demo/ai-assist-en.gif" width="820" alt="Brevia desktop demo (English)" /></p>
+<p align="center"><img src="assets/screenshots/desktop/en/live.png" width="960" alt="Brevia v1.4: live transcript and AI notes (English)" /></p>
 
 ## Télécharger
 
-| Appareil                  | Obtenir Brevia                                                                                                                                |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| macOS 14+ · Apple Silicon | [DMG](https://github.com/zerolovesea/Brevia/releases/latest) · `arm64.dmg`                                                                    |
-| Windows · x64             | [Programme d’installation](https://github.com/zerolovesea/Brevia/releases/latest) · `x64-setup.exe`                                           |
-| Android 7+                | [Télécharger l’APK](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)                            |
-| iPhone · iOS 15+          | App Store : en cours de validation. TestFlight sur invitation uniquement. [État des versions](https://github.com/zerolovesea/Brevia/releases) |
+| Appareil                  | Obtenir Brevia                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| macOS 14+ · Apple Silicon | [DMG](https://github.com/zerolovesea/Brevia/releases/latest) · `arm64.dmg`                                         |
+| Windows · x64             | [Programme d’installation](https://github.com/zerolovesea/Brevia/releases/latest) · `x64-setup.exe`                |
+| Android 7+                | [Télécharger l’APK](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) |
+| iPhone · iOS 15+          | [App Store](https://apps.apple.com/app/id6819869442)                                                               |
+
+<table align="center">
+  <tr><th><a href="https://apps.apple.com/app/id6819869442">iPhone · App Store</a></th><th><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk">Android · APK</a></th></tr>
+  <tr>
+    <td align="center"><a href="https://apps.apple.com/app/id6819869442"><img src="assets/download/ios-qr.png" width="160" alt="iPhone · App Store QR" /></a></td>
+    <td align="center"><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk"><img src="assets/download/android-qr.png" width="160" alt="Android · APK QR" /></a></td>
+  </tr>
+</table>
+
+Scannez pour télécharger sur votre téléphone.
+
+Au 15 octobre 2026 : ordinateur v1.4.0, Android 1.0.1 et iOS 1.0.0. Les captures du téléphone montrent la nouvelle interface 1.0.1 ; la mise à jour iOS n’est pas encore publique.
+
+## Nouveautés de la version 1.4
+
+Une nouvelle interface sur ordinateur et téléphone : notes à côté de la transcription, bibliothèque par espaces de travail et accès aux notes, à la transcription et au résumé. Un téléphone connecté peut aussi servir de microphone à l’ordinateur.
+
+![Nouvelle bibliothèque de réunions](assets/screenshots/desktop/en/library.png)
+
+<details>
+<summary>Résumé modifiable avec décisions et actions</summary>
+
+![Résumé modifiable avec décisions et actions](assets/screenshots/desktop/en/summary.png)
+
+</details>
 
 ## Ce que vous pouvez faire
 
@@ -25,7 +50,7 @@ Les notes IA suivent la transcription en direct et peuvent signaler decisions, a
 
 Ouvrez l'application, appuyez sur enregistrer, et regardez les sous-titres apparaitre. Brevia capture simultanement votre microphone et l'audio systeme, si bien que les deux cotes d'un appel distant se retrouvent dans la meme transcription. La traduction en direct optionnelle s'affiche a cote du flux de sous-titres pour les conversations multilingues.
 
-![Reunion et traduction en direct](assets/tour/en/%E5%AE%9E%E6%97%B6%E4%BC%9A%E8%AE%AE%E5%92%8C%E7%BF%BB%E8%AF%91.png)
+![Reunion et traduction en direct](assets/screenshots/desktop/en/live.png)
 
 ### Plus de 30 langues de transcription et des resumes de reunion
 
@@ -37,7 +62,7 @@ Enregistrez un court échantillon vocal pour chaque membre. Après la réunion, 
 
 Propulse par la segmentation Pyannote plus les modeles d'embeddings de locuteur, le tout s'executant sur l'appareil.
 
-![Identification des intervenants après la réunion](assets/tour/en/%E6%B3%A8%E5%86%8C%E5%A3%B0%E7%BA%B9%E8%AF%86%E5%88%AB.png)
+![Identification des intervenants après la réunion](assets/screenshots/desktop/en/voiceprints.png)
 
 ### Et plus encore
 
@@ -65,15 +90,23 @@ Téléchargez les modèles vocaux, de notes IA et de traduction dans **Réglages
 
 ## Enregistrer avec le téléphone
 
-[**Télécharger l’APK Android**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) · iPhone : validation App Store en cours ; TestFlight sur invitation ([Suivre les versions](https://github.com/zerolovesea/Brevia/releases))
+[**iPhone · App Store**](https://apps.apple.com/app/id6819869442) · [**Android · APK**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)
 
 Emportez Brevia en réunion, en entretien ou dans vos échanges du quotidien. Ouvrez l’application et enregistrez sans créer de compte. Connectez votre propre ordinateur pour suivre la transcription et les notes pendant l’enregistrement.
 
 <p align="center">
-  <img src="assets/mobile/en/02-connect.png" width="240" alt="Brevia iPhone: computer connection (English)" />
-  <img src="assets/mobile/en/01-record.png" width="240" alt="Brevia iPhone: offline recording setup (English)" />
-  <img src="assets/mobile/en/03-transcript.png" width="240" alt="Brevia mobile: live transcript with demo content (English)" />
+  <img src="assets/screenshots/mobile/en/connection.png" width="240" alt="Brevia iPhone: computer connection (English)" />
+  <img src="assets/screenshots/mobile/en/offline.png" width="240" alt="Brevia: offline phone recording (English)" />
+  <img src="assets/screenshots/mobile/en/live.png" width="240" alt="Brevia mobile: live transcript (English)" />
 </p>
+
+<p align="center"><sub>Interface mobile</sub></p>
+
+### Le téléphone comme microphone
+
+Dans une nouvelle réunion sur ordinateur, choisissez **Phone microphone**, vérifiez le niveau audio et contrôlez le démarrage, la pause, la reprise et l’arrêt depuis l’ordinateur. L’application mobile compatible doit être connectée et prête au premier plan. La transcription et les notes de ces réunions restent sur l’ordinateur ; les réunions lancées sur le téléphone reçoivent le texte en retour.
+
+![Le téléphone comme microphone](assets/screenshots/desktop/en/phone-microphone.png)
 
 - **Enregistrez où vous voulez.** Aucun jumelage ni accès à internet nécessaire : mettez en pause, reprenez et marquez les moments importants. L’audio reste sur le téléphone jusqu’au choix d’un ordinateur et à votre confirmation du transfert pour transcription.
 - **Le téléphone capte, l’ordinateur organise.** Une fois jumelé, l’ordinateur reconnaît la parole et renvoie transcriptions et notes en direct. Les modèles et réglages IA restent sur l’ordinateur ; aucun gros modèle à télécharger sur le téléphone.

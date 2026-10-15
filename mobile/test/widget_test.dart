@@ -692,7 +692,12 @@ void main() {
       final policy = tester
           .widget<SelectableText>(find.byType(SelectableText))
           .data!;
-      expect(policy, contains('2026-10-10'));
+      expect(
+        policy,
+        contains(
+          language == 'zh' || language == 'en' ? '2026-10-15' : '2026-10-10',
+        ),
+      );
       expect(policy, contains('https://brevia.work/privacy.html'));
       expect(policy, contains('https://github.com/zerolovesea/Brevia/issues'));
       expect(policy, isNot(contains('Brevia Mobile 0.1')));

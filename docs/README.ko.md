@@ -2,18 +2,43 @@
 
 <p align="center"><strong>대화에 집중하고, 중요한 내용은 기록하세요.</strong><br />컴퓨터나 휴대전화로 녹음하고 로컬 AI로 전사, 결정 사항, 할 일을 정리하세요.</p>
 
-<p align="center"><a href="../README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.es.md">Español</a> · <a href="README.ja.md">日本語</a> · <strong>한국어</strong> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
+<p align="center"><a href="README.en.md">English</a> · <a href="../README.md">简体中文</a> · <a href="README.es.md">Español</a> · <a href="README.ja.md">日本語</a> · <strong>한국어</strong> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
 
-<p align="center"><img src="assets/demo/ai-assist-en.gif" width="820" alt="Brevia desktop demo (English)" /></p>
+<p align="center"><img src="assets/screenshots/desktop/en/live.png" width="960" alt="Brevia v1.4: live transcript and AI notes (English)" /></p>
 
 ## 다운로드
 
-| 기기                      | Brevia 받기                                                                                                                       |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| macOS 14+ · Apple Silicon | [DMG](https://github.com/zerolovesea/Brevia/releases/latest) · `arm64.dmg`                                                        |
-| Windows · x64             | [설치 프로그램](https://github.com/zerolovesea/Brevia/releases/latest) · `x64-setup.exe`                                          |
-| Android 7+                | [APK 다운로드](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)                     |
-| iPhone · iOS 15+          | App Store 심사 중. TestFlight는 초대받은 사용자만 이용할 수 있습니다. [출시 현황](https://github.com/zerolovesea/Brevia/releases) |
+| 기기                      | Brevia 받기                                                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| macOS 14+ · Apple Silicon | [DMG](https://github.com/zerolovesea/Brevia/releases/latest) · `arm64.dmg`                                    |
+| Windows · x64             | [설치 프로그램](https://github.com/zerolovesea/Brevia/releases/latest) · `x64-setup.exe`                      |
+| Android 7+                | [APK 다운로드](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) |
+| iPhone · iOS 15+          | [App Store](https://apps.apple.com/app/id6819869442)                                                          |
+
+<table align="center">
+  <tr><th><a href="https://apps.apple.com/app/id6819869442">iPhone · App Store</a></th><th><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk">Android · APK</a></th></tr>
+  <tr>
+    <td align="center"><a href="https://apps.apple.com/app/id6819869442"><img src="assets/download/ios-qr.png" width="160" alt="iPhone · App Store QR" /></a></td>
+    <td align="center"><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk"><img src="assets/download/android-qr.png" width="160" alt="Android · APK QR" /></a></td>
+  </tr>
+</table>
+
+휴대폰으로 스캔하여 다운로드하세요.
+
+2026년 10월 15일 기준: 데스크톱 v1.4.0, Android 1.0.1, iOS 1.0.0. 휴대폰 이미지는 새 1.0.1 화면이며, iOS 업데이트는 아직 공개되지 않았습니다.
+
+## v1.4의 새로운 기능
+
+컴퓨터와 휴대폰 UI를 새로 설계했습니다. 노트와 실시간 전사를 나란히 보고, 작업 공간별 회의 라이브러리와 전사·노트·요약 탭을 사용할 수 있습니다. 연결된 휴대폰을 컴퓨터 마이크로 선택할 수도 있습니다.
+
+![새 회의 라이브러리](assets/screenshots/desktop/en/library.png)
+
+<details>
+<summary>결정과 할 일을 편집하는 회의 요약</summary>
+
+![결정과 할 일을 편집하는 회의 요약](assets/screenshots/desktop/en/summary.png)
+
+</details>
 
 ## 주요 기능
 
@@ -25,7 +50,7 @@ AI 메모는 실시간 전사를 따라가며 결정, 실행 항목, 핵심 수�
 
 앱을 열고 녹음 버튼을 누르면 자막이 나타납니다. Brevia 는 마이크와 시스템 오디오를 동시에 캡처하므로, 원격 통화의 양쪽이 같은 전사에 담깁니다. 선택적인 실시간 번역이 자막 흐름 옆에 나란히 표시되어 다국어 대화를 지원합니다.
 
-![실시간 회의와 번역](assets/tour/en/%E5%AE%9E%E6%97%B6%E4%BC%9A%E8%AE%AE%E5%92%8C%E7%BF%BB%E8%AF%91.png)
+![실시간 회의와 번역](assets/screenshots/desktop/en/live.png)
 
 ### 30 개 이상의 전사 언어와 회의 요약
 
@@ -37,7 +62,7 @@ Brevia 는 30 개 이상의 언어로 음성을 전사합니다 — 영어, 중�
 
 Pyannote 분할 + 화자 임베딩 모델을 사용하며 모두 기기에서 실행됩니다.
 
-![회의 후 정밀 처리에서 화자 식별](assets/tour/en/%E6%B3%A8%E5%86%8C%E5%A3%B0%E7%BA%B9%E8%AF%86%E5%88%AB.png)
+![회의 후 정밀 처리에서 화자 식별](assets/screenshots/desktop/en/voiceprints.png)
 
 ### 그 외
 
@@ -65,15 +90,23 @@ Pyannote 분할 + 화자 임베딩 모델을 사용하며 모두 기기에서 �
 
 ## 휴대전화로 녹음
 
-[**Android APK 다운로드**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) · iPhone: App Store 심사 중, TestFlight는 초대 사용자만 이용 가능 ([출시 현황](https://github.com/zerolovesea/Brevia/releases))
+[**iPhone · App Store**](https://apps.apple.com/app/id6819869442) · [**Android · APK**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)
 
 회의, 인터뷰, 일상적인 대화에 Brevia를 활용하세요. 계정 없이 앱을 열고 바로 녹음할 수 있습니다. 내 컴퓨터에 연결하면 녹음하면서 전사와 메모도 확인할 수 있습니다.
 
 <p align="center">
-  <img src="assets/mobile/en/02-connect.png" width="240" alt="Brevia iPhone: computer connection (English)" />
-  <img src="assets/mobile/en/01-record.png" width="240" alt="Brevia iPhone: offline recording setup (English)" />
-  <img src="assets/mobile/en/03-transcript.png" width="240" alt="Brevia mobile: live transcript with demo content (English)" />
+  <img src="assets/screenshots/mobile/en/connection.png" width="240" alt="Brevia iPhone: computer connection (English)" />
+  <img src="assets/screenshots/mobile/en/offline.png" width="240" alt="Brevia: offline phone recording (English)" />
+  <img src="assets/screenshots/mobile/en/live.png" width="240" alt="Brevia mobile: live transcript (English)" />
 </p>
+
+<p align="center"><sub>모바일 화면</sub></p>
+
+### 휴대폰을 컴퓨터 마이크로 사용
+
+컴퓨터의 새 회의 화면에서 **Phone microphone**을 선택하고 입력 수준을 확인하세요. 컴퓨터에서 녹음 시작·일시 정지·재개·종료를 제어합니다. 호환되는 휴대폰 앱이 연결되고 전면에서 준비되어 있어야 합니다. 이 회의의 전사와 노트는 컴퓨터에 남습니다. 휴대폰에서 시작한 회의는 텍스트를 휴대폰으로 돌려받습니다.
+
+![휴대폰을 컴퓨터 마이크로 사용](assets/screenshots/desktop/en/phone-microphone.png)
 
 - **컴퓨터 없이 어디서나 녹음.** 페어링이나 인터넷 없이 녹음하고, 일시 정지·재개하거나 중요한 순간을 표시하세요. 오디오는 휴대전화에 저장되며, 전사가 필요할 때 컴퓨터를 선택하고 업로드를 확인합니다.
 - **휴대전화로 녹음하고 컴퓨터로 정리.** 페어링 후 컴퓨터가 음성을 인식하고 전사와 메모를 실시간으로 돌려줍니다. 모델과 AI 설정은 컴퓨터에 있어 휴대전화에 큰 모델을 다운로드할 필요가 없습니다.

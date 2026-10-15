@@ -8,6 +8,9 @@ def connect_key
 end
 
 lane :beta do
+  encryption = ENV.fetch('IOS_USES_NON_EXEMPT_ENCRYPTION', '')
+  UI.user_error!('Review the Apple encryption questionnaire (AES-GCM/WebRTC), then set IOS_USES_NON_EXEMPT_ENCRYPTION to true or false') unless
+    %w[true false].include?(encryption)
   upload_to_testflight(
     api_key: connect_key,
     app_identifier: 'com.brevia.breviaMobile',
@@ -17,8 +20,8 @@ lane :beta do
     submit_beta_review: false,
     skip_waiting_for_build_processing: false,
     wait_processing_timeout_duration: 2400,
-    # Standard TLS; current internal testing excludes France. Reassess before expanding distribution.
-    uses_non_exempt_encryption: false,
+    # 包含系统外 AES-GCM 和 WebRTC；只使用维护者复核问卷后的明确声明，不推定豁免。
+    uses_non_exempt_encryption: encryption == 'true',
     changelog: ENV.fetch('TESTFLIGHT_CHANGELOG') { "内部测试 #{ENV.fetch('BUILD_NUMBER')} · #{ENV.fetch('GITHUB_SHA')[0, 7]}。新增离线录音与手动上传，优化字幕收尾和连接恢复。请验证语言/人数预设、锁屏录音及断线补传；跨网 WebRTC 需电脑配置服务。" }
   )
 end

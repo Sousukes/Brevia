@@ -164,7 +164,9 @@ git push -u origin feature/mobile-transcript-layout
 
 通过 GitHub Secret 页面或 `gh secret set NAME < 文件` 配置凭据；不要复用桌面证书，不要把凭据放进 issue、聊天或代码。签名密钥与 API Key 备份存放在仓库之外。描述文件、证书到期或换证后更新 Secrets。CI 使用临时钥匙串，结束后清理签名文件。
 
-Beta 出口声明按当前已确认范围：标准 TLS、内部测试、不在法国分发。更改加密实现、依赖或扩大分发地区前，重新核对 Apple 要求与 `fastlane/Fastfile` 设置。该设置不覆盖正式 App Store 送审声明。
+应用除 HTTPS 外，还包含系统外实现的 AES-256-GCM 信令加密及 WebRTC 数据通道，不能按“仅系统 TLS”推定豁免。维护者完成 Apple 加密问卷后，在仓库 Actions Variables 中明确设置 `IOS_USES_NON_EXEMPT_ENCRYPTION` 为 `true` 或 `false`；本地运行 beta lane 时设置同名环境变量。缺失或非法值会在上传前失败，不会自动代答。该值表示是否使用非豁免加密，不是“是否包含任何加密”；是否需要文档、法国分发等应按完整问卷确定。更改实现、依赖或分发地区后重新复核，该配置不替代正式 App Store 声明。
+
+2026-10-15 已按当前实现和供应范围复核 Apple 问卷：选择“系统外的标准加密算法”，不选专有算法，“法国分发”选否；问卷结果为无需上传加密文稿。仓库 `zerolovesea/Brevia` 的 `IOS_USES_NON_EXEMPT_ENCRYPTION` 已设置为 `false` 并回读验证。此值表示当前无须加密文稿，不表示应用没有加密；若启用法国供应或更改加密实现，必须重新复核。
 
 ### 正式发布
 

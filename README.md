@@ -1,157 +1,193 @@
-<p align="center"><img src="docs/assets/brevia-mark.svg" width="258" alt="Brevia" /></p>
+<p align="center"><img src="docs/assets/brevia-mark.svg" width="258" alt="Brevia 言录" /></p>
 
-<p align="center"><strong>A local-first AI meeting assistant, on your computer and phone.</strong><br />Live transcription · AI notes · translation · meeting summaries — with your computer doing the processing.</p>
+<p align="center"><strong>专注对话，留下重点。</strong><br />实时转写、随手笔记与 AI 建议，同屏协作。<br />电脑与手机随时记录，让自己的电脑完成识别与整理。</p>
 
 <p align="center">
-  <a href="https://github.com/zerolovesea/Brevia/releases/latest"><img src="https://img.shields.io/github/v/release/zerolovesea/Brevia?style=flat-square" alt="Desktop release" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/zerolovesea/Brevia?style=flat-square" alt="ISC License" /></a>
-  <a href="https://github.com/zerolovesea/Brevia/releases"><img src="https://img.shields.io/github/downloads/zerolovesea/Brevia/total?style=flat-square" alt="Downloads" /></a>
+  <a href="https://github.com/zerolovesea/Brevia/releases/latest"><img src="https://img.shields.io/github/v/release/zerolovesea/Brevia?style=flat-square" alt="桌面版本" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/zerolovesea/Brevia?style=flat-square" alt="ISC 许可证" /></a>
+  <a href="https://github.com/zerolovesea/Brevia/releases"><img src="https://img.shields.io/github/downloads/zerolovesea/Brevia/total?style=flat-square" alt="下载量" /></a>
 </p>
 
-<p align="center"><strong>English</strong> · <a href="docs/README.zh-CN.md">简体中文</a> · <a href="docs/README.es.md">Español</a> · <a href="docs/README.ja.md">日本語</a> · <a href="docs/README.ko.md">한국어</a> · <a href="docs/README.fr.md">Français</a> · <a href="docs/README.de.md">Deutsch</a> · <a href="docs/README.ru.md">Русский</a></p>
+<p align="center"><a href="docs/README.en.md">English</a> · <strong>简体中文</strong> · <a href="docs/README.es.md">Español</a> · <a href="docs/README.ja.md">日本語</a> · <a href="docs/README.ko.md">한국어</a> · <a href="docs/README.fr.md">Français</a> · <a href="docs/README.de.md">Deutsch</a> · <a href="docs/README.ru.md">Русский</a></p>
 
-<p align="center"><a href="https://brevia.work">Website</a> · <a href="#download">Download</a> · <a href="#record-on-your-phone">Phone app</a> · <a href="#faq">FAQ</a></p>
+<p align="center"><a href="#下载">下载</a> · <a href="#从对话到行动">功能介绍</a> · <a href="#用手机录音">手机应用</a> · <a href="#开始使用">开始使用</a> · <a href="https://brevia.work">官网</a></p>
 
-Brevia helps you capture, organize and revisit conversations. Record both sides of a call on your computer, or use your phone for an interview or an in-person meeting. Follow the transcript, review AI suggestions and leave with notes you can edit and share. Speech recognition runs on your own computer; online AI is optional.
+![言录 v1.4 桌面新界面：实时转写、翻译与可编辑的 AI 辅助笔记](docs/assets/screenshots/desktop/zh/live.png)
 
-<p align="center"><img src="docs/assets/demo/ai-assist-en.gif" width="820" alt="Brevia desktop demo: live transcription and AI notes" /></p>
+<p align="center"><sub>桌面界面</sub></p>
 
-## Download
+言录是一款本地优先的 AI 会议助手，适合线上会议、访谈和面对面讨论。记录声音、写下想法、审核 AI 建议，会后得到可编辑的纪要。语音识别在自己的电脑上运行；下载模型后，本地 AI 可离线使用，也能按需接入在线服务。
 
-| Device                    | Download / availability                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| macOS 14+ · Apple Silicon | [Latest desktop release](https://github.com/zerolovesea/Brevia/releases/latest) — choose `Brevia-<version>-arm64.dmg`                                                    |
-| Windows · x64             | [Latest desktop release](https://github.com/zerolovesea/Brevia/releases/latest) — choose `Brevia-<version>-x64-setup.exe`                                                |
-| Android 7+                | [Download signed APK](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) — updates are available through Settings in the app |
-| iPhone · iOS 15+          | App Store review pending; TestFlight is invitation-only. [Follow release updates](https://github.com/zerolovesea/Brevia/releases)                                        |
+## 下载
 
-## Features
+| 设备    | 下载入口                                                                                                            | 系统要求                  |
+| ------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Mac     | [下载最新 macOS 版](https://github.com/zerolovesea/Brevia/releases/latest)，选择 `Brevia-<version>-arm64.dmg`       | Apple Silicon · macOS 14+ |
+| Windows | [下载最新 Windows 版](https://github.com/zerolovesea/Brevia/releases/latest)，选择 `Brevia-<version>-x64-setup.exe` | x64                       |
+| iPhone  | [在 App Store 下载](https://apps.apple.com/app/id6819869442)                                                        | iOS 15+                   |
+| Android | [下载签名 APK](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)       | Android 7+                |
 
-### Live transcription and translation
+<table align="center">
+  <tr>
+    <th><a href="https://apps.apple.com/app/id6819869442">iPhone · App Store</a></th>
+    <th><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk">Android · APK</a></th>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://apps.apple.com/app/id6819869442"><img src="docs/assets/download/ios-qr.png" width="160" alt="扫码打开言录 App Store 下载页" /></a></td>
+    <td align="center"><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk"><img src="docs/assets/download/android-qr.png" width="160" alt="扫码下载 Android APK" /></a></td>
+  </tr>
+</table>
 
-Capture your microphone and computer audio together so both sides of an online meeting appear in one transcript. Brevia produces captions after speech pauses and offers optional translation alongside them. An optional floating-caption window lets you follow the conversation while working in another app.
+<p align="center"><sub>用手机扫码下载，也可直接点击对应平台链接。</sub></p>
 
-Transcription supports **30+ languages**, including English, Chinese, Japanese, Korean, Spanish, French, German, Russian, Arabic, Thai, Vietnamese and Indonesian. Select the meeting language and Brevia suggests a compatible recognition model. You can also import an existing audio recording.
+**发布状态：** 截至 2026 年 10 月 15 日，桌面版为 [v1.4.0](docs/releases/v1.4.0.md)，Android 为 1.0.1，iOS 公开版为 1.0.0。下方手机截图展示重构后的 1.0.1 界面，iOS 更新尚未公开发布；下载链接以当前可用版本为准。Android 可在应用「设置」中检查更新，iPhone 通过 App Store 更新。
 
-![Live meeting and translation](docs/assets/tour/en/实时会议和翻译.png)
+## 从对话到行动
 
-### AI notes you can review
+| 使用场景   | 言录帮你完成                                                                     |
+| ---------- | -------------------------------------------------------------------------------- |
+| 录下讨论   | 麦克风、系统声音或两者同时录制，也可导入已有音频；已配对手机还能作为电脑麦克风。 |
+| 跟上对话   | 发言停顿后显示字幕，可开启翻译与悬浮字幕；支持 30+ 种转写语言。                  |
+| 留下重点   | 富文本与 Markdown 记笔记，审核 AI 提取的决定、待办、重要数字、风险与问题。       |
+| 整理与分享 | 会后精修、区分说话人、编辑纪要，将文字、笔记与录音按需导出。                     |
 
-AI Notes highlights decisions, action items, important numbers, risks and open questions while the meeting is happening. Choose on-demand suggestions, gentle prompts or automatic organization. Accept only what helps, and write alongside the suggestions in rich text or Markdown on desktop.
+### 边听边记，转写与笔记并排
 
-After the meeting, generate a summary from the reviewed transcript. Notes and summaries can use local AI or your chosen online provider, including Claude, OpenAI, OpenRouter and compatible services. You can configure them independently.
+新版会议界面将笔记与实时字幕放在同一屏，底部集中录音控制。AI 笔记支持按需请求、轻量提示和自动整理；采纳需要的建议，也能继续写下自己的想法。
+
+AI 笔记与会议纪要可分别配置：使用本地 AI，或接入 Claude、OpenAI、OpenRouter 及兼容服务。
 
 <details>
-<summary>See AI notes and meeting summaries</summary>
+<summary>查看深色主题</summary>
 
-![AI Notes](docs/assets/tour/en/AI%20Assist%20Notes.png)
-
-![Meeting summary](docs/assets/tour/en/多语言支持与会议纪要.png)
+![深色主题下的实时转写与 AI 笔记](docs/assets/screenshots/desktop/zh/live-dark.png)
 
 </details>
 
-### Review, find and share
+### 把讨论变成可执行的计划
 
-- **Speaker identification after the meeting.** Refinement separates speakers and can match them to saved voiceprints. Live captions do not identify speakers.
-- **A searchable meeting library.** Search titles, transcripts, speakers and tags; organize meetings into workspaces. Recently deleted desktop meetings can be restored for 30 days.
-- **Editable results and useful exports.** Edit transcripts and summaries; export text and notes as Markdown, TXT, JSON, SRT, DOCX or PDF, and audio as WAV.
-- **An interface that fits your work.** Light and dark themes, with English, Simplified Chinese, Spanish, Japanese, Korean, French, German and Russian interfaces on desktop and mobile.
+审核逐字稿后，生成包含讨论要点、决定与行动项的纪要。会议详情集中提供 **笔记、逐字稿、会议纪要** 三个入口，方便回听、编辑与导出。会后精修可区分说话人，并匹配已保存的声纹档案；实时字幕暂不区分说话人。
 
-## Supported models
+![可编辑的会议纪要：摘要、决定与行动项](docs/assets/screenshots/desktop/zh/summary.png)
 
-Download speech, AI-note and translation models from **Settings → Model Library** as needed. Voice activity detection and speaker models are included with the app. All models below run on the computer; mobile recording does not require downloading them to your phone. Available variants and sizes are shown in the Model Library.
+### 让每次对话都能找回来
 
-| Use                        | Model                     | Languages / purpose                                           |
-| -------------------------- | ------------------------- | ------------------------------------------------------------- |
-| Transcription / refinement | FunASR Nano               | Chinese, Cantonese, English                                   |
-| Transcription / refinement | Qwen3-ASR 0.6B            | 30 languages, including Chinese, English, Japanese and Korean |
-| Transcription / refinement | Parakeet TDT 0.6B v3      | 25 European languages                                         |
-| AI notes / summaries       | Qwen 3.5 2B / 4B          | Chinese / English                                             |
-| Caption translation        | Tencent Hy-MT2 1.8B       | Multilingual translation                                      |
-| Voice activity detection   | Silero VAD                | Detect speech and pauses                                      |
-| Speaker separation         | Pyannote Segmentation 3.0 | Separate speakers after a meeting                             |
-| Voiceprint matching        | 3D-Speaker ERes2Net Base  | Match saved speaker profiles                                  |
+用工作区归类，搜索标题、逐字稿、说话人与标签。桌面端最近删除的会议可在 30 天内恢复。文字与笔记支持导出为 **Markdown、TXT、JSON、SRT、DOCX 或 PDF**，音频可导出为 **WAV**。
 
-## Record on your phone
+![新版会议库与工作区导航](docs/assets/screenshots/desktop/zh/library.png)
 
-[**Download Android APK**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) · iPhone: App Store review pending; TestFlight by invitation ([Release updates](https://github.com/zerolovesea/Brevia/releases))
+电脑与手机均提供深浅色主题，以及中文、英语、西班牙语、日语、韩语、法语、德语和俄语界面。
 
-Bring Brevia to meetings, interviews and everyday conversations. Open the phone app and start recording without an account. Connect your own computer to follow transcripts and notes while you record.
+## 用手机录音
+
+[**iPhone · App Store 下载**](https://apps.apple.com/app/id6819869442) · [**Android · 下载 APK**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)
+
+把言录带到采访现场、课堂和会议室，无需注册账号。按场景选择使用方式：
+
+| 使用方式       | 手机负责                                             | 电脑负责                                                                     |
+| -------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 独立离线录音   | 录音、暂停、标记重点和回听；之后选择电脑并确认上传。 | 转写前无需连接。                                                             |
+| 手机发起会议   | 录音，同时查看回传的转写与笔记。                     | 识别语音、运行已配置的 AI；需保持唤醒和网络可达。                            |
+| 作为电脑麦克风 | 保持已配对应用连接，并在前台就绪。                   | 选择「手机麦克风」，试音后开始、暂停、继续和结束录音；逐字稿与笔记留在电脑。 |
 
 <p align="center">
-  <img src="docs/assets/mobile/en/02-connect.png" width="240" alt="iPhone: connect to a computer by QR code or pairing code" />
-  <img src="docs/assets/mobile/en/01-record.png" width="240" alt="iPhone: prepare an offline recording" />
-  <img src="docs/assets/mobile/en/03-transcript.png" width="240" alt="Mobile meeting transcript with timestamps, recording status and controls; demo content" />
+  <img src="docs/assets/screenshots/mobile/zh/library.png" width="240" alt="手机会议库" />
+  <img src="docs/assets/screenshots/mobile/zh/live.png" width="240" alt="手机查看电脑回传的实时转写" />
+  <img src="docs/assets/screenshots/mobile/zh/offline.png" width="240" alt="手机离线录音、笔记与重点标记" />
 </p>
 
-- **Record wherever you are.** No pairing or internet connection is needed. Pause, resume and mark important moments. Audio stays on your phone until you choose a computer and confirm an upload for transcription.
-- **Your phone captures; your computer organizes.** Once paired, the computer handles speech recognition and returns live transcripts and notes to your phone. Models and AI settings stay on the computer, with no large models to download on your phone.
-- **Listen back and share.** Find recordings in your meeting library, revisit the conversation, export WAV audio, or share notes as Markdown and transcripts as text. Deleting a phone copy does not delete the meeting on your computer.
+<p align="center"><sub>手机界面</sub></p>
 
-During a temporary network outage, audio continues saving on your phone; authorized uploads resume after reconnecting. Background recording is supported, but calls, force-stop and system restrictions may interrupt it. Check the status when you return; uploads after recording may require keeping the app open.
+**桌面 v1.4 新增手机麦克风联动：** 在新建会议页面选择已连接的手机，需要配套手机版本支持。电脑发起的会议由手机收音并保存音频，逐字稿和笔记在电脑查看；从手机发起的会议则会将转写与笔记回传到手机。
 
-## How your phone and computer work together
+![电脑新建会议页面：手机麦克风录制来源](docs/assets/screenshots/desktop/zh/phone-microphone.png)
+
+音频先保存在手机，断线后继续保存，重连时续传已授权录音；上传成功不会自动删除手机副本。支持后台录音，但来电、强制退出和系统限制仍可能中断，结束后的补传可能需要保持应用前台。手机笔记可分享为 Markdown、转写为文本、音频为 WAV；删除手机副本不会删除电脑上的会议。
+
+<details>
+<summary>本地模型与下载</summary>
+
+### 支持的模型
+
+识别、AI 笔记和翻译模型可在 **设置 → 模型库** 按需下载；语音活动检测与说话人模型随应用安装。下列模型均在电脑运行，手机录音无需在手机上下载模型。具体版本和大小以应用内模型库为准。
+
+| 用途              | 模型                      | 语言／作用                  |
+| ----------------- | ------------------------- | --------------------------- |
+| 转写／会后精修    | FunASR Nano               | 中文、粤语、英语            |
+| 转写／会后精修    | Qwen3-ASR 0.6B            | 30 种语言，含中、英、日、韩 |
+| 转写／会后精修    | Parakeet TDT 0.6B v3      | 25 种欧洲语言               |
+| AI 笔记／会议纪要 | Qwen 3.5 2B / 4B          | 中文／英语                  |
+| 字幕翻译          | Tencent Hy-MT2 1.8B       | 多语言翻译                  |
+| 语音活动检测      | Silero VAD                | 检测发言与停顿              |
+| 说话人分离        | Pyannote Segmentation 3.0 | 会后区分不同说话人          |
+| 声纹匹配          | 3D-Speaker ERes2Net Base  | 匹配已保存的说话人档案      |
+
+![模型库：按需下载语音识别、AI 与翻译模型](docs/assets/screenshots/desktop/zh/models.png)
+
+</details>
+
+## 手机与电脑如何协作
 
 ```mermaid
 flowchart LR
-  Phone[Phone: record and save audio] -->|Encrypted audio transfer| PC[Your computer: transcription and AI]
-  PC -->|Transcript and saved notes| Phone
-  PC -. Optional text requests .-> AI[Your chosen online AI provider]
+  Phone[手机：录音并本地保存] -->|加密传输音频| PC[你的电脑：转写与 AI 处理]
+  PC -->|回传文字与已保存笔记| Phone
+  PC -. 可选：发送相关文字 .-> AI[你选择的在线 AI 服务]
 ```
 
-You can also start a meeting on the desktop and select a connected **Phone microphone** as its recording source. Keep Brevia open on the phone with no other recording active. The desktop controls recording and keeps the transcript and notes; the phone saves audio for recovery and upload after reconnecting. Meetings started on the phone continue to receive transcripts and notes from the computer.
+- **首次在同一 Wi-Fi 配对。** 电脑打开 **设置 → 设备连接 → 连接新设备**，手机扫码或输入地址和 PIN，核对校验码后在电脑允许连接。后续连接使用已保存的设备身份。
+- **默认通过局域网通信。** 手机通过 HTTPS 向已配对电脑发送音频，电脑回传转写和笔记。实时处理需要电脑保持唤醒、网络可达；手机本身不运行识别模型。
+- **先保存，再确认。** 音频先落在手机，电脑确认保存后才推进上传位置；断线后从已确认的位置继续，不因上传成功自动删除手机副本。
+- **可选跨网络连接。** 配置自有信令／TURN 服务后，已配对设备可通过 WebRTC DataChannel 跨网通信；优先直连，无法直连时中继加密流量。首次配对仍需局域网，详见[跨网连接与恢复](docs/mobile-remote.md)。
 
-- **Pair on the same Wi-Fi first.** Open **Settings → Device connections → Connect new device** on desktop. Scan its QR code on the phone or enter the address and PIN, compare the verification code, then approve on the computer. Subsequent connections use the saved device identity.
-- **Local network by default.** The phone sends audio over HTTPS to the paired computer; the computer returns transcripts and notes. The computer must remain awake and reachable for live processing. The phone does not run recognition models.
-- **Save before acknowledging.** Audio is saved on the phone first. The upload position advances only after the computer confirms it has saved the audio. After a disconnection, transfer resumes from that position; a successful upload does not automatically delete the phone copy.
-- **Optional remote connection.** With your own signalling/TURN service configured, paired devices can use a WebRTC DataChannel across networks. Direct connection is preferred; a relay may carry encrypted traffic when needed. Initial pairing still requires the local network. See [remote setup and recovery](docs/mobile-remote.md).
+语音识别和说话人处理在电脑本地执行；下载所需模型后，AI 笔记、纪要与翻译也可在本机完成。选择在线 AI 时，相关转写与笔记文字会发给所选服务商，音频不会发给 AI 服务商。跨网中继运营方可看到网络地址、连接时间和流量大小等信息，但不能通过中继读取加密会议内容。详见[隐私政策](https://brevia.work/privacy.html)。
 
-Speech recognition and speaker processing run on your computer. Local models can also handle AI notes, summaries and translation after download. If you choose an online AI provider, relevant transcript and note text is sent to that service, not audio. Remote relay operators can see connection metadata such as network addresses and traffic volume, but cannot read the encrypted meeting content through the relay. [Privacy policy](https://brevia.work/privacy.html).
+手机原始录音约占 **115 MB／小时**，导出与缓存会额外占用空间。跨网上传还会消耗相应流量及通信开销，较长录音建议使用 Wi-Fi 传输。
 
-Phone audio uses about **115 MB per recorded hour** before exports and caches. Remote uploads also consume data, plus network overhead; use Wi-Fi for long recordings when possible.
+## 开始使用
 
-## Get started
+1. **准备电脑端。** 安装言录，按提示授权麦克风与系统音频录制，下载推荐的识别模型；需要离线笔记和纪要时，再选择本地 AI 模型。
+2. **开始会议或导入录音。** 选择会议语言、录制，结束后审核并导出结果。
+3. **按需加入手机。** 按上面的步骤配对即可实时转写；也可以先离线录音、稍后上传。仅完成配对不会自动上传离线录音。
 
-1. **Prepare the desktop app.** Install Brevia, grant microphone and system-audio permissions when prompted, and download the suggested recognition model. Select a local AI model if you want offline notes and summaries.
-2. **Start recording or import audio.** Choose a meeting language, capture the conversation, then review and export the result.
-3. **Add your phone when useful.** Follow the pairing steps above for live transcription, or record offline now and upload later. Pairing alone does not upload offline recordings.
-
-## FAQ
+## 常见问题
 
 <details>
-<summary><strong>Can I use Brevia without the internet?</strong></summary>
+<summary><strong>没有互联网也能用吗？</strong></summary>
 
-Yes. Desktop transcription and local AI work after the required models are downloaded. Phone-only recording needs neither a computer nor an account; phone transcription needs your paired computer, which can be reached over the local network without internet access. Online AI and remote connections need internet access.
+可以。下载所需模型后，电脑端转写和本地 AI 可离线运行。手机独立录音不需要电脑，也不需要账号；手机转写需要已配对电脑，但同一局域网连接不依赖互联网。在线 AI 和跨网连接需要互联网。
 
 </details>
 
 <details>
-<summary><strong>Which models should I download?</strong></summary>
+<summary><strong>应该下载哪些模型？</strong></summary>
 
-Start with the suggested speech model for your language. Add a local AI model for notes and summaries, and a translation model if needed. The Model Library shows download sizes; choose a smaller local AI model on a less powerful computer. You do not need every model.
-
-</details>
-
-<details>
-<summary><strong>Where are my recordings stored?</strong></summary>
-
-Desktop data defaults to `~/brevia`; model and recording folders can be selected during setup and changed in Settings. Phone recordings and cached text are stored in the app. Deleting the phone copy does not delete the computer copy. Export or sync pending recordings before uninstalling the phone app, as uninstalling removes its local data.
+先下载适合会议语言的推荐识别模型。需要笔记和纪要时再添加本地 AI 模型，需要翻译时添加翻译模型。模型库会显示下载大小；性能较弱的电脑可优先选择较小的 AI 模型，不必下载全部模型。
 
 </details>
 
 <details>
-<summary><strong>Windows shows a SmartScreen warning</strong></summary>
+<summary><strong>录音和数据存在哪里？</strong></summary>
 
-Confirm that the installer came from the official [release page](https://github.com/zerolovesea/Brevia/releases), then choose **More info → Run anyway** if you trust the download.
+电脑端默认存放在 `~/brevia`，模型与录音文件夹可在首次设置时选择，之后在设置中更改。手机录音和缓存文字保存在应用内；删除手机副本不会删除电脑副本。卸载手机应用会清除其本地数据，请先导出或同步尚未上传的录音。
 
 </details>
 
-## Feedback and contributing
+<details>
+<summary><strong>Windows 提示 SmartScreen 怎么办？</strong></summary>
 
-Found a problem or have a suggestion? [Open an issue](https://github.com/zerolovesea/Brevia/issues) with your device, app version, meeting language and steps to reproduce. Remove private content and credentials from screenshots and logs. Report security issues privately to the maintainer.
+先确认安装包来自官方[发布页面](https://github.com/zerolovesea/Brevia/releases)，信任该下载后再选择「更多信息 → 仍要运行」。
 
-Browse the [documentation index](docs/README.md). For development, architecture, model details and packaging, see the [development guide](docs/DEVELOPMENT.md), [mobile guide](mobile/README.md) and [contribution guidelines](CONTRIBUTING.md).
+</details>
 
-## License and acknowledgments
+<a id="feedback-and-contributing"></a>
 
-Brevia uses the [ISC License](LICENSE). Model files and third-party packages retain their own licenses. Thanks to [mlx-audio](https://github.com/Blaizzy/mlx-audio), [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), Electron, and the authors of Qwen, FunASR, Parakeet, Pyannote, 3D-Speaker, Silero and Tencent Hy-MT2. Model details are listed in the [development guide](docs/DEVELOPMENT.md#supported-models).
+## 反馈与贡献
+
+遇到问题或有建议？欢迎[提交 Issue](https://github.com/zerolovesea/Brevia/issues)，附上设备、应用版本、会议语言和复现步骤。截图与日志请去掉会议隐私及凭据；安全问题请私下联系维护者。
+
+开发、架构、模型细节和打包说明见[开发指南](docs/DEVELOPMENT.zh-CN.md)、[手机开发指南](mobile/README.md)及[贡献规范](CONTRIBUTING.md)。
+
+## 许可与致谢
+
+言录使用 [ISC 许可证](LICENSE)，模型和第三方依赖遵循各自许可。感谢 [mlx-audio](https://github.com/Blaizzy/mlx-audio)、[sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)、Electron，以及 Qwen、FunASR、Parakeet、Pyannote、3D-Speaker、Silero、Tencent Hy-MT2 的作者与维护者。模型详情见[开发指南](docs/DEVELOPMENT.zh-CN.md#支持的模型)。

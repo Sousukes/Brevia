@@ -2,18 +2,43 @@
 
 <p align="center"><strong>Concéntrate en la conversación. Conserva las notas.</strong><br />Graba en el ordenador o en el móvil y convierte las conversaciones en transcripciones, decisiones y tareas con IA local.</p>
 
-<p align="center"><a href="../README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <strong>Español</strong> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
+<p align="center"><a href="README.en.md">English</a> · <a href="../README.md">简体中文</a> · <strong>Español</strong> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
 
-<p align="center"><img src="assets/demo/ai-assist-en.gif" width="820" alt="Brevia desktop demo (English)" /></p>
+<p align="center"><img src="assets/screenshots/desktop/en/live.png" width="960" alt="Brevia v1.4: live transcript and AI notes (English)" /></p>
 
 ## Descargar
 
-| Dispositivo               | Obtener Brevia                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| macOS 14+ · Apple Silicon | [DMG](https://github.com/zerolovesea/Brevia/releases/latest) · `arm64.dmg`                                                      |
-| Windows · x64             | [Instalador](https://github.com/zerolovesea/Brevia/releases/latest) · `x64-setup.exe`                                           |
-| Android 7+                | [Descargar APK](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)                  |
-| iPhone · iOS 15+          | App Store: en revisión. TestFlight solo con invitación. [Estado de publicación](https://github.com/zerolovesea/Brevia/releases) |
+| Dispositivo               | Obtener Brevia                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| macOS 14+ · Apple Silicon | [DMG](https://github.com/zerolovesea/Brevia/releases/latest) · `arm64.dmg`                                     |
+| Windows · x64             | [Instalador](https://github.com/zerolovesea/Brevia/releases/latest) · `x64-setup.exe`                          |
+| Android 7+                | [Descargar APK](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) |
+| iPhone · iOS 15+          | [App Store](https://apps.apple.com/app/id6819869442)                                                           |
+
+<table align="center">
+  <tr><th><a href="https://apps.apple.com/app/id6819869442">iPhone · App Store</a></th><th><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk">Android · APK</a></th></tr>
+  <tr>
+    <td align="center"><a href="https://apps.apple.com/app/id6819869442"><img src="assets/download/ios-qr.png" width="160" alt="iPhone · App Store QR" /></a></td>
+    <td align="center"><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk"><img src="assets/download/android-qr.png" width="160" alt="Android · APK QR" /></a></td>
+  </tr>
+</table>
+
+Escanea para descargar en el teléfono.
+
+El 15 de octubre de 2026: escritorio v1.4.0, Android 1.0.1 e iOS 1.0.0. Las capturas del teléfono muestran la interfaz 1.0.1; la actualización de iOS aún no es pública.
+
+## Novedades de v1.4
+
+Nueva interfaz en ordenador y móvil: notas junto a la transcripción, biblioteca por espacios de trabajo y acceso directo a transcripción, notas y resumen. También puedes usar un teléfono conectado como micrófono del ordenador.
+
+![Biblioteca de reuniones](assets/screenshots/desktop/en/library.png)
+
+<details>
+<summary>Resumen editable con decisiones y tareas</summary>
+
+![Resumen editable con decisiones y tareas](assets/screenshots/desktop/en/summary.png)
+
+</details>
 
 ## Qué puedes hacer
 
@@ -25,7 +50,7 @@ Las notas de IA siguen la transcripción en vivo y señalan decisiones, tareas, 
 
 Ábrelo, pulsa grabar y observa los subtítulos aparecer. Brevia captura el micrófono y el audio del sistema a la vez, de modo que ambas partes de una llamada remota quedan en la misma transcripción. La traducción en vivo opcional se muestra junto al flujo de subtítulos para conversaciones multilingües.
 
-![Reunión y traducción en vivo](assets/tour/en/%E5%AE%9E%E6%97%B6%E4%BC%9A%E8%AE%AE%E5%92%8C%E7%BF%BB%E8%AF%91.png)
+![Reunión y traducción en vivo](assets/screenshots/desktop/en/live.png)
 
 ### 30+ idiomas de transcripción y resúmenes de reuniones
 
@@ -37,7 +62,7 @@ Graba una breve muestra de voz de cada participante. Una vez terminada la reuni�
 
 Con segmentación Pyannote más modelos de embeddings de voz, todo ejecutándose en el dispositivo.
 
-![Identificación de hablantes después de la reunión](assets/tour/en/%E6%B3%A8%E5%86%8C%E5%A3%B0%E7%BA%B9%E8%AF%86%E5%88%AB.png)
+![Identificación de hablantes después de la reunión](assets/screenshots/desktop/en/voiceprints.png)
 
 ### Y más
 
@@ -65,15 +90,23 @@ Descarga modelos de voz, notas IA y traducción desde **Ajustes → Biblioteca d
 
 ## Graba con el móvil
 
-[**Descargar APK para Android**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) · iPhone: App Store en revisión; TestFlight por invitación ([Novedades de publicación](https://github.com/zerolovesea/Brevia/releases))
+[**iPhone · App Store**](https://apps.apple.com/app/id6819869442) · [**Android · APK**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)
 
 Lleva Brevia a reuniones, entrevistas y conversaciones cotidianas. Abre la aplicación y graba sin crear una cuenta. Conecta tu propio ordenador para seguir la transcripción y las notas mientras grabas.
 
 <p align="center">
-  <img src="assets/mobile/en/02-connect.png" width="240" alt="Brevia iPhone: computer connection (English)" />
-  <img src="assets/mobile/en/01-record.png" width="240" alt="Brevia iPhone: offline recording setup (English)" />
-  <img src="assets/mobile/en/03-transcript.png" width="240" alt="Brevia mobile: live transcript with demo content (English)" />
+  <img src="assets/screenshots/mobile/en/connection.png" width="240" alt="Brevia iPhone: computer connection (English)" />
+  <img src="assets/screenshots/mobile/en/offline.png" width="240" alt="Brevia: offline phone recording (English)" />
+  <img src="assets/screenshots/mobile/en/live.png" width="240" alt="Brevia mobile: live transcript (English)" />
 </p>
+
+<p align="center"><sub>Interfaz móvil</sub></p>
+
+### Micrófono del teléfono
+
+En una reunión nueva del ordenador, elige **Phone microphone**, comprueba el nivel de entrada y controla el inicio, pausa, reanudación y fin desde el ordenador. Requiere una app móvil compatible, conectada y en primer plano. La transcripción y las notas de estas reuniones permanecen en el ordenador; las reuniones iniciadas en el teléfono reciben el texto de vuelta.
+
+![Micrófono del teléfono](assets/screenshots/desktop/en/phone-microphone.png)
 
 - **Graba donde estés.** Sin emparejamiento ni internet: pausa, continúa y marca momentos importantes. El audio queda en el móvil hasta que eliges un ordenador y confirmas la subida para transcribirlo.
 - **El móvil capta; el ordenador organiza.** Tras emparejarlos, el ordenador reconoce la voz y devuelve transcripciones y notas en directo. Los modelos y los ajustes de IA permanecen en el ordenador; no necesitas descargar modelos grandes al móvil.

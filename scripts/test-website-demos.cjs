@@ -1,5 +1,5 @@
 // Run with: npx electron scripts/test-website-demos.cjs [--record]
-// --record refreshes the README images and GIFs from the same website demos.
+// --record 将官网演示导出到 output/website-demos；README 使用正式应用截图。
 const { app, BrowserWindow } = require('electron');
 const { writeFileSync, mkdirSync, mkdtempSync, rmSync } = require('node:fs');
 const { join, resolve } = require('node:path');
@@ -7,6 +7,7 @@ const { tmpdir } = require('node:os');
 const { spawnSync } = require('node:child_process');
 const assert = require('node:assert/strict');
 const root = resolve(__dirname, '..');
+const output = join(root, 'output/website-demos');
 const record = process.argv.includes('--record');
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const temp = mkdtempSync(join(tmpdir(), 'brevia-demos-'));
@@ -47,10 +48,13 @@ app
     }
     try {
       for (const locale of ['zh', 'en']) {
-        const tour = join(root, 'docs/assets/tour', locale);
+        const tour = join(output, 'tour', locale);
+        if (record) {
+          mkdirSync(tour, { recursive: true });
+          mkdirSync(join(output, 'demo'), { recursive: true });
+        }
         await load('home', locale);
-        if (record)
-          await capture(join(root, 'website/assets', `home-${locale === 'zh' ? 'cn' : 'en'}.png`));
+        if (record) await capture(join(output, `home-${locale === 'zh' ? 'cn' : 'en'}.png`));
         for (const name of [
           'transcription',
           'summary',
@@ -187,7 +191,7 @@ app
               '[0:v]scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3',
               '-loop',
               '0',
-              join(root, 'docs/assets/demo', `ai-assist-${locale}.gif`),
+              join(output, 'demo', `ai-assist-${locale}.gif`),
             ],
             { encoding: 'utf8' },
           );

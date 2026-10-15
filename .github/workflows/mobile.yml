@@ -130,6 +130,7 @@ jobs:
         working-directory: mobile
     env:
       BUILD_NUMBER: ${{ needs.check.outputs.build }}
+      IOS_USES_NON_EXEMPT_ENCRYPTION: ${{ vars.IOS_USES_NON_EXEMPT_ENCRYPTION }}
       IOS_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
       IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
       IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
@@ -139,6 +140,12 @@ jobs:
       ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
     steps:
       - uses: actions/checkout@v4
+      - name: Require reviewed encryption declaration
+        run: |
+          case "$IOS_USES_NON_EXEMPT_ENCRYPTION" in
+            true|false) ;;
+            *) echo "::error::Review the Apple encryption questionnaire (AES-GCM/WebRTC), then set repository variable IOS_USES_NON_EXEMPT_ENCRYPTION to true or false"; exit 1 ;;
+          esac
       - name: Import App Store signing material
         run: bash scripts/ios-signing.sh
       - uses: subosito/flutter-action@v2

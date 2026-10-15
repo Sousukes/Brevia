@@ -2,9 +2,9 @@
 
 <p align="center"><strong>会話に集中。大切なことは記録に。</strong><br />パソコンやスマートフォンで録音し、ローカル AI で文字起こし・決定事項・次のアクションを整理します。</p>
 
-<p align="center"><a href="../README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.es.md">Español</a> · <strong>日本語</strong> · <a href="README.ko.md">한국어</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
+<p align="center"><a href="README.en.md">English</a> · <a href="../README.md">简体中文</a> · <a href="README.es.md">Español</a> · <strong>日本語</strong> · <a href="README.ko.md">한국어</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.ru.md">Русский</a></p>
 
-<p align="center"><img src="assets/demo/ai-assist-en.gif" width="820" alt="Brevia desktop demo (English)" /></p>
+<p align="center"><img src="assets/screenshots/desktop/en/live.png" width="960" alt="Brevia v1.4: live transcript and AI notes (English)" /></p>
 
 ## ダウンロード
 
@@ -13,7 +13,32 @@
 | macOS 14+ · Apple Silicon | [DMG](https://github.com/zerolovesea/Brevia/releases/latest) · `arm64.dmg`                                          |
 | Windows · x64             | [インストーラー](https://github.com/zerolovesea/Brevia/releases/latest) · `x64-setup.exe`                           |
 | Android 7+                | [APK をダウンロード](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) |
-| iPhone · iOS 15+          | App Store 審査中。TestFlight は招待者のみ。 [リリース情報](https://github.com/zerolovesea/Brevia/releases)          |
+| iPhone · iOS 15+          | [App Store](https://apps.apple.com/app/id6819869442)                                                                |
+
+<table align="center">
+  <tr><th><a href="https://apps.apple.com/app/id6819869442">iPhone · App Store</a></th><th><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk">Android · APK</a></th></tr>
+  <tr>
+    <td align="center"><a href="https://apps.apple.com/app/id6819869442"><img src="assets/download/ios-qr.png" width="160" alt="iPhone · App Store QR" /></a></td>
+    <td align="center"><a href="https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk"><img src="assets/download/android-qr.png" width="160" alt="Android · APK QR" /></a></td>
+  </tr>
+</table>
+
+スマートフォンでスキャンしてダウンロード。
+
+2026年10月15日時点：デスクトップ v1.4.0、Android 1.0.1、iOS 1.0.0。スマートフォンの画像は新しい1.0.1の画面です。iOSの更新はまだ一般公開されていません。
+
+## v1.4 の新機能
+
+パソコンとスマートフォンの画面を刷新。ノートとライブ文字起こしを並べ、ワークスペース別の会議一覧や、文字起こし・ノート・議事録の切り替えを整理しました。接続したスマートフォンをパソコンのマイクとしても使えます。
+
+![新しい会議ライブラリ](assets/screenshots/desktop/en/library.png)
+
+<details>
+<summary>決定事項とタスクを編集できる議事録</summary>
+
+![決定事項とタスクを編集できる議事録](assets/screenshots/desktop/en/summary.png)
+
+</details>
 
 ## できること
 
@@ -25,7 +50,7 @@ AIメモはリアルタイム文字起こしを見ながら、決定事項、ア
 
 開いて録音ボタンを押せば、字幕が現れます。Brevia はマイクとシステム音声を同時にキャプチャし、リモート通話の両側が同じ文字起こしに収まります。オプションのリアルタイム翻訳が字幕の隣に並列表示され、多言語の会話をサポートします。
 
-![リアルタイム会議と翻訳](assets/tour/en/%E5%AE%9E%E6%97%B6%E4%BC%9A%E8%AE%AE%E5%92%8C%E7%BF%BB%E8%AF%91.png)
+![リアルタイム会議と翻訳](assets/screenshots/desktop/en/live.png)
 
 ### 30 以上の文字起こし言語と会議要約
 
@@ -37,7 +62,7 @@ Brevia は 30 以上の言語で音声を文字起こしします——英語、
 
 Pyannote のセグメンテーションと話者埋め込みモデルを組み合わせ、すべて端末上で実行されます。
 
-![会議後の精修で話者を識別](assets/tour/en/%E6%B3%A8%E5%86%8C%E5%A3%B0%E7%BA%B9%E8%AF%86%E5%88%AB.png)
+![会議後の精修で話者を識別](assets/screenshots/desktop/en/voiceprints.png)
 
 ### さらに
 
@@ -65,15 +90,23 @@ Pyannote のセグメンテーションと話者埋め込みモデルを組み�
 
 ## スマートフォンで録音
 
-[**Android APK をダウンロード**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk) · iPhone：App Store 審査中。TestFlight は招待者のみ（[リリース情報](https://github.com/zerolovesea/Brevia/releases)）
+[**iPhone · App Store**](https://apps.apple.com/app/id6819869442) · [**Android · APK**](https://modelscope.cn/models/zyaztec/brevia-release/resolve/master/android/Brevia-android.apk)
 
 会議やインタビュー、日々の打ち合わせに Brevia を。アカウントを作らず、アプリを開いて録音を始められます。自分のパソコンにつなげば、録音しながら文字起こしやメモも確認できます。
 
 <p align="center">
-  <img src="assets/mobile/en/02-connect.png" width="240" alt="Brevia iPhone: computer connection (English)" />
-  <img src="assets/mobile/en/01-record.png" width="240" alt="Brevia iPhone: offline recording setup (English)" />
-  <img src="assets/mobile/en/03-transcript.png" width="240" alt="Brevia mobile: live transcript with demo content (English)" />
+  <img src="assets/screenshots/mobile/en/connection.png" width="240" alt="Brevia iPhone: computer connection (English)" />
+  <img src="assets/screenshots/mobile/en/offline.png" width="240" alt="Brevia: offline phone recording (English)" />
+  <img src="assets/screenshots/mobile/en/live.png" width="240" alt="Brevia mobile: live transcript (English)" />
 </p>
+
+<p align="center"><sub>モバイル画面</sub></p>
+
+### スマートフォンをマイクに
+
+パソコンで新しい会議を開き、**Phone microphone** を選択します。入力レベルを確認し、パソコンから録音の開始・一時停止・再開・終了を操作できます。対応するスマートフォンアプリを接続し、前面で待機させてください。この会議の文字起こしとノートはパソコンに保存されます。スマートフォンから始めた会議では、文字がスマートフォンに返されます。
+
+![スマートフォンをマイクに](assets/screenshots/desktop/en/phone-microphone.png)
 
 - **パソコンを持ち歩かずに録音。** ペアリングやインターネットは不要です。一時停止・再開・重要箇所のマークに対応。音声はスマートフォンに保存され、文字起こしが必要なときにパソコンを選んで送信を承認します。
 - **スマートフォンで収音し、パソコンで整理。** ペアリング後はパソコンが音声認識を行い、文字起こしとメモをリアルタイムで返します。モデルや AI 設定はパソコン側にあり、スマートフォンに大きなモデルを入れる必要はありません。
