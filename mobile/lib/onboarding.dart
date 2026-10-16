@@ -1,14 +1,24 @@
-import 'design_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'i18n.dart';
+
+import 'app_model.dart';
+import 'design_icons.dart';
 import 'design_system.dart';
+import 'i18n.dart';
 import 'pairing_illustration.dart';
 
-/// 引导仅保存本机展示偏好，不请求录音、相机或连接权限。
+/// 首次配对沿用真实连接页面；只在用户完成或选择稍后时保存引导偏好。
 class OnboardingGate extends StatefulWidget {
   final Widget child;
-  const OnboardingGate({super.key, required this.child});
+  final AppModel? model;
+  final Widget Function(VoidCallback onConnected)? pairingBuilder;
+  const OnboardingGate({
+    super.key,
+    required this.child,
+    this.model,
+    this.pairingBuilder,
+  });
   @override
   State<OnboardingGate> createState() => _OnboardingGateState();
 }
@@ -21,9 +31,13 @@ class _OnboardingGateState extends State<OnboardingGate> {
   @override
   void initState() {
     super.initState();
+    final paired = widget.model?.desktop != null;
     SharedPreferences.getInstance().then((prefs) {
       if (mounted) {
-        setState(() => complete = prefs.getBool('onboardingComplete') ?? false);
+        setState(
+          () => complete =
+              paired || (prefs.getBool('onboardingComplete') ?? false),
+        );
       }
     });
   }
@@ -46,200 +60,242 @@ class _OnboardingGateState extends State<OnboardingGate> {
     }
   }
 
+  Future<void> copyDownload() async {
+    try {
+      await Clipboard.setData(
+        ClipboardData(
+          text:
+              'https://brevia.work/index-${languageCode == 'zh' ? 'zh' : 'en'}.html#download',
+        ),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(tr('已复制电脑端下载地址'))));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(tr('重试'))));
+      }
+    }
+  }
+
+  Widget instruction(IconData icon, String title, String body) => ListTile(
+    leading: BreviaIcon(icon),
+    title: Text(tr(title)),
+    subtitle: Text(tr(body)),
+    contentPadding: EdgeInsets.zero,
+  );
+
+  Widget content() {
+    if (step == 2 && widget.pairingBuilder != null) {
+      return widget.pairingBuilder!(() {
+        if (mounted) setState(() => step = 3);
+      });
+    }
+    return ListView(
+      key: ValueKey(step),
+      padding: const EdgeInsets.all(24),
+      children: [
+        if (step == 0) ...[
+          breviaBrand(),
+          const SizedBox(height: 32),
+          Text(
+            tr('手机录音，电脑转写。'),
+            style: Theme.of(context).textTheme.headlineLarge,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            tr('先在电脑安装 Brevia，再用手机扫码配对。'),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Center(child: PairingIllustration()),
+          const SizedBox(height: 28),
+          Text(tr('在电脑浏览器打开')),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.only(left: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).dividerColor),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: SelectableText(
+                    'brevia.work',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                IconButton(
+                  tooltip: tr('复制电脑端下载地址'),
+                  onPressed: copyDownload,
+                  icon: const BreviaIcon(Icons.copy_outlined, size: 20),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('macOS  ·  Windows', textAlign: TextAlign.center),
+        ] else if (step == 1 || step == 2) ...[
+          Text(tr('在电脑上准备好'), style: Theme.of(context).textTheme.headlineLarge),
+          const SizedBox(height: 12),
+          Text(tr('安装完成后，打开 Brevia 的「设备连接」。')),
+          const SizedBox(height: 24),
+          const Center(child: PairingIllustration()),
+          const SizedBox(height: 24),
+          instruction(
+            Icons.laptop_outlined,
+            '安装并打开电脑端 Brevia',
+            '在电脑浏览器打开 brevia.work，下载适合电脑的版本。',
+          ),
+          const Divider(height: 1),
+          instruction(
+            Icons.description_outlined,
+            '完成电脑端的模型准备',
+            '手机采集音频，电脑完成转写',
+          ),
+          const Divider(height: 1),
+          instruction(
+            Icons.qr_code_scanner,
+            '打开「设备连接 → 连接新设备」',
+            '手机与电脑需在同一局域网',
+          ),
+          const SizedBox(height: 24),
+          Text(tr('按需授权'), style: Theme.of(context).textTheme.titleLarge),
+          instruction(Icons.mic_none, '麦克风', '首次录音时申请。'),
+          instruction(Icons.wifi_outlined, '本地网络', '连接电脑时申请。'),
+          instruction(Icons.camera_alt_outlined, '相机', '首次扫码时申请。'),
+          Text(
+            tr('可以使用手动配对，不必开启相机。'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ] else ...[
+          const SizedBox(height: 24),
+          Center(child: breviaLogo(size: 48)),
+          const SizedBox(height: 32),
+          const BreviaIcon(
+            Icons.check_circle_outline,
+            size: 56,
+            color: Color(0xff16812e),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            tr('配对成功'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineLarge,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.model?.desktop?.name ?? tr('已配对电脑'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 32),
+          const Center(child: PairingIllustration()),
+          const SizedBox(height: 24),
+          instruction(Icons.mic_none, '手机采集音频', '转写和笔记会回到这里。'),
+          const Divider(height: 1),
+          instruction(
+            Icons.phone_iphone_outlined,
+            '原始录音保留在本机',
+            '离线录音不会因配对自动上传。',
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (complete == true) return widget.child;
     if (complete == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(body: Center(child: breviaLogo(size: 64)));
     }
-    final titles = ['手机录音，电脑转写', '功能与隐私', '按需授权'];
-    final descriptions = [
-      '无需连接电脑。录音保存在本机，连接后由你主动上传。',
-      '手机采集音频，电脑完成转写',
-      '仅在需要时申请权限，保护你的隐私。',
-    ];
+    final pairing = step == 2 && widget.pairingBuilder != null;
     return Scaffold(
       appBar: AppBar(
-        leading: step == 0
-            ? null
-            : BackButton(onPressed: () => setState(() => step--)),
+        leading: step > 0 && step < 3
+            ? BackButton(
+                onPressed: saving ? null : () => setState(() => step--),
+              )
+            : null,
+        title: step < 3
+            ? Text('${(step + 1).toString().padLeft(2, '0')} / 03')
+            : null,
         actions: [
-          TextButton(onPressed: saving ? null : finish, child: Text(tr('稍后'))),
+          if (step < 3)
+            TextButton(
+              onPressed: saving ? null : finish,
+              child: Text(tr('稍后')),
+            ),
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            if (step == 0) ...[
-              const SizedBox(height: 32),
-              Center(child: breviaLogo(size: 64)),
-              const SizedBox(height: 40),
-              const Center(child: PairingIllustration()),
-              const SizedBox(height: 24),
-            ],
-            if (step != 0) const SizedBox(height: 16),
-            Text(
-              tr(titles[step]),
-              textAlign: step == 0 ? TextAlign.center : TextAlign.start,
-              style: step == 0
-                  ? Theme.of(context).textTheme.titleLarge
-                  : Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              tr(descriptions[step]),
-              textAlign: step == 0 ? TextAlign.center : TextAlign.start,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 28),
-            if (step == 1) ...[
-              ListTile(
-                leading: const BreviaIcon(Icons.phone_iphone_outlined),
-                title: Text(tr('仅保存在手机')),
-                subtitle: Text(tr('无需连接电脑。录音保存在本机，连接后由你主动上传。')),
-              ),
-              const Divider(),
-              ListTile(
-                leading: const BreviaIcon(Icons.laptop_outlined),
-                title: Text(tr('连接电脑')),
-                subtitle: Text(tr('转写和笔记会回到这里。')),
-              ),
-              const Divider(),
-              ListTile(
-                leading: const BreviaIcon(Icons.shield_outlined),
-                title: Text(tr('在线 AI')),
-                subtitle: Text(tr('电脑启用在线 AI 时，相关文字按电脑设置发送给所选服务商。')),
-              ),
-            ],
-            if (step == 2) ...[
-              for (final permission in [
-                (Icons.mic_none, '麦克风', '用于录制会议音频。', '首次录音时申请。'),
-                (Icons.wifi_outlined, '本地网络', '用于发现和连接电脑。', '连接电脑时申请。'),
-                (Icons.camera_alt_outlined, '相机', '仅用于扫描配对二维码。', '首次扫码时申请。'),
-              ])
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerLow,
+        child: AnimatedSwitcher(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 180),
+          child: KeyedSubtree(key: ValueKey(step), child: content()),
+        ),
+      ),
+      bottomNavigationBar: pairing
+          ? null
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton(
+                      onPressed: saving
+                          ? null
+                          : step == 0
+                          ? copyDownload
+                          : step == 1
+                          ? () => setState(() => step = 2)
+                          : finish,
+                      child: Text(
+                        tr(
+                          step == 0
+                              ? '复制电脑端下载地址'
+                              : step == 1
+                              ? '已打开二维码，开始扫码'
+                              : step == 3
+                              ? '进入会议'
+                              : '我知道了',
                         ),
-                        child: BreviaIcon(permission.$1, size: 28),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              tr(permission.$2),
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              tr(permission.$3),
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              tr(permission.$4),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
+                    ),
+                    if (step == 0) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: saving
+                            ? null
+                            : () => setState(() => step = 1),
+                        child: Text(tr('电脑已安装，开始配对')),
+                      ),
+                      TextButton(
+                        onPressed: saving ? null : finish,
+                        child: Text(tr('先离线录音')),
                       ),
                     ],
-                  ),
-                ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const BreviaIcon(Icons.info_outline, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      tr('可以使用手动配对，不必开启相机。'),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: saving
-                      ? null
-                      : step == 2
-                      ? finish
-                      : () => setState(() => step++),
-                  child: Text(
-                    tr(
-                      step == 2
-                          ? '我知道了'
-                          : step == 0
-                          ? '开始使用'
-                          : '继续',
-                    ),
-                  ),
+                    if (step == 1)
+                      TextButton(
+                        onPressed: () => setState(() => step = 0),
+                        child: Text(tr('查看电脑端下载地址')),
+                      ),
+                  ],
                 ),
               ),
-              if (step == 0) ...[
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.tonal(
-                    onPressed: saving ? null : finish,
-                    child: Text(tr('无需电脑，先录音')),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  3,
-                  (index) => Container(
-                    width: 6,
-                    height: 6,
-                    margin: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: index == step
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).dividerColor,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

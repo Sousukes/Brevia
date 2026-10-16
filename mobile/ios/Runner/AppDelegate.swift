@@ -2,7 +2,6 @@ import ActivityKit
 import Flutter
 import StoreKit
 import UIKit
-import flutter_webrtc
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -30,8 +29,6 @@ import flutter_webrtc
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    // WebRTC 仅传数据，音频会话由现有录音器管理，重连不可重置麦克风。
-    FlutterWebRTCPlugin.setAudioSessionManagementEnabled(false)
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let updates = FlutterMethodChannel(
       name: "com.brevia/app_update",

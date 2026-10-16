@@ -361,9 +361,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('开始使用'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('继续'));
+    await tester.tap(find.text('电脑已安装，开始配对'));
     await tester.pumpAndSettle();
     for (final label in ['首次录音时申请。', '连接电脑时申请。', '首次扫码时申请。']) {
       await tester.scrollUntilVisible(
@@ -374,6 +372,8 @@ void main() {
       expect(find.text(label), findsOneWidget);
     }
     expect(find.text('允许'), findsNothing);
+    await tester.tap(find.text('已打开二维码，开始扫码'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('我知道了'));
     await tester.pumpAndSettle();
     expect(find.text('library-ready'), findsOneWidget);
@@ -464,7 +464,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('12:36'), findsOneWidget);
+    expect(find.text('12:36'), findsWidgets);
     expect(find.text('转写'), findsNothing);
     expect(find.byTooltip('重点'), findsOneWidget);
     model.serviceRunning = false;
@@ -689,15 +689,13 @@ void main() {
       await tester.scrollUntilVisible(find.text(tr('隐私与关于')), 400);
       await tester.tap(find.text(tr('隐私与关于')));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text(tr('完整隐私政策')), 300);
+      await tester.tap(find.text(tr('完整隐私政策')));
+      await tester.pumpAndSettle();
       final policy = tester
           .widget<SelectableText>(find.byType(SelectableText))
           .data!;
-      expect(
-        policy,
-        contains(
-          language == 'zh' || language == 'en' ? '2026-10-15' : '2026-10-10',
-        ),
-      );
+      expect(policy, contains('2026-10-16'));
       expect(policy, contains('https://brevia.work/privacy.html'));
       expect(policy, contains('https://github.com/zerolovesea/Brevia/issues'));
       expect(policy, isNot(contains('Brevia Mobile 0.1')));
@@ -793,7 +791,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('long press deletes directly without a confirmation dialog', (
+  testWidgets('deleting a local meeting waits for explicit confirmation', (
     tester,
   ) async {
     final model = MenuModel()
@@ -830,7 +828,11 @@ void main() {
     );
     await tester.tap(find.text('删除本机记录'));
     await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(model.meetings, hasLength(1));
+    expect(find.text('删除本机记录？'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, '删除本机记录'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
     expect(model.meetings, isEmpty);
     expect(tester.takeException(), isNull);
   });
@@ -1177,6 +1179,28 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(tester.takeException(), isNull);
+    },
+  );
+  test(
+    'saved pairing survives removal of legacy remote configuration',
+    () async {
+      final saved = {
+        'address': 'https://192.168.1.2:43187',
+        'fingerprint': 'saved-fingerprint',
+        'token': 'saved-token',
+        'name': 'My computer',
+      };
+      final connection = DesktopConnection.fromJson({
+        ...saved,
+        'remote': {'url': 'wss://obsolete.invalid', 'ticket': 'old-ticket'},
+      });
+      expect(connection.toJson(), saved);
+      connection.address = 'https://example.com';
+      await expectLater(
+        connection.call('GET', '/meetings'),
+        throwsFormatException,
+      );
+      await connection.dispose();
     },
   );
   test('pairing only accepts private IPv4 HTTPS endpoints', () {

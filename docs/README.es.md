@@ -119,11 +119,9 @@ Si se pierde la red, el audio sigue guardándose en el móvil y las subidas auto
 
 En la red local, el móvil envía audio mediante **HTTPS** al ordenador emparejado y recibe transcripciones y notas. Guarda el audio primero en el teléfono y avanza la posición de subida solo cuando el ordenador confirma que lo ha guardado. Tras una desconexión, continúa desde esa posición; subir el audio no elimina la copia del teléfono.
 
-Con un servicio propio de señalización/TURN, los dispositivos ya emparejados pueden comunicarse entre redes mediante **WebRTC DataChannel**. Se intenta una conexión directa; si no es posible, un servidor retransmite tráfico cifrado. El operador puede ver direcciones de red y volumen de tráfico, pero no leer el contenido cifrado a través del relay. [La conexión entre redes requiere configuración adicional; el primer emparejamiento se hace en la red local.](mobile-remote.md)
+El reconocimiento de voz se realiza en tu ordenador. Las grabaciones sin conexión permanecen en el móvil hasta que confirmas la subida; la transcripción en directo envía audio al ordenador emparejado. Brevia no envía automáticamente reuniones al desarrollador. Con los modelos descargados puedes usar IA local; si eliges un proveedor de IA en línea, recibe el texto pertinente, no el audio. [Privacidad](https://brevia.work/privacy.html).
 
-El reconocimiento de voz se realiza en tu ordenador. Las grabaciones sin conexión permanecen en el móvil hasta que confirmas la subida; la transcripción en directo envía audio al ordenador emparejado. Brevia no envía automáticamente reuniones al desarrollador. Con los modelos descargados puedes usar IA local; si eliges un proveedor de IA en línea, recibe el texto pertinente, no el audio. Las conexiones remotas opcionales pueden retransmitir tráfico cifrado. [Privacidad](https://brevia.work/privacy.html).
-
-El audio del móvil ocupa unos **115 MB por hora grabada**, sin contar exportaciones y cachés. Las subidas remotas también consumen datos y tráfico adicional del protocolo.
+El audio del móvil ocupa unos **115 MB por hora grabada**, sin contar exportaciones y cachés. Las subidas y la transcripción en directo requieren que el móvil y el ordenador estén en la misma red local.
 
 ## Primeros pasos
 

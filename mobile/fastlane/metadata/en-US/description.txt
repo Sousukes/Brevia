@@ -2,7 +2,7 @@ Record meetings on your iPhone and work with your own computer using Brevia. Rec
 
 For transcription, pair your iPhone with a computer running a compatible version of Brevia. Your phone captures audio while the computer runs speech recognition and returns transcripts and notes. The phone does not run transcription models. Live transcription, translation and computer AI features require an online computer with the corresponding models installed.
 
-Pair for the first time on the same local network using a QR code or manual pairing code, then approve the connection on the computer. Pairing does not automatically upload offline recordings: choose a destination computer and confirm before syncing. Saved audio stays on your phone when disconnected and uploads resume after reconnecting. Remote connections require configuring the relevant services on the computer and completing initial pairing on the local network.
+Pair for the first time on the same local network using a QR code or manual pairing code, then approve the connection on the computer. Pairing does not automatically upload offline recordings: choose a destination computer and confirm before syncing. Saved audio stays on your phone when disconnected and uploads resume after reconnecting. Uploads and live transcription require the phone and computer to be on the same local network.
 
 Background recording is supported, but calls, force-stop and system limits may interrupt it. Check the recording status when you return. Uploading after recording may require keeping the app in the foreground.
 

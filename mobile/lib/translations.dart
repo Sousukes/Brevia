@@ -1,6 +1,70 @@
 // Shared mobile UI, recording notifications and error messages. Keep placeholders consistent.
 const translations = {
   "en": {
+    "更新通过 App Store 提供。": "Updates are provided through the App Store.",
+    "完整隐私政策": "Full privacy policy",
+    "反馈与支持": "Feedback and support",
+    "已复制反馈地址": "Feedback address copied",
+    "复制反馈地址": "Copy feedback address",
+    "偏好设置": "Preferences",
+    "录音与数据": "Recording and data",
+    "所有对话，清晰归档。": "Every conversation, clearly organized.",
+    "先在电脑安装 Brevia，再用手机扫码配对。":
+        "Install Brevia on your computer, then scan to pair your phone.",
+    "先离线录音": "Record offline first",
+    "在电脑浏览器打开": "Open in your computer’s browser",
+    "复制电脑端下载地址": "Copy desktop download link",
+    "已复制电脑端下载地址": "Desktop download link copied",
+    "电脑已安装，开始配对": "Already installed? Pair now",
+    "在电脑上准备好": "Get your computer ready",
+    "安装完成后，打开 Brevia 的「设备连接」。":
+        "After installation, open Device Connection in Brevia.",
+    "安装并打开电脑端 Brevia": "Install and open Brevia on your computer",
+    "在电脑浏览器打开 brevia.work，下载适合电脑的版本。":
+        "Open brevia.work on your computer and download the matching version.",
+    "完成电脑端的模型准备": "Set up models on the computer",
+    "打开「设备连接 → 连接新设备」": "Open Device Connection → Connect new device",
+    "手机与电脑需在同一局域网": "Phone and computer must be on the same local network",
+    "已打开二维码，开始扫码": "QR code ready, scan now",
+    "查看电脑端下载地址": "View desktop download link",
+    "在电脑 Brevia 中打开「设备连接 → 连接新设备」。":
+        "In desktop Brevia, open Device Connection → Connect new device.",
+    "对准电脑上的二维码，将自动识别。":
+        "Point at the computer’s QR code to scan automatically.",
+    "改用配对码": "Use a pairing code instead",
+    "配对成功": "Pairing complete",
+    "已配对电脑": "Paired computer",
+    "手机采集音频": "Your phone captures audio",
+    "原始录音保留在本机": "Original audio stays on this phone",
+    "离线录音不会因配对自动上传。":
+        "Pairing does not automatically upload offline recordings.",
+    "进入会议": "Go to meetings",
+    "让 Brevia 按你的习惯工作。": "Make Brevia work your way.",
+    "让记录接着发生": "Keep the conversation going",
+    "打开电脑端 Brevia，在「设备连接」中添加手机。":
+        "Open desktop Brevia and add your phone in Device Connection.",
+    "已准备作为电脑麦克风": "Ready as the computer’s microphone",
+    "等待电脑开始录音": "Waiting for the computer to start recording",
+    "电脑已选择此手机为声源": "The computer selected this phone as its audio source",
+    "电脑已选择此手机为声源，开始录音后这里会显示采集状态。":
+        "This phone is selected as the audio source. Capture status appears here when recording starts.",
+    "试音中，不保存录音": "Testing the microphone; audio is not saved",
+    "尚未开始录音": "Recording has not started",
+    "电脑正在使用\n手机麦克风": "The computer is using your phone’s microphone",
+    "由电脑发起": "Started on the computer",
+    "正在录音，等待电脑连接": "Recording, waiting for the computer",
+    "仍在本机录音": "Still recording on this phone",
+    "暂停期间不采集音频": "No audio is captured while paused",
+    "音频保留在手机，恢复连接后自动补传。":
+        "Audio stays on the phone and uploads after reconnecting.",
+    "已存本机": "Saved on phone",
+    "已传电脑": "Sent to computer",
+    "输入音量": "Input level",
+    "这会删除手机上的录音与本机记录，不会删除电脑上的副本。":
+        "This deletes audio and records on this phone. Copies on the computer are not deleted.",
+    "取消信任这台电脑？": "Untrust this computer?",
+    "取消后需要重新配对，手机和电脑中已保存的会议副本不会被删除。":
+        "You will need to pair again. Saved meeting copies on both devices are kept.",
     "电脑会议的手机录音": "Phone audio for a desktop meeting",
     "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
         "This meeting was started on the computer. Transcripts and notes stay there. Audio is kept on this phone and can upload after reconnecting.",
@@ -103,10 +167,6 @@ const translations = {
     "录音保留在手机，恢复连接后自动补传。":
         "Recordings stay on your phone and upload automatically when reconnected.",
     "首次配对需同一 Wi-Fi": "Use the same Wi-Fi for initial pairing",
-    "跨网连接需要先在电脑配置服务。":
-        "Set up the service on your computer to connect across networks.",
-    "已配置跨网连接，直连失败时通过加密中继连接。":
-        "Remote connection is configured. An encrypted relay is used if a direct connection fails.",
     "正在重新连接": "Reconnecting",
     "电脑已休眠或断开，等待开盖或恢复连接":
         "Computer asleep or disconnected. Waiting for it to wake or reconnect.",
@@ -374,12 +434,76 @@ const translations = {
     "麦克风中断：{0}": "Microphone interrupted: {0}",
     "麦克风已停止，请检查录音权限": "Microphone stopped. Check recording permission.",
     "麦克风返回了不完整的音频样本": "Microphone returned incomplete audio samples",
-    "Brevia 隐私政策\n更新日期：2026-10-15\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不运营官方信令、中继或在线 AI 代理，也不提供统一 AI 账号；跨网服务、在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。首次配对需要局域网和电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全与服务日志\n局域网连接使用 HTTPS 并校验已配对电脑的证书指纹。可选跨网连接使用加密信令及 WebRTC 数据通道；信令和中继运营方不能仅凭中继流量读取加密会议内容，但可能看到网络地址、连接标识、连接时间和流量大小，并按服务配置记录日志。这些服务不由 Brevia 运营；请核对自行部署或所选服务的日志、保留及删除设置。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
-        "Brevia Privacy Policy\nUpdated: 2026-10-15\n\nProvider and scope\nBrevia is provided by YANG ZHOU. Phone recording and local review require no account. The app has no advertising or behavioral analytics SDKs and does not automatically upload meetings to the developer. Brevia operates no official signalling, relay or online AI proxy and provides no shared AI account. Users configure their own remote services, AI endpoints and accounts.\n\nRecording, transcription and sync\nAudio, notes, transcripts and meeting settings are stored on your devices. Offline recordings sync only after you select a computer and confirm upload. Live transcription or using the phone as a computer microphone sends audio and necessary meeting information to the paired computer, where speech recognition runs. Initial pairing requires a local network and computer approval. Pairing alone does not upload existing offline recordings.\n\nOptional online AI\nLocal AI runs on the computer. With online AI selected, the computer may send the meeting title, transcript (including speakers and timestamps), notes and AI context to generate summaries and live AI notes. These AI requests do not send original audio. Review the provider, endpoint and model in the computer settings. Enabling online AI or generating an online summary sends relevant text according to that configuration. Recording, local transcription and local AI remain available without online AI. Turning off live AI stops future automatic requests; requests already sent cannot be recalled. Providers may retain requests, logs and results under their policies. Review the selected provider’s privacy policy before setup and use, and manage or delete data with that provider. Using your own API key does not mean the provider retains no data.\n\nConnection security and service logs\nLocal connections use HTTPS and verify the paired computer’s certificate fingerprint. Optional remote connections use encrypted signalling and WebRTC data channels. Signalling and relay operators cannot read encrypted meeting content merely by relaying traffic, but may see network addresses, connection identifiers, times and traffic volumes, and may log them according to service settings. Brevia does not operate these services. Review the logging, retention and deletion settings of your own deployment or chosen service.\n\nPermissions and update checks\nMicrophone access records audio and checks input levels; the camera only scans pairing codes; local network access discovers and connects to computers. Manual pairing can replace scanning. Permissions can be revoked in system settings. Calls, force-stop and system limits may interrupt recording. When you check for updates on iOS, the app sends Apple the public App ID and store region, not meeting content. Apple can access network information associated with the request.\n\nStorage, deletion and exports\nPhone pairing credentials use system secure storage. The iOS recording directory uses system file protection and is excluded from system backup by the app. Meetings remain until you delete them or uninstall the app. Deleting a phone copy does not delete the computer copy. Unpairing does not delete saved meetings or data already received by third parties. Export or finish syncing pending recordings before uninstalling. Manage your own backups, exports and data held by online AI services separately.\n\nSupport and policy updates\nSupport and privacy enquiries: https://github.com/zerolovesea/Brevia/issues . Feedback is voluntary; do not include recordings, credentials or personal information in public issues. Obtain participants’ consent before recording. We will update this policy and its date when features or data practices change. Policy website: https://brevia.work/privacy.html",
+    "Brevia 隐私政策\n更新日期：2026-10-16\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不提供在线 AI 代理或统一 AI 账号；在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。配对和同步需要手机与电脑处于同一局域网；首次配对还需电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全\n手机与电脑仅通过局域网 HTTPS 通信，并校验已配对电脑的证书指纹。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
+        "Brevia Privacy Policy\nUpdated: 2026-10-16\n\nProvider and scope\nBrevia is provided by YANG ZHOU. Phone recording and local review require no account. The app has no advertising or behavioral analytics SDKs and does not automatically upload meetings to the developer. Brevia provides no online AI proxy or shared AI account. Users configure their own AI endpoints and accounts.\n\nRecording, transcription and sync\nAudio, notes, transcripts and meeting settings are stored on your devices. Offline recordings sync only after you select a computer and confirm upload. Live transcription or using the phone as a computer microphone sends audio and necessary meeting information to the paired computer, where speech recognition runs. Pairing and sync require the phone and computer to be on the same local network; initial pairing also requires computer approval. Pairing alone does not upload existing offline recordings.\n\nOptional online AI\nLocal AI runs on the computer. With online AI selected, the computer may send the meeting title, transcript (including speakers and timestamps), notes and AI context to generate summaries and live AI notes. These AI requests do not send original audio. Review the provider, endpoint and model in the computer settings. Enabling online AI or generating an online summary sends relevant text according to that configuration. Recording, local transcription and local AI remain available without online AI. Turning off live AI stops future automatic requests; requests already sent cannot be recalled. Providers may retain requests, logs and results under their policies. Review the selected provider’s privacy policy before setup and use, and manage or delete data with that provider. Using your own API key does not mean the provider retains no data.\n\nConnection security\nPhone and computer communicate only over local network HTTPS connections, which verify the paired computer’s certificate fingerprint.\n\nPermissions and update checks\nMicrophone access records audio and checks input levels; the camera only scans pairing codes; local network access discovers and connects to computers. Manual pairing can replace scanning. Permissions can be revoked in system settings. Calls, force-stop and system limits may interrupt recording. When you check for updates on iOS, the app sends Apple the public App ID and store region, not meeting content. Apple can access network information associated with the request.\n\nStorage, deletion and exports\nPhone pairing credentials use system secure storage. The iOS recording directory uses system file protection and is excluded from system backup by the app. Meetings remain until you delete them or uninstall the app. Deleting a phone copy does not delete the computer copy. Unpairing does not delete saved meetings or data already received by third parties. Export or finish syncing pending recordings before uninstalling. Manage your own backups, exports and data held by online AI services separately.\n\nSupport and policy updates\nSupport and privacy enquiries: https://github.com/zerolovesea/Brevia/issues . Feedback is voluntary; do not include recordings, credentials or personal information in public issues. Obtain participants’ consent before recording. We will update this policy and its date when features or data practices change. Policy website: https://brevia.work/privacy.html",
     "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。\n\nAndroid 使用麦克风前台服务。请允许录音通知；如厂商省电策略终止应用，可在系统设置中调整。暂停后请回到应用继续。":
         "Recording can continue while locked. Calls, force-stop or system limits can interrupt it; check the status when you return.\n\nAndroid uses a microphone foreground service. Allow recording notifications. If battery restrictions stop the app, adjust system settings. Return to the app to resume after pausing.",
   },
   "es": {
+    "更新通过 App Store 提供。": "Las actualizaciones se ofrecen en el App Store.",
+    "完整隐私政策": "Política de privacidad completa",
+    "反馈与支持": "Comentarios y soporte",
+    "已复制反馈地址": "Dirección de comentarios copiada",
+    "复制反馈地址": "Copiar dirección de comentarios",
+    "偏好设置": "Preferencias",
+    "录音与数据": "Grabación y datos",
+    "所有对话，清晰归档。": "Cada conversación, bien organizada.",
+    "先在电脑安装 Brevia，再用手机扫码配对。":
+        "Instala Brevia en el ordenador y escanea para vincular el móvil.",
+    "先离线录音": "Grabar sin conexión",
+    "在电脑浏览器打开": "Abrir en el navegador del ordenador",
+    "复制电脑端下载地址": "Copiar enlace de descarga",
+    "已复制电脑端下载地址": "Enlace de descarga copiado",
+    "电脑已安装，开始配对": "Ya está instalado, vincular",
+    "在电脑上准备好": "Prepara el ordenador",
+    "安装完成后，打开 Brevia 的「设备连接」。":
+        "Tras instalar, abre Conexión de dispositivos en Brevia.",
+    "安装并打开电脑端 Brevia": "Instala y abre Brevia en el ordenador",
+    "在电脑浏览器打开 brevia.work，下载适合电脑的版本。":
+        "Abre brevia.work en el ordenador y descarga la versión adecuada.",
+    "完成电脑端的模型准备": "Prepara los modelos en el ordenador",
+    "打开「设备连接 → 连接新设备」":
+        "Abre Conexión de dispositivos → Conectar nuevo dispositivo",
+    "手机与电脑需在同一局域网": "El móvil y el ordenador deben estar en la misma red local",
+    "已打开二维码，开始扫码": "Código QR listo, escanear",
+    "查看电脑端下载地址": "Ver enlace de descarga",
+    "在电脑 Brevia 中打开「设备连接 → 连接新设备」。":
+        "En Brevia del ordenador, abre Conexión de dispositivos → Conectar nuevo dispositivo.",
+    "对准电脑上的二维码，将自动识别。":
+        "Apunta al QR del ordenador para escanearlo automáticamente.",
+    "改用配对码": "Usar código de vinculación",
+    "配对成功": "Vinculación completada",
+    "已配对电脑": "Ordenador vinculado",
+    "手机采集音频": "El móvil captura el audio",
+    "原始录音保留在本机": "El audio original se conserva en el móvil",
+    "离线录音不会因配对自动上传。":
+        "La vinculación no sube automáticamente las grabaciones sin conexión.",
+    "进入会议": "Ir a reuniones",
+    "让 Brevia 按你的习惯工作。": "Adapta Brevia a tu manera.",
+    "让记录接着发生": "Continúa la conversación",
+    "打开电脑端 Brevia，在「设备连接」中添加手机。":
+        "Abre Brevia en el ordenador y añade el móvil en Conexión de dispositivos.",
+    "已准备作为电脑麦克风": "Listo como micrófono del ordenador",
+    "等待电脑开始录音": "Esperando a que el ordenador empiece a grabar",
+    "电脑已选择此手机为声源": "El ordenador eligió este móvil como fuente de audio",
+    "电脑已选择此手机为声源，开始录音后这里会显示采集状态。":
+        "Este móvil es la fuente de audio. Aquí se mostrará el estado al empezar a grabar.",
+    "试音中，不保存录音": "Probando el micrófono; el audio no se guarda",
+    "尚未开始录音": "La grabación no ha empezado",
+    "电脑正在使用\n手机麦克风": "El ordenador usa el micrófono del móvil",
+    "由电脑发起": "Iniciado en el ordenador",
+    "正在录音，等待电脑连接": "Grabando, esperando al ordenador",
+    "仍在本机录音": "Se sigue grabando en el móvil",
+    "暂停期间不采集音频": "No se captura audio durante la pausa",
+    "音频保留在手机，恢复连接后自动补传。": "El audio queda en el móvil y se sube al reconectar.",
+    "已存本机": "Guardado en el móvil",
+    "已传电脑": "Enviado al ordenador",
+    "输入音量": "Nivel de entrada",
+    "这会删除手机上的录音与本机记录，不会删除电脑上的副本。":
+        "Esto elimina el audio y los registros del móvil, no las copias del ordenador.",
+    "取消信任这台电脑？": "¿Dejar de confiar en este ordenador?",
+    "取消后需要重新配对，手机和电脑中已保存的会议副本不会被删除。":
+        "Tendrás que vincular de nuevo. Se conservan las reuniones guardadas en ambos dispositivos.",
     "电脑会议的手机录音": "Audio del teléfono para una reunión del ordenador",
     "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
         "Esta reunión se inició en el ordenador. Las transcripciones y notas se guardan allí. El audio queda en el teléfono y puede enviarse al reconectar.",
@@ -486,10 +610,6 @@ const translations = {
     "录音保留在手机，恢复连接后自动补传。":
         "Las grabaciones se conservan en el teléfono y se envían automáticamente al reconectar.",
     "首次配对需同一 Wi-Fi": "La misma Wi-Fi para el primer emparejamiento",
-    "跨网连接需要先在电脑配置服务。":
-        "Configura el servicio en el ordenador para conectar desde otras redes.",
-    "已配置跨网连接，直连失败时通过加密中继连接。":
-        "Conexión remota configurada. Si falla la conexión directa, se usa un relé cifrado.",
     "正在重新连接": "Reconectando",
     "电脑已休眠或断开，等待开盖或恢复连接":
         "Ordenador en reposo o desconectado. Esperando a que se active o vuelva a conectarse.",
@@ -757,12 +877,67 @@ const translations = {
     "麦克风中断：{0}": "Micrófono interrumpido: {0}",
     "麦克风已停止，请检查录音权限": "Micrófono detenido. Comprueba el permiso.",
     "麦克风返回了不完整的音频样本": "El micrófono devolvió muestras incompletas",
-    "Brevia 隐私政策\n更新日期：2026-10-15\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不运营官方信令、中继或在线 AI 代理，也不提供统一 AI 账号；跨网服务、在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。首次配对需要局域网和电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全与服务日志\n局域网连接使用 HTTPS 并校验已配对电脑的证书指纹。可选跨网连接使用加密信令及 WebRTC 数据通道；信令和中继运营方不能仅凭中继流量读取加密会议内容，但可能看到网络地址、连接标识、连接时间和流量大小，并按服务配置记录日志。这些服务不由 Brevia 运营；请核对自行部署或所选服务的日志、保留及删除设置。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
-        "Política de privacidad de Brevia\nActualizada: 2026-10-10\n\nBrevia es una aplicación de YANG ZHOU. La grabación y la consulta local no requieren cuenta. No incluye SDK de publicidad ni análisis de comportamiento y no envía reuniones automáticamente al desarrollador.\n\nEl audio, las notas, las transcripciones y los ajustes se guardan en tus dispositivos. Las grabaciones sin conexión solo se sincronizan tras elegir un ordenador y confirmar la carga. La transcripción en directo envía audio al ordenador vinculado, donde se realiza el reconocimiento. Si activas IA en línea en el ordenador, el texto correspondiente se envía al proveedor elegido según sus ajustes.\n\nLa vinculación inicial requiere una red local y autorización del ordenador. Los servicios opcionales de señalización y retransmisión pueden transportar tráfico cifrado. Sus operadores ven direcciones de red, horarios de conexión y volumen de tráfico, pero no por ello el contenido cifrado de las reuniones. Consulta sus políticas de privacidad.\n\nEl micrófono graba audio; la cámara escanea códigos de vinculación; el acceso a la red local permite descubrir y conectar ordenadores. Puedes vincular manualmente y revocar permisos en los ajustes del sistema. Las llamadas, el cierre forzado y las restricciones del sistema pueden interrumpir la grabación.\n\nLas credenciales se guardan en el almacenamiento seguro del sistema. Las reuniones permanecen hasta que las eliminas o desinstalas la aplicación. Borrar la copia del teléfono no borra la del ordenador; desvincular no elimina reuniones. Exporta o sincroniza las grabaciones pendientes antes de desinstalar. Gestiona por separado copias de seguridad, archivos exportados y datos de servicios de IA.\n\nSoporte y privacidad: https://github.com/zerolovesea/Brevia/issues . No incluyas grabaciones, credenciales ni datos personales en consultas públicas. Obtén el consentimiento de los participantes antes de grabar. Política web: https://brevia.work/privacy.html",
+    "Brevia 隐私政策\n更新日期：2026-10-16\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不提供在线 AI 代理或统一 AI 账号；在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。配对和同步需要手机与电脑处于同一局域网；首次配对还需电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全\n手机与电脑仅通过局域网 HTTPS 通信，并校验已配对电脑的证书指纹。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
+        "Política de privacidad de Brevia\nActualizada: 2026-10-16\n\nBrevia es una aplicación de YANG ZHOU. La grabación y la consulta local no requieren cuenta. No incluye SDK de publicidad ni análisis de comportamiento y no envía reuniones automáticamente al desarrollador.\n\nEl audio, las notas, las transcripciones y los ajustes se guardan en tus dispositivos. Las grabaciones sin conexión solo se sincronizan tras elegir un ordenador y confirmar la carga. La transcripción en directo envía audio al ordenador vinculado, donde se realiza el reconocimiento. Si activas IA en línea en el ordenador, el texto correspondiente se envía al proveedor elegido según sus ajustes.\n\nLa vinculación y la sincronización requieren que el móvil y el ordenador estén en la misma red local; la vinculación inicial también requiere autorización del ordenador. Las conexiones usan HTTPS y verifican la huella del certificado del ordenador vinculado.\n\nEl micrófono graba audio; la cámara escanea códigos de vinculación; el acceso a la red local permite descubrir y conectar ordenadores. Puedes vincular manualmente y revocar permisos en los ajustes del sistema. Las llamadas, el cierre forzado y las restricciones del sistema pueden interrumpir la grabación.\n\nLas credenciales se guardan en el almacenamiento seguro del sistema. Las reuniones permanecen hasta que las eliminas o desinstalas la aplicación. Borrar la copia del teléfono no borra la del ordenador; desvincular no elimina reuniones. Exporta o sincroniza las grabaciones pendientes antes de desinstalar. Gestiona por separado copias de seguridad, archivos exportados y datos de servicios de IA.\n\nSoporte y privacidad: https://github.com/zerolovesea/Brevia/issues . No incluyas grabaciones, credenciales ni datos personales en consultas públicas. Obtén el consentimiento de los participantes antes de grabar. Política web: https://brevia.work/privacy.html",
     "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。\n\nAndroid 使用麦克风前台服务。请允许录音通知；如厂商省电策略终止应用，可在系统设置中调整。暂停后请回到应用继续。":
         "La grabación puede continuar con la pantalla bloqueada. Las llamadas, el cierre forzado o los límites del sistema pueden interrumpirla; comprueba el estado al volver.\n\nAndroid usa un servicio de micrófono en primer plano. Permite las notificaciones. Si el ahorro de batería cierra la app, ajusta el sistema. Vuelve a la app para continuar tras pausar.",
   },
   "ja": {
+    "更新通过 App Store 提供。": "アップデートは App Store で提供されます。",
+    "完整隐私政策": "プライバシーポリシー全文",
+    "反馈与支持": "フィードバックとサポート",
+    "已复制反馈地址": "フィードバック先をコピーしました",
+    "复制反馈地址": "フィードバック先をコピー",
+    "偏好设置": "環境設定",
+    "录音与数据": "録音とデータ",
+    "所有对话，清晰归档。": "すべての会話を、わかりやすく整理。",
+    "先在电脑安装 Brevia，再用手机扫码配对。": "パソコンに Brevia をインストールし、スマホでコードを読み取ってペアリングします。",
+    "先离线录音": "まずオフラインで録音",
+    "在电脑浏览器打开": "パソコンのブラウザで開く",
+    "复制电脑端下载地址": "パソコン版のダウンロード先をコピー",
+    "已复制电脑端下载地址": "パソコン版のリンクをコピーしました",
+    "电脑已安装，开始配对": "インストール済み、ペアリングへ",
+    "在电脑上准备好": "パソコンで準備する",
+    "安装完成后，打开 Brevia 的「设备连接」。": "インストール後、Brevia の「デバイス接続」を開きます。",
+    "安装并打开电脑端 Brevia": "パソコン版 Brevia をインストールして開く",
+    "在电脑浏览器打开 brevia.work，下载适合电脑的版本。":
+        "パソコンで brevia.work を開き、対応するバージョンをダウンロードします。",
+    "完成电脑端的模型准备": "パソコンでモデルを準備する",
+    "打开「设备连接 → 连接新设备」": "「デバイス接続 → 新しいデバイスを接続」を開く",
+    "手机与电脑需在同一局域网": "スマホとパソコンは同じローカルネットワークに接続してください",
+    "已打开二维码，开始扫码": "QR コードを開いたので読み取る",
+    "查看电脑端下载地址": "パソコン版のダウンロード先を見る",
+    "在电脑 Brevia 中打开「设备连接 → 连接新设备」。":
+        "パソコンの Brevia で「デバイス接続 → 新しいデバイスを接続」を開きます。",
+    "对准电脑上的二维码，将自动识别。": "パソコンの QR コードに向けると、自動で読み取ります。",
+    "改用配对码": "ペアリングコードを使う",
+    "配对成功": "ペアリング完了",
+    "已配对电脑": "ペアリング済みのパソコン",
+    "手机采集音频": "スマホで音声を収録",
+    "原始录音保留在本机": "元の録音はスマホに保存",
+    "离线录音不会因配对自动上传。": "ペアリングだけではオフライン録音はアップロードされません。",
+    "进入会议": "会議へ",
+    "让 Brevia 按你的习惯工作。": "Brevia を自分の使い方に合わせる。",
+    "让记录接着发生": "記録を、次へつなぐ",
+    "打开电脑端 Brevia，在「设备连接」中添加手机。": "パソコンの Brevia を開き、「デバイス接続」でスマホを追加します。",
+    "已准备作为电脑麦克风": "パソコンのマイクとして準備完了",
+    "等待电脑开始录音": "パソコンからの録音開始を待機中",
+    "电脑已选择此手机为声源": "パソコンでこのスマホが音声入力に選択されました",
+    "电脑已选择此手机为声源，开始录音后这里会显示采集状态。": "このスマホが音声入力に選択されています。録音開始後、ここに収録状態を表示します。",
+    "试音中，不保存录音": "マイクをテスト中、音声は保存しません",
+    "尚未开始录音": "録音はまだ開始していません",
+    "电脑正在使用\n手机麦克风": "パソコンがスマホのマイクを使用中",
+    "由电脑发起": "パソコンから開始",
+    "正在录音，等待电脑连接": "録音中、パソコンの接続を待機",
+    "仍在本机录音": "スマホで録音を継続中",
+    "暂停期间不采集音频": "一時停止中は音声を収録しません",
+    "音频保留在手机，恢复连接后自动补传。": "音声はスマホに保存され、再接続後に追送されます。",
+    "已存本机": "スマホに保存済み",
+    "已传电脑": "パソコンに転送済み",
+    "输入音量": "入力レベル",
+    "这会删除手机上的录音与本机记录，不会删除电脑上的副本。": "スマホの録音と記録を削除します。パソコンのコピーは削除しません。",
+    "取消信任这台电脑？": "このパソコンの信頼を解除しますか？",
+    "取消后需要重新配对，手机和电脑中已保存的会议副本不会被删除。": "再接続にはペアリングが必要です。両方の端末に保存済みの会議は削除しません。",
     "电脑会议的手机录音": "パソコン会議のスマートフォン録音",
     "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
         "この会議はパソコンで開始され、文字起こしとノートはパソコンに保存されます。録音はスマートフォンに残り、再接続後に送信できます。",
@@ -854,8 +1029,6 @@ const translations = {
     "如需授权，请允许安装后返回重试": "必要に応じてインストールを許可し、戻って再試行してください。",
     "录音保留在手机，恢复连接后自动补传。": "録音は端末に保存され、再接続後に自動で送信されます。",
     "首次配对需同一 Wi-Fi": "初回ペアリングは同じ Wi-Fi で",
-    "跨网连接需要先在电脑配置服务。": "別のネットワークから接続するには、パソコンでサービスを設定してください。",
-    "已配置跨网连接，直连失败时通过加密中继连接。": "リモート接続を設定済みです。直接接続できない場合は暗号化された中継を使用します。",
     "正在重新连接": "再接続中",
     "电脑已休眠或断开，等待开盖或恢复连接": "パソコンがスリープ中か接続が切れています。復帰または再接続を待っています。",
     "上传到电脑": "パソコンに送信",
@@ -1099,12 +1272,67 @@ const translations = {
     "麦克风中断：{0}": "マイクが中断されました：{0}",
     "麦克风已停止，请检查录音权限": "マイクが停止しました。録音の権限を確認してください",
     "麦克风返回了不完整的音频样本": "マイクから不完全な音声サンプルが返されました",
-    "Brevia 隐私政策\n更新日期：2026-10-15\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不运营官方信令、中继或在线 AI 代理，也不提供统一 AI 账号；跨网服务、在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。首次配对需要局域网和电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全与服务日志\n局域网连接使用 HTTPS 并校验已配对电脑的证书指纹。可选跨网连接使用加密信令及 WebRTC 数据通道；信令和中继运营方不能仅凭中继流量读取加密会议内容，但可能看到网络地址、连接标识、连接时间和流量大小，并按服务配置记录日志。这些服务不由 Brevia 运营；请核对自行部署或所选服务的日志、保留及删除设置。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
-        "Brevia プライバシーポリシー\n更新日：2026-10-10\n\nBrevia の提供者は YANG ZHOU です。録音と端末内での閲覧にアカウントは不要です。広告や行動分析の SDK は含まず、会議を開発者へ自動送信しません。\n\n音声、メモ、字幕、会議設定は端末に保存されます。オフライン録音は、パソコンを選択してアップロードを確認した場合にのみ同期します。リアルタイム文字起こしでは音声をペアリング済みのパソコンへ送り、パソコンで認識します。パソコンでオンライン AI を有効にした場合、設定に従って関連するテキストを選択した事業者へ送信します。\n\n初回ペアリングにはローカルネットワークとパソコンでの承認が必要です。任意のリモート接続サービスは暗号化通信を中継する場合があります。運営者はネットワークアドレス、接続時刻、通信量を確認できますが、それによって暗号化された会議内容を読むことはできません。利用するサービスのポリシーをご確認ください。\n\nマイクは録音、カメラはペアリングコードの読み取り、ローカルネットワークはパソコンの検出と接続に使用します。手動ペアリングも可能です。権限はシステム設定で取り消せます。着信、強制終了、システム制限で録音が中断する場合があります。\n\n接続情報はシステムの安全な領域に保存します。会議は削除またはアンインストールまで残ります。スマートフォンのコピーを削除してもパソコンのコピーは残り、ペアリング解除でも会議は削除されません。アンインストール前に未同期の録音をエクスポートまたは同期してください。バックアップ、書き出したファイル、オンライン AI のデータは別途管理してください。\n\nサポートとプライバシー：https://github.com/zerolovesea/Brevia/issues 。公開の問い合わせに録音、認証情報、個人情報を含めないでください。録音前に参加者の同意を得てください。ポリシー：https://brevia.work/privacy.html",
+    "Brevia 隐私政策\n更新日期：2026-10-16\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不提供在线 AI 代理或统一 AI 账号；在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。配对和同步需要手机与电脑处于同一局域网；首次配对还需电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全\n手机与电脑仅通过局域网 HTTPS 通信，并校验已配对电脑的证书指纹。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
+        "Brevia プライバシーポリシー\n更新日：2026-10-16\n\nBrevia の提供者は YANG ZHOU です。録音と端末内での閲覧にアカウントは不要です。広告や行動分析の SDK は含まず、会議を開発者へ自動送信しません。\n\n音声、メモ、字幕、会議設定は端末に保存されます。オフライン録音は、パソコンを選択してアップロードを確認した場合にのみ同期します。リアルタイム文字起こしでは音声をペアリング済みのパソコンへ送り、パソコンで認識します。パソコンでオンライン AI を有効にした場合、設定に従って関連するテキストを選択した事業者へ送信します。\n\nペアリングと同期には、スマートフォンとパソコンが同じローカルネットワークに接続されている必要があります。初回ペアリングにはパソコンでの承認も必要です。接続には HTTPS を使用し、ペアリング済みパソコンの証明書フィンガープリントを検証します。\n\nマイクは録音、カメラはペアリングコードの読み取り、ローカルネットワークはパソコンの検出と接続に使用します。手動ペアリングも可能です。権限はシステム設定で取り消せます。着信、強制終了、システム制限で録音が中断する場合があります。\n\n接続情報はシステムの安全な領域に保存します。会議は削除またはアンインストールまで残ります。スマートフォンのコピーを削除してもパソコンのコピーは残り、ペアリング解除でも会議は削除されません。アンインストール前に未同期の録音をエクスポートまたは同期してください。バックアップ、書き出したファイル、オンライン AI のデータは別途管理してください。\n\nサポートとプライバシー：https://github.com/zerolovesea/Brevia/issues 。公開の問い合わせに録音、認証情報、個人情報を含めないでください。録音前に参加者の同意を得てください。ポリシー：https://brevia.work/privacy.html",
     "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。\n\nAndroid 使用麦克风前台服务。请允许录音通知；如厂商省电策略终止应用，可在系统设置中调整。暂停后请回到应用继续。":
         "ロック中も録音できます。着信、強制終了、システム制限で中断される場合があるため、戻ったら状態を確認してください。\n\nAndroid はマイクのフォアグラウンドサービスを使用します。録音通知を許可してください。省電力設定でアプリが停止する場合はシステム設定を調整してください。一時停止後はアプリに戻って再開してください。",
   },
   "ko": {
+    "更新通过 App Store 提供。": "업데이트는 App Store를 통해 제공됩니다.",
+    "完整隐私政策": "전체 개인정보 처리방침",
+    "反馈与支持": "피드백 및 지원",
+    "已复制反馈地址": "피드백 주소를 복사했습니다",
+    "复制反馈地址": "피드백 주소 복사",
+    "偏好设置": "환경설정",
+    "录音与数据": "녹음 및 데이터",
+    "所有对话，清晰归档。": "모든 대화를 깔끔하게 정리하세요.",
+    "先在电脑安装 Brevia，再用手机扫码配对。": "컴퓨터에 Brevia를 설치한 다음 휴대폰으로 코드를 스캔해 연결하세요.",
+    "先离线录音": "먼저 오프라인으로 녹음",
+    "在电脑浏览器打开": "컴퓨터 브라우저에서 열기",
+    "复制电脑端下载地址": "데스크톱 다운로드 주소 복사",
+    "已复制电脑端下载地址": "다운로드 주소를 복사했습니다",
+    "电脑已安装，开始配对": "설치 완료, 연결 시작",
+    "在电脑上准备好": "컴퓨터에서 준비하기",
+    "安装完成后，打开 Brevia 的「设备连接」。": "설치 후 Brevia의 기기 연결을 여세요.",
+    "安装并打开电脑端 Brevia": "컴퓨터에 Brevia 설치 및 실행",
+    "在电脑浏览器打开 brevia.work，下载适合电脑的版本。": "컴퓨터에서 brevia.work를 열고 맞는 버전을 다운로드하세요.",
+    "完成电脑端的模型准备": "컴퓨터에서 모델 준비",
+    "打开「设备连接 → 连接新设备」": "기기 연결 → 새 기기 연결 열기",
+    "手机与电脑需在同一局域网": "휴대폰과 컴퓨터가 같은 로컬 네트워크에 있어야 합니다",
+    "已打开二维码，开始扫码": "QR 코드 준비 완료, 스캔하기",
+    "查看电脑端下载地址": "데스크톱 다운로드 주소 보기",
+    "在电脑 Brevia 中打开「设备连接 → 连接新设备」。": "컴퓨터의 Brevia에서 기기 연결 → 새 기기 연결을 여세요.",
+    "对准电脑上的二维码，将自动识别。": "컴퓨터의 QR 코드에 맞추면 자동으로 인식합니다.",
+    "改用配对码": "연결 코드 사용",
+    "配对成功": "연결 완료",
+    "已配对电脑": "연결된 컴퓨터",
+    "手机采集音频": "휴대폰에서 오디오 수집",
+    "原始录音保留在本机": "원본 녹음은 이 휴대폰에 보관",
+    "离线录音不会因配对自动上传。": "기기를 연결해도 오프라인 녹음은 자동 업로드되지 않습니다.",
+    "进入会议": "회의로 이동",
+    "让 Brevia 按你的习惯工作。": "Brevia를 원하는 방식으로 사용하세요.",
+    "让记录接着发生": "기록을 이어가세요",
+    "打开电脑端 Brevia，在「设备连接」中添加手机。": "컴퓨터 Brevia의 기기 연결에서 휴대폰을 추가하세요.",
+    "已准备作为电脑麦克风": "컴퓨터 마이크로 사용 준비 완료",
+    "等待电脑开始录音": "컴퓨터에서 녹음을 시작할 때까지 대기",
+    "电脑已选择此手机为声源": "컴퓨터가 이 휴대폰을 오디오 소스로 선택했습니다",
+    "电脑已选择此手机为声源，开始录音后这里会显示采集状态。":
+        "이 휴대폰이 오디오 소스로 선택되었습니다. 녹음이 시작되면 수집 상태가 여기에 표시됩니다.",
+    "试音中，不保存录音": "마이크 테스트 중이며 녹음은 저장하지 않습니다",
+    "尚未开始录音": "아직 녹음을 시작하지 않았습니다",
+    "电脑正在使用\n手机麦克风": "컴퓨터가 휴대폰 마이크를 사용 중입니다",
+    "由电脑发起": "컴퓨터에서 시작됨",
+    "正在录音，等待电脑连接": "녹음 중, 컴퓨터 연결 대기",
+    "仍在本机录音": "휴대폰에서 계속 녹음 중",
+    "暂停期间不采集音频": "일시정지 중에는 오디오를 수집하지 않습니다",
+    "音频保留在手机，恢复连接后自动补传。": "오디오는 휴대폰에 보관되며 다시 연결되면 자동 전송됩니다.",
+    "已存本机": "휴대폰에 저장됨",
+    "已传电脑": "컴퓨터에 전송됨",
+    "输入音量": "입력 음량",
+    "这会删除手机上的录音与本机记录，不会删除电脑上的副本。": "휴대폰의 녹음과 기록을 삭제합니다. 컴퓨터의 사본은 삭제하지 않습니다.",
+    "取消信任这台电脑？": "이 컴퓨터의 신뢰를 해제할까요?",
+    "取消后需要重新配对，手机和电脑中已保存的会议副本不会被删除。":
+        "다시 연결하려면 기기를 연결해야 합니다. 두 기기에 저장된 회의 사본은 삭제되지 않습니다.",
     "电脑会议的手机录音": "컴퓨터 회의용 휴대폰 녹음",
     "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
         "컴퓨터에서 시작한 회의입니다. 전사와 메모는 컴퓨터에 저장됩니다. 녹음은 휴대폰에 보관되며 재연결 후 전송할 수 있습니다.",
@@ -1195,8 +1423,6 @@ const translations = {
     "如需授权，请允许安装后返回重试": "권한 요청 시 설치를 허용한 후 돌아와 다시 시도하세요.",
     "录音保留在手机，恢复连接后自动补传。": "녹음은 휴대폰에 보관되며 다시 연결되면 자동으로 전송됩니다.",
     "首次配对需同一 Wi-Fi": "처음 페어링할 때는 같은 Wi-Fi 사용",
-    "跨网连接需要先在电脑配置服务。": "다른 네트워크에서 연결하려면 컴퓨터에서 서비스를 설정하세요.",
-    "已配置跨网连接，直连失败时通过加密中继连接。": "원격 연결이 설정되었습니다. 직접 연결이 안 되면 암호화된 중계를 사용합니다.",
     "正在重新连接": "다시 연결 중",
     "电脑已休眠或断开，等待开盖或恢复连接": "컴퓨터가 절전 상태이거나 연결이 끊겼습니다. 깨어나거나 다시 연결되기를 기다리는 중입니다.",
     "上传到电脑": "컴퓨터로 업로드",
@@ -1441,12 +1667,77 @@ const translations = {
     "麦克风中断：{0}": "마이크 중단: {0}",
     "麦克风已停止，请检查录音权限": "마이크가 멈췄습니다. 녹음 권한을 확인하세요",
     "麦克风返回了不完整的音频样本": "마이크에서 불완전한 샘플이 반환됨",
-    "Brevia 隐私政策\n更新日期：2026-10-15\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不运营官方信令、中继或在线 AI 代理，也不提供统一 AI 账号；跨网服务、在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。首次配对需要局域网和电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全与服务日志\n局域网连接使用 HTTPS 并校验已配对电脑的证书指纹。可选跨网连接使用加密信令及 WebRTC 数据通道；信令和中继运营方不能仅凭中继流量读取加密会议内容，但可能看到网络地址、连接标识、连接时间和流量大小，并按服务配置记录日志。这些服务不由 Brevia 运营；请核对自行部署或所选服务的日志、保留及删除设置。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
-        "Brevia 개인정보 처리방침\n업데이트: 2026-10-10\n\nBrevia는 YANG ZHOU가 제공합니다. 녹음과 기기 내 열람에는 계정이 필요 없습니다. 광고 또는 행동 분석 SDK가 없으며 회의를 개발자에게 자동 전송하지 않습니다.\n\n오디오, 메모, 자막 및 회의 설정은 기기에 저장됩니다. 오프라인 녹음은 컴퓨터를 선택하고 업로드를 확인한 후에만 동기화합니다. 실시간 전사는 페어링된 컴퓨터로 오디오를 보내 컴퓨터에서 인식합니다. 컴퓨터에서 온라인 AI를 사용하면 해당 설정에 따라 관련 텍스트를 선택한 서비스에 전송합니다.\n\n최초 페어링에는 로컬 네트워크와 컴퓨터의 승인이 필요합니다. 선택적 원격 연결 서비스가 암호화된 트래픽을 중계할 수 있습니다. 운영자는 네트워크 주소, 연결 시간, 트래픽 양을 볼 수 있지만 이를 통해 암호화된 회의 내용을 읽을 수는 없습니다. 선택한 서비스의 개인정보 처리방침을 확인하세요.\n\n마이크는 녹음, 카메라는 페어링 코드 스캔, 로컬 네트워크는 컴퓨터 검색과 연결에 사용합니다. 수동 페어링도 가능하며 시스템 설정에서 권한을 철회할 수 있습니다. 전화, 강제 종료 또는 시스템 제한으로 녹음이 중단될 수 있습니다.\n\n페어링 자격 증명은 시스템 보안 저장소에 보관됩니다. 회의는 삭제하거나 앱을 제거할 때까지 유지됩니다. 휴대전화 사본 삭제는 컴퓨터 사본에 영향을 주지 않으며 페어링 해제도 회의를 삭제하지 않습니다. 앱 제거 전 미동기화 녹음을 내보내거나 동기화하세요. 백업, 내보낸 파일, 온라인 AI 데이터는 별도로 관리하세요.\n\n지원 및 개인정보 문의: https://github.com/zerolovesea/Brevia/issues . 공개 문의에 녹음, 자격 증명, 개인정보를 포함하지 마세요. 녹음 전에 참여자의 동의를 받으세요. 정책 웹페이지: https://brevia.work/privacy.html",
+    "Brevia 隐私政策\n更新日期：2026-10-16\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不提供在线 AI 代理或统一 AI 账号；在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。配对和同步需要手机与电脑处于同一局域网；首次配对还需电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全\n手机与电脑仅通过局域网 HTTPS 通信，并校验已配对电脑的证书指纹。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
+        "Brevia 개인정보 처리방침\n업데이트: 2026-10-16\n\nBrevia는 YANG ZHOU가 제공합니다. 녹음과 기기 내 열람에는 계정이 필요 없습니다. 광고 또는 행동 분석 SDK가 없으며 회의를 개발자에게 자동 전송하지 않습니다.\n\n오디오, 메모, 자막 및 회의 설정은 기기에 저장됩니다. 오프라인 녹음은 컴퓨터를 선택하고 업로드를 확인한 후에만 동기화합니다. 실시간 전사는 페어링된 컴퓨터로 오디오를 보내 컴퓨터에서 인식합니다. 컴퓨터에서 온라인 AI를 사용하면 해당 설정에 따라 관련 텍스트를 선택한 서비스에 전송합니다.\n\n페어링과 동기화를 사용하려면 휴대전화와 컴퓨터가 같은 로컬 네트워크에 있어야 하며, 최초 페어링에는 컴퓨터의 승인도 필요합니다. 연결은 HTTPS를 사용하고 페어링된 컴퓨터의 인증서 지문을 확인합니다.\n\n마이크는 녹음, 카메라는 페어링 코드 스캔, 로컬 네트워크는 컴퓨터 검색과 연결에 사용합니다. 수동 페어링도 가능하며 시스템 설정에서 권한을 철회할 수 있습니다. 전화, 강제 종료 또는 시스템 제한으로 녹음이 중단될 수 있습니다.\n\n페어링 자격 증명은 시스템 보안 저장소에 보관됩니다. 회의는 삭제하거나 앱을 제거할 때까지 유지됩니다. 휴대전화 사본 삭제는 컴퓨터 사본에 영향을 주지 않으며 페어링 해제도 회의를 삭제하지 않습니다. 앱 제거 전 미동기화 녹음을 내보내거나 동기화하세요. 백업, 내보낸 파일, 온라인 AI 데이터는 별도로 관리하세요.\n\n지원 및 개인정보 문의: https://github.com/zerolovesea/Brevia/issues . 공개 문의에 녹음, 자격 증명, 개인정보를 포함하지 마세요. 녹음 전에 참여자의 동의를 받으세요. 정책 웹페이지: https://brevia.work/privacy.html",
     "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。\n\nAndroid 使用麦克风前台服务。请允许录音通知；如厂商省电策略终止应用，可在系统设置中调整。暂停后请回到应用继续。":
         "잠금 후에도 녹음할 수 있습니다. 통화, 강제 종료, 시스템 제한으로 중단될 수 있으니 돌아온 후 상태를 확인하세요.\n\nAndroid는 마이크 포그라운드 서비스를 사용합니다. 녹음 알림을 허용하세요. 절전 정책이 앱을 종료하면 시스템 설정을 조정하세요. 일시정지 후에는 앱에서 재개하세요.",
   },
   "fr": {
+    "更新通过 App Store 提供。": "Les mises à jour sont proposées via l’App Store.",
+    "完整隐私政策": "Politique de confidentialité complète",
+    "反馈与支持": "Commentaires et assistance",
+    "已复制反馈地址": "Adresse de contact copiée",
+    "复制反馈地址": "Copier l’adresse de contact",
+    "偏好设置": "Préférences",
+    "录音与数据": "Enregistrement et données",
+    "所有对话，清晰归档。": "Chaque conversation, bien organisée.",
+    "先在电脑安装 Brevia，再用手机扫码配对。":
+        "Installez Brevia sur l’ordinateur, puis scannez le code avec le téléphone.",
+    "先离线录音": "Enregistrer hors ligne",
+    "在电脑浏览器打开": "Ouvrir dans le navigateur de l’ordinateur",
+    "复制电脑端下载地址": "Copier le lien de téléchargement",
+    "已复制电脑端下载地址": "Lien de téléchargement copié",
+    "电脑已安装，开始配对": "Déjà installé, associer",
+    "在电脑上准备好": "Préparer l’ordinateur",
+    "安装完成后，打开 Brevia 的「设备连接」。":
+        "Après l’installation, ouvrez Connexion des appareils dans Brevia.",
+    "安装并打开电脑端 Brevia": "Installer et ouvrir Brevia sur l’ordinateur",
+    "在电脑浏览器打开 brevia.work，下载适合电脑的版本。":
+        "Ouvrez brevia.work sur l’ordinateur et téléchargez la version adaptée.",
+    "完成电脑端的模型准备": "Préparer les modèles sur l’ordinateur",
+    "打开「设备连接 → 连接新设备」": "Ouvrir Connexion des appareils → Nouvel appareil",
+    "手机与电脑需在同一局域网":
+        "Le téléphone et l’ordinateur doivent être sur le même réseau local",
+    "已打开二维码，开始扫码": "Code QR prêt, scanner",
+    "查看电脑端下载地址": "Voir le lien de téléchargement",
+    "在电脑 Brevia 中打开「设备连接 → 连接新设备」。":
+        "Dans Brevia sur ordinateur, ouvrez Connexion des appareils → Nouvel appareil.",
+    "对准电脑上的二维码，将自动识别。":
+        "Visez le code QR de l’ordinateur pour le scanner automatiquement.",
+    "改用配对码": "Utiliser un code d’association",
+    "配对成功": "Association réussie",
+    "已配对电脑": "Ordinateur associé",
+    "手机采集音频": "Le téléphone capture l’audio",
+    "原始录音保留在本机": "L’audio d’origine reste sur le téléphone",
+    "离线录音不会因配对自动上传。":
+        "L’association ne transfère pas automatiquement les enregistrements hors ligne.",
+    "进入会议": "Accéder aux réunions",
+    "让 Brevia 按你的习惯工作。": "Adaptez Brevia à vos habitudes.",
+    "让记录接着发生": "Poursuivre la conversation",
+    "打开电脑端 Brevia，在「设备连接」中添加手机。":
+        "Ouvrez Brevia sur l’ordinateur et ajoutez le téléphone dans Connexion des appareils.",
+    "已准备作为电脑麦克风": "Prêt comme micro de l’ordinateur",
+    "等待电脑开始录音": "En attente du démarrage sur l’ordinateur",
+    "电脑已选择此手机为声源": "L’ordinateur a choisi ce téléphone comme source audio",
+    "电脑已选择此手机为声源，开始录音后这里会显示采集状态。":
+        "Ce téléphone est la source audio. L’état de capture apparaîtra au démarrage de l’enregistrement.",
+    "试音中，不保存录音": "Test du micro, audio non enregistré",
+    "尚未开始录音": "L’enregistrement n’a pas commencé",
+    "电脑正在使用\n手机麦克风": "L’ordinateur utilise le micro du téléphone",
+    "由电脑发起": "Démarré sur l’ordinateur",
+    "正在录音，等待电脑连接": "Enregistrement, en attente de l’ordinateur",
+    "仍在本机录音": "Enregistrement maintenu sur le téléphone",
+    "暂停期间不采集音频": "Aucun son capturé pendant la pause",
+    "音频保留在手机，恢复连接后自动补传。":
+        "L’audio reste sur le téléphone et sera transféré après reconnexion.",
+    "已存本机": "Sauvé sur le téléphone",
+    "已传电脑": "Envoyé à l’ordinateur",
+    "输入音量": "Niveau d’entrée",
+    "这会删除手机上的录音与本机记录，不会删除电脑上的副本。":
+        "L’audio et les données du téléphone seront supprimés, pas les copies sur l’ordinateur.",
+    "取消信任这台电脑？": "Ne plus faire confiance à cet ordinateur ?",
+    "取消后需要重新配对，手机和电脑中已保存的会议副本不会被删除。":
+        "Une nouvelle association sera nécessaire. Les réunions enregistrées sur les deux appareils sont conservées.",
     "电脑会议的手机录音": "Audio du téléphone pour une réunion sur ordinateur",
     "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
         "Cette réunion a été lancée sur l’ordinateur. Transcriptions et notes y restent. L’audio est conservé sur le téléphone et peut être envoyé après reconnexion.",
@@ -1554,10 +1845,6 @@ const translations = {
     "录音保留在手机，恢复连接后自动补传。":
         "Les enregistrements restent sur le téléphone et sont envoyés automatiquement à la reconnexion.",
     "首次配对需同一 Wi-Fi": "Même Wi-Fi pour le premier jumelage",
-    "跨网连接需要先在电脑配置服务。":
-        "Configurez le service sur votre ordinateur pour vous connecter depuis un autre réseau.",
-    "已配置跨网连接，直连失败时通过加密中继连接。":
-        "Connexion distante configurée. Un relais chiffré est utilisé si la connexion directe échoue.",
     "正在重新连接": "Reconnexion en cours",
     "电脑已休眠或断开，等待开盖或恢复连接":
         "Ordinateur en veille ou déconnecté. En attente du réveil ou de la reconnexion.",
@@ -1829,12 +2116,76 @@ const translations = {
     "麦克风中断：{0}": "Microphone interrompu : {0}",
     "麦克风已停止，请检查录音权限": "Microphone arrêté. Vérifiez l’autorisation.",
     "麦克风返回了不完整的音频样本": "Échantillons audio incomplets du microphone",
-    "Brevia 隐私政策\n更新日期：2026-10-15\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不运营官方信令、中继或在线 AI 代理，也不提供统一 AI 账号；跨网服务、在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。首次配对需要局域网和电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全与服务日志\n局域网连接使用 HTTPS 并校验已配对电脑的证书指纹。可选跨网连接使用加密信令及 WebRTC 数据通道；信令和中继运营方不能仅凭中继流量读取加密会议内容，但可能看到网络地址、连接标识、连接时间和流量大小，并按服务配置记录日志。这些服务不由 Brevia 运营；请核对自行部署或所选服务的日志、保留及删除设置。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
-        "Politique de confidentialité de Brevia\nMise à jour : 2026-10-10\n\nBrevia est fourni par YANG ZHOU. Aucun compte n’est requis pour enregistrer et consulter les données locales. L’application ne contient aucun SDK publicitaire ou d’analyse comportementale et n’envoie pas automatiquement vos réunions au développeur.\n\nAudio, notes, transcriptions et réglages sont stockés sur vos appareils. Les enregistrements hors ligne ne sont synchronisés qu’après sélection d’un ordinateur et confirmation du transfert. La transcription en direct envoie l’audio à l’ordinateur jumelé, qui effectue la reconnaissance. Si une IA en ligne y est activée, le texte concerné est envoyé au fournisseur choisi selon les réglages de l’ordinateur.\n\nLe jumelage initial nécessite un réseau local et l’autorisation de l’ordinateur. Les services distants facultatifs peuvent relayer du trafic chiffré. Leurs opérateurs voient les adresses réseau, les horaires et le volume des échanges, sans pouvoir ainsi lire le contenu chiffré des réunions. Consultez leurs politiques de confidentialité.\n\nLe microphone sert à enregistrer, la caméra à scanner les codes de jumelage et le réseau local à détecter et connecter les ordinateurs. Le jumelage manuel est possible. Les autorisations peuvent être retirées dans les réglages système. Appels, arrêt forcé et restrictions système peuvent interrompre l’enregistrement.\n\nLes identifiants de jumelage utilisent le stockage sécurisé du système. Les réunions restent jusqu’à leur suppression ou la désinstallation. Supprimer la copie du téléphone n’efface pas celle de l’ordinateur ; dissocier n’efface pas les réunions. Exportez ou synchronisez les enregistrements en attente avant de désinstaller. Gérez séparément sauvegardes, exports et données des services d’IA.\n\nAssistance et confidentialité : https://github.com/zerolovesea/Brevia/issues . Ne publiez ni enregistrements, ni identifiants, ni données personnelles. Obtenez l’accord des participants avant d’enregistrer. Politique : https://brevia.work/privacy.html",
+    "Brevia 隐私政策\n更新日期：2026-10-16\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不提供在线 AI 代理或统一 AI 账号；在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。配对和同步需要手机与电脑处于同一局域网；首次配对还需电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全\n手机与电脑仅通过局域网 HTTPS 通信，并校验已配对电脑的证书指纹。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
+        "Politique de confidentialité de Brevia\nMise à jour : 2026-10-16\n\nBrevia est fourni par YANG ZHOU. Aucun compte n’est requis pour enregistrer et consulter les données locales. L’application ne contient aucun SDK publicitaire ou d’analyse comportementale et n’envoie pas automatiquement vos réunions au développeur.\n\nAudio, notes, transcriptions et réglages sont stockés sur vos appareils. Les enregistrements hors ligne ne sont synchronisés qu’après sélection d’un ordinateur et confirmation du transfert. La transcription en direct envoie l’audio à l’ordinateur jumelé, qui effectue la reconnaissance. Si une IA en ligne y est activée, le texte concerné est envoyé au fournisseur choisi selon les réglages de l’ordinateur.\n\nLe jumelage et la synchronisation nécessitent que le téléphone et l’ordinateur soient sur le même réseau local ; le jumelage initial nécessite aussi l’autorisation de l’ordinateur. Les connexions utilisent HTTPS et vérifient l’empreinte du certificat de l’ordinateur jumelé.\n\nLe microphone sert à enregistrer, la caméra à scanner les codes de jumelage et le réseau local à détecter et connecter les ordinateurs. Le jumelage manuel est possible. Les autorisations peuvent être retirées dans les réglages système. Appels, arrêt forcé et restrictions système peuvent interrompre l’enregistrement.\n\nLes identifiants de jumelage utilisent le stockage sécurisé du système. Les réunions restent jusqu’à leur suppression ou la désinstallation. Supprimer la copie du téléphone n’efface pas celle de l’ordinateur ; dissocier n’efface pas les réunions. Exportez ou synchronisez les enregistrements en attente avant de désinstaller. Gérez séparément sauvegardes, exports et données des services d’IA.\n\nAssistance et confidentialité : https://github.com/zerolovesea/Brevia/issues . Ne publiez ni enregistrements, ni identifiants, ni données personnelles. Obtenez l’accord des participants avant d’enregistrer. Politique : https://brevia.work/privacy.html",
     "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。\n\nAndroid 使用麦克风前台服务。请允许录音通知；如厂商省电策略终止应用，可在系统设置中调整。暂停后请回到应用继续。":
         "L’enregistrement peut continuer écran verrouillé. Appels, arrêt forcé ou limites système peuvent l’interrompre ; vérifiez l’état au retour.\n\nAndroid utilise un service de microphone au premier plan. Autorisez les notifications. Si l’économie de batterie arrête l’app, ajustez les réglages système. Revenez dans l’app pour reprendre après une pause.",
   },
   "de": {
+    "更新通过 App Store 提供。": "Updates werden über den App Store bereitgestellt.",
+    "完整隐私政策": "Vollständige Datenschutzerklärung",
+    "反馈与支持": "Feedback und Support",
+    "已复制反馈地址": "Feedback-Adresse kopiert",
+    "复制反馈地址": "Feedback-Adresse kopieren",
+    "偏好设置": "Einstellungen",
+    "录音与数据": "Aufnahme und Daten",
+    "所有对话，清晰归档。": "Alle Gespräche, übersichtlich geordnet.",
+    "先在电脑安装 Brevia，再用手机扫码配对。":
+        "Brevia am Computer installieren, dann den Code mit dem Handy scannen.",
+    "先离线录音": "Zuerst offline aufnehmen",
+    "在电脑浏览器打开": "Im Browser am Computer öffnen",
+    "复制电脑端下载地址": "Desktop-Downloadlink kopieren",
+    "已复制电脑端下载地址": "Downloadlink kopiert",
+    "电脑已安装，开始配对": "Bereits installiert, jetzt koppeln",
+    "在电脑上准备好": "Computer vorbereiten",
+    "安装完成后，打开 Brevia 的「设备连接」。":
+        "Nach der Installation Geräteverbindung in Brevia öffnen.",
+    "安装并打开电脑端 Brevia": "Brevia am Computer installieren und öffnen",
+    "在电脑浏览器打开 brevia.work，下载适合电脑的版本。":
+        "brevia.work am Computer öffnen und die passende Version laden.",
+    "完成电脑端的模型准备": "Modelle am Computer vorbereiten",
+    "打开「设备连接 → 连接新设备」": "Geräteverbindung → Neues Gerät verbinden öffnen",
+    "手机与电脑需在同一局域网": "Handy und Computer müssen im selben lokalen Netzwerk sein",
+    "已打开二维码，开始扫码": "QR-Code bereit, jetzt scannen",
+    "查看电脑端下载地址": "Desktop-Downloadlink anzeigen",
+    "在电脑 Brevia 中打开「设备连接 → 连接新设备」。":
+        "In Brevia am Computer Geräteverbindung → Neues Gerät verbinden öffnen.",
+    "对准电脑上的二维码，将自动识别。":
+        "Auf den QR-Code am Computer richten; er wird automatisch erkannt.",
+    "改用配对码": "Stattdessen Kopplungscode verwenden",
+    "配对成功": "Kopplung erfolgreich",
+    "已配对电脑": "Gekoppelter Computer",
+    "手机采集音频": "Das Handy erfasst Audio",
+    "原始录音保留在本机": "Originalaufnahme bleibt auf dem Handy",
+    "离线录音不会因配对自动上传。":
+        "Durch das Koppeln werden Offline-Aufnahmen nicht automatisch hochgeladen.",
+    "进入会议": "Zu den Meetings",
+    "让 Brevia 按你的习惯工作。": "Brevia an deine Gewohnheiten anpassen.",
+    "让记录接着发生": "Das Gespräch weiterführen",
+    "打开电脑端 Brevia，在「设备连接」中添加手机。":
+        "Brevia am Computer öffnen und das Handy unter Geräteverbindung hinzufügen.",
+    "已准备作为电脑麦克风": "Als Computermikrofon bereit",
+    "等待电脑开始录音": "Warten auf den Aufnahmestart am Computer",
+    "电脑已选择此手机为声源": "Der Computer hat dieses Handy als Audioquelle gewählt",
+    "电脑已选择此手机为声源，开始录音后这里会显示采集状态。":
+        "Dieses Handy ist als Audioquelle gewählt. Nach dem Aufnahmestart erscheint hier der Status.",
+    "试音中，不保存录音": "Mikrofontest, Audio wird nicht gespeichert",
+    "尚未开始录音": "Aufnahme noch nicht gestartet",
+    "电脑正在使用\n手机麦克风": "Der Computer verwendet das Handymikrofon",
+    "由电脑发起": "Am Computer gestartet",
+    "正在录音，等待电脑连接": "Aufnahme läuft, auf Computer warten",
+    "仍在本机录音": "Aufnahme läuft auf dem Handy weiter",
+    "暂停期间不采集音频": "Während der Pause wird kein Audio erfasst",
+    "音频保留在手机，恢复连接后自动补传。":
+        "Audio bleibt auf dem Handy und wird nach der Verbindung nachgesendet.",
+    "已存本机": "Auf dem Handy gespeichert",
+    "已传电脑": "An Computer übertragen",
+    "输入音量": "Eingangspegel",
+    "这会删除手机上的录音与本机记录，不会删除电脑上的副本。":
+        "Aufnahme und Eintrag auf diesem Handy werden gelöscht, nicht die Computerkopien.",
+    "取消信任这台电脑？": "Diesem Computer nicht mehr vertrauen?",
+    "取消后需要重新配对，手机和电脑中已保存的会议副本不会被删除。":
+        "Erneutes Koppeln ist nötig. Gespeicherte Meetings auf beiden Geräten bleiben erhalten.",
     "电脑会议的手机录音": "Telefonaufnahme für ein Desktop-Meeting",
     "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
         "Dieses Meeting wurde am Computer gestartet. Transkripte und Notizen bleiben dort. Das Audio bleibt am Telefon und wird nach dem Wiederverbinden übertragen.",
@@ -1943,10 +2294,6 @@ const translations = {
     "录音保留在手机，恢复连接后自动补传。":
         "Aufnahmen bleiben auf dem Telefon und werden nach der Wiederverbindung automatisch übertragen.",
     "首次配对需同一 Wi-Fi": "Erste Kopplung im selben WLAN",
-    "跨网连接需要先在电脑配置服务。":
-        "Richten Sie den Dienst am Computer für Verbindungen über andere Netzwerke ein.",
-    "已配置跨网连接，直连失败时通过加密中继连接。":
-        "Fernverbindung eingerichtet. Schlägt die Direktverbindung fehl, wird ein verschlüsseltes Relais verwendet.",
     "正在重新连接": "Verbindung wird wiederhergestellt",
     "电脑已休眠或断开，等待开盖或恢复连接":
         "Computer im Ruhezustand oder getrennt. Warte auf Aufwachen oder erneute Verbindung.",
@@ -2216,12 +2563,77 @@ const translations = {
     "麦克风中断：{0}": "Mikrofon unterbrochen: {0}",
     "麦克风已停止，请检查录音权限": "Mikrofon gestoppt. Aufnahmeberechtigung prüfen.",
     "麦克风返回了不完整的音频样本": "Mikrofon lieferte unvollständige Audiodaten",
-    "Brevia 隐私政策\n更新日期：2026-10-15\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不运营官方信令、中继或在线 AI 代理，也不提供统一 AI 账号；跨网服务、在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。首次配对需要局域网和电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全与服务日志\n局域网连接使用 HTTPS 并校验已配对电脑的证书指纹。可选跨网连接使用加密信令及 WebRTC 数据通道；信令和中继运营方不能仅凭中继流量读取加密会议内容，但可能看到网络地址、连接标识、连接时间和流量大小，并按服务配置记录日志。这些服务不由 Brevia 运营；请核对自行部署或所选服务的日志、保留及删除设置。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
-        "Datenschutzerklärung von Brevia\nStand: 2026-10-10\n\nBrevia wird von YANG ZHOU bereitgestellt. Aufnahme und lokale Ansicht benötigen kein Konto. Die App enthält keine Werbe- oder Verhaltensanalyse-SDKs und sendet Besprechungen nicht automatisch an den Entwickler.\n\nAudio, Notizen, Transkripte und Einstellungen werden auf Ihren Geräten gespeichert. Offline-Aufnahmen werden erst nach Auswahl eines Computers und Bestätigung des Uploads synchronisiert. Bei Live-Transkription wird Audio zum gekoppelten Computer gesendet und dort erkannt. Ist dort Online-KI aktiviert, wird entsprechender Text gemäß den Computereinstellungen an den gewählten Anbieter gesendet.\n\nDie erste Kopplung benötigt ein lokales Netzwerk und die Freigabe am Computer. Optionale Fernverbindungsdienste können verschlüsselten Datenverkehr weiterleiten. Ihre Betreiber sehen Netzwerkadressen, Verbindungszeiten und Datenmengen, können dadurch aber keine verschlüsselten Besprechungsinhalte lesen. Beachten Sie deren Datenschutzerklärungen.\n\nDas Mikrofon dient der Aufnahme, die Kamera scannt Kopplungscodes und das lokale Netzwerk erkennt und verbindet Computer. Manuelle Kopplung ist möglich. Berechtigungen können in den Systemeinstellungen widerrufen werden. Anrufe, erzwungenes Beenden und Systembeschränkungen können Aufnahmen unterbrechen.\n\nKopplungsdaten liegen im sicheren Systemspeicher. Besprechungen bleiben bis zur Löschung oder Deinstallation erhalten. Das Löschen der Telefonkopie löscht nicht die Computerkopie; Entkoppeln löscht keine Besprechungen. Exportieren oder synchronisieren Sie ausstehende Aufnahmen vor der Deinstallation. Verwalten Sie Sicherungen, Exporte und Daten bei KI-Diensten separat.\n\nSupport und Datenschutz: https://github.com/zerolovesea/Brevia/issues . Veröffentlichen Sie dort keine Aufnahmen, Zugangsdaten oder persönlichen Informationen. Holen Sie vor Aufnahmen die Zustimmung der Teilnehmer ein. Richtlinie: https://brevia.work/privacy.html",
+    "Brevia 隐私政策\n更新日期：2026-10-16\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不提供在线 AI 代理或统一 AI 账号；在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。配对和同步需要手机与电脑处于同一局域网；首次配对还需电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全\n手机与电脑仅通过局域网 HTTPS 通信，并校验已配对电脑的证书指纹。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
+        "Datenschutzerklärung von Brevia\nStand: 2026-10-16\n\nBrevia wird von YANG ZHOU bereitgestellt. Aufnahme und lokale Ansicht benötigen kein Konto. Die App enthält keine Werbe- oder Verhaltensanalyse-SDKs und sendet Besprechungen nicht automatisch an den Entwickler.\n\nAudio, Notizen, Transkripte und Einstellungen werden auf Ihren Geräten gespeichert. Offline-Aufnahmen werden erst nach Auswahl eines Computers und Bestätigung des Uploads synchronisiert. Bei Live-Transkription wird Audio zum gekoppelten Computer gesendet und dort erkannt. Ist dort Online-KI aktiviert, wird entsprechender Text gemäß den Computereinstellungen an den gewählten Anbieter gesendet.\n\nFür Kopplung und Synchronisierung müssen Smartphone und Computer im selben lokalen Netzwerk sein; die erste Kopplung erfordert zusätzlich die Freigabe am Computer. Verbindungen verwenden HTTPS und prüfen den Zertifikatsfingerabdruck des gekoppelten Computers.\n\nDas Mikrofon dient der Aufnahme, die Kamera scannt Kopplungscodes und das lokale Netzwerk erkennt und verbindet Computer. Manuelle Kopplung ist möglich. Berechtigungen können in den Systemeinstellungen widerrufen werden. Anrufe, erzwungenes Beenden und Systembeschränkungen können Aufnahmen unterbrechen.\n\nKopplungsdaten liegen im sicheren Systemspeicher. Besprechungen bleiben bis zur Löschung oder Deinstallation erhalten. Das Löschen der Telefonkopie löscht nicht die Computerkopie; Entkoppeln löscht keine Besprechungen. Exportieren oder synchronisieren Sie ausstehende Aufnahmen vor der Deinstallation. Verwalten Sie Sicherungen, Exporte und Daten bei KI-Diensten separat.\n\nSupport und Datenschutz: https://github.com/zerolovesea/Brevia/issues . Veröffentlichen Sie dort keine Aufnahmen, Zugangsdaten oder persönlichen Informationen. Holen Sie vor Aufnahmen die Zustimmung der Teilnehmer ein. Richtlinie: https://brevia.work/privacy.html",
     "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。\n\nAndroid 使用麦克风前台服务。请允许录音通知；如厂商省电策略终止应用，可在系统设置中调整。暂停后请回到应用继续。":
         "Aufnahme ist bei gesperrtem Bildschirm möglich. Anrufe, erzwungenes Beenden oder Systemlimits können sie unterbrechen; prüfen Sie den Status nach der Rückkehr.\n\nAndroid verwendet einen Mikrofon-Vordergrunddienst. Aufnahmebenachrichtigungen erlauben. Bei Beendigung durch Energiesparregeln die Systemeinstellungen anpassen. Nach einer Pause in der App fortsetzen.",
   },
   "ru": {
+    "更新通过 App Store 提供。": "Обновления доступны через App Store.",
+    "完整隐私政策": "Полная политика конфиденциальности",
+    "反馈与支持": "Обратная связь и поддержка",
+    "已复制反馈地址": "Адрес обратной связи скопирован",
+    "复制反馈地址": "Скопировать адрес обратной связи",
+    "偏好设置": "Настройки",
+    "录音与数据": "Запись и данные",
+    "所有对话，清晰归档。": "Все разговоры — в понятном порядке.",
+    "先在电脑安装 Brevia，再用手机扫码配对。":
+        "Установите Brevia на компьютер, затем отсканируйте код телефоном.",
+    "先离线录音": "Сначала записать офлайн",
+    "在电脑浏览器打开": "Откройте в браузере на компьютере",
+    "复制电脑端下载地址": "Скопировать ссылку для компьютера",
+    "已复制电脑端下载地址": "Ссылка для компьютера скопирована",
+    "电脑已安装，开始配对": "Уже установлено, начать сопряжение",
+    "在电脑上准备好": "Подготовьте компьютер",
+    "安装完成后，打开 Brevia 的「设备连接」。":
+        "После установки откройте подключение устройств в Brevia.",
+    "安装并打开电脑端 Brevia": "Установите и откройте Brevia на компьютере",
+    "在电脑浏览器打开 brevia.work，下载适合电脑的版本。":
+        "Откройте brevia.work на компьютере и скачайте подходящую версию.",
+    "完成电脑端的模型准备": "Подготовьте модели на компьютере",
+    "打开「设备连接 → 连接新设备」":
+        "Откройте подключение устройств → Подключить новое устройство",
+    "手机与电脑需在同一局域网": "Телефон и компьютер должны быть в одной локальной сети",
+    "已打开二维码，开始扫码": "QR-код открыт, сканировать",
+    "查看电脑端下载地址": "Показать ссылку для компьютера",
+    "在电脑 Brevia 中打开「设备连接 → 连接新设备」。":
+        "В Brevia на компьютере откройте подключение устройств → Подключить новое устройство.",
+    "对准电脑上的二维码，将自动识别。":
+        "Наведите камеру на QR-код компьютера для автоматического сканирования.",
+    "改用配对码": "Использовать код сопряжения",
+    "配对成功": "Сопряжение выполнено",
+    "已配对电脑": "Сопряжённый компьютер",
+    "手机采集音频": "Телефон записывает звук",
+    "原始录音保留在本机": "Исходная запись остаётся на телефоне",
+    "离线录音不会因配对自动上传。":
+        "При сопряжении офлайн-записи не загружаются автоматически.",
+    "进入会议": "Перейти к встречам",
+    "让 Brevia 按你的习惯工作。": "Настройте Brevia под свои привычки.",
+    "让记录接着发生": "Продолжайте записывать",
+    "打开电脑端 Brevia，在「设备连接」中添加手机。":
+        "Откройте Brevia на компьютере и добавьте телефон в подключении устройств.",
+    "已准备作为电脑麦克风": "Готово к работе микрофоном компьютера",
+    "等待电脑开始录音": "Ожидание начала записи с компьютера",
+    "电脑已选择此手机为声源": "Компьютер выбрал этот телефон источником звука",
+    "电脑已选择此手机为声源，开始录音后这里会显示采集状态。":
+        "Телефон выбран источником звука. После начала записи здесь появится состояние захвата.",
+    "试音中，不保存录音": "Проверка микрофона, звук не сохраняется",
+    "尚未开始录音": "Запись ещё не началась",
+    "电脑正在使用\n手机麦克风": "Компьютер использует микрофон телефона",
+    "由电脑发起": "Начато с компьютера",
+    "正在录音，等待电脑连接": "Идёт запись, ожидание подключения компьютера",
+    "仍在本机录音": "Запись на телефоне продолжается",
+    "暂停期间不采集音频": "Во время паузы звук не записывается",
+    "音频保留在手机，恢复连接后自动补传。":
+        "Звук остаётся на телефоне и будет загружен после восстановления связи.",
+    "已存本机": "Сохранено на телефоне",
+    "已传电脑": "Передано на компьютер",
+    "输入音量": "Уровень входного сигнала",
+    "这会删除手机上的录音与本机记录，不会删除电脑上的副本。":
+        "Запись и данные на телефоне будут удалены, копии на компьютере останутся.",
+    "取消信任这台电脑？": "Отменить доверие этому компьютеру?",
+    "取消后需要重新配对，手机和电脑中已保存的会议副本不会被删除。":
+        "Потребуется повторное сопряжение. Сохранённые встречи на обоих устройствах останутся.",
     "电脑会议的手机录音": "Запись с телефона для встречи на компьютере",
     "这场会议由电脑发起，逐字稿和笔记保存在电脑。录音保留在手机，断线后可补传。":
         "Встреча начата на компьютере. Расшифровка и заметки остаются там. Аудио сохраняется на телефоне и передаётся после восстановления связи.",
@@ -2325,10 +2737,6 @@ const translations = {
     "录音保留在手机，恢复连接后自动补传。":
         "Записи сохраняются на телефоне и автоматически передаются после восстановления связи.",
     "首次配对需同一 Wi-Fi": "Первое сопряжение — в одной сети Wi-Fi",
-    "跨网连接需要先在电脑配置服务。":
-        "Настройте службу на компьютере для подключения из других сетей.",
-    "已配置跨网连接，直连失败时通过加密中继连接。":
-        "Удалённое подключение настроено. Если прямое соединение недоступно, используется зашифрованная ретрансляция.",
     "正在重新连接": "Повторное подключение",
     "电脑已休眠或断开，等待开盖或恢复连接":
         "Компьютер спит или отключён. Ожидаем пробуждения или восстановления связи.",
@@ -2597,8 +3005,8 @@ const translations = {
     "麦克风中断：{0}": "Микрофон прерван: {0}",
     "麦克风已停止，请检查录音权限": "Микрофон остановлен. Проверьте разрешение на запись.",
     "麦克风返回了不完整的音频样本": "Микрофон вернул неполные аудиоданные",
-    "Brevia 隐私政策\n更新日期：2026-10-15\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不运营官方信令、中继或在线 AI 代理，也不提供统一 AI 账号；跨网服务、在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。首次配对需要局域网和电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全与服务日志\n局域网连接使用 HTTPS 并校验已配对电脑的证书指纹。可选跨网连接使用加密信令及 WebRTC 数据通道；信令和中继运营方不能仅凭中继流量读取加密会议内容，但可能看到网络地址、连接标识、连接时间和流量大小，并按服务配置记录日志。这些服务不由 Brevia 运营；请核对自行部署或所选服务的日志、保留及删除设置。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
-        "Политика конфиденциальности Brevia\nОбновлено: 2026-10-10\n\nBrevia предоставляется YANG ZHOU. Для записи и локального просмотра аккаунт не нужен. Приложение не содержит рекламных SDK или SDK поведенческой аналитики и не отправляет встречи разработчику автоматически.\n\nАудио, заметки, расшифровки и настройки хранятся на ваших устройствах. Офлайн-записи синхронизируются только после выбора компьютера и подтверждения загрузки. При расшифровке в реальном времени аудио отправляется на сопряжённый компьютер, где выполняется распознавание. Если там включён онлайн-ИИ, соответствующий текст передаётся выбранному поставщику согласно настройкам компьютера.\n\nПервое сопряжение требует локальной сети и подтверждения на компьютере. Дополнительные сервисы удалённой связи могут передавать зашифрованный трафик. Их операторы видят сетевые адреса, время соединений и объём трафика, но это не позволяет читать зашифрованное содержимое встреч. Ознакомьтесь с их политиками конфиденциальности.\n\nМикрофон нужен для записи, камера — для сканирования кодов, локальная сеть — для поиска и подключения компьютеров. Доступно ручное сопряжение. Разрешения можно отозвать в настройках системы. Звонки, принудительное завершение и системные ограничения могут прервать запись.\n\nДанные сопряжения хранятся в защищённом хранилище системы. Встречи сохраняются до удаления записей или приложения. Удаление копии на телефоне не удаляет копию на компьютере; отмена сопряжения не удаляет встречи. Перед удалением приложения экспортируйте или синхронизируйте ожидающие записи. Резервные копии, экспортированные файлы и данные онлайн-ИИ управляются отдельно.\n\nПоддержка и конфиденциальность: https://github.com/zerolovesea/Brevia/issues . Не публикуйте записи, учётные данные и личную информацию. Получите согласие участников до записи. Политика: https://brevia.work/privacy.html",
+    "Brevia 隐私政策\n更新日期：2026-10-16\n\n提供者与范围\nBrevia 由 YANG ZHOU 提供。手机录音和本地回看无需账号。应用不含广告或行为分析 SDK，不会自动向开发者上传会议。Brevia 不提供在线 AI 代理或统一 AI 账号；在线 AI 地址与账号均由用户自行配置。\n\n录音、转写与同步\n录音、笔记、逐字稿和会议设置保存在你的设备上。离线录音只有在你选择电脑并确认上传后才同步；选择实时转写或将手机用作电脑麦克风时，音频及必要的会议资料会发送到已配对电脑，语音识别在电脑执行。配对和同步需要手机与电脑处于同一局域网；首次配对还需电脑确认，配对本身不会上传已有离线录音。\n\n可选在线 AI\n本地 AI 在电脑运行。选择在线 AI 后，电脑可能发送会议标题、逐字稿（含说话人和时间点）、笔记及 AI 上下文，用于生成纪要和实时 AI 笔记；这些 AI 请求不发送原始录音。请在电脑配置中核对服务商、地址和模型；启用在线 AI 或生成在线纪要后，相关文字会按该配置发送。不启用在线 AI 仍可使用录音、本地转写和本地 AI。关闭实时 AI 可停止后续自动请求，已发出的请求无法撤回。服务商可能按其政策保留请求、日志及生成结果；请在配置和使用前核对其隐私政策，并直接向所选服务管理或删除数据。自备 API Key 不代表服务商不会保留数据。\n\n连接安全\n手机与电脑仅通过局域网 HTTPS 通信，并校验已配对电脑的证书指纹。\n\n权限与更新检查\n麦克风用于录音和试音，相机仅用于扫码配对，局域网权限用于发现和连接电脑。手动配对可替代扫码。权限可在系统设置撤销；来电、强制停止或系统限制可能中断录音。在 iOS 主动检查更新时，应用向 Apple 查询公开 App ID 与商店地区，不发送会议内容；Apple 可接触请求的网络信息。\n\n保存、删除与导出\n手机配对凭据存入系统安全存储；iOS 录音目录使用系统文件保护并排除应用配置的系统备份。会议保留至你删除或卸载应用。删除手机副本不会删除电脑副本，取消配对不会删除已保存的会议，也不会删除第三方已收到的数据。卸载前请先导出或同步尚未上传的录音。自行创建的备份、导出文件及在线 AI 服务上的数据需分别管理。\n\n支持与政策变更\n支持和隐私咨询：https://github.com/zerolovesea/Brevia/issues 。反馈由你主动提供；公开反馈中不要包含录音、凭据或个人信息。请在录音前取得参与者同意。功能或数据处理方式变化时，我们会更新本政策及日期。政策网页：https://brevia.work/privacy.html":
+        "Политика конфиденциальности Brevia\nОбновлено: 2026-10-16\n\nBrevia предоставляется YANG ZHOU. Для записи и локального просмотра аккаунт не нужен. Приложение не содержит рекламных SDK или SDK поведенческой аналитики и не отправляет встречи разработчику автоматически.\n\nАудио, заметки, расшифровки и настройки хранятся на ваших устройствах. Офлайн-записи синхронизируются только после выбора компьютера и подтверждения загрузки. При расшифровке в реальном времени аудио отправляется на сопряжённый компьютер, где выполняется распознавание. Если там включён онлайн-ИИ, соответствующий текст передаётся выбранному поставщику согласно настройкам компьютера.\n\nДля сопряжения и синхронизации телефон и компьютер должны находиться в одной локальной сети; первое сопряжение также требует подтверждения на компьютере. Соединения используют HTTPS и проверяют отпечаток сертификата сопряжённого компьютера.\n\nМикрофон нужен для записи, камера — для сканирования кодов, локальная сеть — для поиска и подключения компьютеров. Доступно ручное сопряжение. Разрешения можно отозвать в настройках системы. Звонки, принудительное завершение и системные ограничения могут прервать запись.\n\nДанные сопряжения хранятся в защищённом хранилище системы. Встречи сохраняются до удаления записей или приложения. Удаление копии на телефоне не удаляет копию на компьютере; отмена сопряжения не удаляет встречи. Перед удалением приложения экспортируйте или синхронизируйте ожидающие записи. Резервные копии, экспортированные файлы и данные онлайн-ИИ управляются отдельно.\n\nПоддержка и конфиденциальность: https://github.com/zerolovesea/Brevia/issues . Не публикуйте записи, учётные данные и личную информацию. Получите согласие участников до записи. Политика: https://brevia.work/privacy.html",
     "锁屏后可继续录音。来电、强制停止或系统限制仍可能中断录音，返回后请检查状态。\n\nAndroid 使用麦克风前台服务。请允许录音通知；如厂商省电策略终止应用，可在系统设置中调整。暂停后请回到应用继续。":
         "Запись может продолжаться при блокировке. Звонки, принудительная остановка и ограничения системы могут её прервать; проверьте состояние после возвращения.\n\nAndroid использует активную службу микрофона. Разрешите уведомления. Если энергосбережение останавливает приложение, измените настройки системы. После паузы продолжите запись в приложении.",
   },

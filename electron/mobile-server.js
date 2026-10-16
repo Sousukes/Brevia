@@ -192,12 +192,10 @@ class MobileServer {
       void this.drain();
     }, 1000);
     this.timer.unref();
-    await this.remote?.start();
     return this.status();
   }
   async disable() {
     this.pairing = null;
-    this.remote?.stop();
     clearInterval(this.timer);
     this.bonjour?.destroy();
     this.bonjour = null;
@@ -319,7 +317,6 @@ class MobileServer {
   async revoke(id) {
     if ([...this.sessions.values()].some((s) => s.owner === id && !s.finished))
       throw fail(409, '该设备仍有未完成的录音，请先结束并补传');
-    this.remote?.drop(id);
     this.captureLevels.delete(id);
     if (this.capturePreview?.deviceId === id) this.capturePreview = null;
     this.devices = this.devices.filter((d) => d.id !== id);
@@ -363,7 +360,6 @@ class MobileServer {
         deviceId: id,
         name: hostname(),
         fingerprint: this.fingerprint,
-        remote: (await this.remote?.credentials(id)) || null,
       };
     } finally {
       this.pairBusy = false;
@@ -513,8 +509,6 @@ class MobileServer {
     }
     if (req.url === '/pair' && req.method === 'POST') return this.pair(await body(req));
     const owner = this.owner(req);
-    if (req.url === '/connection' && req.method === 'GET')
-      return { remote: (await this.remote?.credentials(owner)) || null };
     if (req.url === '/options' && req.method === 'GET') return this.request('mobile.options', {});
     if (req.url === '/meetings' && req.method === 'GET')
       return [...this.sessions.values()]
@@ -827,4 +821,4 @@ class MobileServer {
     }
   }
 }
-module.exports = { MobileServer, atomicJSON };
+module.exports = { MobileServer };

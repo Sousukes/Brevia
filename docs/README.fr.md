@@ -119,11 +119,9 @@ En cas de coupure réseau, l’audio continue à être sauvegardé sur le télé
 
 Sur le réseau local, le téléphone envoie l’audio par **HTTPS** à l’ordinateur jumelé, qui renvoie transcriptions et notes. L’audio est d’abord enregistré sur le téléphone ; la progression du transfert n’avance qu’après confirmation de sa sauvegarde par l’ordinateur. Après une coupure, le transfert reprend à cette position. La copie du téléphone n’est pas supprimée automatiquement.
 
-Avec votre propre service de signalisation/TURN, les appareils déjà jumelés peuvent communiquer entre réseaux via **WebRTC DataChannel**. La connexion directe est privilégiée ; à défaut, un relais transporte le trafic chiffré. Son opérateur peut voir les adresses réseau et le volume des échanges, mais ne peut pas lire le contenu chiffré via le relais. [La connexion entre réseaux nécessite une configuration supplémentaire ; le premier jumelage reste local.](mobile-remote.md)
+La reconnaissance vocale s’effectue sur votre ordinateur. Les enregistrements hors ligne restent sur le téléphone jusqu’à votre confirmation ; la transcription en direct envoie l’audio à l’ordinateur jumelé. Brevia n’envoie pas automatiquement vos réunions au développeur. Après téléchargement des modèles, vous pouvez utiliser une IA locale. Un fournisseur IA en ligne choisi par vos soins reçoit le texte pertinent, pas l’audio. [Confidentialité](https://brevia.work/privacy.html).
 
-La reconnaissance vocale s’effectue sur votre ordinateur. Les enregistrements hors ligne restent sur le téléphone jusqu’à votre confirmation ; la transcription en direct envoie l’audio à l’ordinateur jumelé. Brevia n’envoie pas automatiquement vos réunions au développeur. Après téléchargement des modèles, vous pouvez utiliser une IA locale. Un fournisseur IA en ligne choisi par vos soins reçoit le texte pertinent, pas l’audio. Les connexions distantes facultatives peuvent relayer du trafic chiffré. [Confidentialité](https://brevia.work/privacy.html).
-
-L’audio du téléphone occupe environ **115 Mo par heure enregistrée**, hors exports et caches. Les transferts distants consomment aussi des données, avec un surcoût réseau.
+L’audio du téléphone occupe environ **115 Mo par heure enregistrée**, hors exports et caches. Les transferts et la transcription en direct nécessitent que le téléphone et l’ordinateur soient sur le même réseau local.
 
 ## Bien démarrer
 

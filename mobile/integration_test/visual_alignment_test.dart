@@ -1,4 +1,5 @@
 import 'package:brevia_mobile/app_model.dart';
+import 'package:brevia_mobile/connection.dart';
 import 'package:brevia_mobile/i18n.dart';
 import 'package:brevia_mobile/main.dart';
 import 'package:brevia_mobile/onboarding.dart';
@@ -50,9 +51,9 @@ void main() {
 
     await show(const OnboardingGate(child: SizedBox()));
     await capture('ios-welcome');
-    await tester.tap(find.text('开始使用'));
+    await tester.tap(find.text('电脑已安装，开始配对'));
     await capture('ios-onboarding-privacy');
-    await tester.tap(find.text('继续'));
+    await tester.tap(find.text('已打开二维码，开始扫码'));
     await capture('ios-onboarding-permissions');
     await tester.pumpWidget(BreviaApp(model: model));
     await capture('ios-library-empty');
@@ -138,6 +139,25 @@ void main() {
       brightness: Brightness.dark,
     );
     await capture('ios-live-dark');
+    model.desktop = DesktopConnection(
+      address: 'https://192.168.1.24:43187',
+      fingerprint: 'native-fixture',
+      name: 'MacBook Pro',
+    );
+    model.desktopMicrophoneSelected = true;
+    await show(Scaffold(body: ConnectionPage(model: model)));
+    await capture('ios-mic-ready');
+    model.live!['desktopCapture'] = true;
+    model.live!['inputLevel'] = .5;
+    await show(MeetingPage(model: model, id: 'native-live'));
+    await capture('ios-mic-active');
+    model.live!['state'] = 'paused';
+    model.notifyListeners();
+    await capture('ios-mic-paused');
+    model.live!['state'] = 'recording';
+    model.live!['connected'] = false;
+    model.notifyListeners();
+    await capture('ios-mic-disconnected');
     await show(
       PrepareMeetingPage(
         computer: 'MacBook Pro',
@@ -158,6 +178,15 @@ void main() {
       ),
     );
     await capture('ios-prepare-connected');
+    await show(
+      MediaQuery(
+        data: MediaQueryData.fromView(
+          tester.view,
+        ).copyWith(textScaler: TextScaler.linear(2)),
+        child: MeetingPage(model: model, id: 'native-live'),
+      ),
+    );
+    await capture('ios-mic-large-text');
     await tester.pumpWidget(const SizedBox());
   });
 }

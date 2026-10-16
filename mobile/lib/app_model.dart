@@ -66,6 +66,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
   bool serviceRunning = false, refreshing = false, busy = false;
   bool foreground = true, checkingDesktop = false;
   AudioRecorder? capturePreview;
+  bool desktopMicrophoneSelected = false;
   StreamSubscription<Uint8List>? previewAudio;
   double? previewLevel;
   Future<void> previewChanges = Future.value();
@@ -79,6 +80,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
           !disposed &&
           engine == null &&
           !serviceRunning;
+      desktopMicrophoneSelected = wanted;
       if (wanted == (capturePreview != null)) return;
       final previous = capturePreview;
       capturePreview = null;
@@ -104,6 +106,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
           ),
         );
         capturePreview = recorder;
+        notifyListeners();
         previewAudio = stream.listen(
           (bytes) => previewLevel = pcmLevel(bytes),
           onError: (Object _) => unawaited(setCapturePreview(false)),
@@ -353,7 +356,10 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
         notifyListeners();
         return;
       }
-      if (capturePreview != null) return;
+      if (capturePreview != null) {
+        notifyListeners();
+        return;
+      }
     }
     refreshing = true;
     try {
@@ -602,7 +608,6 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
       }
       live = {...store.meta, 'samples': store.samples};
       if (Platform.isAndroid) {
-        await desktop?.dispose();
         await FlutterForegroundTask.saveData(key: 'sessionId', value: id);
         final result = await FlutterForegroundTask.startService(
           serviceId: 43187,
@@ -662,8 +667,7 @@ class AppModel extends ChangeNotifier with WidgetsBindingObserver {
     final current = desktop!;
     final candidate = DesktopConnection.fromJson(current.toJson())
       ..address = address;
-    // 用户修改局域网地址时必须验证该地址，不能由远程回退掩盖错误。
-    await candidate.localCall('GET', '/meetings');
+    await candidate.call('GET', '/meetings');
     current.address = address;
     await current.save();
     if (serviceRunning) {

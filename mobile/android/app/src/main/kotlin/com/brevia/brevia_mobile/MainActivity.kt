@@ -9,7 +9,6 @@ import androidx.core.content.FileProvider
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-import com.cloudwebrtc.webrtc.audio.AudioSwitchManager
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity() {
@@ -57,10 +56,5 @@ class MainActivity : FlutterActivity() {
                     result.error("update_failed", error.message, null)
                 }
             }
-    }
-
-    init {
-        // WebRTC 只传数据，音频焦点和路由仍由录音器管理。
-        AudioSwitchManager.setAudioSessionManagementEnabled(false)
     }
 }

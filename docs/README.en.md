@@ -137,13 +137,12 @@ flowchart LR
 ```
 
 - **Pair on the same Wi-Fi first.** Open **Settings → Device connections → Connect new device** on desktop. Scan its QR code on the phone or enter the address and PIN, compare the verification code, then approve on the computer. Subsequent connections use the saved device identity.
-- **Local network by default.** The phone sends audio over HTTPS to the paired computer; the computer returns transcripts and notes. The computer must remain awake and reachable for live processing. The phone does not run recognition models.
+- **Local network connection only.** The phone sends audio over HTTPS to the paired computer; the computer returns transcripts and notes. The computer must remain awake and reachable for live processing. The phone does not run recognition models.
 - **Save before acknowledging.** Audio is saved on the phone first. The upload position advances only after the computer confirms it has saved the audio. After a disconnection, transfer resumes from that position; a successful upload does not automatically delete the phone copy.
-- **Optional remote connection.** With your own signalling/TURN service configured, paired devices can use a WebRTC DataChannel across networks. Direct connection is preferred; a relay may carry encrypted traffic when needed. Initial pairing still requires the local network. See [remote setup and recovery](mobile-remote.md).
 
-Speech recognition and speaker processing run on your computer. Local models can also handle AI notes, summaries and translation after download. If you choose an online AI provider, relevant transcript and note text is sent to that service, not audio. Remote relay operators can see connection metadata such as network addresses and traffic volume, but cannot read the encrypted meeting content through the relay. [Privacy policy](https://brevia.work/privacy.html).
+Speech recognition and speaker processing run on your computer. Local models can also handle AI notes, summaries and translation after download. If you choose an online AI provider, relevant transcript and note text is sent to that service, not audio. [Privacy policy](https://brevia.work/privacy.html).
 
-Phone audio uses about **115 MB per recorded hour** before exports and caches. Remote uploads also consume data, plus network overhead; use Wi-Fi for long recordings when possible.
+Phone audio uses about **115 MB per recorded hour** before exports and caches. Uploads and live transcription require the phone and computer to be on the same local network.
 
 ## Get started
 
@@ -156,7 +155,7 @@ Phone audio uses about **115 MB per recorded hour** before exports and caches. R
 <details>
 <summary><strong>Can I use Brevia without the internet?</strong></summary>
 
-Yes. Desktop transcription and local AI work after the required models are downloaded. Phone-only recording needs neither a computer nor an account; phone transcription needs your paired computer, which can be reached over the local network without internet access. Online AI and remote connections need internet access.
+Yes. Desktop transcription and local AI work after the required models are downloaded. Phone-only recording needs neither a computer nor an account; phone transcription needs your paired computer, which can be reached over the local network without internet access. Online AI needs internet access.
 
 </details>
 

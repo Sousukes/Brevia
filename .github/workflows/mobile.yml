@@ -144,7 +144,7 @@ jobs:
         run: |
           case "$IOS_USES_NON_EXEMPT_ENCRYPTION" in
             true|false) ;;
-            *) echo "::error::Review the Apple encryption questionnaire (AES-GCM/WebRTC), then set repository variable IOS_USES_NON_EXEMPT_ENCRYPTION to true or false"; exit 1 ;;
+            *) echo "::error::Review the Apple encryption questionnaire for the current implementation, then set repository variable IOS_USES_NON_EXEMPT_ENCRYPTION to true or false"; exit 1 ;;
           esac
       - name: Import App Store signing material
         run: bash scripts/ios-signing.sh

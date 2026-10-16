@@ -119,11 +119,9 @@ Bei einem Netzausfall wird Audio auf dem Smartphone weiter gespeichert; erlaubte
 
 Im lokalen Netzwerk sendet das Smartphone Audio per **HTTPS** an den gekoppelten Computer und erhält Transkripte und Notizen zurück. Audio wird zuerst auf dem Smartphone gespeichert. Der Upload-Fortschritt wird erst bestätigt, wenn der Computer die Daten gespeichert hat. Nach einer Unterbrechung geht es an dieser Stelle weiter; die Kopie auf dem Smartphone wird nicht automatisch gelöscht.
 
-Mit einem eigenen Signalisierungs-/TURN-Dienst können bereits gekoppelte Geräte über **WebRTC DataChannel** zwischen Netzwerken kommunizieren. Direkte Verbindungen werden bevorzugt; andernfalls leitet ein Relay verschlüsselten Verkehr weiter. Der Betreiber kann Netzwerkadressen und Datenmengen sehen, aber die verschlüsselten Inhalte nicht über das Relay lesen. [Verbindungen zwischen Netzwerken benötigen zusätzliche Einrichtung; die erste Kopplung erfolgt im lokalen Netzwerk.](mobile-remote.md)
+Spracherkennung läuft auf Ihrem Computer. Offline-Aufnahmen bleiben bis zur Upload-Bestätigung auf dem Smartphone; Live-Transkription sendet Audio an den gekoppelten Computer. Brevia überträgt Besprechungen nicht automatisch an den Entwickler. Mit heruntergeladenen Modellen ist lokale KI möglich. Ein selbst gewählter Online-KI-Anbieter erhält relevante Texte, kein Audio. [Datenschutz](https://brevia.work/privacy.html).
 
-Spracherkennung läuft auf Ihrem Computer. Offline-Aufnahmen bleiben bis zur Upload-Bestätigung auf dem Smartphone; Live-Transkription sendet Audio an den gekoppelten Computer. Brevia überträgt Besprechungen nicht automatisch an den Entwickler. Mit heruntergeladenen Modellen ist lokale KI möglich. Ein selbst gewählter Online-KI-Anbieter erhält relevante Texte, kein Audio. Optionale Fernverbindungen können verschlüsselten Verkehr weiterleiten. [Datenschutz](https://brevia.work/privacy.html).
-
-Telefonaufnahmen benötigen etwa **115 MB pro aufgenommener Stunde**, ohne Exporte und Cache. Fernübertragungen verbrauchen zusätzlich Daten einschließlich Netzwerk-Overhead.
+Telefonaufnahmen benötigen etwa **115 MB pro aufgenommener Stunde**, ohne Exporte und Cache. Für Uploads und Live-Transkription müssen Smartphone und Computer im selben lokalen Netzwerk sein.
 
 ## Erste Schritte
 

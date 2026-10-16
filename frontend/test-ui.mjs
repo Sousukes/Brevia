@@ -1882,7 +1882,7 @@ assert.match(text(electronMain), /const startupAnimationMs = 1700;/);
 assert.match(text(electronMain), /const startupDataWaitMs = 2200;/);
 assert.match(
   text(electronMain),
-  /powerMonitor\.on\('suspend',\s+\(\)\s+=>\s+\{\s+mobileServer\?\.remote\?\.stop\(\);\s+void\s+stopActiveMeetingForSleep\(\);\s+\}\);/,
+  /powerMonitor\.on\('suspend',\s+\(\)\s+=>\s+\{\s+void\s+stopActiveMeetingForSleep\(\);\s+\}\);/,
 );
 assert.doesNotMatch(text(electronMain), /const splash = new BrowserWindow/);
 assert.match(

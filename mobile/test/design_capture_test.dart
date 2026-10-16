@@ -246,6 +246,20 @@ void main() {
       lessThan(tester.getTopLeft(find.text('开始录音')).dy),
     );
     await capture('mobile-prepare-connected');
+    for (final (choice, name) in [
+      ('中文', 'mobile-meeting-language'),
+      ('不指定工作区', 'mobile-workspace'),
+      ('不翻译', 'mobile-translation'),
+      ('Fun-ASR-Nano', 'mobile-recognition-model'),
+    ]) {
+      final button = find.widgetWithText(OutlinedButton, tr(choice));
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      await capture(name);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+    }
     await show(
       MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -311,6 +325,11 @@ void main() {
     await tester.tap(find.text(tr('取消')));
     await tester.pumpAndSettle();
     expect(model.desktop!.address, 'https://192.168.1.24:43187');
+    model.desktopMicrophoneSelected = true;
+    model.desktopOnline = true;
+    model.notifyListeners();
+    await capture('mobile-mic-ready');
+    model.desktopMicrophoneSelected = false;
     model.desktop = null;
 
     model.live = {
@@ -399,6 +418,30 @@ void main() {
       ),
     );
     await capture('mobile-live-dark');
+    model.live!['desktopCapture'] = true;
+    model.live!['inputLevel'] = .5;
+    model.desktop = DesktopConnection(
+      address: 'https://192.168.1.24:43187',
+      fingerprint: 'fixture',
+      name: 'MacBook Pro',
+    );
+    await show(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: breviaTheme(Brightness.light),
+        home: MeetingPage(model: model, id: 'live'),
+      ),
+    );
+    await capture('mobile-mic-active');
+    model.live!['state'] = 'paused';
+    model.notifyListeners();
+    await capture('mobile-mic-paused');
+    model.live!['state'] = 'recording';
+    model.live!['connected'] = false;
+    model.notifyListeners();
+    await capture('mobile-mic-disconnected');
+    model.live!.remove('desktopCapture');
+    model.desktop = null;
     model.live!['state'] = 'interrupted';
     model.live!['error'] = FileSystemException(
       'write failed',
@@ -467,10 +510,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     await capture('mobile-welcome');
-    await tester.tap(find.text(tr('开始使用')));
+    await tester.tap(find.text(tr('电脑已安装，开始配对')));
     await tester.pumpAndSettle();
     await capture('mobile-onboarding-connection');
-    await tester.tap(find.text(tr('继续')));
+    await tester.tap(find.text(tr('已打开二维码，开始扫码')));
     await tester.pumpAndSettle();
     await capture('mobile-permissions');
     await tester.pumpWidget(const SizedBox());

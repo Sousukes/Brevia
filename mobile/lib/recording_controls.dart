@@ -68,3 +68,39 @@ class RecordingControls extends StatelessWidget {
     );
   }
 }
+
+class MicrophoneLevel extends StatelessWidget {
+  final double level;
+  const MicrophoneLevel({super.key, required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    final active = (level.clamp(0.0, 1.0) * 16).ceil();
+    return Semantics(
+      label: tr('输入音量'),
+      value: '${(level.clamp(0.0, 1.0) * 100).round()}%',
+      child: SizedBox(
+        width: 160,
+        height: 12,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < 16; i++)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: ColoredBox(
+                    color: i < active
+                        ? Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xff80c99a)
+                              : const Color(0xff16812e)
+                        : Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

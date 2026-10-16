@@ -10,18 +10,6 @@ import 'package:brevia_mobile/recorder.dart';
 import 'package:brevia_mobile/storage.dart';
 import 'package:brevia_mobile/connection.dart';
 import 'package:brevia_mobile/i18n.dart';
-import 'package:brevia_mobile/remote_transport.dart';
-
-class SlowTransport extends RemoteTransport {
-  final entered = Completer<void>();
-  final release = Completer<void>();
-  SlowTransport() : super({}, (_) {});
-  @override
-  Future<void> open() async {
-    if (!entered.isCompleted) entered.complete();
-    await release.future;
-  }
-}
 
 class FakeRecorder implements AudioRecorder {
   @override
@@ -169,6 +157,7 @@ void main() {
       final model = AppModel()..desktop = connection;
       try {
         await model.refresh();
+        expect(model.desktopMicrophoneSelected, isTrue);
         expect(model.capturePreview, isNotNull);
         expect(model.live, isNull);
         platform.bytes.add(
@@ -180,6 +169,7 @@ void main() {
         expect(await (await recordingsRoot()).list().toList(), isEmpty);
         model.didChangeAppLifecycleState(AppLifecycleState.paused);
         await model.previewChanges;
+        expect(model.desktopMicrophoneSelected, isFalse);
         expect(model.capturePreview, isNull);
         expect(model.previewLevel, isNull);
         model.foreground = true;
@@ -222,12 +212,18 @@ void main() {
         await model.engine?.syncDone?.future;
         final recording = model.engine!;
         model.didChangeAppLifecycleState(AppLifecycleState.paused);
-        platform.bytes.add(Uint8List(32000));
+        platform.bytes.add(
+          Uint8List.fromList(List.generate(32000, (i) => i.isOdd ? 8 : 0)),
+        );
         await Future<void>.delayed(Duration.zero);
         await recording.disk;
         expect(model.engine, same(recording));
         expect(recording.store.meta['state'], 'recording');
         expect(recording.store.samples, 16000);
+        expect(recording.view['inputLevel'], .5);
+        expect(recording.store.meta.containsKey('inputLevel'), isFalse);
+        recording.store.meta['state'] = 'paused';
+        expect(recording.view['inputLevel'], 0);
       } finally {
         await platform.bytes.close();
         await model.releaseEngines();
@@ -275,28 +271,6 @@ void main() {
       }
     },
   );
-  test('slow signalling does not delay pause or end commands', () async {
-    final dir = await Directory.systemTemp.createTemp('brevia-reconnect-');
-    final store = RecordingStore(dir, {'id': 'test', 'state': 'recording'});
-    final engine = Engine(store);
-    final transport = SlowTransport();
-    engine.connection!.transport = transport;
-    try {
-      final reconnect = engine.command({'action': 'reconnect'});
-      await transport.entered.future;
-      await engine.command({'action': 'pause'}).timeout(Duration(seconds: 2));
-      expect(store.meta['state'], 'paused');
-      await engine.command({'action': 'end'}).timeout(Duration(seconds: 2));
-      expect(engine.fake.stopped, isTrue);
-      expect(store.meta['state'], 'ended');
-      expect(transport.release.isCompleted, isFalse);
-      await reconnect;
-    } finally {
-      transport.release.complete();
-      await transport.dispose();
-      await dir.delete(recursive: true);
-    }
-  });
   test(
     'missing committed chunks are rejected without changing audio',
     () async {
@@ -402,7 +376,7 @@ void main() {
   );
 
   test(
-    'recovered transport wakes a pending sender without waiting for backoff',
+    'reconnect wakes a pending sender without waiting for backoff',
     () async {
       final connection = DesktopConnection(
         address: 'https://192.168.1.2',
@@ -413,15 +387,16 @@ void main() {
         connection,
       );
       sender.retryAt = DateTime.now().add(Duration(seconds: 15));
-      connection.available.add(true);
+      await connection.reconnect();
       await Future<void>.delayed(Duration.zero);
       expect(sender.syncs, 1);
       expect(sender.retryAt.isBefore(DateTime.now()), isTrue);
       await sender.dispose();
-      connection.available.add(true);
+      await connection.reconnect();
       await Future<void>.delayed(Duration.zero);
       expect(sender.syncs, 1);
-      await connection.available.close();
+      await connection.dispose();
+      await connection.reconnect();
     },
   );
 

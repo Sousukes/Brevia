@@ -95,6 +95,7 @@ void main() {
             ),
           );
           await tester.pump();
+          await tester.scrollUntilVisible(find.text(tr('电脑会议的手机录音')), 200);
           expect(find.text(tr('电脑会议的手机录音')), findsOneWidget);
           expect(find.text('Private desktop transcript'), findsNothing);
           expect(find.text('Private desktop notes'), findsNothing);

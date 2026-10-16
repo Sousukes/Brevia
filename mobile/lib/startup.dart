@@ -1,9 +1,9 @@
-import 'i18n.dart';
-import 'design_system.dart';
-import 'dart:async';
 import 'package:flutter/material.dart';
 
-/// 显示应用Logo，首帧和本机初始化完成后淡出。
+import 'design_system.dart';
+import 'i18n.dart';
+
+/// 原生静态 Logo 首帧就绪后再播放，初始化失败保留重试入口。
 class Startup extends StatefulWidget {
   final Future<void> Function() initialize;
   final Widget child;
@@ -12,10 +12,19 @@ class Startup extends StatefulWidget {
   State<Startup> createState() => _StartupState();
 }
 
-class _StartupState extends State<Startup> {
-  bool ready = false, played = false;
+class _StartupState extends State<Startup> with SingleTickerProviderStateMixin {
+  bool ready = false, played = false, started = false;
   Object? error;
-  Timer? timer;
+  late final controller =
+      AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 900),
+      )..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          setState(() => played = true);
+        }
+      });
+
   @override
   void initState() {
     super.initState();
@@ -33,47 +42,86 @@ class _StartupState extends State<Startup> {
   }
 
   void firstFrame() {
-    timer ??= Timer(Duration(milliseconds: 1500), () {
-      if (mounted) setState(() => played = true);
-    });
+    if (started) return;
+    started = true;
+    controller.forward();
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
+    final canvas = Theme.of(context).scaffoldBackgroundColor;
     return AnimatedSwitcher(
-      duration: reduced ? Duration.zero : Duration(milliseconds: 360),
+      duration: reduced ? Duration.zero : const Duration(milliseconds: 220),
       child: ready && (played || reduced)
           ? widget.child
           : ColoredBox(
-              key: ValueKey('startup'),
-              color: Color(0xfffbfaf7),
+              key: const ValueKey('startup'),
+              color: canvas,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   if (reduced)
                     Center(child: breviaLogo(size: 64))
                   else
-                    Center(
-                      child: Image.asset(
-                        'assets/brevia-logo.png',
-                        width: 64,
-                        height: 64,
-                        semanticLabel: 'Brevia',
-                        frameBuilder: (_, child, frame, _) {
-                          if (frame != null) firstFrame();
-                          return child;
-                        },
-                        errorBuilder: (_, _, _) {
-                          firstFrame();
-                          return const SizedBox(width: 64, height: 64);
-                        },
+                    AnimatedBuilder(
+                      animation: controller,
+                      builder: (context, _) => Transform.translate(
+                        offset: Offset(
+                          0,
+                          -12 *
+                              const Interval(
+                                .55,
+                                1,
+                                curve: Curves.easeOutCubic,
+                              ).transform(controller.value),
+                        ),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Center(
+                              child: Image.asset(
+                                'assets/brevia-logo.png',
+                                width: 64,
+                                height: 64,
+                                semanticLabel: 'Brevia',
+                                frameBuilder: (_, child, frame, _) {
+                                  if (frame != null) firstFrame();
+                                  return child;
+                                },
+                                errorBuilder: (_, _, _) {
+                                  firstFrame();
+                                  return const SizedBox(width: 64, height: 64);
+                                },
+                              ),
+                            ),
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 120),
+                                child: Opacity(
+                                  opacity: const Interval(
+                                    .2,
+                                    .6,
+                                    curve: Curves.easeOut,
+                                  ).transform(controller.value),
+                                  child: const Text(
+                                    'Brevia',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   if (error != null)
@@ -81,16 +129,16 @@ class _StartupState extends State<Startup> {
                       child: Align(
                         alignment: Alignment.bottomCenter,
                         child: Material(
-                          color: Color(0xfffbfaf7),
+                          color: canvas,
                           child: Padding(
-                            padding: EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(24),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(tr("本机数据暂时无法读取，请重试。")),
+                                Text(tr('本机数据暂时无法读取，请重试。')),
                                 TextButton(
                                   onPressed: load,
-                                  child: Text(tr("重试")),
+                                  child: Text(tr('重试')),
                                 ),
                               ],
                             ),

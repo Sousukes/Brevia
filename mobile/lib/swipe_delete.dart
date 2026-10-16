@@ -68,7 +68,9 @@ class _SwipeDeleteState extends State<SwipeDelete> {
                   })
                 : null,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 150),
               transform: Matrix4.translationValues(
                 widget.enabled ? offset : 0,
                 0,

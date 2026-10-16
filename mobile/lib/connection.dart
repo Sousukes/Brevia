@@ -6,7 +6,6 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'i18n.dart';
-import 'remote_transport.dart';
 
 const vault = FlutterSecureStorage(
   iOptions: IOSOptions(
@@ -24,24 +23,18 @@ class DesktopConnection {
   String fingerprint;
   String token;
   String name;
-  Map<String, dynamic>? remote;
-  RemoteTransport? transport;
   final available = StreamController<bool>.broadcast();
-  bool checkedRemote = false;
-  DateTime lanRetry = DateTime.fromMillisecondsSinceEpoch(0);
   DesktopConnection({
     required this.address,
     required this.fingerprint,
     this.token = '',
     this.name = '',
-    this.remote,
   });
   Map<String, dynamic> toJson() => {
     'address': address,
     'fingerprint': fingerprint,
     'token': token,
     'name': name,
-    if (remote != null) 'remote': remote,
   };
   factory DesktopConnection.fromJson(Map<String, dynamic> v) =>
       DesktopConnection(
@@ -49,9 +42,6 @@ class DesktopConnection {
         fingerprint: v['fingerprint'],
         token: v['token'] ?? '',
         name: v['name'] ?? tr("电脑"),
-        remote: v['remote'] == null
-            ? null
-            : Map<String, dynamic>.from(v['remote']),
       );
   static Uri endpoint(String address) {
     final uri = Uri.parse(
@@ -77,44 +67,6 @@ class DesktopConnection {
     return uri;
   }
 
-  Future<dynamic> call(String method, String route, [Object? data]) async {
-    if (remote == null ||
-        (!transportConnected && DateTime.now().isAfter(lanRetry))) {
-      try {
-        final value = await localCall(method, route, data);
-        if (!checkedRemote && token.isNotEmpty) {
-          checkedRemote = true;
-          try {
-            final setup = await localCall('GET', '/connection');
-            if (setup['remote'] != null) {
-              remote = Map<String, dynamic>.from(setup['remote']);
-              await save();
-            }
-          } catch (_) {
-            /* 兼容未启用跨网连接的旧版电脑。 */
-          }
-        }
-        return value;
-      } on SocketException {
-        if (remote == null) rethrow;
-      } on TimeoutException {
-        if (remote == null) rethrow;
-      }
-      lanRetry = DateTime.now().add(Duration(seconds: 30));
-    }
-    transport ??= RemoteTransport(remote!, (connected) {
-      if (!available.isClosed) available.add(connected);
-    });
-    final result = await transport!.call({
-      'method': method,
-      'route': route,
-      'data': data,
-      'token': token,
-    });
-    return decodeResponse(result['status'], result['value']);
-  }
-
-  bool get transportConnected => transport?.connected == true;
   dynamic decodeResponse(int status, dynamic value) {
     if (status == 410) throw MeetingDeletedException();
     if (status != 200) {
@@ -126,28 +78,19 @@ class DesktopConnection {
   }
 
   Future<void> reconnect() async {
-    lanRetry = DateTime.fromMillisecondsSinceEpoch(0);
-    // 定时唤醒不重置正在协商的连接，也不让网络等待阻塞本地录音控制。
-    if (!transportConnected && transport?.reconnecting == null) {
-      unawaited(transport?.open() ?? Future.value());
-    }
     if (!available.isClosed) available.add(true);
   }
 
-  Future<void> dispose() async {
-    await transport?.dispose();
-    transport = null;
-  }
+  Future<void> dispose() => available.close();
 
-  Future<dynamic> localCall(String method, String route, [Object? data]) async {
+  Future<dynamic> call(String method, String route, [Object? data]) async {
     final base = endpoint(address);
-    final client = HttpClient(
-      context: SecurityContext(withTrustedRoots: false),
-    )..connectionTimeout = Duration(milliseconds: remote == null ? 6000 : 1500);
+    final client = HttpClient(context: SecurityContext(withTrustedRoots: false))
+      ..connectionTimeout = Duration(seconds: 6);
     String? peer;
     client.badCertificateCallback = (cert, host, port) {
       peer = sha256.convert(cert.der).toString();
-      // Empty pin is permitted only for unauthenticated identity discovery.
+      // 仅未认证的设备发现允许空指纹。
       return host == base.host &&
           (peer == fingerprint ||
               (fingerprint.isEmpty && route == '/identity'));
@@ -155,7 +98,7 @@ class DesktopConnection {
     try {
       final request = await client
           .openUrl(method, base.replace(path: route))
-          .timeout(Duration(milliseconds: remote == null ? 8000 : 2000));
+          .timeout(Duration(seconds: 8));
       request.followRedirects = false;
       if (token.isNotEmpty) {
         request.headers.set('Authorization', 'Bearer $token');

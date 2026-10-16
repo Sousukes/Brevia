@@ -37,6 +37,7 @@ class RecordingEngine {
   final DesktopConnection? connection;
   final void Function(Map<String, dynamic>) onChanged;
   AudioRecorder? _recorder;
+  double inputLevel = 0;
   AudioRecorder get recorder => _recorder ??= AudioRecorder();
   Completer<void>? audioDone;
   Completer<void>? syncDone;
@@ -80,6 +81,8 @@ class RecordingEngine {
     'error': error,
     'samples': store.samples,
     'count': store.count,
+    // 仅用于界面电平，不写入录音元数据或发送给电脑。
+    'inputLevel': store.meta['state'] == 'recording' ? inputLevel : 0.0,
   };
   DateTime activityUpdated = DateTime.fromMillisecondsSinceEpoch(0);
   String? activityStatus;
@@ -198,6 +201,7 @@ class RecordingEngine {
       audioDone = done;
       audio = stream.listen(
         (bytes) {
+          inputLevel = pcmLevel(bytes);
           // One ordered disk queue; transport never owns the microphone stream.
           unawaited(
             write(() async {
